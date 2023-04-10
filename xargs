@@ -1,0 +1,457 @@
+XARGS(1)                                                                                  General Commands Manual                                                                                 XARGS(1)
+
+NAME
+       xargs - build and execute command lines from standard input
+
+SYNOPSIS
+       xargs [options] [command [initial-arguments]]
+
+DESCRIPTION
+       This  manual  page documents the GNU version of xargs.  xargs reads items from the standard input, delimited by blanks (which can be protected with double or single quotes or a backslash) or new‐
+       lines, and executes the command (default is echo) one or more times with any initial-arguments followed by items read from standard input.  Blank lines on the standard input are ignored.
+
+       The command line for command is built up until it reaches a system-defined limit (unless the -n and -L options are used).  The specified command will be invoked as many times as necessary to  use
+       up  the list of input items.  In general, there will be many fewer invocations of command than there were items in the input.  This will normally have significant performance benefits.  Some com‐
+       mands can usefully be executed in parallel too; see the -P option.
+
+       Because Unix filenames can contain blanks and newlines, this default behaviour is often problematic; filenames containing blanks and/or newlines are incorrectly processed by xargs.  In these sit‐
+       uations  it  is  better  to  use the -0 option, which prevents such problems.   When using this option you will need to ensure that the program which produces the input for xargs also uses a null
+       character as a separator.  If that program is GNU find for example, the -print0 option does this for you.
+
+       If any invocation of the command exits with a status of 255, xargs will stop immediately without reading any further input.  An error message is issued on stderr when this happens.
+
+OPTIONS
+       -0, --null
+              Input items are terminated by a null character instead of by whitespace, and the quotes and backslash are not special (every character is  taken  literally).   Disables  the  end  of  file
+              string,  which is treated like any other argument.  Useful when input items might contain white space, quote marks, or backslashes.  The GNU find -print0 option produces input suitable for
+              this mode.
+
+       -a file, --arg-file=file
+              Read items from file instead of standard input.  If you use this option, stdin remains unchanged when commands are run.  Otherwise, stdin is redirected from /dev/null.
+
+       --delimiter=delim, -d delim
+              Input items are terminated by the specified character.  The specified delimiter may be a single character, a C-style character escape such as \n, or an octal or  hexadecimal  escape  code.
+              Octal and hexadecimal escape codes are understood as for the printf command.   Multibyte characters are not supported.  When processing the input, quotes and backslash are not special; ev‐
+              ery character in the input is taken literally.  The -d option disables any end-of-file string, which is treated like any other argument.  You can use this option when the input consists of
+              simply newline-separated items, although it is almost always better to design your program to use --null where this is possible.
+
+       -E eof-str
+              Set the end of file string to eof-str.  If the end of file string occurs as a line of input, the rest of the input is ignored.  If neither -E nor -e is used, no end of file string is used.
+
+       -e[eof-str], --eof[=eof-str]
+              This  option is a synonym for the -E option.  Use -E instead, because it is POSIX compliant while this option is not.  If eof-str is omitted, there is no end of file string.  If neither -E
+              nor -e is used, no end of file string is used.
+
+       -I replace-str
+              Replace occurrences of replace-str in the initial-arguments with names read from standard input.  Also, unquoted blanks do not terminate input items; instead the separator is  the  newline
+              character.  Implies -x and -L 1.
+
+       -i[replace-str], --replace[=replace-str]
+              This option is a synonym for -Ireplace-str if replace-str is specified.  If the replace-str argument is missing, the effect is the same as -I{}.  This option is deprecated; use -I instead.
+
+       -L max-lines
+              Use at most max-lines nonblank input lines per command line.  Trailing blanks cause an input line to be logically continued on the next input line.  Implies -x.
+
+       -l[max-lines], --max-lines[=max-lines]
+              Synonym  for the -L option.  Unlike -L, the max-lines argument is optional.  If max-lines is not specified, it defaults to one.  The -l option is deprecated since the POSIX standard speci‐
+              fies -L instead.
+
+       -n max-args, --max-args=max-args
+              Use at most max-args arguments per command line.  Fewer than max-args arguments will be used if the size (see the -s option) is exceeded, unless the -x option is given, in which case xargs
+              will exit.
+
+       -P max-procs, --max-procs=max-procs
+              Run  up  to max-procs processes at a time; the default is 1.  If max-procs is 0, xargs will run as many processes as possible at a time.  Use the -n option or the -L option with -P; other‐
+              wise chances are that only one exec will be done.  While xargs is running, you can send its process a SIGUSR1 signal to increase the number of commands to run simultaneously, or a  SIGUSR2
+              to decrease the number.  You cannot increase it above an implementation-defined limit (which is shown with --show-limits).  You cannot decrease it below 1.  xargs never terminates its com‐
+              mands; when asked to decrease, it merely waits for more than one existing command to terminate before starting another.
+
+              Please note that it is up to the called processes to properly manage parallel access to shared resources.  For example, if more than one of them tries to print to stdout, the  output  will
+              be produced in an indeterminate order (and very likely mixed up) unless the processes collaborate in some way to prevent this.  Using some kind of locking scheme is one way to prevent such
+              problems.  In general, using a locking scheme will help ensure correct output but reduce performance.  If you don't want to tolerate the performance difference,  simply  arrange  for  each
+              process to produce a separate output file (or otherwise use separate resources).
+
+       -o, --open-tty
+              Reopen stdin as /dev/tty in the child process before executing the command.  This is useful if you want xargs to run an interactive application.
+
+       -p, --interactive
+              Prompt the user about whether to run each command line and read a line from the terminal.  Only run the command line if the response starts with `y' or `Y'.  Implies -t.
+
+       --process-slot-var=name
+              Set  the  environment  variable  name  to  a  unique value in each running child process.  Values are reused once child processes exit.  This can be used in a rudimentary load distribution
+              scheme, for example.
+
+       -r, --no-run-if-empty
+              If the standard input does not contain any nonblanks, do not run the command.  Normally, the command is run once even if there is no input.  This option is a GNU extension.
+
+       -s max-chars, --max-chars=max-chars
+              Use at most max-chars characters per command line, including the command and initial-arguments and the terminating nulls at the ends of the argument strings.  The largest allowed value  is
+              system-dependent,  and  is  calculated  as the argument length limit for exec, less the size of your environment, less 2048 bytes of headroom.  If this value is more than 128KiB, 128Kib is
+              used as the default value; otherwise, the default value is the maximum.  1KiB is 1024 bytes.  xargs automatically adapts to tighter constraints.
+
+       --show-limits
+              Display the limits on the command-line length which are imposed by the operating system, xargs' choice of buffer size and the -s option.  Pipe the input from /dev/null (and perhaps specify
+              --no-run-if-empty) if you don't want xargs to do anything.
+
+       -t, --verbose
+              Print the command line on the standard error output before executing it.
+
+       -x, --exit
+              Exit if the size (see the -s option) is exceeded.
+
+       --help Print a summary of the options to xargs and exit.
+
+       --version
+              Print the version number of xargs and exit.
+
+       The options --max-lines (-L, -l), --replace (-I, -i) and --max-args (-n) are mutually exclusive. If some of them are specified at the same time, then xargs will generally use the option specified
+       last on the command line, i.e., it will reset the value of the offending option (given before) to its default value.  Additionally, xargs will issue a warning diagnostic on stderr.  The exception
+       to this rule is that the special max-args value 1 ('-n1') is ignored after the --replace option and its aliases -I and -i, because it would not actually conflict.
+
+EXAMPLES
+       find /tmp -name core -type f -print | xargs /bin/rm -f
+
+       Find files named core in or below the directory /tmp and delete them.  Note that this will work incorrectly if there are any filenames containing newlines or spaces.
+
+       find /tmp -name core -type f -print0 | xargs -0 /bin/rm -f
+
+       Find files named core in or below the directory /tmp and delete them, processing filenames in such a way that file or directory names containing spaces or newlines are correctly handled.
+
+       find /tmp -depth -name core -type f -delete
+
+       Find  files  named core in or below the directory /tmp and delete them, but more efficiently than in the previous example (because we avoid the need to use fork(2) and exec(2) to launch rm and we
+       don't need the extra xargs process).
+
+       cut -d: -f1 < /etc/passwd | sort | xargs echo
+
+       Generates a compact listing of all the users on the system.
+
+EXIT STATUS
+       xargs exits with the following status:
+
+              0      if it succeeds
+
+              123    if any invocation of the command exited with status 1-125
+
+              124    if the command exited with status 255
+
+              125    if the command is killed by a signal
+
+              126    if the command cannot be run
+
+              127    if the command is not found
+
+              1      if some other error occurred.
+
+       Exit codes greater than 128 are used by the shell to indicate that a program died due to a fatal signal.
+
+STANDARDS CONFORMANCE
+       As of GNU xargs version 4.2.9, the default behaviour of xargs is not to have a logical end-of-file marker.  POSIX (IEEE Std 1003.1, 2004 Edition) allows this.
+
+       The -l and -i options appear in the 1997 version of the POSIX standard, but do not appear in the 2004 version of the standard.  Therefore you should use -L and -I instead, respectively.
+
+       The -o option is an extension to the POSIX standard for better compatibility with BSD.
+
+       The POSIX standard allows implementations to have a limit on the size of arguments to the exec functions.  This limit could be as low as 4096 bytes including the size  of  the  environment.   For
+       scripts  to be portable, they must not rely on a larger value.  However, I know of no implementation whose actual limit is that small.  The --show-limits option can be used to discover the actual
+       limits in force on the current system.
+
+BUGS
+       It is not possible for xargs to be used securely, since there will always be a time gap between the production of the list of input files and their use in the commands that xargs issues.  If oth‐
+       er users have access to the system, they can manipulate the filesystem during this time window to force the action of the commands xargs runs to apply to files that you didn't intend.  For a more
+       detailed discussion of this and related problems, please refer to the ``Security Considerations'' chapter in the findutils Texinfo documentation.  The -execdir option of find can often be used as
+       a more secure alternative.
+
+       When  you  use the -I option, each line read from the input is buffered internally.   This means that there is an upper limit on the length of input line that xargs will accept when used with the
+       -I option.  To work around this limitation, you can use the -s option to increase the amount of buffer space that xargs uses, and you can also use an extra invocation of xargs to ensure that very
+       long lines do not occur.  For example:
+
+       somecommand | xargs -s 50000 echo | xargs -I '{}' -s 100000 rm '{}'
+
+       Here,  the first invocation of xargs has no input line length limit because it doesn't use the -i option.  The second invocation of xargs does have such a limit, but we have ensured that it never
+       encounters a line which is longer than it can handle.   This is not an ideal solution.  Instead, the -i option should not impose a line length limit, which is why this discussion appears  in  the
+       BUGS section.  The problem doesn't occur with the output of find(1) because it emits just one filename per line.
+
+REPORTING BUGS
+       GNU findutils online help: <https://www.gnu.org/software/findutils/#get-help>
+       Report any translation bugs to <https://translationproject.org/team/>
+
+       Report any other issue via the form at the GNU Savannah bug tracker:
+              <https://savannah.gnu.org/bugs/?group=findutils>
+       General topics about the GNU findutils package are discussed at the bug-findutils mailing list:
+              <https://lists.gnu.org/mailman/listinfo/bug-findutils>
+
+COPYRIGHT
+       Copyright © 1990-2022 Free Software Foundation, Inc.  License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+       This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       find(1), kill(1), locate(1), updatedb(1), fork(2), execvp(3), locatedb(5), signal(7)
+
+       Full documentation <https://www.gnu.org/software/findutils/xargs>
+       or available locally via: info xargs
+
+                                                                                                                                                                                                  XARGS(1)
+XARGS(1P)                                                                                POSIX Programmer's Manual                                                                               XARGS(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       xargs — construct argument lists and invoke utility
+
+SYNOPSIS
+       xargs [-ptx] [-E eofstr] [-I replstr|-L number|-n number]
+           [-s size] [utility [argument...]]
+
+DESCRIPTION
+       The xargs utility shall construct a command line consisting of the utility and argument operands specified followed by as many arguments read in sequence from standard input as fit in length  and
+       number constraints specified by the options. The xargs utility shall then invoke the constructed command line and wait for its completion. This sequence shall be repeated until one of the follow‐
+       ing occurs:
+
+        *  An end-of-file condition is detected on standard input.
+
+        *  An argument consisting of just the logical end-of-file string (see the -E eofstr option) is found on standard input after double-quote processing, <apostrophe> processing, and <backslash>-es‐
+           cape  processing  (see  next paragraph). All arguments up to but not including the argument consisting of just the logical end-of-file string shall be used as arguments in constructed command
+           lines.
+
+        *  An invocation of a constructed command line returns an exit status of 255.
+
+       The application shall ensure that arguments in the standard input are separated by unquoted <blank> characters, unescaped <blank> characters, or <newline> characters. A string  of  zero  or  more
+       non-double-quote  ('"')  characters  and  non-<newline>  characters can be quoted by enclosing them in double-quotes. A string of zero or more non-<apostrophe> ('\'') characters and non-<newline>
+       characters can be quoted by enclosing them in <apostrophe> characters. Any unquoted character can be escaped by preceding it with a <backslash>.  The utility named by utility  shall  be  executed
+       one  or  more times until the end-of-file is reached or the logical end-of file string is found. The results are unspecified if the utility named by utility attempts to read from its standard in‐
+       put.
+
+       The generated command line length shall be the sum of the size in bytes of the utility name and each argument treated as strings, including a null byte terminator for each of these  strings.  The
+       xargs  utility  shall  limit the command line length such that when the command line is invoked, the combined argument and environment lists (see the exec family of functions in the System Inter‐
+       faces volume of POSIX.1‐2017) shall not exceed {ARG_MAX}-2048 bytes. Within this constraint, if neither the -n nor the -s option is specified, the default command line length shall  be  at  least
+       {LINE_MAX}.
+
+OPTIONS
+       The xargs utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following options shall be supported:
+
+       -E eofstr Use  eofstr  as  the  logical end-of-file string. If -E is not specified, it is unspecified whether the logical end-of-file string is the <underscore> character ('_') or the end-of-file
+                 string capability is disabled. When eofstr is the null string, the logical end-of-file string capability shall be disabled and <underscore> characters shall be taken literally.
+
+       -I replstr
+                 Insert mode: utility is executed for each logical line from standard input. Arguments in the standard input shall be separated only by unescaped <newline>  characters,  not  by  <blank>
+                 characters.  Any  unquoted unescaped <blank> characters at the beginning of each line shall be ignored. The resulting argument shall be inserted in arguments in place of each occurrence
+                 of replstr.  At least five arguments in arguments can each contain one or more instances of replstr.  Each of these constructed arguments cannot grow larger than  an  implementation-de‐
+                 fined limit greater than or equal to 255 bytes. Option -x shall be forced on.
+
+       -L number The  utility shall be executed for each non-empty number lines of arguments from standard input. The last invocation of utility shall be with fewer lines of arguments if fewer than num‐
+                 ber remain. A line is considered to end with the first <newline> unless the last character of the line is an unescaped <blank>; a trailing unescaped <blank> signals continuation to  the
+                 next non-empty line, inclusive.
+
+       -n number Invoke utility using as many standard input arguments as possible, up to number (a positive decimal integer) arguments maximum. Fewer arguments shall be used if:
+
+                  *  The command line length accumulated exceeds the size specified by the -s option (or {LINE_MAX} if there is no -s option).
+
+                  *  The last iteration has fewer than number, but not zero, operands remaining.
+
+       -p        Prompt mode: the user is asked whether to execute utility at each invocation. Trace mode (-t) is turned on to write the command instance to be executed, followed by a prompt to standard
+                 error. An affirmative response read from /dev/tty shall execute the command; otherwise, that particular invocation of utility shall be skipped.
+
+       -s size   Invoke utility using as many standard input arguments as possible yielding a command line length less than size (a positive decimal integer) bytes. Fewer arguments shall be used if:
+
+                  *  The total number of arguments exceeds that specified by the -n option.
+
+                  *  The total number of lines exceeds that specified by the -L option.
+
+                  *  End-of-file is encountered on standard input before size bytes are accumulated.
+
+                 Values of size up to at least {LINE_MAX} bytes shall be supported, provided that the constraints specified in the DESCRIPTION are met. It shall not be considered an  error  if  a  value
+                 larger  than  that  supported  by  the  implementation  or exceeding the constraints specified in the DESCRIPTION is given; xargs shall use the largest value it supports within the con‐
+                 straints.
+
+       -t        Enable trace mode. Each generated command line shall be written to standard error just prior to invocation.
+
+       -x        Terminate if a constructed command line will not fit in the implied or specified size (see the -s option above).
+
+OPERANDS
+       The following operands shall be supported:
+
+       utility   The name of the utility to be invoked, found by search path using the PATH environment variable, described in the Base Definitions volume of POSIX.1‐2017, Chapter 8,  Environment  Vari‐
+                 ables.  If utility is omitted, the default shall be the echo utility. If the utility operand names any of the special built-in utilities in Section 2.14, Special Built-In Utilities, the
+                 results are undefined.
+
+       argument  An initial option or operand for the invocation of utility.
+
+STDIN
+       The standard input shall be a text file. The results are unspecified if an end-of-file condition is detected immediately following an escaped <newline>.
+
+INPUT FILES
+       The file /dev/tty shall be used to read responses required by the -p option.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of xargs:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_COLLATE
+                 Determine  the locale for the behavior of ranges, equivalence classes, and multi-character collating elements used in the extended regular expression defined for the yesexpr locale key‐
+                 word in the LC_MESSAGES category.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments and input  files)
+                 and the behavior of character classes used in the extended regular expression defined for the yesexpr locale keyword in the LC_MESSAGES category.
+
+       LC_MESSAGES
+                 Determine the locale used to process affirmative responses, and the locale used to affect the format and contents of diagnostic messages and prompts written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+       PATH      Determine the location of utility, as described in the Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       The  standard  error shall be used for diagnostic messages and the -t and -p options. If the -t option is specified, the utility and its constructed argument list shall be written to standard er‐
+       ror, as it will be invoked, prior to invocation. If -p is specified, a prompt of the following format shall be written (in the POSIX locale):
+
+           "?..."
+
+       at the end of the line of the output from -t.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+           0   All invocations of utility returned exit status zero.
+
+       1‐125   A command line meeting the specified requirements could not be assembled, one or more of the invocations of utility returned a non-zero exit status, or some other error occurred.
+
+         126   The utility specified by utility was found but could not be invoked.
+
+         127   The utility specified by utility could not be found.
+
+CONSEQUENCES OF ERRORS
+       If a command line meeting the specified requirements cannot be assembled, the utility cannot be invoked, an invocation of the utility is terminated by a signal, or an invocation  of  the  utility
+       exits with exit status 255, the xargs utility shall write a diagnostic message and exit without processing any remaining input.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The  255 exit status allows a utility being used by xargs to tell xargs to terminate if it knows no further invocations using the current data stream will succeed. Thus, utility should explicitly
+       exit with an appropriate value to avoid accidentally returning with 255.
+
+       Note that since input is parsed as lines, <blank> characters separate arguments, and <backslash>, <apostrophe>, and double-quote characters are used for quoting, if xargs is used  to  bundle  the
+       output of commands like find dir -print or ls into commands to be executed, unexpected results are likely if any filenames contain <blank>, <newline>, or quoting characters. This can be solved by
+       using find to call a script that converts each file found into a quoted string that is then piped to xargs, but in most cases it is preferable just to have find do the argument aggregation itself
+       by  using -exec with a '+' terminator instead of ';'.  Note that the quoting rules used by xargs are not the same as in the shell. They were not made consistent here because existing applications
+       depend on the current rules. An easy (but inefficient) method that can be used to transform input consisting of one argument per line into a quoted form that xargs interprets correctly is to pre‐
+       cede each non-<newline> character with a <backslash>.  More efficient alternatives are shown in Example 2 and Example 5 below.
+
+       On  implementations with a large value for {ARG_MAX}, xargs may produce command lines longer than {LINE_MAX}.  For invocation of utilities, this is not a problem. If xargs is being used to create
+       a text file, users should explicitly set the maximum command line length with the -s option.
+
+       The command, env, nice, nohup, time, and xargs utilities have been specified to use exit code 127 if an error occurs so that applications can distinguish ``failure to find a utility'' from  ``in‐
+       voked  utility  exited with an error indication''. The value 127 was chosen because it is not commonly used for other meanings; most utilities use small values for ``normal error conditions'' and
+       the values above 128 can be confused with termination due to receipt of a signal. The value 126 was chosen in a similar manner to indicate that the utility could be found, but not  invoked.  Some
+       scripts  produce  meaningful error messages differentiating the 126 and 127 cases. The distinction between exit codes 126 and 127 is based on KornShell practice that uses 127 when all attempts to
+       exec the utility fail with [ENOENT], and uses 126 when any attempt to exec the utility fails for any other reason.
+
+EXAMPLES
+        1. The following command combines the output of the parenthesized commands (minus the <apostrophe> characters) onto one line, which is then appended to the file log. It assumes that  the  expan‐
+           sion of "$0$*" does not include any <apostrophe> or <newline> characters.
+
+               (logname; date; printf "'%s'\n$0 $*") | xargs -E "" >>log
+
+        2. The  following command invokes diff with successive pairs of arguments originally typed as command line arguments. It assumes there are no embedded <newline> characters in the elements of the
+           original argument list.
+
+               printf "%s\n$@" | sed 's/[^[:alnum:]]/\\&/g' |
+                   xargs -E "" -n 2 -x diff
+
+        3. In the following commands, the user is asked which files in the current directory (excluding dotfiles) are to be archived. The files are archived into arch; a, one at a time or b, many  at  a
+           time. The commands assume that no filenames contain <blank>, <newline>, <backslash>, <apostrophe>, or double-quote characters.
+
+               a. ls | xargs -E "" -p -L 1 ar -r arch
+
+               b. ls | xargs -E "" -p -L 1 | xargs -E "" ar -r arch
+
+        4. The following command invokes command1 one or more times with multiple arguments, stopping if an invocation of command1 has a non-zero exit status.
+
+               xargs -E "" sh -c 'command1 "$@" || exit 255' sh < xargs_input
+
+        5. On  XSI-conformant  systems,  the following command moves all files from directory $1 to directory $2, and echoes each move command just before doing it. It assumes no filenames contain <new‐
+           line> characters and that neither $1 nor $2 contains the sequence "{}".
+
+               ls -A "$1" | sed -e 's/"/"\\""/g' -e 's/.*/"&"/' |
+                   xargs -E "" -I {} -t mv "$1"/{} "$2"/{}
+
+RATIONALE
+       The xargs utility was usually found only in System V-based systems; BSD systems included an apply utility that provided functionality similar to xargs -n number.  The SVID lists xargs as a  soft‐
+       ware development extension. This volume of POSIX.1‐2017 does not share the view that it is used only for development, and therefore it is not optional.
+
+       The  classic application of the xargs utility is in conjunction with the find utility to reduce the number of processes launched by a simplistic use of the find -exec combination. The xargs util‐
+       ity is also used to enforce an upper limit on memory required to launch a process. With this basis in mind, this volume of POSIX.1‐2017 selected only the minimal features required.
+
+       Although the 255 exit status is mostly an accident of historical implementations, it allows a utility being used by xargs to tell xargs to terminate if it knows no further invocations  using  the
+       current data stream shall succeed. Any non-zero exit status from a utility falls into the 1‐125 range when xargs exits. There is no statement of how the various non-zero utility exit status codes
+       are accumulated by xargs.  The value could be the addition of all codes, their highest value, the last one received, or a single value such as 1. Since no algorithm is arguably  better  than  the
+       others, and since many of the standard utilities say little more (portably) than ``pass/fail'', no new algorithm was invented.
+
+       Several  other xargs options were removed because simple alternatives already exist within this volume of POSIX.1‐2017. For example, the -i replstr option can be just as efficiently performed us‐
+       ing a shell for loop. Since xargs calls an exec function with each input line, the -i option does not usually exploit the grouping capabilities of xargs.
+
+       The requirement that xargs never produces command lines such that invocation of utility is within 2048 bytes of hitting the POSIX exec {ARG_MAX} limitations is intended to guarantee that the  in‐
+       voked utility has room to modify its environment variables and command line arguments and still be able to invoke another utility. Note that the minimum {ARG_MAX} allowed by the System Interfaces
+       volume of POSIX.1‐2017 is 4096 bytes and the minimum value allowed by this volume of POSIX.1‐2017 is 2048 bytes; therefore, the 2048 bytes difference seems reasonable. Note, however,  that  xargs
+       may never be able to invoke a utility if the environment passed in to xargs comes close to using {ARG_MAX} bytes.
+
+       The  version  of  xargs  required  by  this  volume of POSIX.1‐2017 is required to wait for the completion of the invoked command before invoking another command. This was done because historical
+       scripts using xargs assumed sequential execution. Implementations wanting to provide parallel operation of the invoked utilities are encouraged to add an option enabling parallel invocation,  but
+       should still wait for termination of all of the children before xargs terminates normally.
+
+       The -e option was omitted from the ISO POSIX‐2:1993 standard in the belief that the eofstr option-argument was recognized only when it was on a line by itself and before quote and escape process‐
+       ing were performed, and that the logical end-of-file processing was only enabled if a -e option was specified. In that case, a simple sed script could be used to duplicate the  -e  functionality.
+       Further investigation revealed that:
+
+        *  The logical end-of-file string was checked for after quote and escape processing, making a sed script that provided equivalent functionality much more difficult to write.
+
+        *  The default was to perform logical end-of-file processing with an <underscore> as the logical end-of-file string.
+
+       To  correct  this misunderstanding, the -E eofstr option was adopted from the X/Open Portability Guide. Users should note that the description of the -E option matches historical documentation of
+       the -e option (which was not adopted because it did not support the Utility Syntax Guidelines), by saying that if eofstr is the null string, logical end-of-file processing is disabled.   Histori‐
+       cal  implementations  of  xargs  actually  did not disable logical end-of-file processing; they treated a null argument found in the input as a logical end-of-file string. (A null string argument
+       could be generated using single or double-quotes ('' or "").  Since this behavior was not documented historically, it is considered to be a bug.
+
+       The -I, -L, and -n options are mutually-exclusive. Some implementations use the last one specified if more than one is given on a command line; other implementations treat combinations of the op‐
+       tions in different ways.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Chapter 2, Shell Command Language, diff, echo, find
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+       The System Interfaces volume of POSIX.1‐2017, exec
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          XARGS(1P)

@@ -1,0 +1,66 @@
+XkbGetIndicatorChanges(3)                                                                      XKB FUNCTIONS                                                                     XkbGetIndicatorChanges(3)
+
+NAME
+       XkbGetIndicatorChanges - Updates a local copy of the keyboard description with the actual values of one or more calls to XkbNoteIndicatorChanges
+
+SYNOPSIS
+       Status XkbGetIndicatorChanges (Display *dpy, XkbDescPtr xkb, XkbIndicatorChangesPtr changes, unsigned int state);
+
+ARGUMENTS
+       dpy    connection to the X server
+
+       xkb    keyboard description to hold the new values
+
+       changes
+              indicator maps/state to be obtained from the server
+
+       state  backfilled with the state of the indicators
+
+DESCRIPTION
+       Whenever an indicator changes state, the server sends XkbIndicatorStateNotify events to all interested clients. Similarly, whenever an indicator's map changes, the server sends XkbIndicatorMapNo‐
+       tify events to all interested clients.
+
+       To receive XkbIndicatorStateNotify events, use XkbSelectEvents with both the bits_to_change and values_for_bits parameters containing XkbIndicatorStateNotifyMask. To receive XkbIndicatorMapNotify
+       events, use XkbSelectEvents with XkbIndicatorMapNotifyMask.
+
+       To  receive  events for only specific indicators, use XkbSelectEventDetails.  Set the event_type parameter to XkbIndicatorStateNotify or XkbIndicatorMapNotify, and set both the bits_to_change and
+       values_for_bits detail parameters to a mask where each bit specifies one indicator, turning on those bits that specify the indicators for which you want to receive events.
+
+       Both types of indicator events use the same structure:
+
+       typedef struct _XkbIndicatorNotify {
+         int            type;       /* Xkb extension base event code */
+         unsigned long  serial;     /* X server serial number for event */
+         Bool           send_event; /* True => synthetically generated */
+         Display *      display;    /* server connection where event generated */
+         Time           time;       /* server time when event generated */
+         int            xkb_type;   /* specifies state or map notify */
+         int            device;     /* Xkb device ID, will not be XkbUseCoreKbd */
+         unsigned int   changed;    /* mask of indicators with new state or map */
+         unsigned int   state;      /* current state of all indicators */
+       } XkbIndicatorNotifyEvent;
+
+       xkb_type is either XkbIndicatorStateNotify or XkbIndicatorMapNotify, depending on whether the event is a kbIndicatorStateNotify event or kbIndicatorMapNotify event.
+
+       The changed parameter is a mask that is the bitwise inclusive OR of the indicators that have changed. If the event is of type XkbIndicatorMapNotify, changed reports the maps that changed. If  the
+       event is of type XkbIndicatorStateNotify, changed reports the indicators that have changed state.  state is a mask that specifies the current state of all indicators, whether they have changed or
+       not, for both XkbIndicatorStateNotify and IndicatorMapNotify events.
+
+       When your client application receives either a XkbIndicatorStateNotify event or XkbIndicatorMapNotify event, you can note the changes in a changes structure by calling XkbNoteIndicatorChanges.
+
+       XkbGetIndicatorChanges examines the changes parameter, pulls over the necessary information from the server, and copies the results into the xkb keyboard description. If any bits are set  in  the
+       state_changes  field  of changes, XkbGetIndicatorChanges also places the state of those indicators in state.  If the indicators field of xkb is NULL, XkbGetIndicatorChanges allocates and initial‐
+       izes it. To free the indicators field, use XkbFreeIndicators.
+
+DIAGNOSTICS
+       BadAlloc       Unable to allocate storage
+
+       BadImplementation
+                      Invalid reply from server
+
+       BadMatch       A compatible version of Xkb was not available in the server or an argument has correct type and range, but is otherwise invalid
+
+SEE ALSO
+       XkbFreeIndicators(3), XkbGetIndicatorChanges(3), XkbNoteIndicatorChanges(3), XkbSelectEvents(3), XkbSelectEventDetail(3)
+
+X Version 11                                                                                   libX11 1.8.4                                                                      XkbGetIndicatorChanges(3)

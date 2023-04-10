@@ -1,0 +1,82 @@
+XvCreateImage(3)                                                                              libXv Functions                                                                             XvCreateImage(3)
+
+NAME
+       XvCreateImage, XvShmCreateImage - create an XvImage
+
+SYNOPSIS
+       #include <X11/extensions/Xvlib.h>
+
+       XvImage * XvCreateImage (Display *dpy, XvPortID port,
+                                int id, char *data,
+                                int width, int height);
+
+       XvImage * XvShmCreateImage (Display *dpy, XvPortID port,
+                                   int id, char *data,
+                                   int width, int height,
+                                   XShmSegmentInfo *shminfo);
+
+ARGUMENTS
+       dpy     Specifies the connection to the X server.
+
+       port    Specifies the port the XvImage will be used with.
+
+       id      Specifies the format of the image to be created by the XvImageFormatValues id.
+
+       data    Specifies the image data.
+
+       width, height
+               Specifies the desired width and height of the image.
+
+DESCRIPTION
+       XvCreateImage(3)  is  similar  to XCreateImage(3).  XvShmCreateImage(3) is similar to XShmCreateImage(3).  The library will allocate the XvImage structure and fill out all fields except for data.
+       Width and height may be enlarged in some YUV formats.  The size of the data buffer that needs to be allocated will be given in the data_size field in the XvImage.  Image data is not allocated  by
+       this  function.   The  client  may  pass  a pointer to the preallocated memory as data or may allocate the memory and fill in the XvImage structure's data field after the data_size field has been
+       filled out by the server.  The XvImage structure may be freed by XFree(3).  Shared memory segments are attached/detached with XShmAttach(3)/XShmDetach(3).
+
+RETURN VALUES
+       XvImage has the following structure:
+
+       typedef struct {
+          int id;
+          int width, height;
+          int data_size;
+          int num_planes;
+          int *pitches;
+          int *offsets;
+          char *data;
+          XPointer obdata;
+       } XvImage;
+
+       id      A descriptor for the format from the XvImageFormatValues structure returned by XvListImageFormats(3).
+
+       width, height
+               The width and height of the image in pixels.
+
+       data_size
+               The size of the data buffer in bytes.
+
+       num_planes
+               The number of image planes.
+
+       pitches An array of size num_planes indicating the scanline pitch in bytes.  Each plane may have a different pitch.
+
+       offsets An array of size num_planes indicating the byte offset from data to the start of each plane.
+
+       data    A pointer to the start of the data buffer.
+
+       obdata  A private field for holding SHM info.  This field will be set up by the client libraries so the programmer will generally need not be concerned with this field.
+
+DIAGNOSTICS
+       [XvBadPort]
+               Generated if the requested port does not exist.
+
+       [XvBadAlloc]
+               Generated if the X server was unable to allocate resources required to complete the operation.
+
+       [BadMatch]
+               Generated if incompatible arguments were supplied, such as a port that isn't capable of displaying XvImages.
+
+SEE ALSO
+       XvListImageFormats(3), XCreateImage(3), XShmCreateImage(3), XShmAttach(3), XShmDetach(3).
+
+X Version 11                                                                                   libXv 1.0.12                                                                               XvCreateImage(3)

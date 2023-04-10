@@ -1,0 +1,63 @@
+ZIP_SET_FILE_COMPRESSION(3)                                                            BSD Library Functions Manual                                                            ZIP_SET_FILE_COMPRESSION(3)
+
+NAME
+     zip_set_file_compression — set compression method for file in zip
+
+LIBRARY
+     libzip (-lzip)
+
+SYNOPSIS
+     #include <zip.h>
+
+     int
+     zip_set_file_compression(zip_t *archive, zip_uint64_t index, zip_int32_t comp, zip_uint32_t comp_flags);
+
+DESCRIPTION
+     The zip_set_file_compression() function sets the compression method for the file at position index in the zip archive to comp with the compression method specific comp_flags.  The comp is the same
+     as returned by zip_stat(3).  For the comp argument, currently only the following values are supported:
+
+     ZIP_CM_DEFAULT     default compression; currently the same as ZIP_CM_DEFLATE, but flags are ignored.
+
+     ZIP_CM_STORE       Store the file uncompressed.
+
+     ZIP_CM_BZIP2       Compress the file using the bzip2(1) algorithm.
+
+     ZIP_CM_DEFLATE     Deflate the file with the zlib(3) algorithm and default options.
+
+     ZIP_CM_XZ          Use the xz(1) algorithm for compression
+
+     ZIP_CM_ZSTD        Use the zstd(1) algorithm for compression
+
+     NOTE: Only the deflate and store methods can be assumed to be universally supported.
+
+     The comp_flags argument defines the compression level.  This value is dependent on the compression algorithm.  In general, lower numbers mean faster de/compression and higher numbers mean slower
+     de/compression.  For ZIP_CM_BZIP, ZIP_CM_DEFLATE, and ZIP_CM_XZ 1 is the fastest compression and 9 the best, 0 chooses the default.  For ZIP_CM_ZSTD possible values are ZSTD_minCLevel(3) to
+     ZSTD_maxCLevel(3).
+
+     Further compression method specific flags might be added over time.
+
+     The current compression method for a file in a zip archive can be determined using zip_stat(3).
+
+RETURN VALUES
+     Upon successful completion 0 is returned.  Otherwise, -1 is returned and the error information in archive is set to indicate the error.
+
+ERRORS
+     zip_set_file_compression() fails if:
+
+     [ZIP_ER_COMPNOTSUPP]
+                        Unsupported compression method requested.
+
+     [ZIP_ER_INVAL]     index is not a valid file index in archive, or the argument combination is invalid.
+
+     [ZIP_ER_RDONLY]    Read-only zip file, no changes allowed.
+
+SEE ALSO
+     libzip(3), zip_compression_method_supported(3), zip_stat(3)
+
+HISTORY
+     zip_set_file_compression() was added in libzip 0.11.
+
+AUTHORS
+     Dieter Baron <dillo@nih.at> and Thomas Klausner <tk@giga.or.at>
+
+BSD                                                                                            June 18, 2021                                                                                           BSD

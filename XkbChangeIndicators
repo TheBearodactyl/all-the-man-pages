@@ -1,0 +1,73 @@
+XkbChangeIndicators(3)                                                                         XKB FUNCTIONS                                                                        XkbChangeIndicators(3)
+
+NAME
+       XkbChangeIndicators - Changes indicator maps or state without passing the entire keyboard description
+
+SYNOPSIS
+       Bool XkbChangeIndicators (Display *dpy, XkbDescPtr xkb, XkbIndicatorChangesPtr changes, unsigned int state);
+
+ARGUMENTS
+       dpy    connection to the X server
+
+       xkb    keyboard description from which names are to be taken.
+
+       changes
+              indicators to be updated on the server
+
+       state  new state of indicators listed in changes->state_changes
+
+DESCRIPTION
+       The XkbIndicatorChangesRec identifies small modifications to the indicator map.  Use it with the function XkbChangeIndicators to reduce the amount of traffic sent to the server (see STRUCTURES).
+
+       The state_changes field is a mask that specifies the indicators that have changed state, and map_changes is a mask that specifies the indicators whose maps have changed.
+
+       XkbChangeIndicators  copies  any  maps  specified  by  changes  from the keyboard description, xkb, to the server specified by dpy.  If any bits are set in the state_changes field of changes, Xk‐
+       bChangeIndicators also sets the state of those indicators to the values specified in the state mask. A 1 bit in state turns the corresponding indicator on, a 0 bit turns it off.
+
+       In addition, it can also generate XkbIndicatorStateNotify and XkbIndicatorMapNotify events.
+
+       Whenever an indicator changes state, the server sends XkbIndicatorStateNotify events to all interested clients. Similarly, whenever an indicator's map changes, the server sends XkbIndicatorMapNo‐
+       tify events to all interested clients.
+
+       To receive XkbIndicatorStateNotify events, use XkbSelectEvents with both the bits_to_change and values_for_bits parameters containing XkbIndicatorStateNotifyMask. To receive XkbIndicatorMapNotify
+       events, use XkbSelectEvents with XkbIndicatorMapNotifyMask.
+
+       To receive events for only specific indicators, use XkbSelectEventDetails.  Set the event_type parameter to XkbIndicatorStateNotify or XkbIndicatorMapNotify, and set both the  bits_to_change  and
+       values_for_bits detail parameters to a mask where each bit specifies one indicator, turning on those bits that specify the indicators for which you want to receive events.
+
+       xkb_type is either XkbIndicatorStateNotify or XkbIndicatorMapNotify, depending on whether the event is a kbIndicatorStateNotify event or kbIndicatorMapNotify event.
+
+       The  changed parameter is a mask that is the bitwise inclusive OR of the indicators that have changed. If the event is of type XkbIndicatorMapNotify, changed reports the maps that changed. If the
+       event is of type XkbIndicatorStateNotify, changed reports the indicators that have changed state.  state is a mask that specifies the current state of all indicators, whether they have changed or
+       not, for both XkbIndicatorStateNotify and IndicatorMapNotify events.
+
+STRUCTURES
+            typedef struct _XkbIndicatorChanges {
+                unsigned int          state_changes;
+                unsigned int           map_changes;
+            }XkbIndicatorChangesRec,*XkbIndicatorChangesPtr;
+
+       Both types of indicator events use the same structure:
+
+           typedef struct _XkbIndicatorNotify {
+               int            type;        /* Xkb extension base event code */
+               unsigned long  serial;      /* X server serial number for event */
+               Bool           send_event;  /* True => synthetically generated */
+               Display *      display;     /* server connection where event generated */
+               Time           time;        /* server time when event generated */
+               int            xkb_type;    /* specifies state or map notify */
+               int            device;      /* Xkb device ID, will not be XkbUseCoreKbd*/
+               unsigned int   changed;     /* mask of indicators with new state or map */
+               unsigned int   state;       /* current state of all indicators */
+           } XkbIndicatorNotifyEvent;
+
+DIAGNOSTICS
+       BadAtom        A name is neither a valid Atom or None
+
+       BadImplementation
+                      Invalid reply from server
+
+SEE ALSO
+       XkbIndicatorMapNotify(3), XkbIndicatorStateNotify(3)
+
+X Version 11                                                                                   libX11 1.8.4                                                                         XkbChangeIndicators(3)

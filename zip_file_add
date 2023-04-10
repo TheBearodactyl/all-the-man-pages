@@ -1,0 +1,68 @@
+ZIP_FILE_ADD(3)                                                                        BSD Library Functions Manual                                                                        ZIP_FILE_ADD(3)
+
+NAME
+     zip_file_add, zip_file_replace — add file to zip archive or replace file in zip archive
+
+LIBRARY
+     libzip (-lzip)
+
+SYNOPSIS
+     #include <zip.h>
+
+     zip_int64_t
+     zip_file_add(zip_t *archive, const char *name, zip_source_t *source, zip_flags_t flags);
+
+     int
+     zip_file_replace(zip_t *archive, zip_uint64_t index, zip_source_t *source, zip_flags_t flags);
+
+DESCRIPTION
+     The function zip_file_add() adds a file to a zip archive, while zip_file_replace() replaces an existing file in a zip archive.  The argument archive specifies the zip archive to which the file
+     should be added.  name is the file's name in the zip archive (for zip_file_add()), while index specifies which file should be replaced (for zip_file_replace()).  The flags argument can be any com‐
+     bination of ZIP_FL_OVERWRITE with one of ZIP_FL_ENC_*:
+
+     ZIP_FL_OVERWRITE      Overwrite any existing file of the same name.  For zip_file_add only.
+
+     ZIP_FL_ENC_GUESS      Guess encoding of name (default).  (Only CP-437 and UTF-8 are recognized.)
+
+     ZIP_FL_ENC_UTF_8      Interpret name as UTF-8.
+
+     ZIP_FL_ENC_CP437      Interpret name as code page 437 (CP-437).
+     The data is obtained from the source argument, see zip_source(3).
+
+     NOTE: zip_source_free(3) should not be called on a source after it was used successfully in a zip_file_add or zip_file_replace call.
+
+RETURN VALUES
+     Upon successful completion, zip_file_add() returns the index of the new file in the archive, and zip_file_replace() returns 0.  Otherwise, -1 is returned and the error code in archive is set to in‐
+     dicate the error.
+
+EXAMPLES
+           zip_source_t *s;
+           const char buf[]="teststring";
+
+           if ((s=zip_source_buffer(archive, buf, sizeof(buf), 0)) == NULL ||
+               zip_file_add(archive, name, s, ZIP_FL_ENC_UTF_8) < 0) {
+               zip_source_free(s);
+               printf("error adding file: %s\n", zip_strerror(archive));
+           }
+
+ERRORS
+     zip_file_add() and zip_file_replace() fail if:
+
+     [ZIP_ER_EXISTS]    There is already a file called name in the archive.  (Only applies to zip_file_add(), and only if ZIP_FL_OVERWRITE is not provided).
+
+     [ZIP_ER_INVAL]     source or name are NULL, or index is invalid.
+
+     [ZIP_ER_MEMORY]    Required memory could not be allocated.
+
+     [ZIP_ER_RDONLY]    Archive was opened in read-only mode.
+
+SEE ALSO
+     libzip(3), zip_source(3)
+
+HISTORY
+     zip_file_add() and zip_file_replace() were added in libzip 0.11.
+
+AUTHORS
+     Dieter Baron <dillo@nih.at> and Thomas Klausner <tk@giga.or.at>
+
+BSD                                                                                         September 22, 2020                                                                                         BSD

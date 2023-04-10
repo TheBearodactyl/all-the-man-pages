@@ -1,0 +1,65 @@
+ZIP_CLOSE(3)                                                                           BSD Library Functions Manual                                                                           ZIP_CLOSE(3)
+
+NAME
+     zip_close — close zip archive
+
+LIBRARY
+     libzip (-lzip)
+
+SYNOPSIS
+     #include <zip.h>
+
+     int
+     zip_close(zip_t *archive);
+
+DESCRIPTION
+     The zip_close() function writes any changes made to archive to disk.  If archive contains no files, the file is completely removed (no empty archive is written).  If successful, archive is freed.
+     Otherwise archive is left unchanged and must still be freed.
+
+     To close and free a zip archive without saving changes, use zip_discard(3).
+
+     Progress updates for GUIs can be implemented using zip_register_progress_callback_with_state(3).  Cancelling the write of an archive during zip_close can be implemented using
+     zip_register_cancel_callback_with_state(3).
+
+RETURN VALUES
+     Upon successful completion 0 is returned.  Otherwise, -1 is returned and the error code in archive is set to indicate the error.
+
+ERRORS
+     zip_close() will fail if:
+
+     [ZIP_ER_EOF]       Unexpected end-of-file found while reading from a file.
+
+     [ZIP_ER_INTERNAL]  The callback function of an added or replaced file returned an error but failed to report which.
+
+     [ZIP_ER_INVAL]     The path argument is NULL.
+
+     [ZIP_ER_MEMORY]    Required memory could not be allocated.
+
+     [ZIP_ER_NOZIP]     File is not a zip archive.
+
+     [ZIP_ER_READ]      A file read failed.
+
+     [ZIP_ER_RENAME]    A temporary file could not be renamed to its final name.
+
+     [ZIP_ER_SEEK]      A file seek failed.
+
+     [ZIP_ER_TMPOPEN]   A temporary file could not be created.
+
+     [ZIP_ER_WRITE]     A file write failed.
+
+     [ZIP_ER_ZLIB]      An error occurred while (de)compressing a stream with zlib(3).
+     Additionally, any errors returned by the callback function for added or replaced files will be passed back.
+
+SEE ALSO
+     libzip(3), zip_discard(3), zip_fdopen(3), zip_get_error(3), zip_open(3), zip_register_cancel_callback_with_state(3), zip_register_progress_callback_with_state(3), zip_strerror(3)
+
+HISTORY
+     zip_close() was added in libzip 0.6.
+
+AUTHORS
+     Dieter Baron <dillo@nih.at> and Thomas Klausner <tk@giga.or.at>
+
+CAVEATS
+     Please note that all indices, zip_stat(3) information and other data about the archive is invalid after zip_close.  When you open the same file again, it will be a completely new zip_t structure.
+
+BSD                                                                                            April 1, 2022                                                                                           BSD

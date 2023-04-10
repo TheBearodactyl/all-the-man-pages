@@ -1,0 +1,89 @@
+xcb_change_property(3)                                                                         XCB Requests                                                                         xcb_change_property(3)
+
+NAME
+       xcb_change_property - Changes a window property
+
+SYNOPSIS
+       #include <xcb/xproto.h>
+
+   Request function
+       xcb_void_cookie_t xcb_change_property(xcb_connection_t *conn, uint8_t mode, xcb_window_t window, xcb_atom_t property, xcb_atom_t type, uint8_t format, uint32_t data_len, const void *data);
+
+REQUEST ARGUMENTS
+       conn      The XCB connection to X11.
+
+       mode      One of the following values:
+
+                 XCB_PROP_MODE_REPLACE
+                           Discard the previous property value and store the new data.
+
+                 XCB_PROP_MODE_PREPEND
+                           Insert the new data before the beginning of existing data. The format must match existing property value. If the property is undefined, it is treated as defined with the cor‐
+                           rect type and format with zero-length data.
+
+                 XCB_PROP_MODE_APPEND
+                           Insert the new data after the beginning of existing data. The format must match existing property value. If the property is undefined, it is treated as defined with the cor‐
+                           rect type and format with zero-length data.
+
+       window    The window whose property you want to change.
+
+       property  The property you want to change (an atom).
+
+       type      The type of the property you want to change (an atom).
+
+       format    Specifies whether the data should be viewed as a list of 8-bit, 16-bit or 32-bit quantities. Possible values are 8, 16 and 32. This information allows the X server to correctly perform
+                 byte-swap operations as necessary.
+
+       data_len  Specifies the number of elements (see format).
+
+       data      The property data.
+
+DESCRIPTION
+       Sets or updates a property on the specified window. Properties are for example the window title (WM_NAME) or its minimum size (WM_NORMAL_HINTS).  Protocols such as EWMH also use properties - for
+       example EWMH defines the window title, encoded as UTF-8 string, in the _NET_WM_NAME property.
+
+RETURN VALUE
+       Returns an xcb_void_cookie_t. Errors (if any) have to be handled in the event loop.
+
+       If you want to handle errors directly with xcb_request_check instead, use xcb_change_property_checked. See xcb-requests(3) for details.
+
+ERRORS
+       xcb_alloc_error_t
+                 The X server could not store the property (no memory?).
+
+       xcb_atom_error_t
+                 property or type do not refer to a valid atom.
+
+       xcb_match_error_t
+                 TODO: reasons?
+
+       xcb_value_error_t
+                 TODO: reasons?
+
+       xcb_window_error_t
+                 The specified window does not exist.
+
+EXAMPLE
+       /*
+        * Sets the WM_NAME property of the window to "XCB Example".
+        *
+        */
+       void my_example(xcb_connection_t *conn, xcb_window_t window) {
+           xcb_change_property(conn,
+               XCB_PROP_MODE_REPLACE,
+               window,
+               XCB_ATOM_WM_NAME,
+               XCB_ATOM_STRING,
+               8,
+               strlen("XCB Example"),
+               "XCB Example");
+           xcb_flush(conn);
+       }
+
+SEE ALSO
+       xcb-requests(3), xcb-examples(3), xcb_intern_atom(3), xprop(1)
+
+AUTHOR
+       Generated from xproto.xml. Contact xcb@lists.freedesktop.org for corrections and improvements.
+
+X Version 11                                                                                    libxcb 1.15                                                                         xcb_change_property(3)

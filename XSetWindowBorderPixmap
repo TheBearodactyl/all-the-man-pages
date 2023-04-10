@@ -1,0 +1,108 @@
+XChangeWindowAttributes(3)                                                                    XLIB FUNCTIONS                                                                    XChangeWindowAttributes(3)
+
+NAME
+       XChangeWindowAttributes, XSetWindowBackground, XSetWindowBackgroundPixmap, XSetWindowBorder, XSetWindowBorderPixmap, XSetWindowColormap - change window attributes
+
+SYNTAX
+       int XChangeWindowAttributes(Display *display, Window w, unsigned long valuemask, XSetWindowAttributes *attributes);
+
+       int XSetWindowBackground(Display *display, Window w, unsigned long background_pixel);
+
+       int XSetWindowBackgroundPixmap(Display *display, Window w, Pixmap background_pixmap);
+
+       int XSetWindowBorder(Display *display, Window w, unsigned long border_pixel);
+
+       int XSetWindowBorderPixmap(Display *display, Window w, Pixmap border_pixmap);
+
+       int XSetWindowColormap(Display *display, Window w, Colormap colormap);
+
+ARGUMENTS
+       attributes
+                 Specifies  the  structure  from which the values (as specified by the value mask) are to be taken.  The value mask should have the appropriate bits set to indicate which attributes have
+                 been set in the structure.
+
+       background_pixel
+                 Specifies the pixel that is to be used for the background.
+
+       background_pixmap
+                 Specifies the background pixmap, ParentRelative, or None.
+
+       border_pixel
+                 Specifies the entry in the colormap.
+
+       border_pixmap
+                 Specifies the border pixmap or CopyFromParent.
+
+       display   Specifies the connection to the X server.
+
+       valuemask Specifies which window attributes are defined in the attributes argument.  This mask is the bitwise inclusive OR of the valid attribute mask bits.  If valuemask is zero, the  attributes
+                 are ignored and are not referenced.
+
+       w         Specifies the window.
+
+       colormap  Specifies the colormap.
+
+DESCRIPTION
+       Depending  on  the  valuemask, the XChangeWindowAttributes function uses the window attributes in the XSetWindowAttributes structure to change the specified window attributes.  Changing the back‐
+       ground does not cause the window contents to be changed.  To repaint the window and its background, use XClearWindow.  Setting the border or changing the background such that the border tile ori‐
+       gin changes causes the border to be repainted.  Changing the background of a root window to None or ParentRelative restores the default background pixmap.  Changing the border of a root window to
+       CopyFromParent restores the default border pixmap.  Changing the win-gravity does not affect the current position of the window.  Changing the backing-store of an obscured window to WhenMapped or
+       Always, or changing the backing-planes, backing-pixel, or save-under of a mapped window may have no immediate effect.  Changing the colormap of a window (that is, defining a new map, not changing
+       the contents of the existing map) generates a ColormapNotify event.  Changing the colormap of a visible window may have no immediate effect on the screen because the map may not be installed (see
+       XInstallColormap).  Changing the cursor of a root window to None restores the default cursor.  Whenever possible, you are encouraged to share colormaps.
+
+       Multiple  clients  can  select  input  on  the same window.  Their event masks are maintained separately.  When an event is generated, it is reported to all interested clients.  However, only one
+       client at a time can select for SubstructureRedirectMask, ResizeRedirectMask, and ButtonPressMask.  If a client attempts to select any of these event masks and some other client has  already  se‐
+       lected one, a BadAccess error results.  There is only one do-not-propagate-mask for a window, not one per client.
+
+       XChangeWindowAttributes can generate BadAccess, BadColor, BadCursor, BadMatch, BadPixmap, BadValue, and BadWindow errors.
+
+       The  XSetWindowBackground function sets the background of the window to the specified pixel value.  Changing the background does not cause the window contents to be changed.  XSetWindowBackground
+       uses a pixmap of undefined size filled with the pixel value you passed.  If you try to change the background of an InputOnly window, a BadMatch error results.
+
+       XSetWindowBackground can generate BadMatch and BadWindow errors.
+
+       The XSetWindowBackgroundPixmap function sets the background pixmap of the window to the specified pixmap.  The background pixmap can immediately be freed if no further explicit references  to  it
+       are  to  be made.  If ParentRelative is specified, the background pixmap of the window's parent is used, or on the root window, the default background is restored.  If you try to change the back‐
+       ground of an InputOnly window, a BadMatch error results.  If the background is set to None, the window has no defined background.
+
+       XSetWindowBackgroundPixmap can generate BadMatch, BadPixmap, and BadWindow errors.
+
+       The XSetWindowBorder function sets the border of the window to the pixel value you specify.  If you attempt to perform this on an InputOnly window, a BadMatch error results.
+
+       XSetWindowBorder can generate BadMatch and BadWindow errors.
+
+       The XSetWindowBorderPixmap function sets the border pixmap of the window to the pixmap you specify.  The border pixmap can be freed immediately if no further explicit references to it are  to  be
+       made.  If you specify CopyFromParent, a copy of the parent window's border pixmap is used.  If you attempt to perform this on an InputOnly window, a BadMatch error results.
+
+       XSetWindowBorderPixmap can generate BadMatch, BadPixmap, and BadWindow errors.
+
+       The XSetWindowColormap function sets the specified colormap of the specified window.  The colormap must have the same visual type as the window, or a BadMatch error results.
+
+       XSetWindowColormap can generate BadColor, BadMatch, and BadWindow errors.
+
+DIAGNOSTICS
+       BadAccess A client attempted to free a color map entry that it did not already allocate.
+
+       BadAccess A client attempted to store into a read-only color map entry.
+
+       BadColor  A value for a Colormap argument does not name a defined Colormap.
+
+       BadCursor A value for a Cursor argument does not name a defined Cursor.
+
+       BadMatch  Some argument or pair of arguments has the correct type and range but fails to match in some other way required by the request.
+
+       BadMatch  An InputOnly window locks this attribute.
+
+       BadPixmap A value for a Pixmap argument does not name a defined Pixmap.
+
+       BadValue  Some numeric value falls outside the range of values accepted by the request.  Unless a specific range is specified for an argument, the full range defined by the argument's type is ac‐
+                 cepted.  Any argument defined as a set of alternatives can generate this error.
+
+       BadWindow A value for a Window argument does not name a defined Window.
+
+SEE ALSO
+       XConfigureWindow(3), XCreateWindow(3), XDestroyWindow(3), XInstallColormap(3), XMapWindow(3), XRaiseWindow(3), XUnmapWindow(3)
+       Xlib - C Language X Interface
+
+X Version 11                                                                                   libX11 1.8.4                                                                     XChangeWindowAttributes(3)

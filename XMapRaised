@@ -1,0 +1,54 @@
+XMapWindow(3)                                                                                 XLIB FUNCTIONS                                                                                 XMapWindow(3)
+
+NAME
+       XMapWindow, XMapRaised, XMapSubwindows - map windows
+
+SYNTAX
+       int XMapWindow(Display *display, Window w);
+
+       int XMapRaised(Display *display, Window w);
+
+       int XMapSubwindows(Display *display, Window w);
+
+ARGUMENTS
+       display   Specifies the connection to the X server.
+
+       w         Specifies the window.
+
+DESCRIPTION
+       The  XMapWindow function maps the window and all of its subwindows that have had map requests.  Mapping a window that has an unmapped ancestor does not display the window but marks it as eligible
+       for display when the ancestor becomes mapped.  Such a window is called unviewable.  When all its ancestors are mapped, the window becomes viewable and will be visible on the screen if it  is  not
+       obscured by another window.  This function has no effect if the window is already mapped.
+
+       If  the override-redirect of the window is False and if some other client has selected SubstructureRedirectMask on the parent window, then the X server generates a MapRequest event, and the XMap‐
+       Window function does not map the window.  Otherwise, the window is mapped, and the X server generates a MapNotify event.
+
+       If the window becomes viewable and no earlier contents for it are remembered, the X server tiles the window with its background.  If the window's background is undefined, the existing screen con‐
+       tents  are  not  altered,  and the X server generates zero or more Expose events.  If backing-store was maintained while the window was unmapped, no Expose events are generated.  If backing-store
+       will now be maintained, a full-window exposure is always generated.  Otherwise, only visible regions may be reported.  Similar tiling and exposure take place for any newly viewable inferiors.
+
+       If the window is an InputOutput window, XMapWindow generates Expose events on each InputOutput window that it causes to be displayed.  If the client maps and paints the window and if  the  client
+       begins processing events, the window is painted twice.  To avoid this, first ask for Expose events and then map the window, so the client processes input events as usual.  The event list will in‐
+       clude Expose for each window that has appeared on the screen.  The client's normal response to an Expose event should be to repaint the window.  This method usually leads to simpler programs  and
+       to proper interaction with window managers.
+
+       XMapWindow can generate a BadWindow error.
+
+       The  XMapRaised function essentially is similar to XMapWindow in that it maps the window and all of its subwindows that have had map requests.  However, it also raises the specified window to the
+       top of the stack.
+
+       XMapRaised can generate a BadWindow error.
+
+       The XMapSubwindows function maps all subwindows for a specified window in top-to-bottom stacking order.  The X server generates Expose events on each newly displayed window.   This  may  be  much
+       more efficient than mapping many windows one at a time because the server needs to perform much of the work only once, for all of the windows, rather than for each window.
+
+       XMapSubwindows can generate a BadWindow error.
+
+DIAGNOSTICS
+       BadWindow A value for a Window argument does not name a defined Window.
+
+SEE ALSO
+       XChangeWindowAttributes(3), XConfigureWindow(3), XCreateWindow(3), XDestroyWindow(3), XRaiseWindow(3), XUnmapWindow(3)
+       Xlib - C Language X Interface
+
+X Version 11                                                                                   libX11 1.8.4                                                                                  XMapWindow(3)

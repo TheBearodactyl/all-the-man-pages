@@ -1,0 +1,101 @@
+XkbFreeServerMap(3)                                                                            XKB FUNCTIONS                                                                           XkbFreeServerMap(3)
+
+NAME
+       XkbFreeServerMap - Free memory used by the server member of an XkbDescRec structure
+
+SYNOPSIS
+       void XkbFreeServerMap (XkbDescPtr xkb, unsigned int which, Bool free_all);
+
+ARGUMENTS
+       xkb    keyboard description containing server map to free
+
+       which  mask identifying components of map to free
+
+       free_all
+              True => free all server map components and server itself
+
+DESCRIPTION
+       The  XkbFreeServerMap  function  frees  the  specified components of server map in the XkbDescRec structure specified by the xkb parameter and sets the corresponding structure component values to
+       NULL. The which parameter specifies a combination of the server map masks and is a bitwise inclusive OR of the masks listed in Table 1. If free_all is True, which is ignored and  XkbFreeServerMap
+       frees every non-NULL structure component in the server map, frees the XkbServerMapRec structure referenced by the server member of the xkb parameter, and sets the server member to NULL.
+
+                         Table 1 XkbAllocServerMap Masks
+       ─────────────────────────────────────────────────────────────────────
+       Mask                        Effect
+       ─────────────────────────────────────────────────────────────────────
+       XkbExplicitComponentsMask   The min_key_code and max_key_code fields
+                                   of the xkb parameter are used  to  allo‐
+                                   cate  the  explicit  field of the server
+                                   map.
+
+       XkbKeyActionsMask           The min_key_code and max_key_code fields
+                                   of  the  xkb parameter are used to allo‐
+                                   cate the key_acts field  of  the  server
+                                   map. The count_acts parameter is used to
+                                   allocate the acts field  of  the  server
+                                   map.
+
+       XkbKeyBehaviorsMask         The min_key_code and max_key_code fields
+                                   of the xkb parameter are used  to  allo‐
+                                   cate  the  behaviors field of the server
+                                   map.
+
+       XkbVirtualModMapMask        The min_key_code and max_key_code fields
+                                   of  the  xkb parameter are used to allo‐
+                                   cate the vmodmap  field  of  the  server
+                                   map.
+
+STRUCTURES
+       The complete description of an Xkb keyboard is given by an XkbDescRec. The component structures in the XkbDescRec represent the major Xkb components.
+
+       typedef struct {
+          struct _XDisplay * display;      /* connection to X server */
+          unsigned short     flags;        /* private to Xkb, do not modify */
+          unsigned short     device_spec;  /* device of interest */
+          KeyCode            min_key_code; /* minimum keycode for device */
+          KeyCode            max_key_code; /* maximum keycode for device */
+          XkbControlsPtr     ctrls;        /* controls */
+          XkbServerMapPtr    server;       /* server keymap */
+          XkbClientMapPtr    map;          /* client keymap */
+          XkbIndicatorPtr    indicators;   /* indicator map */
+          XkbNamesPtr        names;        /* names for all components */
+          XkbCompatMapPtr    compat;       /* compatibility map */
+          XkbGeometryPtr     geom;         /* physical geometry of keyboard */
+       } XkbDescRec, *XkbDescPtr;
+
+       The  display field points to an X display structure. The flags field is private to the library: modifying flags may yield unpredictable results. The device_spec field specifies the device identi‐
+       fier of the keyboard input device, or XkbUseCoreKeyboard, which specifies the core keyboard device. The min_key_code and max_key_code fields specify the least and greatest keycode that can be re‐
+       turned by the keyboard.
+
+       Each  structure  component  has  a  corresponding mask bit that is used in function calls to indicate that the structure should be manipulated in some manner, such as allocating it or freeing it.
+       These masks and their relationships to the fields in the XkbDescRec are shown in Table 2.
+
+               Table 2 Mask Bits for XkbDescRec
+       ──────────────────────────────────────────────────
+       Mask Bit               XkbDescRec Field   Value
+       ──────────────────────────────────────────────────
+       XkbControlsMask        ctrls              (1L<<0)
+       XkbServerMapMask       server             (1L<<1)
+       XkbIClientMapMask      map                (1L<<2)
+       XkbIndicatorMapMask    indicators         (1L<<3)
+       XkbNamesMask           names              (1L<<4)
+       XkbCompatMapMask       compat             (1L<<5)
+       XkbGeometryMask        geom               (1L<<6)
+       XkbAllComponentsMask   All Fields         (0x7f)
+
+       The Xkb server map contains the information the server needs to interpret key events and is of type XkbServerMapRec:
+
+       #define XkbNumVirtualMods          16
+
+       typedef struct {                    /* Server Map */
+           unsigned short    num_acts;     /* # of occupied entries in acts */
+           unsigned short    size_acts;    /* # of entries in acts */
+           XkbAction *       acts;         /* linear 2d tables of key actions, 1 per keycode */
+           XkbBehavior *     behaviors;    /* key behaviors,1 per keycode */
+           unsigned short *  key_acts;     /* index into acts, 1 per keycode */
+           unsigned char *   explicit;     /* explicit overrides of core remapping, 1 per key */
+           unsigned char     vmods[XkbNumVirtualMods]; /* real mods bound to virtual mods */
+           unsigned short *  vmodmap;      /* virtual mods bound to key, 1 per keycode*/
+       } XkbServerMapRec, *XkbServerMapPtr;
+
+X Version 11                                                                                   libX11 1.8.4                                                                            XkbFreeServerMap(3)

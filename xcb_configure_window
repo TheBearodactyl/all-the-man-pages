@@ -1,0 +1,72 @@
+xcb_configure_window(3)                                                                        XCB Requests                                                                        xcb_configure_window(3)
+
+NAME
+       xcb_configure_window - Configures window attributes
+
+SYNOPSIS
+       #include <xcb/xproto.h>
+
+   Request function
+       xcb_void_cookie_t xcb_configure_window(xcb_connection_t *conn, xcb_window_t window, uint16_t value_mask, const void *value_list);
+
+REQUEST ARGUMENTS
+       conn      The XCB connection to X11.
+
+       window    The window to configure.
+
+       value_mask
+                 Bitmask of attributes to change.
+
+       value_list
+                 New values, corresponding to the attributes in value_mask. The order has to correspond to the order of possible value_mask bits. See the example.
+
+DESCRIPTION
+       Configures a window's size, position, border width and stacking order.
+
+RETURN VALUE
+       Returns an xcb_void_cookie_t. Errors (if any) have to be handled in the event loop.
+
+       If you want to handle errors directly with xcb_request_check instead, use xcb_configure_window_checked. See xcb-requests(3) for details.
+
+ERRORS
+       xcb_match_error_t
+                 You specified a Sibling without also specifying StackMode or the window is not actually a Sibling.
+
+       xcb_value_error_t
+                 TODO: reasons?
+
+       xcb_window_error_t
+                 The specified window does not exist. TODO: any other reason?
+
+EXAMPLE
+       /*
+        * Configures the given window to the left upper corner
+        * with a size of 1024x768 pixels.
+        *
+        */
+       void my_example(xcb_connection_t *c, xcb_window_t window) {
+           uint16_t mask = 0;
+
+           mask |= XCB_CONFIG_WINDOW_X;
+           mask |= XCB_CONFIG_WINDOW_Y;
+           mask |= XCB_CONFIG_WINDOW_WIDTH;
+           mask |= XCB_CONFIG_WINDOW_HEIGHT;
+
+           const uint32_t values[] = {
+               0,    /* x */
+               0,    /* y */
+               1024, /* width */
+               768   /* height */
+           };
+
+           xcb_configure_window(c, window, mask, values);
+           xcb_flush(c);
+       }
+
+SEE ALSO
+       xcb-requests(3), xcb-examples(3), xcb_expose_event_t(3), xcb_map_notify_event_t(3)
+
+AUTHOR
+       Generated from xproto.xml. Contact xcb@lists.freedesktop.org for corrections and improvements.
+
+X Version 11                                                                                    libxcb 1.15                                                                        xcb_configure_window(3)

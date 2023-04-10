@@ -1,0 +1,98 @@
+xcb_get_geometry(3)                                                                            XCB Requests                                                                            xcb_get_geometry(3)
+
+NAME
+       xcb_get_geometry - Get current window geometry
+
+SYNOPSIS
+       #include <xcb/xproto.h>
+
+   Request function
+       xcb_get_geometry_cookie_t xcb_get_geometry(xcb_connection_t *conn, xcb_drawable_t drawable);
+
+   Reply datastructure
+       typedef struct xcb_get_geometry_reply_t {
+           uint8_t      response_type;
+           uint8_t      depth;
+           uint16_t     sequence;
+           uint32_t     length;
+           xcb_window_t root;
+           int16_t      x;
+           int16_t      y;
+           uint16_t     width;
+           uint16_t     height;
+           uint16_t     border_width;
+           uint8_t      pad0[2];
+       } xcb_get_geometry_reply_t;
+
+   Reply function
+       xcb_get_geometry_reply_t *xcb_get_geometry_reply(xcb_connection_t *conn, xcb_get_geometry_cookie_t cookie, xcb_generic_error_t **e);
+
+REQUEST ARGUMENTS
+       conn      The XCB connection to X11.
+
+       drawable  The drawable (Window or Pixmap) of which the geometry will be received.
+
+REPLY FIELDS
+       response_type
+                 The type of this reply, in this case XCB_GET_GEOMETRY. This field is also present in the xcb_generic_reply_t and can be used to tell replies apart from each other.
+
+       sequence  The sequence number of the last request processed by the X11 server.
+
+       length    The length of the reply, in words (a word is 4 bytes).
+
+       depth     The depth of the drawable (bits per pixel for the object).
+
+       root      Root window of the screen containing drawable.
+
+       x         The X coordinate of drawable. If drawable is a window, the coordinate specifies the upper-left outer corner relative to its parent's origin. If drawable is a pixmap, the X coordinate is
+                 always 0.
+
+       y         The Y coordinate of drawable. If drawable is a window, the coordinate specifies the upper-left outer corner relative to its parent's origin. If drawable is a pixmap, the Y coordinate is
+                 always 0.
+
+       width     The width of drawable.
+
+       height    The height of drawable.
+
+       border_width
+                 The border width (in pixels).
+
+DESCRIPTION
+       Gets the current geometry of the specified drawable (either Window or Pixmap).
+
+RETURN VALUE
+       Returns an xcb_get_geometry_cookie_t. Errors have to be handled when calling the reply function xcb_get_geometry_reply.
+
+       If you want to handle errors in the event loop instead, use xcb_get_geometry_unchecked. See xcb-requests(3) for details.
+
+ERRORS
+       xcb_drawable_error_t
+                 TODO: reasons?
+
+       xcb_window_error_t
+                 TODO: reasons?
+
+EXAMPLE
+       /*
+        * Displays the x and y position of the given window.
+        *
+        */
+       void my_example(xcb_connection_t *c, xcb_window_t window) {
+           xcb_get_geometry_cookie_t cookie;
+           xcb_get_geometry_reply_t *reply;
+
+           cookie = xcb_get_geometry(c, window);
+           /* ... do other work here if possible ... */
+           if ((reply = xcb_get_geometry_reply(c, cookie, NULL))) {
+               printf("This window is at %d, %d\n", reply->x, reply->y);
+           }
+           free(reply);
+       }
+
+SEE ALSO
+       xcb-requests(3), xcb-examples(3), xwininfo(1)
+
+AUTHOR
+       Generated from xproto.xml. Contact xcb@lists.freedesktop.org for corrections and improvements.
+
+X Version 11                                                                                    libxcb 1.15                                                                            xcb_get_geometry(3)

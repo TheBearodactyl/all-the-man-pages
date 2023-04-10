@@ -1,0 +1,361 @@
+Xaw(3)                                                                                   Library Functions Manual                                                                                   Xaw(3)
+
+NAME
+        Xaw - X Athena Widgets
+
+DESCRIPTION
+       Xaw  is a widget set based on the X Toolkit Intrinsics (Xt) Library.  This release by the X.Org Foundation includes additions and modifications originally made for The XFree86 Project, Inc.  This
+       manual page describes these changes as well as some of the common interfaces between its version and the previous X Consortium release (Xaw6).
+
+       The bulk of the Xaw documentation is located in the API specification which may be installed in /usr/share/doc/libXaw, or found on the X.Org website.
+
+ACTIONS
+       All of the Xaw widgets now have the additional translations call-proc, declare, get-values and set-values. The syntax for these actions is:
+
+       action-name (boolean-expression, arguments)
+
+       Action-name is one of call-proc, declare, get-values or set-values.
+
+       Boolean-expression is composed with the operators | (or), & (and), ^ (xor), and ~ (not). The operands can be a variable name, which starts with a $; a resource name without the bindings .  or  *;
+       or a constant name, including mine (event->xany.window == XtWindow(widget)), faked (event->xany.send_event != 0), true (1) and false (0).
+
+       Arguments are self-explanatory; when starting with a $ they name a variable, otherwise, they indicate a resource name.
+
+       call-proc (boolean-expression, procedure-name)
+               This action allows the evaluation of a boolean expression in the first parameter before calling a action procedure.  The procedure is only called if the expression evaluates as true.  Ex‐
+               ample:
+               call-proc("$inside & $pressed", notify)
+
+       declare (boolean-expression, variable, value, ...)
+               This action is used to create new variables or change their values.  Any number of variable-value tuples may be specified.  Example:
+               declare(1, $pressed, 1)
+
+       get-values (boolean-expression, variable, value, ...)
+               This action reads a widget resource value into a variable.  Any number of variable-value tuples may be specified.  Example:
+               get-values(1, $fg, foreground, $bg, background)
+
+       set-values (boolean-expression, variable, value, ...)
+               This action sets a widget resource to the given value, which may be a variable.  Any number of variable-value tuples may be specified.  Example:
+               set-values(1, foreground, $bg, background, $fg)
+
+       Here is a sample translation to make a label widget behave like a button:
+
+       <Map>:      get-values(1, $fg, foreground, $bg, background)\n\
+       <Btn1Down>: set-values(1, foreground, yellow, background, gray30)\n\
+       <Btn1Up>:   set-values(1, foreground, $fg, background, $bg)
+
+DISPLAY LISTS
+       All of the Xaw widgets have now the additional resource displayList.  This resource allows drawing the widget decorations using commands embedded in a resource string.  The  displayList  resource
+       has the syntax:
+
+       [class-name:]function-name arguments[[{;\n}]...]
+
+       Class-name is any registered set of functions to draw in the widget.  Currently the only existing class is xlib, which provides access to the Xlib drawing primitives.
+
+       Function-name is the drawing or configuration function to be called, described below.
+
+       Arguments may be anything suitable to the displayList function being called. When the function requires a coordinate, the syntax is {+-}<integer> or <integer>/<integer>. Examples:
+            +0,+0      top, left
+            -0,-0      bottom, right
+            -+10,-+10  bottom+10, right+10
+            +0,1/2     left, vertical-center
+
+       arc-mode mode
+               Sets the arc mode.  Accepted modes are "pieslice" and "chord", which set the arc to ArcPieSlice or ArcChord, respectively.  Example:
+               arc-mode chord
+
+       bg color-spec
+       background color-spec
+               Sets the  background color.  color-spec must a valid color specification.  Example:
+               background red
+
+       cap-style style
+               Sets the cap style.  Accepted styles are "notlast", "butt", "round", and "projecting", which set the cap style to CapNotLast, CapBut, CapRound or CapProjecting, respectively.  Example:
+               cap-style round
+
+       clip-mask pixmap-spec
+               Sets the pixmap for the clip mask.  Requires a pixmap parameter, as described in the PIXMAPS section below.  Example:
+               clip-mask xlogo11
+
+       clip-origin x,y
+               Sets the clip x and y origin.  Requires two arguments, the x and y coordinates.  Example:
+               clip-origin 10,10
+
+       clip-rects x1,y1,x2,y2 [...,xn,yn]
+       clip-rectangles x1,y1,x2,y2 [...,xn,yn]
+               Sets a list of rectangles to the clip mask.  The number of arguments must be a multiple of four.  The arguments are coordinates.  The parser calculates the width and height of the rectan‐
+               gles.  Example:
+               clip-rects 0,0,10,20, 20,10,30,30
+
+       coord-mode mode
+               Changes the coord mode for fill-polygon, draw-lines, and draw-points.  Accepted parameters are "modeorigin" and "previous", that sets the coord mode to CoordModeOrigin or  CoordModePrevi‐
+               ous, respectively.  Example:
+               coord-mode previous
+
+       copy-area {pixmap-spec|.},dstx,dsty[,x2,y2,srcx,srcy]
+               Calls XCopyArea.  The character . means copy the window contents; pixmap-spec is as defined in the PIXMAPS section below.  X2 and y2 are the coordinates of the end copy, not the width and
+               height; if not defined, the parser calculates them. src_x and src_y default to zero.  Example:
+               copy-area Term,10,10
+
+       copy-plane {pixmap-spec|.},dstx,dsty[,x2,y2,srcx,srcy,plane]
+               Calls XCopyPlane. The character . means copy the window contents; pixmap-spec is as defined in the PIXMAPS section below.  X2 and y2 are the coordinates of the end copy, not the width and
+               height; if not defined, the parser calculates them.  src_x and src_y default to zero. Plane defaults to one.  Example:
+               copy-plane star,10,10
+
+       dashes i1[...,in]
+               Sets the dashes for line drawing.  Accepts up to 127 arguments.  Example:
+               dashes 3,7 9,10
+
+       draw-arc x1,y1,x2,y2[,start-angle,end-angle]
+               Draws an arc.  The four first arguments are the rectangle enclosing the arc.  The two remaining arguments, if specified, are the start and end angle, in degrees.  Example:
+               draw-arc +0,+0,-1,-1,0,90
+
+       draw-rect x1,y1,x2,y2
+       draw-rectangle x1,y1,x2,y2
+               Draws a rectangle.  Requires four arguments, which are the start and end coordinate pairs.  Example:
+               draw-rect +1,+1,-5,-5
+
+       draw-string x,y,"string"
+               Draws  a text string.  Requires three arguments, a x coordinate, a y coordinate, and a string.  Strings that have white space can be quoted with the " character; the backslash character \
+               can also be used, but it will be necessary escape it twice.  Example:
+                draw-string 10,10, "Hello world!"
+
+       exposures boolean
+               Sets graphics exposures in the GC.  Allowed parameters are a integer or the strings "true", "false", "on" and "off".  Example:
+               exposures true
+
+       fill-arc x1,y1,x2,y2[,start-angle,end-angle]
+               Like draw-arc, but fills the contents of the arc with the currently selected foreground.  Example:
+               fill-arc +0,+0,-1,-1,0,180
+
+       fill-poly x1,y1 [...,xn,yn]
+       fill-polygon x1,y1 [...,xn,yn]
+               Like draw-lines, but fills the enclosed polygon and joins the first and last point, if they are not at the same position.  Example:
+               fill-poly +0,+10, +10,+20, +30,+0
+
+       fill-rect x1,y1,x2,y2
+       fill-rectangle x1,y1,x2,y2
+               Like draw-rect, but fills the contents of the rectangle with the selected foreground color.  Example:
+               fill-rect +10,+10,-20,-20
+
+       fill-rule rule
+               Sets the fill rule.  Accepted parameters are "evenodd" and "winding", which set the fill rule to EvenOddRule or WindingRule, respectively.  Example:
+               fill-rule winding
+
+       fill-style style
+               Sets the fill style.  Allowed parameters are "solid", "tiled", "stippled" and "opaquestippled", which set the fill style to FillSolid, FillTiled, FillStippled or  FillOpaqueStippled,  re‐
+               spectively.  Example:
+               fill-style tiled
+
+       font font-spec
+               Sets the font for text functions.  Example:
+               font -*-*-*-R-*-*-*-120-*-*-*-*-ISO8859-1
+
+       fg color-spec
+       foreground color-spec
+               Like background, but sets the current foreground color.  Example:
+               foreground blue
+
+       mask    This command is useful when you want to draw only in the region that really needs to be repainted.  Requires no arguments.
+
+       function function-spec
+               Sets  the  specific  GC  function.  Allowed parameters are "set", "clear", "and", "andreverse", "copy", "andinverted", "noop", "xor", "or", "nor", "equiv", "invert", "orreverse", "copyin‐
+               verted" and "nand", which set the function to GXset, GXclear, GXand, GXandReverse, GXcopy, GXandInverted, GXnoop, GXxor, GXor, GXnor, GXequiv, GXinvert, GXorReverse, GXcopyInverted or GX‐
+               nand, respectively.  Example:
+               function xor
+
+       join-style style
+               Sets the join style.  Allowed parameters are "miter", "round" and "bevel", which set the join style to JoinMiter, JoinRound and JoinBevel, respectively.  Example:
+               join-style round
+
+       image {pixmap-spec},xs,ys,[xe,ye]
+               This  function is implemented as a way to quickly compose complex decorations in widgets.  Pixmap-spec is as defined in the PIXMAPS section below. xs and ys are the coordinates from where
+               to start copying the pixmap; xe and ye are optional (they default to xs + pixmap.width and ys + pixmap.height, respectively).  If the pixmap has a mask, the copy  is  masked  accordingly.
+               Example:
+               image pixmap.xpm,0,0,20,20
+
+       line x1,y1,x2,y2
+       draw-line x1,y1,x2,y2
+               Draws a line with the current foreground color.  Requires four arguments, the starting and ending coordinate pairs.  Example:
+               line +0,+0, -1,-1
+
+       line-width integer
+               Selects a line width for drawing.  Example:
+               line-width 2
+
+       line-style style
+               Sets the line style.  Accepted parameters are "solid", "onoffdash" and "doubledash", which set the line style to LineSolid, LineOnOffDash or LineDoubleDash, respectively.  Example:
+               line-style onoffdash
+
+       lines x1,y1,x2,y2 [...,xn,yn]
+       draw-lines x1,y1,x2,y2 [...,xn,yn]
+               Draws a list of lines. Any number of argument pairs may be supplied.  Example:
+               lines +0,-1, -1,-1, -1,+0
+
+       paint-string x,y,"string"
+               Identical to draw-string, but also uses the background color.  Example:
+                paint-string 10,20, "Sample text"
+
+       point x,y
+       draw-point x,y
+               Draws a point.  Requires two arguments, a coordinate pair.  Example:
+               point +10,+10
+
+       plane-mask integer
+               Sets the plane mask.  Requires an integer parameter.  Example:
+               plane-mask -1
+
+       points x1,y1 [...,xn,yn]
+       draw-points x1,y1 [...,xn,yn]
+               Draws a list of points at the specified coordinates.  Example:
+               points +1,+2, +1,+4, +1,+6
+
+       segments x1,y1,x2,y2 [...,xn,yn]
+       draw-segments x1,y1,x2,y2 [...,xn,yn]
+               Draws a list of segment lines.  The number of parameters must be multiple of 4.  Example:
+               segments +1,+2,+1,-3, +2,-2,-3,-2
+
+       shape-mode mode
+               Sets the shape mode used in fill-polygon.  Accepted parameters are "complex", "convex" or "nonconvex", which set the shape mode to Complex, Convex or Nonconvex, accordingly.  Example:
+               shape-mode convex
+
+       stipple pixmap-spec
+               Sets the pixmap for a stipple.  Requires a pixmap parameter, as described in the PIXMAPS section below.  Example:
+               stipple plaid
+
+       subwindow-mode mode
+               Sets the subwindow mode in the GC.  Accepted parameters are "includeinferiors" and "clipbychildren", which set the subwindow mode to IncludeInferiors or ClipByChildren, respectively.  Ex‐
+               ample:
+               subwindow-mode includeinferiors
+
+       tile pixmap-spec
+               Sets the pixmap for a tile.  Requires a pixmap parameter, as described in the PIXMAPS section below.  Example:
+               tile xlogo11?foreground=red&background=gray80
+
+       ts-origin x,y
+               Sets the tile stipple x and y origin.  Requires two arguments, a x and y coordinate.  Example:
+               ts-origin 10,10
+
+       umask   Disables the GC mask, if it has been set with the command mask.  Requires no arguments.
+
+       Example for drawing a shadow effect in a widget:
+       foreground gray30;\
+       draw-lines +1,-1,-1,-1,-1,+1;\
+       foreground gray85;\
+       draw-lines -1,+0,+0,+0,+0,-1
+
+PIXMAPS
+       A String to Pixmap converter has been  added to Xaw.  This converter is meant to be extended, and has enough abstraction to allow loading several image formats.  It uses a format that resembles a
+       URL, with the syntax:
+
+       [type:]name[?arg=val[{&}...]]
+
+       Type can be one of bitmap, gradient or xpm.
+
+       Name may be a file name, or, in the case of type gradient, may be either vertical or horizontal.
+
+       Arg=val  is  a  list of arguments to the converter.  An argument list is preceded by a question mark, and multiple arguments are separated by ampersands.  The most common arguments are foreground
+       and background.  Gradients also support the arguments start and end (colors with which to start and end the gradient); the steps argument, to allow using less colors; and the  dimension  argument
+       to specify the size of the gradient.    The xpm converter understands the closeness argument, which aids in using fewer colors (useful if you have a limited colormap).
+
+TEXT WIDGET
+       Most of the changes to this version of the Xaw library were done in the TextWidget, TextSrcObject, TextSinkObject and related files.
+
+       A  couple  of  highly  visible changes in the Text widget are due to many bugs in the Xaw6 implementation involving scrollbars and auto-resizing.  Scrollbars being added or removed caused several
+       problems in keeping the text cursor visible, and in Xaw6 it was very easy to have a widget thinking the cursor was visible, when it was not.  Also, permitting automatic resizing of the widget  to
+       a  larger  geometry  created other problems, making it difficult to have a consistent layout in the application, and, if the window manager did not interfere, windows larger than the screen could
+       result.  Therefore, some functionality involving scrollbars and auto-resizing has been disabled; see the section on new and modified Text widget resources below.
+
+       The Text widget's default key bindings were originally based on the Emacs text editor.  In this release, even more operations familiar to Emacs users have been added.  New text actions include:
+
+       indent  Indents text blocks.  Not bound by default.  The Text widget also does not attempt to perform auto-indentation of its source object by default.
+
+       keyboard-reset
+               Resets the keyboard state.  Reverts the action multiplier to 1, and if undo is enabled, toggles between undo and redo.  Bound by default to Control<Key>G.
+
+       kill-ring-yank
+               In this version of Xaw, text killed in any text field is kept in memory, allowing cut and paste operations internally to the program between text fields.  Bound by default to Meta<Key>Y.
+
+       numeric Listed here only for purposes of documentation.  Called by default when one of the characters 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, or - is typed, allowing composition of the multiplication  num‐
+               ber of text actions.
+
+       set-keyboard-focus
+               Sets the input focus of the top level widget to the text field.  Not enabled by default, but bound to the <Btn1Down> event.
+
+       toggle-overwrite
+               Toggles overwrite mode.  In overwrite mode, any text inserted in a text field will replace existing text.  Bound by default to <Key>Insert.
+
+       undo    Sets the enableUndo resource of the textSrcObject.  Not enabled by default, but bound to Control<Key>_.
+
+       New and modified Text widget resources include:
+
+       justify (Class Justify)
+               Sets the text justification.  Can be one of left, right, center, or full.  Only enabled when the autoFill resource is set, and the resources leftColumn and rightColumn are correctly set.
+
+       leftColumn (Class Column)
+               Specifies the left column at which to break text.  Text lines started with an alphanumeric character will automatically start at this column.
+
+       positionCallback (Class Callback)
+               Allows  installation of a callback to be called every time the cursor is moved, and/or the file changes its size.  The callback is called with a pointer to a structure containing the fol‐
+               lowing data:
+               typedef struct {
+                   int line_number;
+                   int column_number;
+                   XawTextPosition insert_position;
+                   XawTextPosition last_position;
+                   Boolean overwrite_mode;
+               } XawTextPositionInfo;
+               This callback is intended to help programmers write text editors based on the Xaw widget set.
+
+       resize (Class Resize)
+               No longer supported, but recognized for backward compatibility with resource specifications written for the Xaw6 Text widget.
+
+       rightColumn (Class Column)
+               Specifies the right column at which to break text.  Text lines started with an alphanumeric character will automatically end at this column.
+
+       scrollHorizontal (Class Scroll)
+       scrollVertical (Class Scroll)
+               These resources control the placement of scrollbars on the left and bottom edges of the Text widget.  They accept the values XawtextScrollAlways and XawtextScrollNever.   A  converter  is
+               registered  for  this resource that will convert the following strings: always and never.  The value XawtextScrollWhenNeeded (and whenNeeded, recognized by the converter), is accepted for
+               backwards compatibility with resource specifications written for the Xaw6 Text widget, but ignored (effectively treated as XawtextScrollNever).
+
+TEXT SOURCE OBJECT
+       The textSrcObject allows display of its contents to more than one window, and also stores undo information. The new resources for the textSrcObject are:
+
+       callback (Class Callback)
+               Previous versions of Xaw had this resource in subclasses of the TextSource object.  This was changed to make it possible to tell the callback the state of the text when undo is enabled.
+
+       enableUndo (Class Undo)
+               A boolean resource that enables or disables the undo function.  The default value is False.
+
+       sourceChanged (Class Changed)
+               Like the callback resource, this resource was previously in subclasses of the TextSource object.  It is now in the textSrcObject to control the changed/unchanged state when  undo  is  en‐
+               abled.
+
+TEXT SINK OBJECT
+       The  textSinkObject  subclasses  asciiSinkObject and multiSinkObject have been changed slightly to use a new cursor shape (no longer a caret at the baseline) that indicates the input focus of the
+       text widget, and allow specification of the cursor color.  The new resource is:
+
+       cursorColor (Class Color)
+               Sets the cursor color of the text.  This color is also used to draw selected text.
+
+SIMPLE MENU WIDGET
+       The simpleMenuWidget algorithm to lay out menu entries has been changed to enable multiple columns when a single column does not fit on the screen.  It was also modified to enable submenus.
+
+SME BSB OBJECT
+       A new resource has been added to the smeBSBObject to allow binding submenus to it.  The new resource is:
+
+       menuName (Class MenuName)
+               Specifies the name of the popup widget to be popped up when the pointer is over the menu entry, or NULL.  Note that the named menu must be a child of the popup parent of the smeBSBObject.
+
+AUTHORS
+       The original X Consortium version of the Athena Widget Set and its documentation were the work of many people, including Chris D. Peterson, Ralph Swick, Mark Ackerman, Donna Converse, Jim Fulton,
+       Loretta  Guarino-Reid,  Charles  Haynes, Rich Hyde, Mary Larson, Joel McCormack, Ron Newman, Jeanne Rich, Terry Weissman, Mike Gancarz, Phil Karlton, Kathleen Langone, Ram Rao, Smokey Wallace, Al
+       Mento, and Jean Diaz.
+
+       The additions and modifications to Xaw which were originally made for XFree86 were written by Paulo César Pereira de Andrade.
+
+SEE ALSO
+       Athena Widget Set - C Language Interface
+
+X Version 11                                                                                   libXaw 1.0.15                                                                                        Xaw(3)

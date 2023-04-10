@@ -1,0 +1,58 @@
+XGetEventData(3)                                                                              XLIB FUNCTIONS                                                                              XGetEventData(3)
+
+NAME
+       XGetEventData, XFreeEventData, XGenericEventCookie - retrieve and free additional event data through cookies.
+
+SYNTAX
+       Bool XGetEventData(Display *display, XGenericEventCookie *cookie);
+
+       void XFreeEventData(Display *display, XGenericEventCookie *cookie);
+
+ARGUMENTS
+       display   Specifies the connection to the X server.
+
+       cookie    Specifies the cookie to free or retrieve the data for.
+
+STRUCTURES
+       typedef struct {
+               int type;
+               unsigned long serial;
+               Bool send_event;
+               Display *display;
+               int extension;
+               int evtype;
+               unsigned int cookie;
+               void *data;
+       } XGenericEventCookie;
+
+DESCRIPTION
+       Some  extension  XGenericEvents  require  additional  memory  to store information.  For these events, the library returns a XGenericEventCookie with a token ('cookie') unique to this event.  The
+       XGenericEventCookie's data pointer is undefined until XGetEventData is called.
+
+       The XGetEventData function retrieves this extra data for the given cookie.  No round-trip to the server is required.  If the cookie is invalid or the event is not an event handled by cookie  han‐
+       dlers,  False is returned.  If XGetEventData returns True, the cookie's data pointer points to the memory containing the event information.  A client must call XFreeEventData to free this memory.
+       XGetEventData returns False for multiple calls for the same event cookie.
+
+       The XFreeEventData function frees the data associated with a cookie.  A client must call XFreeEventData for each cookie claimed with XGetEventData.
+
+EXAMPLE CODE
+       XEvent event;
+       XGenericEventCookie *cookie = &ev;
+
+       XNextEvent(display, &event);
+       if (XGetEventData(display, cookie)) {
+           handle_cookie_event(cookie->data);
+       } else
+           handle_event(&event);
+       }
+       XFreeEventData(display, cookie);
+
+NOTES
+       A cookie is defined as unclaimed if it has been returned to the client through XNextEvent but its data has not been retrieved via XGetEventData.  Subsequent calls to XNextEvent  may  free  memory
+       associated with unclaimed cookies.  Multi-threaded X clients must ensure that XGetEventData is called before the next call to XNextEvent.
+
+SEE ALSO
+       XNextEvent(3),
+       Xlib - C Language X Interface
+
+X Version 11                                                                                   libX11 1.8.4                                                                               XGetEventData(3)
