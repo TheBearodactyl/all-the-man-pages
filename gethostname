@@ -1,0 +1,131 @@
+GETHOSTNAME(3P)                                                                          POSIX Programmer's Manual                                                                         GETHOSTNAME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       gethostname — get name of current host
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int gethostname(char *name, size_t namelen);
+
+DESCRIPTION
+       The gethostname() function shall return the standard host name for the current machine.  The namelen argument shall specify the size of the array pointed to by the  name  argument.  The  returned
+       name shall be null-terminated, except that if namelen is an insufficient length to hold the host name, then the returned name shall be truncated and it is unspecified whether the returned name is
+       null-terminated.
+
+       Host names are limited to {HOST_NAME_MAX} bytes.
+
+RETURN VALUE
+       Upon successful completion, 0 shall be returned; otherwise, -1 shall be returned.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       gethostid(), uname()
+
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                    GETHOSTNAME(3P)
+gethostname(2)                                                                              System Calls Manual                                                                             gethostname(2)
+
+NAME
+       gethostname, sethostname - get/set hostname
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int gethostname(char *name, size_t len);
+       int sethostname(const char *name, size_t len);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       gethostname():
+           _XOPEN_SOURCE >= 500 || _POSIX_C_SOURCE >= 200112L
+               || /* glibc 2.19 and earlier */ _BSD_SOURCE
+
+       sethostname():
+           Since glibc 2.21:
+               _DEFAULT_SOURCE
+           In glibc 2.19 and 2.20:
+               _DEFAULT_SOURCE || (_XOPEN_SOURCE && _XOPEN_SOURCE < 500)
+           Up to and including glibc 2.19:
+               _BSD_SOURCE || (_XOPEN_SOURCE && _XOPEN_SOURCE < 500)
+
+DESCRIPTION
+       These system calls are used to access or to change the system hostname.  More precisely, they operate on the hostname associated with the calling process's UTS namespace.
+
+       sethostname() sets the hostname to the value given in the character array name.  The len argument specifies the number of bytes in name.  (Thus, name does not require a terminating null byte.)
+
+       gethostname()  returns the null-terminated hostname in the character array name, which has a length of len bytes.  If the null-terminated hostname is too large to fit, then the name is truncated,
+       and no error is returned (but see NOTES below).  POSIX.1 says that if such truncation occurs, then it is unspecified whether the returned buffer includes a terminating null byte.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EFAULT name is an invalid address.
+
+       EINVAL len is negative or, for sethostname(), len is larger than the maximum allowed size.
+
+       ENAMETOOLONG
+              (glibc gethostname()) len is smaller than the actual size.  (Before glibc 2.1, glibc uses EINVAL for this case.)
+
+       EPERM  For sethostname(), the caller did not have the CAP_SYS_ADMIN capability in the user namespace associated with its UTS namespace (see namespaces(7)).
+
+VERSIONS
+       SUSv2 guarantees that "Host names are limited to 255 bytes".  POSIX.1 guarantees that "Host names (not including the terminating null  byte)  are  limited  to  HOST_NAME_MAX  bytes".   On  Linux,
+       HOST_NAME_MAX is defined with the value 64, which has been the limit since Linux 1.0 (earlier kernels imposed a limit of 8 bytes).
+
+   C library/kernel differences
+       The  GNU C library does not employ the gethostname() system call; instead, it implements gethostname() as a library function that calls uname(2) and copies up to len bytes from the returned node‐
+       name field into name.  Having performed the copy, the function then checks if the length of the nodename was greater than or equal to len, and if it is, then the function returns  -1  with  errno
+       set to ENAMETOOLONG; in this case, a terminating null byte is not included in the returned name.
+
+STANDARDS
+       gethostname()
+              POSIX.1-2008.
+
+       sethostname()
+              None.
+
+HISTORY
+       SVr4, 4.4BSD (these interfaces first appeared in 4.2BSD).  POSIX.1-2001 and POSIX.1-2008 specify gethostname() but not sethostname().
+
+       Versions  of glibc before glibc 2.2 handle the case where the length of the nodename was greater than or equal to len differently: nothing is copied into name and the function returns -1 with er‐
+       rno set to ENAMETOOLONG.
+
+SEE ALSO
+       hostname(1), getdomainname(2), setdomainname(2), uname(2), uts_namespaces(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                  gethostname(2)

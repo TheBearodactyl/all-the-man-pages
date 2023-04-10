@@ -1,0 +1,48 @@
+PCRE2_JIT_STACK_ASSIGN(3)  Library Functions Manual  PCRE2_JIT_STACK_ASSIGN(3)
+
+NAME
+       PCRE2 - Perl-compatible regular expressions (revised API)
+
+SYNOPSIS
+
+       #include <pcre2.h>
+
+       void pcre2_jit_stack_assign(pcre2_match_context *mcontext,
+         pcre2_jit_callback callback_function, void *callback_data);
+
+DESCRIPTION
+
+       This  function  provides  control over the memory used by JIT as a run-
+       time stack when pcre2_match() or pcre2_jit_match()  is  called  with  a
+       pattern  that  has been successfully processed by the JIT compiler. The
+       information that determines which stack is used is  put  into  a  match
+       context  that  is subsequently passed to a matching function. The argu‐
+       ments of this function are:
+
+         mcontext       a pointer to a match context
+         callback       a callback function
+         callback_data  a JIT stack or a value to be passed to the callback
+
+       If mcontext is NULL, the function returns  immediately,  without  doing
+       anything.
+
+       If  callback is NULL and callback_data is NULL, an internal 32KiB block
+       on the machine stack is used.
+
+       If callback is NULL and callback_data is not NULL,  callback_data  must
+       be a valid JIT stack, the result of calling pcre2_jit_stack_create().
+
+       If callback not NULL, it is called with callback_data as an argument at
+       the start of matching, in order to set up a JIT stack. If the result is
+       NULL, the internal 32KiB stack is used; otherwise the return value must
+       be a valid JIT stack, the result of calling pcre2_jit_stack_create().
+
+       You may safely use the same JIT stack for multiple patterns, as long as
+       they  are all matched in the same thread. In a multithread application,
+       each thread must use its own JIT  stack.  For  more  details,  see  the
+       pcre2jit page.
+
+       There is a complete description of the PCRE2 native API in the pcre2api
+       page and a description of the POSIX API in the pcre2posix page.
+
+PCRE2 10.32                      28 June 2018        PCRE2_JIT_STACK_ASSIGN(3)

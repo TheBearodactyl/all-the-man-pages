@@ -1,0 +1,98 @@
+hwlocality_helper_find_misc(3)                                                           Hardware Locality (hwloc)                                                          hwlocality_helper_find_misc(3)
+
+NAME
+       hwlocality_helper_find_misc - Finding objects, miscellaneous helpers
+
+SYNOPSIS
+   Functions
+       int hwloc_bitmap_singlify_per_core (hwloc_topology_t topology, hwloc_bitmap_t cpuset, unsigned which)
+       static hwloc_obj_t hwloc_get_pu_obj_by_os_index (hwloc_topology_t topology, unsigned os_index)
+       static hwloc_obj_t hwloc_get_numanode_obj_by_os_index (hwloc_topology_t topology, unsigned os_index)
+       unsigned hwloc_get_closest_objs (hwloc_topology_t topology, hwloc_obj_t src, hwloc_obj_t *restrict objs, unsigned max)
+       static hwloc_obj_t hwloc_get_obj_below_by_type (hwloc_topology_t topology, hwloc_obj_type_t type1, unsigned idx1, hwloc_obj_type_t type2, unsigned idx2)
+       static hwloc_obj_t hwloc_get_obj_below_array_by_type (hwloc_topology_t topology, int nr, hwloc_obj_type_t *typev, unsigned *idxv)
+       hwloc_obj_t hwloc_get_obj_with_same_locality (hwloc_topology_t topology, hwloc_obj_t src, hwloc_obj_type_t type, const char *subtype, const char *nameprefix, unsigned long flags)
+
+Detailed Description
+       Be sure to see the figure in Terms and Definitions that shows a complete topology tree, including depths, child/sibling/cousin relationships, and an example of an asymmetric topology where one
+       package has fewer caches than its peers.
+
+Function Documentation
+   int hwloc_bitmap_singlify_per_core (hwloc_topology_t topology, hwloc_bitmap_t cpuset, unsigned which)
+       Remove simultaneous multithreading PUs from a CPU set. For each core in topology, if cpuset contains some PUs of that core, modify cpuset to only keep a single PU for that core.
+
+       which specifies which PU will be kept. PU are considered in physical index order. If 0, for each core, the function keeps the first PU that was originally set in cpuset.
+
+       If which is larger than the number of PUs in a core there were originally set in cpuset, no PU is kept for that core.
+
+       Note
+           PUs that are not below a Core object are ignored (for instance if the topology does not contain any Core object). None of them is removed from cpuset.
+
+   unsigned hwloc_get_closest_objs (hwloc_topology_t topology, hwloc_obj_t src, hwloc_obj_t *restrict objs, unsigned max)
+       Do a depth-first traversal of the topology to find and sort. all objects that are at the same depth than src. Report in objs up to max physically closest ones to src.
+
+       Returns
+           the number of objects returned in objs.
+
+           0 if src is an I/O object.
+
+       Note
+           This function requires the src object to have a CPU set.
+
+   static hwloc_obj_t hwloc_get_numanode_obj_by_os_index (hwloc_topology_t topology, unsigned os_index) [inline],  [static]
+       Returns the object of type HWLOC_OBJ_NUMANODE with os_index. This function is useful for converting a nodeset into the NUMA node objects it contains. When retrieving the current binding (e.g.
+       with hwloc_get_membind() with HWLOC_MEMBIND_BYNODESET), one may iterate over the bits of the resulting nodeset with hwloc_bitmap_foreach_begin(), and find the corresponding NUMA nodes with this
+       function.
+
+   static hwloc_obj_t hwloc_get_obj_below_array_by_type (hwloc_topology_t topology, int nr, hwloc_obj_type_t * typev, unsigned * idxv) [inline],  [static]
+       Find an object below a chain of objects specified by types and indexes. This is a generalized version of hwloc_get_obj_below_by_type().
+
+       Arrays typev and idxv must contain nr types and indexes.
+
+       Start from the top system object and walk the arrays typev and idxv. For each type and logical index couple in the arrays, look under the previously found object to find the index-th object of
+       the given type. Indexes are specified within the parent, not withing the entire system.
+
+       For instance, if nr is 3, typev contains NODE, PACKAGE and CORE, and idxv contains 0, 1 and 2, return the third core object below the second package below the first NUMA node.
+
+       Note
+           This function requires all these objects and the root object to have a CPU set.
+
+   static hwloc_obj_t hwloc_get_obj_below_by_type (hwloc_topology_t topology, hwloc_obj_type_t type1, unsigned idx1, hwloc_obj_type_t type2, unsigned idx2) [inline],  [static]
+       Find an object below another object, both specified by types and indexes. Start from the top system object and find object of type type1 and logical index idx1. Then look below this object and
+       find another object of type type2 and logical index idx2. Indexes are specified within the parent, not withing the entire system.
+
+       For instance, if type1 is PACKAGE, idx1 is 2, type2 is CORE and idx2 is 3, return the fourth core object below the third package.
+
+       Note
+           This function requires these objects to have a CPU set.
+
+   hwloc_obj_t hwloc_get_obj_with_same_locality (hwloc_topology_t topology, hwloc_obj_t src, hwloc_obj_type_t type, const char * subtype, const char * nameprefix, unsigned long flags)
+       Return an object of a different type with same locality. If the source object src is a normal or memory type, this function returns an object of type type with same CPU and node sets, either
+       below or above in the hierarchy.
+
+       If the source object src is a PCI or an OS device within a PCI device, the function may either return that PCI device, or another OS device in the same PCI parent. This may for instance be useful
+       for converting between OS devices such as 'nvml0' or 'rsmi1' used in distance structures into the the PCI device, or the CUDA or OpenCL OS device that correspond to the same physical card.
+
+       If not NULL, parameter subtype only select objects whose subtype attribute exists and is subtype (case-insensitively), for instance 'OpenCL' or 'CUDA'.
+
+       If not NULL, parameter nameprefix only selects objects whose name attribute exists and starts with nameprefix (case-insensitively), for instance 'rsmi' for matching 'rsmi0'.
+
+       If multiple objects match, the first one is returned.
+
+       This function will not walk the hierarchy across bridges since the PCI locality may become different. This function cannot also convert between normal/memory objects and I/O or Misc objects.
+
+       flags must be 0 for now.
+
+       Returns
+           An object with identical locality, matching subtype and nameprefix if any.
+
+           NULL if no matching object could be found, or if the source object and target type are incompatible, for instance if converting between CPU and I/O objects.
+
+   static hwloc_obj_t hwloc_get_pu_obj_by_os_index (hwloc_topology_t topology, unsigned os_index) [inline],  [static]
+       Returns the object of type HWLOC_OBJ_PU with os_index. This function is useful for converting a CPU set into the PU objects it contains. When retrieving the current binding (e.g. with
+       hwloc_get_cpubind()), one may iterate over the bits of the resulting CPU set with hwloc_bitmap_foreach_begin(), and find the corresponding PUs with this function.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                               hwlocality_helper_find_misc(3)

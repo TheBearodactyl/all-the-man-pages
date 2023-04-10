@@ -1,0 +1,193 @@
+getgrent(3)                                                                              Library Functions Manual                                                                              getgrent(3)
+
+NAME
+       getgrent, setgrent, endgrent - get group file entry
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/types.h>
+       #include <grp.h>
+
+       struct group *getgrent(void);
+
+       void setgrent(void);
+       void endgrent(void);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       setgrent():
+           _XOPEN_SOURCE >= 500
+               || /* glibc >= 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       getgrent(), endgrent():
+           Since glibc 2.22:
+               _XOPEN_SOURCE >= 500 || _DEFAULT_SOURCE
+           glibc 2.21 and earlier
+               _XOPEN_SOURCE >= 500
+                   || /* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809L
+                   || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       The getgrent() function returns a pointer to a structure containing the broken-out fields of a record in the group database (e.g., the local group file /etc/group, NIS, and LDAP).  The first time
+       getgrent() is called, it returns the first entry; thereafter, it returns successive entries.
+
+       The setgrent() function rewinds to the beginning of the group database, to allow repeated scans.
+
+       The endgrent() function is used to close the group database after all processing has been performed.
+
+       The group structure is defined in <grp.h> as follows:
+
+           struct group {
+               char   *gr_name;        /* group name */
+               char   *gr_passwd;      /* group password */
+               gid_t   gr_gid;         /* group ID */
+               char  **gr_mem;         /* NULL-terminated array of pointers
+                                          to names of group members */
+           };
+
+       For more information about the fields of this structure, see group(5).
+
+RETURN VALUE
+       The getgrent() function returns a pointer to a group structure, or NULL if there are no more entries or an error occurs.
+
+       Upon error, errno may be set.  If one wants to check errno after the call, it should be set to zero before the call.
+
+       The return value may point to a static area, and may be overwritten by subsequent calls to getgrent(), getgrgid(3), or getgrnam(3).  (Do not pass the returned pointer to free(3).)
+
+ERRORS
+       EAGAIN The service was temporarily unavailable; try again later.  For NSS backends in glibc this indicates a temporary error talking to the backend.  The error may correct itself, retrying  later
+              is suggested.
+
+       EINTR  A signal was caught; see signal(7).
+
+       EIO    I/O error.
+
+       EMFILE The per-process limit on the number of open file descriptors has been reached.
+
+       ENFILE The system-wide limit on the total number of open files has been reached.
+
+       ENOENT A necessary input file cannot be found.  For NSS backends in glibc this indicates the backend is not correctly configured.
+
+       ENOMEM Insufficient memory to allocate group structure.
+
+       ERANGE Insufficient buffer space supplied.
+
+FILES
+       /etc/group
+              local group database file
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌───────────────────────┬───────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface              │ Attribute     │ Value                                                                                                                                                    │
+       ├───────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getgrent()             │ Thread safety │ MT-Unsafe race:grent race:grentbuf locale                                                                                                                │
+       ├───────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │setgrent(), endgrent() │ Thread safety │ MT-Unsafe race:grent locale                                                                                                                              │
+       └───────────────────────┴───────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+       In  the above table, grent in race:grent signifies that if any of the functions setgrent(), getgrent(), or endgrent() are used in parallel in different threads of a program, then data races could
+       occur.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+SEE ALSO
+       fgetgrent(3), getgrent_r(3), getgrgid(3), getgrnam(3), getgrouplist(3), putgrent(3), group(5)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                     getgrent(3)
+ENDGRENT(3P)                                                                             POSIX Programmer's Manual                                                                            ENDGRENT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       endgrent, getgrent, setgrent — group database entry functions
+
+SYNOPSIS
+       #include <grp.h>
+
+       void endgrent(void);
+       struct group *getgrent(void);
+       void setgrent(void);
+
+DESCRIPTION
+       The getgrent() function shall return a pointer to a structure containing the broken-out fields of an entry in the group database. If the group database is not already open, getgrent() shall  open
+       it  and  return  a  pointer  to a group structure containing the first entry in the database. Thereafter, it shall return a pointer to a group structure containing the next group structure in the
+       group database, so successive calls may be used to search the entire database.
+
+       An implementation that provides extended security controls may impose further implementation-defined restrictions on accessing the group database. In particular, the system may deny the existence
+       of  some or all of the group database entries associated with groups other than those groups associated with the caller and may omit users other than the caller from the list of members of groups
+       in database entries that are returned.
+
+       The setgrent() function shall rewind the group database so that the next getgrent() call returns the first entry, allowing repeated searches.
+
+       The endgrent() function shall close the group database.
+
+       The setgrent() and endgrent() functions shall not change the setting of errno if successful.
+
+       On error, the setgrent() and endgrent() functions shall set errno to indicate the error.
+
+       Since no value is returned by the setgrent() and endgrent() functions, an application wishing to check for error situations should set errno to 0, then call the function, then check errno.
+
+       These functions need not be thread-safe.
+
+RETURN VALUE
+       On successful completion, getgrent() shall return a pointer to a group structure. On end-of-file, getgrent() shall return a null pointer and shall not change the setting of errno.  On error, get‐
+       grent() shall return a null pointer and errno shall be set to indicate the error.
+
+       The  application  shall not modify the structure to which the return value points, nor any storage areas pointed to by pointers within the structure. The returned pointer, and pointers within the
+       structure, might be invalidated or the structure or the storage areas might be overwritten by a subsequent call to getgrgid(), getgrnam(), or  getgrent().   The  returned  pointer,  and  pointers
+       within the structure, might also be invalidated if the calling thread is terminated.
+
+ERRORS
+       These functions may fail if:
+
+       EINTR  A signal was caught during the operation.
+
+       EIO    An I/O error has occurred.
+
+       In addition, the getgrent() and setgrent() functions may fail if:
+
+       EMFILE All file descriptors available to the process are currently open.
+
+       ENFILE The maximum allowable number of files is currently open in the system.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       These  functions  are  provided due to their historical usage.  Applications should avoid dependencies on fields in the group database, whether the database is a single file, or where in the file
+       system name space the database resides. Applications should use getgrnam() and getgrgid() whenever possible because it avoids these dependencies.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       endpwent(), getgrgid(), getgrnam(), getlogin()
+
+       The Base Definitions volume of POSIX.1‐2017, <grp.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       ENDGRENT(3P)

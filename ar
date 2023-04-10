@@ -1,0 +1,532 @@
+AR(1)                                                                                      GNU Development Tools                                                                                     AR(1)
+
+NAME
+       ar - create, modify, and extract from archives
+
+SYNOPSIS
+       ar [-X32_64] [-]p[mod] [--plugin name] [--target bfdname] [--output dirname] [--record-libdeps libdeps] [--thin] [relpos] [count] archive [member...]
+
+DESCRIPTION
+       The GNU ar program creates, modifies, and extracts from archives.  An archive is a single file holding a collection of other files in a structure that makes it possible to retrieve the original
+       individual files (called members of the archive).
+
+       The original files' contents, mode (permissions), timestamp, owner, and group are preserved in the archive, and can be restored on extraction.
+
+       GNU ar can maintain archives whose members have names of any length; however, depending on how ar is configured on your system, a limit on member-name length may be imposed for compatibility with
+       archive formats maintained with other tools.  If it exists, the limit is often 15 characters (typical of formats related to a.out) or 16 characters (typical of formats related to coff).
+
+       ar is considered a binary utility because archives of this sort are most often used as libraries holding commonly needed subroutines.  Since libraries often will depend on other libraries, ar can
+       also record the dependencies of a library when the --record-libdeps option is specified.
+
+       ar creates an index to the symbols defined in relocatable object modules in the archive when you specify the modifier s.  Once created, this index is updated in the archive whenever ar makes a
+       change to its contents (save for the q update operation).  An archive with such an index speeds up linking to the library, and allows routines in the library to call each other without regard to
+       their placement in the archive.
+
+       You may use nm -s or nm --print-armap to list this index table.  If an archive lacks the table, another form of ar called ranlib can be used to add just the table.
+
+       GNU ar can optionally create a thin archive, which contains a symbol index and references to the original copies of the member files of the archive.  This is useful for building libraries for use
+       within a local build tree, where the relocatable objects are expected to remain available, and copying the contents of each object would only waste time and space.
+
+       An archive can either be thin or it can be normal.  It cannot be both at the same time.  Once an archive is created its format cannot be changed without first deleting it and then creating a new
+       archive in its place.
+
+       Thin archives are also flattened, so that adding one thin archive to another thin archive does not nest it, as would happen with a normal archive.  Instead the elements of the first archive are
+       added individually to the second archive.
+
+       The paths to the elements of the archive are stored relative to the archive itself.
+
+       GNU ar is designed to be compatible with two different facilities.  You can control its activity using command-line options, like the different varieties of ar on Unix systems; or, if you specify
+       the single command-line option -M, you can control it with a script supplied via standard input, like the MRI "librarian" program.
+
+OPTIONS
+       GNU ar allows you to mix the operation code p and modifier flags mod in any order, within the first command-line argument.
+
+       If you wish, you may begin the first command-line argument with a dash.
+
+       The p keyletter specifies what operation to execute; it may be any of the following, but you must specify only one of them:
+
+       d   Delete modules from the archive.  Specify the names of modules to be deleted as member...; the archive is untouched if you specify no files to delete.
+
+           If you specify the v modifier, ar lists each module as it is deleted.
+
+       m   Use this operation to move members in an archive.
+
+           The ordering of members in an archive can make a difference in how programs are linked using the library, if a symbol is defined in more than one member.
+
+           If no modifiers are used with "m", any members you name in the member arguments are moved to the end of the archive; you can use the a, b, or i modifiers to move them to a specified place
+           instead.
+
+       p   Print the specified members of the archive, to the standard output file.  If the v modifier is specified, show the member name before copying its contents to standard output.
+
+           If you specify no member arguments, all the files in the archive are printed.
+
+       q   Quick append; Historically, add the files member... to the end of archive, without checking for replacement.
+
+           The modifiers a, b, and i do not affect this operation; new members are always placed at the end of the archive.
+
+           The modifier v makes ar list each file as it is appended.
+
+           Since the point of this operation is speed, implementations of ar have the option of not updating the archive's symbol table if one exists.  Too many different systems however assume that
+           symbol tables are always up-to-date, so GNU ar will rebuild the table even with a quick append.
+
+           Note - GNU ar treats the command qs as a synonym for r - replacing already existing files in the archive and appending new ones at the end.
+
+       r   Insert the files member... into archive (with replacement). This operation differs from q in that any previously existing members are deleted if their names match those being added.
+
+           If one of the files named in member... does not exist, ar displays an error message, and leaves undisturbed any existing members of the archive matching that name.
+
+           By default, new members are added at the end of the file; but you may use one of the modifiers a, b, or i to request placement relative to some existing member.
+
+           The modifier v used with this operation elicits a line of output for each file inserted, along with one of the letters a or r to indicate whether the file was appended (no old member deleted)
+           or replaced.
+
+       s   Add an index to the archive, or update it if it already exists.  Note this command is an exception to the rule that there can only be one command letter, as it is possible to use it as either
+           a command or a modifier.  In either case it does the same thing.
+
+       t   Display a table listing the contents of archive, or those of the files listed in member... that are present in the archive.  Normally only the member name is shown, but if the modifier O is
+           specified, then the corresponding offset of the member is also displayed.  Finally, in order to see the modes (permissions), timestamp, owner, group, and size the v modifier should be
+           included.
+
+           If you do not specify a member, all files in the archive are listed.
+
+           If there is more than one file with the same name (say, fie) in an archive (say b.a), ar t b.a fie lists only the first instance; to see them all, you must ask for a complete listing---in our
+           example, ar t b.a.
+
+       x   Extract members (named member) from the archive.  You can use the v modifier with this operation, to request that ar list each name as it extracts it.
+
+           If you do not specify a member, all files in the archive are extracted.
+
+           Files cannot be extracted from a thin archive, and there are restrictions on extracting from archives created with P: The paths must not be absolute, may not contain "..", and any
+           subdirectories in the paths must exist.  If it is desired to avoid these restrictions then used the --output option to specify an output directory.
+
+       A number of modifiers (mod) may immediately follow the p keyletter, to specify variations on an operation's behavior:
+
+       a   Add new files after an existing member of the archive.  If you use the modifier a, the name of an existing archive member must be present as the relpos argument, before the archive
+           specification.
+
+       b   Add new files before an existing member of the archive.  If you use the modifier b, the name of an existing archive member must be present as the relpos argument, before the archive
+           specification.  (same as i).
+
+       c   Create the archive.  The specified archive is always created if it did not exist, when you request an update.  But a warning is issued unless you specify in advance that you expect to create
+           it, by using this modifier.
+
+       D   Operate in deterministic mode.  When adding files and the archive index use zero for UIDs, GIDs, timestamps, and use consistent file modes for all files.  When this option is used, if ar is
+           used with identical options and identical input files, multiple runs will create identical output files regardless of the input files' owners, groups, file modes, or modification times.
+
+           If binutils was configured with --enable-deterministic-archives, then this mode is on by default.  It can be disabled with the U modifier, below.
+
+       f   Truncate names in the archive.  GNU ar will normally permit file names of any length.  This will cause it to create archives which are not compatible with the native ar program on some
+           systems.  If this is a concern, the f modifier may be used to truncate file names when putting them in the archive.
+
+       i   Insert new files before an existing member of the archive.  If you use the modifier i, the name of an existing archive member must be present as the relpos argument, before the archive
+           specification.  (same as b).
+
+       l   Specify dependencies of this library.  The dependencies must immediately follow this option character, must use the same syntax as the linker command line, and must be specified within a
+           single argument.  I.e., if multiple items are needed, they must be quoted to form a single command line argument.  For example L "-L/usr/local/lib -lmydep1 -lmydep2"
+
+       N   Uses the count parameter.  This is used if there are multiple entries in the archive with the same name.  Extract or delete instance count of the given name from the archive.
+
+       o   Preserve the original dates of members when extracting them.  If you do not specify this modifier, files extracted from the archive are stamped with the time of extraction.
+
+       O   Display member offsets inside the archive. Use together with the t option.
+
+       P   Use the full path name when matching or storing names in the archive.  Archives created with full path names are not POSIX compliant, and thus may not work with tools other than up to date
+           GNU tools.  Modifying such archives with GNU ar without using P will remove the full path names unless the archive is a thin archive.  Note that P may be useful when adding files to a thin
+           archive since r without P ignores the path when choosing which element to replace.  Thus
+
+                   ar rcST archive.a subdir/file1 subdir/file2 file1
+
+           will result in the first "subdir/file1" being replaced with "file1" from the current directory.  Adding P will prevent this replacement.
+
+       s   Write an object-file index into the archive, or update an existing one, even if no other change is made to the archive.  You may use this modifier flag either with any operation, or alone.
+           Running ar s on an archive is equivalent to running ranlib on it.
+
+       S   Do not generate an archive symbol table.  This can speed up building a large library in several steps.  The resulting archive can not be used with the linker.  In order to build a symbol
+           table, you must omit the S modifier on the last execution of ar, or you must run ranlib on the archive.
+
+       T   Deprecated alias for --thin.  T is not recommended because in many ar implementations T has a different meaning, as specified by X/Open System Interface.
+
+       u   Normally, ar r... inserts all files listed into the archive.  If you would like to insert only those of the files you list that are newer than existing members of the same names, use this
+           modifier.  The u modifier is allowed only for the operation r (replace).  In particular, the combination qu is not allowed, since checking the timestamps would lose any speed advantage from
+           the operation q.
+
+       U   Do not operate in deterministic mode.  This is the inverse of the D modifier, above: added files and the archive index will get their actual UID, GID, timestamp, and file mode values.
+
+           This is the default unless binutils was configured with --enable-deterministic-archives.
+
+       v   This modifier requests the verbose version of an operation.  Many operations display additional information, such as filenames processed, when the modifier v is appended.
+
+       V   This modifier shows the version number of ar.
+
+       The ar program also supports some command-line options which are neither modifiers nor actions, but which do change its behaviour in specific ways:
+
+       --help
+           Displays the list of command-line options supported by ar and then exits.
+
+       --version
+           Displays the version information of ar and then exits.
+
+       -X32_64
+           ar ignores an initial option spelled -X32_64, for compatibility with AIX.  The behaviour produced by this option is the default for GNU ar.  ar does not support any of the other -X options;
+           in particular, it does not support -X32 which is the default for AIX ar.
+
+       --plugin name
+           The optional command-line switch --plugin name causes ar to load the plugin called name which adds support for more file formats, including object files with link-time optimization
+           information.
+
+           This option is only available if the toolchain has been built with plugin support enabled.
+
+           If --plugin is not provided, but plugin support has been enabled then ar iterates over the files in ${libdir}/bfd-plugins in alphabetic order and the first plugin that claims the object in
+           question is used.
+
+           Please note that this plugin search directory is not the one used by ld's -plugin option.  In order to make ar use the  linker plugin it must be copied into the ${libdir}/bfd-plugins
+           directory.  For GCC based compilations the linker plugin is called liblto_plugin.so.0.0.0.  For Clang based compilations it is called LLVMgold.so.  The GCC plugin is always backwards
+           compatible with earlier versions, so it is sufficient to just copy the newest one.
+
+       --target target
+           The optional command-line switch --target bfdname specifies that the archive members are in an object code format different from your system's default format.  See
+
+       --output dirname
+           The --output option can be used to specify a path to a directory into which archive members should be extracted.  If this option is not specified then the current directory will be used.
+
+           Note - although the presence of this option does imply a x extraction operation that option must still be included on the command line.
+
+       --record-libdeps libdeps
+           The --record-libdeps option is identical to the l modifier, just handled in long form.
+
+       --thin
+           Make the specified archive a thin archive.  If it already exists and is a regular archive, the existing members must be present in the same directory as archive.
+
+       @file
+           Read command-line options from file.  The options read are inserted in place of the original @file option.  If file does not exist, or cannot be read, then the option will be treated
+           literally, and not removed.
+
+           Options in file are separated by whitespace.  A whitespace character may be included in an option by surrounding the entire option in either single or double quotes.  Any character (including
+           a backslash) may be included by prefixing the character to be included with a backslash.  The file may itself contain additional @file options; any such options will be processed recursively.
+
+SEE ALSO
+       nm(1), ranlib(1), and the Info entries for binutils.
+
+COPYRIGHT
+       Copyright (c) 1991-2023 Free Software Foundation, Inc.
+
+       Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.3 or any later version published by the Free Software
+       Foundation; with no Invariant Sections, with no Front-Cover Texts, and with no Back-Cover Texts.  A copy of the license is included in the section entitled "GNU Free Documentation License".
+
+binutils-2.40                                                                                   2023-02-03                                                                                           AR(1)
+AR(1P)                                                                                   POSIX Programmer's Manual                                                                                  AR(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       ar — create and maintain library archives
+
+SYNOPSIS
+       ar -d [-v] archive file...
+
+       ar -m [-v] archive file...
+       ar -m -a [-v] posname archive file...
+       ar -m -b [-v] posname archive file...
+       ar -m -i [-v] posname archive file...
+
+       ar -p [-v] [-s] archive [file...]
+
+       ar -q [-cv] archive file...
+
+       ar -r [-cuv] archive file...
+
+       ar -r -a [-cuv] posname archive file...
+       ar -r -b [-cuv] posname archive file...
+       ar -r -i [-cuv] posname archive file...
+
+       ar -t [-v] [-s] archive [file...]
+
+       ar -x [-v] [-sCT] archive [file...]
+
+DESCRIPTION
+       The ar utility is part of the Software Development Utilities option.
+
+       The ar utility can be used to create and maintain groups of files combined into an archive. Once an archive has been created, new files can be added, and existing files in an archive can  be  ex‐
+       tracted, deleted, or replaced. When an archive consists entirely of valid object files, the implementation shall format the archive so that it is usable as a library for link editing (see c99 and
+       fort77).  When some of the archived files are not valid object files, the suitability of the archive for library use is undefined.  If an archive consists entirely of printable files, the  entire
+       archive shall be printable.
+
+       When ar creates an archive, it creates administrative information indicating whether a symbol table is present in the archive. When there is at least one object file that ar recognizes as such in
+       the archive, an archive symbol table shall be created in the archive and maintained by ar; it is used by the link editor to search the archive. Whenever the ar utility is used to create or update
+       the contents of such an archive, the symbol table shall be rebuilt. The -s option shall force the symbol table to be rebuilt.
+
+       All  file  operands can be pathnames. However, files within archives shall be named by a filename, which is the last component of the pathname used when the file was entered into the archive. The
+       comparison of file operands to the names of files in archives shall be performed by comparing the last component of the operand to the name of the file in the archive.
+
+       It is unspecified whether multiple files in the archive may be identically named. In the case of such files, however, each file and posname operand shall match only the first file in the  archive
+       having a name that is the same as the last component of the operand.
+
+OPTIONS
+       The ar utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines, except for Guideline 9.
+
+       The following options shall be supported:
+
+       -a        Position new files in the archive after the file named by the posname operand.
+
+       -b        Position new files in the archive before the file named by the posname operand.
+
+       -c        Suppress the diagnostic message that is written to standard error by default when the archive archive is created.
+
+       -C        Prevent extracted files from replacing like-named files in the file system. This option is useful when -T is also used, to prevent truncated filenames from replacing files with the same
+                 prefix.
+
+       -d        Delete one or more files from archive.
+
+       -i        Position new files in the archive before the file in the archive named by the posname operand (equivalent to -b).
+
+       -m        Move the named files in the archive. The -a, -b, or -i options with the posname operand indicate the position; otherwise, move the names files in the archive to the end of the archive.
+
+       -p        Write the contents of the files in the archive named by file operands from archive to the standard output. If no file operands are specified, the contents of all files  in  the  archive
+                 shall be written in the order of the archive.
+
+       -q        Append  the  named  files to the end of the archive. In this case ar does not check whether the added files are already in the archive.  This is useful to bypass the searching otherwise
+                 done when creating a large archive piece by piece.
+
+       -r        Replace or add files to archive.  If the archive named by archive does not exist, a new archive shall be created and a diagnostic message shall be written to standard error (unless  the
+                 -c  option is specified). If no files are specified and the archive exists, the results are undefined. Files that replace existing files in the archive shall not change the order of the
+                 archive. Files that do not replace existing files in the archive shall be appended to the archive unless a -a, -b, or -i option specifies another position.
+
+       -s        Force the regeneration of the archive symbol table even if ar is not invoked with an option that modifies the archive contents. This option is useful to restore the archive symbol table
+                 after it has been stripped; see strip.
+
+       -t        Write  a table of contents of archive to the standard output. Only the files specified by the file operands shall be included in the written list. If no file operands are specified, all
+                 files in archive shall be included in the order of the archive.
+
+       -T        Allow filename truncation of extracted files whose archive names are longer than the file system can support. By default, extracting a file with a name that is too long shall be an  er‐
+                 ror; a diagnostic message shall be written and the file shall not be extracted.
+
+       -u        Update older files in the archive. When used with the -r option, files in the archive shall be replaced only if the corresponding file has a modification time that is at least as new as
+                 the modification time of the file in the archive.
+
+       -v        Give verbose output. When used with the option characters -d, -r, or -x, write a detailed file-by-file description of the archive creation and maintenance activity, as described in  the
+                 STDOUT section.
+
+                 When used with -p, write the name of the file in the archive to the standard output before writing the file in the archive itself to the standard output, as described in the STDOUT sec‐
+                 tion.
+
+                 When used with -t, include a long listing of information about the files in the archive, as described in the STDOUT section.
+
+       -x        Extract the files in the archive named by the file operands from archive.  The contents of the archive shall not be changed. If no file operands are given,  all  files  in  the  archive
+                 shall be extracted. The modification time of each file extracted shall be set to the time the file is extracted from the archive.
+
+OPERANDS
+       The following operands shall be supported:
+
+       archive   A pathname of the archive.
+
+       file      A  pathname.  Only  the  last component shall be used when comparing against the names of files in the archive. If two or more file operands have the same last pathname component (base‐
+                 name), the results are unspecified. The implementation's archive format shall not truncate valid filenames of files added to or replaced in the archive.
+
+       posname   The name of a file in the archive, used for relative positioning; see options -m and -r.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       The archive named by archive shall be a file in the format created by ar -r.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of ar:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments and input files).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       LC_TIME   Determine the format and content for date and time strings written by ar -tv.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+       TMPDIR    Determine the pathname that overrides the default directory for temporary files, if any.
+
+       TZ        Determine the timezone used to calculate date and time strings written by ar -tv.  If TZ is unset or null, an unspecified default timezone shall be used.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       If the -d option is used with the -v option, the standard output format shall be:
+
+           "d - %s\n", <file>
+
+       where file is the operand specified on the command line.
+
+       If the -p option is used with the -v option, ar shall precede the contents of each file with:
+
+           "\n<%s>\n\n", <file>
+
+       where file is the operand specified on the command line, if file operands were specified, and the name of the file in the archive if they were not.
+
+       If the -r option is used with the -v option:
+
+        *  If file is already in the archive, the standard output format shall be:
+
+               "r - %s\n", <file>
+
+           where <file> is the operand specified on the command line.
+
+        *  If file is not already in the archive, the standard output format shall be:
+
+               "a - %s\n", <file>
+
+           where <file> is the operand specified on the command line.
+
+       If the -t option is used, ar shall write the names of the files in the archive to the standard output in the format:
+
+           "%s\n", <file>
+
+       where file is the operand specified on the command line, if file operands were specified, or the name of the file in the archive if they were not.
+
+       If the -t option is used with the -v option, the standard output format shall be:
+
+           "%s %u/%u %u %s %d %d:%d %d %s\n", <member mode>, <user ID>,
+               <group ID>, <number of bytes in member>,
+               <abbreviated month>, <day-of-month>, <hour>,
+               <minute>, <year>, <file>
+
+       where:
+
+       <file>    Shall be the operand specified on the command line, if file operands were specified, or the name of the file in the archive if they were not.
+
+       <member mode>
+                 Shall be formatted the same as the <file mode> string defined in the STDOUT section of ls, except that the first character, the <entry type>, is not used; the string represents the file
+                 mode of the file in the archive at the time it was added to or replaced in the archive.
+
+       The following represent the last-modification time of a file when it was most recently added to or replaced in the archive:
+
+       <abbreviated month>
+                 Equivalent to the format of the %b conversion specification format in date.
+
+       <day-of-month>
+                 Equivalent to the format of the %e conversion specification format in date.
+
+       <hour>    Equivalent to the format of the %H conversion specification format in date.
+
+       <minute>  Equivalent to the format of the %M conversion specification format in date.
+
+       <year>    Equivalent to the format of the %Y conversion specification format in date.
+
+       When LC_TIME does not specify the POSIX locale, a different format and order of presentation of these fields relative to each other may be used in a format appropriate in the specified locale.
+
+       If the -x option is used with the -v option, the standard output format shall be:
+
+           "x - %s\n", <file>
+
+       where file is the operand specified on the command line, if file operands were specified, or the name of the file in the archive if they were not.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.  The diagnostic message about creating a new archive when -c is not specified shall not modify the exit status.
+
+OUTPUT FILES
+       Archives are files with unspecified formats.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       None.
+
+EXAMPLES
+       None.
+
+RATIONALE
+       The archive format is not described. It is recognized that there are several known ar formats, which are not compatible. The ar utility is included, however, to allow creation  of  archives  that
+       are  intended  for use only on one machine. The archive is specified as a file, and it can be moved as a file. This does allow an archive to be moved from one machine to another machine that uses
+       the same implementation of ar.
+
+       Utilities such as pax (and its forebears tar and cpio) also provide portable ``archives''. This is a not a duplication; the ar utility is included to provide an interface primarily for  make  and
+       the compilers, based on a historical model.
+
+       In  historical  implementations, the -q option (available on XSI-conforming systems) is known to execute quickly because ar does not check on whether the added members are already in the archive.
+       This is useful to bypass the searching otherwise done when creating a large archive piece-by-piece. These remarks may but need not remain true for a brand  new  implementation  of  this  utility;
+       hence, these remarks have been moved into the RATIONALE.
+
+       BSD  implementations historically required applications to provide the -s option whenever the archive was supposed to contain a symbol table.  As in this volume of POSIX.1‐2017, System V histori‐
+       cally creates or updates an archive symbol table whenever an object file is removed from, added to, or updated in the archive.
+
+       The OPERANDS section requires what might seem to be true without specifying it: the archive cannot truncate the filenames below {NAME_MAX}.  Some historical implementations do so, however,  caus‐
+       ing unexpected results for the application. Therefore, this volume of POSIX.1‐2017 makes the requirement explicit to avoid misunderstandings.
+
+       According  to  the  System V documentation, the options -dmpqrtx are not required to begin with a <hyphen-minus> ('-').  This volume of POSIX.1‐2017 requires that a conforming application use the
+       leading <hyphen-minus>.
+
+       The archive format used by the 4.4 BSD implementation is documented in this RATIONALE as an example:
+
+              A file created by ar begins with the ``magic'' string "!<arch>\n".  The rest of the archive is made up of objects, each of which is composed of a header for a file,  a  possible  filename,
+              and the file contents. The header is portable between machine architectures, and, if the file contents are printable, the archive is itself printable.
+
+              The  header  is  made up of six ASCII fields, followed by a two-character trailer. The fields are the object name (16 characters), the file last modification time (12 characters), the user
+              and group IDs (each 6 characters), the file mode (8 characters), and the file size (10 characters). All numeric fields are in decimal, except for the file mode, which is in octal.
+
+              The modification time is the file st_mtime field. The user and group IDs are the file st_uid and st_gid fields. The file mode is the file st_mode field. The file size is the  file  st_size
+              field. The two-byte trailer is the string "`<newline>".
+
+              Only the name field has any provision for overflow. If any filename is more than 16 characters in length or contains an embedded space, the string "#1/" followed by the ASCII length of the
+              name is written in the name field.  The file size (stored in the archive header) is incremented by the length of the name. The name  is  then  written  immediately  following  the  archive
+              header.
+
+              Any  unused  characters  in any of these fields are written as <space> characters. If any fields are their particular maximum number of characters in length, there is no separation between
+              the fields.
+
+              Objects in the archive are always an even number of bytes long; files that are an odd number of bytes long are padded with a <newline>, although the size in the  header  does  not  reflect
+              this.
+
+       The  ar utility description requires that (when all its members are valid object files) ar produce an object code library, which the linkage editor can use to extract object modules. If the link‐
+       age editor needs a symbol table to permit random access to the archive, ar must provide it; however, ar does not require a symbol table.
+
+       The BSD -o option was omitted. It is a rare conforming application that uses ar to extract object code from a library with concern for its modification time, since this can only be of  importance
+       to make.  Hence, since this functionality is not deemed important for applications portability, the modification time of the extracted files is set to the current time.
+
+       There  is at least one known implementation (for a small computer) that can accommodate only object files for that system, disallowing mixed object and other files. The ability to handle any type
+       of file is not only historical practice for most implementations, but is also a reasonable expectation.
+
+       Consideration was given to changing the output format of ar -tv to the same format as the output of ls -l.  This would have made parsing the output of ar the same as that of  ls.   This  was  re‐
+       jected  in  part  because  the  current  ar  format is commonly used and changes would break historical usage.  Second, ar gives the user ID and group ID in numeric format separated by a <slash>.
+       Changing this to be the user name and group name would not be correct if the archive were moved to a machine that contained a different user database. Since ar cannot know whether the archive was
+       generated on the same machine, it cannot tell what to report.
+
+       The text on the -ur option combination is historical practice—since one filename can easily represent two different files (for example, /a/foo and /b/foo), it is reasonable to replace the file in
+       the archive even when the modification time in the archive is identical to that in the file system.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       c99, date, fort77, pax, strip
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines, <unistd.h>, description of {POSIX_NO_TRUNC}
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                             AR(1P)

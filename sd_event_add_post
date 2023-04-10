@@ -1,0 +1,112 @@
+SD_EVENT_ADD_DEFER(3)         sd_event_add_defer         SD_EVENT_ADD_DEFER(3)
+
+NAME
+       sd_event_add_defer, sd_event_add_post, sd_event_add_exit,
+       sd_event_handler_t - Add static event sources to an event loop
+
+SYNOPSIS
+       #include <systemd/sd-event.h>
+
+       typedef struct sd_event_source sd_event_source;
+
+       typedef int (*sd_event_handler_t)(sd_event_source *s, void *userdata);
+
+       int sd_event_add_defer(sd_event *event, sd_event_source **source,
+                              sd_event_handler_t handler, void *userdata);
+
+       int sd_event_add_post(sd_event *event, sd_event_source **source,
+                             sd_event_handler_t handler, void *userdata);
+
+       int sd_event_add_exit(sd_event *event, sd_event_source **source,
+                             sd_event_handler_t handler, void *userdata);
+
+DESCRIPTION
+       These three functions add new static event sources to an event loop.
+       The event loop object is specified in the event parameter, the event
+       source object is returned in the source parameter. The event sources
+       are enabled statically and will "fire" when the event loop is run and
+       the conditions described below are met.
+
+       The handler is a function to call or NULL. The handler function will be
+       passed the userdata pointer, which may be chosen freely by the caller.
+       The handler may return negative to signal an error (see below), other
+       return values are ignored. If handler is NULL, a default handler that
+       calls sd_event_exit(3) will be used.
+
+       sd_event_add_defer() adds a new event source that will be dispatched
+       instantly, before the event loop goes to sleep again and waits for new
+       events. By default, the handler will be called once (SD_EVENT_ONESHOT).
+       Note that if the event source is set to SD_EVENT_ON the event loop will
+       never go to sleep again, but continuously call the handler, possibly
+       interleaved with other event sources.
+
+       sd_event_add_post() adds a new event source that is run before the
+       event loop will sleep and wait for new events, but only after at least
+       one other non-post event source was dispatched. By default, the source
+       is enabled permanently (SD_EVENT_ON). Note that this event source type
+       will still allow the event loop to go to sleep again, even if set to
+       SD_EVENT_ON, as long as no other event source is ever triggered.
+
+       sd_event_add_exit() adds a new event source that will be dispatched
+       when the event loop is terminated with sd_event_exit(3).
+
+       The sd_event_source_set_enabled(3) function may be used to enable the
+       event source permanently (SD_EVENT_ON) or to make it fire just once
+       (SD_EVENT_ONESHOT).
+
+       If the handler function returns a negative error code, it will either
+       be disabled after the invocation, even if the SD_EVENT_ON mode was
+       requested before, or it will cause the loop to terminate, see
+       sd_event_source_set_exit_on_failure(3).
+
+       To destroy an event source object use sd_event_source_unref(3), but
+       note that the event source is only removed from the event loop when all
+       references to the event source are dropped. To make sure an event
+       source does not fire anymore, even when there's still a reference to it
+       kept, consider setting the event source to SD_EVENT_OFF with
+       sd_event_source_set_enabled(3).
+
+       If the second parameter of these functions is passed as NULL no
+       reference to the event source object is returned. In this case the
+       event source is considered "floating", and will be destroyed implicitly
+       when the event loop itself is destroyed.
+
+       If the handler parameter to sd_event_add_defer() or sd_event_add_post()
+       is NULL, and the event source fires, this will be considered a request
+       to exit the event loop. In this case, the userdata parameter, cast to
+       an integer, is passed as the exit code parameter to sd_event_exit(3).
+       Similar functionality is not available for sd_event_add_exit(), as
+       these types of event sources are only dispatched when exiting anyway.
+
+RETURN VALUE
+       On success, these functions return 0 or a positive integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -ENOMEM
+           Not enough memory to allocate an object.
+
+       -EINVAL
+           An invalid argument has been passed.
+
+       -ESTALE
+           The event loop is already terminated.
+
+       -ECHILD
+           The event loop has been created in a different process.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-event(3), sd_event_new(3), sd_event_now(3),
+       sd_event_add_io(3), sd_event_add_time(3), sd_event_add_signal(3),
+       sd_event_add_child(3), sd_event_add_inotify(3),
+       sd_event_source_set_enabled(3), sd_event_source_set_priority(3),
+       sd_event_source_set_userdata(3), sd_event_source_set_description(3),
+       sd_event_source_set_floating(3), sd_event_exit(3)
+
+systemd 253                                              SD_EVENT_ADD_DEFER(3)

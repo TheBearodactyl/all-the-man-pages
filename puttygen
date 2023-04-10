@@ -1,0 +1,329 @@
+puttygen(1)                    PuTTY tool suite                    puttygen(1)
+
+NAME
+       puttygen - public-key generator for the PuTTY tools
+
+SYNOPSIS
+       puttygen ( keyfile | -t keytype [ -b bits ] [ --primes method ] [ -q ] )
+                [ -C new-comment ] [ -P ] [ --reencrypt ]
+                [ --certificate cert-file | --remove-certificate ]
+                [ -O output-type | -l | -L | -p | --dump | --cert-info ]
+                   [ --ppk-param key=value,... | -E fptype ]
+                [ -o output-file ]
+
+DESCRIPTION
+       puttygen  is  a  tool to generate and manipulate SSH public and private
+       key pairs. It is part of the PuTTY suite, although it can also interop‐
+       erate with the key formats used by some other SSH clients.
+
+       When  you  run puttygen, it does three things. Firstly, it either loads
+       an existing key file (if you specified keyfile), or generates a new key
+       (if  you specified keytype). Then, it optionally makes modifications to
+       the key (such as changing the comment and/or the passphrase);  finally,
+       it outputs the key, or some information about the key, to a file.
+
+       All  three  of  these phases are controlled by the options described in
+       the following section.
+
+OPTIONS
+       In the first phase, puttygen either loads or generates a key. Note that
+       generating  a  key  requires  random  data, which can cause puttygen to
+       pause, possibly for some time if your system does not have much random‐
+       ness available.
+
+       The options to control this phase are:
+
+       keyfile
+              Specify  a  key  file  to be loaded. (Use `-' to read a key file
+              from standard input.)
+
+              Usually this will be a private key, which  can  be  in  the  (de
+              facto  standard)  SSH-1 key format, or in PuTTY's SSH-2 key for‐
+              mat, or in either of the  SSH-2  private  key  formats  used  by
+              OpenSSH and ssh.com's implementation.
+
+              You  can  also specify a file containing only a public key here.
+              The operations you can do are limited to outputting another pub‐
+              lic  key  format  (possibly  removing  an  attached  certificate
+              first), or a fingerprint. Public keys can  be  in  RFC  4716  or
+              OpenSSH format, or the standard SSH-1 format.
+
+       -t keytype
+              Specify  a  type  of key to generate. The acceptable values here
+              are rsa, dsa, ecdsa, eddsa,  ed25519,  and  ed448  (to  generate
+              SSH-2 keys), and rsa1 (to generate SSH-1 keys).
+
+       -b bits
+              Specify  the  size  of the key to generate, in bits. Default for
+              rsa and dsa keys is 2048.
+
+       --primes method
+              Method for generating prime numbers. The acceptable values  here
+              are  probable  (the default), proven, and proven-even; the later
+              methods are slower. (Various synonyms for these method names are
+              also accepted.)
+
+              The  `probable  primes'  method sounds unsafe, but it's the most
+              commonly used prime-generation strategy. There is  in  theory  a
+              possibility  that  it  might accidentally generate a number that
+              isn't prime, but the software does enough checking to make  that
+              probability  vanishingly  small  (less  than  1 in 2^80, or 1 in
+              10^24). So, in practice, nobody worries about it very much.
+
+              The other methods cause PuTTYgen to use numbers that it is  sure
+              are  prime, because it generates the output number together with
+              a proof of its primality. This takes more effort, but it  elimi‐
+              nates that theoretical risk in the probabilistic method.
+
+              You might choose to switch from probable to proven primes if you
+              have a local security standard that demands it, or if you  don't
+              trust  the  probabilistic  argument  for the safety of the usual
+              method.
+
+       --strong-rsa
+              When generating an RSA key, make sure the prime factors  of  the
+              key  modulus are `strong primes'. A strong prime is a prime num‐
+              ber chosen to have a particular  structure  that  makes  certain
+              factoring  algorithms  more difficult to apply, so some security
+              standards recommend their use. However, the most modern  factor‐
+              ing  algorithms  are  unaffected, so this option is probably not
+              worth turning on unless you have a local  standard  that  recom‐
+              mends it.
+
+       -q     Suppress the progress display when generating a new key.
+
+       --old-passphrase file
+              Specify  a file name; the first line will be read from this file
+              (removing any trailing newline) and used as the old  passphrase.
+              CAUTION:  If  the  passphrase  is  important, the file should be
+              stored on a temporary filesystem or else securely  erased  after
+              use.
+
+       --random-device device
+              Specify  device  to read entropy from. By default, puttygen uses
+              /dev/urandom, falling back to /dev/random if it has to.
+
+       In the second phase, puttygen optionally alters properties of  the  key
+       it has loaded or generated. The options to control this are:
+
+       -C new-comment
+              Specify  a  comment  string  to  describe  the key. This comment
+              string will be used by PuTTY to identify the key  to  you  (when
+              asking  you  to  enter  the passphrase, for example, so that you
+              know which passphrase to type).
+
+       -P     Indicate that you want to change the key's passphrase.  This  is
+              automatic  when  you  are generating a new key, but not when you
+              are modifying an existing key.
+
+       --certificate certificate-file
+              Adds an OpenSSH-style certificate to the public half of the key,
+              so that the output file contains a certified public key with the
+              same private key. If the input file already contained a certifi‐
+              cate,  it  will be replaced with the new one. (Use `-' to read a
+              certificate from standard input.)
+
+       --remove-certificate
+              Removes any certificate that was part of the key, to recover the
+              uncertified version of the underlying key.
+
+       --reencrypt
+              For an existing private key saved with a passphrase, refresh the
+              encryption without changing the passphrase.
+
+              This is most likely to be useful with the --ppk-param option, to
+              change some aspect of the key file's format or encryption.
+
+       --ppk-param key=value,...
+              When  saving  a  PPK  file  (the default private output type for
+              SSH-2 keys), adjust details of the on-disk format.
+
+              Aspects to change are specified as a series of  key=value  pairs
+              separated by commas. The keys are:
+
+              version
+                     The  PPK  format  version. Possible values are 3 (the de‐
+                     fault) and 2 (which is less resistant to brute-force  de‐
+                     cryption,  but  which you might need if your key needs to
+                     be used by old versions of PuTTY tools, or other PPK con‐
+                     sumers).
+
+                     The following keys only affect PPK version 3 files.
+
+              kdf    The variant of the Argon2 key derivation function to use.
+                     Options are argon2id (default, and recommended), argon2i,
+                     and argon2d.
+
+                     You  might  change  this if you consider your exposure to
+                     side-channel attacks to be different to the norm.
+
+              memory The amount of memory needed to decrypt the key, in Kbyte.
+                     Default is 8192 (i.e., 8 Mbyte).
+
+              time   Approximate  time,  on  this machine, required to attempt
+                     decrypting the key, in milliseconds. Default is 100 (ms).
+
+              passes Alternative to time: explicitly  specify  the  number  of
+                     hash passes required to attempt decrypting the key.
+
+              parallelism
+                     Number  of parallelisable threads that can be used to de‐
+                     crypt the key. Default is 1 (force decryption to run sin‐
+                     gle-threaded).
+
+       In the third phase, puttygen saves the key or information about it. The
+       options to control this are:
+
+       -O output-type
+              Specify the type of output you want puttygen to produce. Accept‐
+              able options are:
+
+              private
+                     Save  the  private  key in a format usable by PuTTY. This
+                     will either be the standard SSH-1 key format, or  PuTTY's
+                     own SSH-2 key format (`PPK'). This is the default.
+
+              public Save  the  public  key only. For SSH-1 keys, the standard
+                     public key format will be used  (`1024  37  5698745...').
+                     For SSH-2 keys, the public key will be output in the for‐
+                     mat specified by RFC 4716, which  is  a  multi-line  text
+                     file  beginning with the line `---- BEGIN SSH2 PUBLIC KEY
+                     ----'.
+
+              public-openssh
+                     Save the public key only, in a format usable by  OpenSSH.
+                     For SSH-1 keys, this output format behaves identically to
+                     public. For SSH-2 keys, the public key will be output  in
+                     the  OpenSSH  format,  which  is  a single line (`ssh-rsa
+                     AAAAB3NzaC1yc2...').
+
+              fingerprint
+                     Print a fingerprint of the public key. The -E option lets
+                     you  specify  which  fingerprinting algorithm to use. All
+                     algorithms are believed compatible with OpenSSH.
+
+              private-openssh
+                     Save an SSH-2 private key in OpenSSH's format, using  the
+                     oldest  format available to maximise backward compatibil‐
+                     ity. This option is not permitted for SSH-1 keys.
+
+              private-openssh-new
+                     As private-openssh, except that  it  forces  the  use  of
+                     OpenSSH's newer format even for RSA, DSA, and ECDSA keys.
+
+              private-sshcom
+                     Save  an  SSH-2 private key in ssh.com's format. This op‐
+                     tion is not permitted for SSH-1 keys.
+
+              cert-info
+                     Save a textual dump of information about the  certificate
+                     on  the  key,  if any: whether it's a host or a user cer‐
+                     tificate, what host(s) or user(s) it's certified  to  be,
+                     its  validity  period, ID and serial number, and the fin‐
+                     gerprint of the signing CA.
+
+              text   Save a textual dump of the numeric components  comprising
+                     the  key (both the public and private parts, if present).
+                     Useful for debugging, or for using PuTTYgen as a key gen‐
+                     erator for applications other than SSH.
+
+                     The  output  consists  of  a  series of name=value lines,
+                     where each value is either a  C-like  string  literal  in
+                     double  quotes, a hexadecimal number starting with 0x...,
+                     or  a  binary  blob  encoded  with  base64,  denoted   by
+                     b64("...").
+
+              If no output type is specified, the default is private.
+
+       -o output-file
+              Specify the file where puttygen should write its output. If this
+              option is not specified, puttygen will assume you want to  over‐
+              write  the  original file if the input and output file types are
+              the same (changing a comment or passphrase), and will assume you
+              want  to  output  to  stdout if you are asking for a public key,
+              fingerprint, or one of the textual dump types. Otherwise, the -o
+              option is required.
+
+       -l     Synonym for `-O fingerprint'.
+
+       -L     Synonym for `-O public-openssh'.
+
+       -p     Synonym for `-O public'.
+
+       --cert-info
+              Synonym for `-O cert-info'.
+
+       --dump Synonym for `-O text'.
+
+       -E fptype
+              Specify  the  algorithm  to use if generating a fingerprint. The
+              available algorithms are are sha256 (the default) and md5.
+
+              By default, when showing the fingerprint of a  public  key  that
+              includes  a  certificate, puttygen will not include the certifi‐
+              cate, so that the fingerprint shown will be the same as the  un‐
+              derlying  public  key. If you want the fingerprint including the
+              certificate (for example, so  as  to  tell  two  certified  keys
+              apart),  you  can specify sha256-cert or md5-cert as the finger‐
+              print type.
+
+       --new-passphrase file
+              Specify a file name; the first line will be read from this  file
+              (removing  any trailing newline) and used as the new passphrase.
+              If the file is empty then the saved  key  will  be  unencrypted.
+              CAUTION:  If  the  passphrase  is  important, the file should be
+              stored on a temporary filesystem or else securely  erased  after
+              use.
+
+       The following options do not run PuTTYgen as normal, but print informa‐
+       tional messages and then quit:
+
+       -h, --help
+              Display a message summarizing the available options.
+
+       -V, --version
+              Display the version of PuTTYgen.
+
+       --pgpfp
+              Display the fingerprints of the PuTTY PGP Master Keys, to aid in
+              verifying new files released by the PuTTY team.
+
+EXAMPLES
+       To  generate  an  SSH-2  RSA key pair and save it in PuTTY's own format
+       (you will be prompted for the passphrase):
+
+       puttygen -t rsa -C "my home key" -o mykey.ppk
+
+       To generate a larger (4096-bit) key:
+
+       puttygen -t rsa -b 4096 -C "my home key" -o mykey.ppk
+
+       To change the passphrase on a key (you will be prompted for the old and
+       new passphrases):
+
+       puttygen -P mykey.ppk
+
+       To change the comment on a key:
+
+       puttygen -C "new comment" mykey.ppk
+
+       To convert a key into OpenSSH's private key format:
+
+       puttygen mykey.ppk -O private-openssh -o my-openssh-key
+
+       To  convert  a key from another format (puttygen will automatically de‐
+       tect the input key type):
+
+       puttygen my-ssh.com-key -o mykey.ppk
+
+       To display the SHA-256 fingerprint of a key (some key types  require  a
+       passphrase to extract even this much information):
+
+       puttygen -l mykey.ppk
+
+       To  add the OpenSSH-format public half of a key to your authorised keys
+       file:
+
+       puttygen -L mykey.ppk >> $HOME/.ssh/authorized_keys
+
+PuTTY tool suite                  2004‐03‐24                       puttygen(1)

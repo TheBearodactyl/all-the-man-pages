@@ -1,0 +1,159 @@
+gets(n)                                                                                    Tcl Built-In Commands                                                                                   gets(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       gets - Read a line from a channel
+
+SYNOPSIS
+       gets channelId ?varName?
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       This command reads the next line from channelId, returns everything in the line up to (but not including) the end-of-line character(s), and discards the end-of-line character(s).
+
+       ChannelId must be an identifier for an open channel such as the Tcl standard input channel (stdin), the return value from an invocation of open or socket, or the result of a channel creation com‐
+       mand provided by a Tcl extension. The channel must have been opened for input.
+
+       If varName is omitted the line is returned as the result of the command.  If varName is specified then the line is placed in the variable by that name and the return value is a count of the  num‐
+       ber of characters returned.
+
+       If  end of file occurs while scanning for an end of line, the command returns whatever input is available up to the end of file.  If channelId is in non-blocking mode and there is not a full line
+       of input available, the command returns an empty string and does not consume any input.  If varName is specified and an empty string is returned in varName because of end-of-file  or  because  of
+       insufficient  data  in non-blocking mode, then the return count is -1.  Note that if varName is not specified then the end-of-file and no-full-line-available cases can produce the same results as
+       if there were an input line consisting only of the end-of-line character(s).  The eof and fblocked commands can be used to distinguish these three cases.
+
+EXAMPLE
+       This example reads a file one line at a time and prints it out with the current line number attached to the start of each line.
+
+              set chan [open "some.file.txt"]
+              set lineNumber 0
+              while {[gets $chan line] >= 0} {
+                  puts "[incr lineNumber]: $line"
+              }
+              close $chan
+
+SEE ALSO
+       file(n), eof(n), fblocked(n), Tcl_StandardChannels(3)
+
+KEYWORDS
+       blocking, channel, end of file, end of line, line, non-blocking, read
+
+Tcl                                                                                                 7.5                                                                                            gets(n)
+gets(3)                                                                                  Library Functions Manual                                                                                  gets(3)
+
+NAME
+       gets - get a string from standard input (DEPRECATED)
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       [[deprecated]] char *gets(char *s);
+
+DESCRIPTION
+       Never use this function.
+
+       gets() reads a line from stdin into the buffer pointed to by s until either a terminating newline or EOF, which it replaces with a null byte ('\0').  No check for buffer overrun is performed (see
+       BUGS below).
+
+RETURN VALUE
+       gets() returns s on success, and NULL on error or when end of file occurs while no characters have been read.  However, given the lack of buffer overrun checking, there can be no guarantees  that
+       the function will even return.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │gets()                                                                                                                                                                  │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       C89, POSIX.1-2001.
+
+       LSB deprecates gets().  POSIX.1-2008 marks gets() obsolescent.  ISO C11 removes the specification of gets() from the C language, and since glibc 2.16, glibc header files don't expose the function
+       declaration if the _ISOC11_SOURCE feature test macro is defined.
+
+BUGS
+       Never use gets().  Because it is impossible to tell without knowing the data in advance how many characters gets() will read, and because gets() will continue to store characters past the end  of
+       the buffer, it is extremely dangerous to use.  It has been used to break computer security.  Use fgets() instead.
+
+       For more information, see CWE-242 (aka "Use of Inherently Dangerous Function") at http://cwe.mitre.org/data/definitions/242.html
+
+SEE ALSO
+       read(2),  write(2),  ferror(3),  fgetc(3),  fgets(3),  fgetwc(3),  fgetws(3),  fopen(3),  fread(3),  fseek(3),  getline(3),  getwchar(3),  puts(3),  scanf(3),  ungetwc(3), unlocked_stdio(3), fea‐
+       ture_test_macros(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         gets(3)
+GETS(3P)                                                                                 POSIX Programmer's Manual                                                                                GETS(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       gets — get a string from a stdin stream
+
+SYNOPSIS
+       #include <stdio.h>
+
+       char *gets(char *s);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  gets()  function  shall  read bytes from the standard input stream, stdin, into the array pointed to by s, until a <newline> is read or an end-of-file condition is encountered. Any <newline>
+       shall be discarded and a null byte shall be placed immediately after the last byte read into the array.
+
+       The gets() function may mark the last data access timestamp of the file associated with stream for update. The last data access timestamp shall be marked for update by the first successful execu‐
+       tion of fgetc(), fgets(), fread(), fscanf(), getc(), getchar(), getdelim(), getline(), gets(), or scanf() using stream that returns data not supplied by a prior call to ungetc().
+
+RETURN VALUE
+       Upon  successful  completion, gets() shall return s.  If the end-of-file indicator for the stream is set, or if the stream is at end-of-file, the end-of-file indicator for the stream shall be set
+       and gets() shall return a null pointer. If a read error occurs, the error indicator for the stream shall be set, gets() shall return a null pointer, and set errno to indicate the error.
+
+ERRORS
+       Refer to fgetc().
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Reading a line that overflows the array pointed to by s results in undefined behavior. The use of fgets() is recommended.
+
+       Since the user cannot specify the length of the buffer passed to gets(), use of this function is discouraged. The length of the string read is unlimited. It is possible to overflow this buffer in
+       such a way as to cause applications to fail, or possible system security violations.
+
+       Applications should use the fgets() function instead of the obsolescent gets() function.
+
+RATIONALE
+       The standard developers decided to mark the gets() function as obsolescent even though it is in the ISO C standard due to the possibility of buffer overflow.
+
+FUTURE DIRECTIONS
+       The gets() function may be removed in a future version.
+
+SEE ALSO
+       Section 2.5, Standard I/O Streams, feof(), ferror(), fgets()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           GETS(3P)

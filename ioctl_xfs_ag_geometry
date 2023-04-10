@@ -1,0 +1,103 @@
+IOCTL-XFS-AG-GEOMETRY(2)                                                                    System Calls Manual                                                                   IOCTL-XFS-AG-GEOMETRY(2)
+
+NAME
+       ioctl_xfs_ag_geometry - query XFS allocation group geometry information
+
+SYNOPSIS
+       #include <xfs/xfs_fs.h>
+
+       int ioctl(int fd, XFS_IOC_AG_GEOMETRY, struct xfs_ag_geometry *arg);
+
+DESCRIPTION
+       This XFS ioctl retrieves the geometry information for a given allocation group.  The geometry information is conveyed in a structure of the following form:
+
+           struct xfs_ag_geometry {
+                uint32_t  ag_number;
+                uint32_t  ag_length;
+                uint32_t  ag_freeblks;
+                uint32_t  ag_icount;
+                uint32_t  ag_ifree;
+                uint32_t  ag_sick;
+                uint32_t  ag_checked;
+                uint32_t  ag_flags;
+                uint64_t  ag_reserved[12];
+           };
+
+       ag_number
+              The caller must set this field to the index of the allocation group that the caller wishes to learn about.
+
+       ag_length
+              The length of the allocation group is returned in this field, in units of filesystem blocks.
+
+       ag_freeblks
+              The number of free blocks in the allocation group is returned in this field, in units of filesystem blocks.
+
+       ag_icount
+              The number of inode records allocated in this allocation group is returned in this field.
+
+       ag_ifree
+              The number of unused inode records (of the space allocated) in this allocation group is returned in this field.
+
+       ag_flags
+              The caller can set this field to change the operational behavior of the ioctl.  Currently no flags are defined, so this field must be zero.
+
+       ag_reserved
+              All reserved fields will be set to zero on return.
+
+       The fields ag_sick and ag_checked indicate the relative health of various allocation group metadata:
+
+       • If a given sick flag is set in ag_sick, then that piece of metadata has been observed to be damaged.  The same bit will be set in ag_checked.
+
+       • If a given sick flag is set in ag_checked and is not set in ag_sick, then that piece of metadata has been checked and is not faulty.
+
+       • If a given sick flag is not set in ag_checked, then no conclusion can be made.
+
+       The following flags apply to these fields:
+
+           XFS_AG_GEOM_SICK_SB
+                  Allocation group superblock.
+
+           XFS_AG_GEOM_SICK_AGF
+                  Free space header.
+
+           XFS_AG_GEOM_SICK_AGFL
+                  Free space reserve list.
+
+           XFS_AG_GEOM_SICK_AGI
+                  Inode header.
+
+           XFS_AG_GEOM_SICK_BNOBT or XFS_AG_GEOM_SICK_CNTBT
+                  Free space btrees.
+
+           XFS_AG_GEOM_SICK_INOBT or XFS_AG_GEOM_SICK_FINOBT
+                  Inode btrees.
+
+           XFS_AG_GEOM_SICK_RMAPBT
+                  Reverse mapping btree.
+
+           XFS_AG_GEOM_SICK_REFCNTBT
+                  Reference count btree.
+
+RETURN VALUE
+       On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       Error codes can be one of, but are not limited to, the following:
+
+       EFSBADCRC
+              Metadata checksum validation failed while performing the query.
+
+       EFSCORRUPTED
+              Metadata corruption was encountered while performing the query.
+
+       EINVAL The specified allocation group number is not valid for this filesystem.
+
+       EIO    An I/O error was encountered while performing the query.
+
+CONFORMING TO
+       This API is specific to XFS filesystem on the Linux kernel.
+
+SEE ALSO
+       ioctl(2)
+
+XFS                                                                                             2019-08-30                                                                        IOCTL-XFS-AG-GEOMETRY(2)

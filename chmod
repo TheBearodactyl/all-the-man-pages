@@ -1,0 +1,730 @@
+CHMOD(1)                                                                                       User Commands                                                                                      CHMOD(1)
+
+NAME
+       chmod - change file mode bits
+
+SYNOPSIS
+       chmod [OPTION]... MODE[,MODE]... FILE...
+       chmod [OPTION]... OCTAL-MODE FILE...
+       chmod [OPTION]... --reference=RFILE FILE...
+
+DESCRIPTION
+       This  manual  page documents the GNU version of chmod.  chmod changes the file mode bits of each given file according to mode, which can be either a symbolic representation of changes to make, or
+       an octal number representing the bit pattern for the new mode bits.
+
+       The format of a symbolic mode is [ugoa...][[-+=][perms...]...], where perms is either zero or more letters from the set rwxXst, or a single letter from the set ugo.  Multiple symbolic  modes  can
+       be given, separated by commas.
+
+       A combination of the letters ugoa controls which users' access to the file will be changed: the user who owns it (u), other users in the file's group (g), other users not in the file's group (o),
+       or all users (a).  If none of these are given, the effect is as if (a) were given, but bits that are set in the umask are not affected.
+
+       The operator + causes the selected file mode bits to be added to the existing file mode bits of each file; - causes them to be removed; and = causes them to be added and causes  unmentioned  bits
+       to be removed except that a directory's unmentioned set user and group ID bits are not affected.
+
+       The  letters  rwxXst select file mode bits for the affected users: read (r), write (w), execute (or search for directories) (x), execute/search only if the file is a directory or already has exe‐
+       cute permission for some user (X), set user or group ID on execution (s), restricted deletion flag or sticky bit (t).  Instead of one or more of these letters, you can specify exactly one of  the
+       letters  ugo:  the permissions granted to the user who owns the file (u), the permissions granted to other users who are members of the file's group (g), and the permissions granted to users that
+       are in neither of the two preceding categories (o).
+
+       A numeric mode is from one to four octal digits (0-7), derived by adding up the bits with values 4, 2, and 1.  Omitted digits are assumed to be leading zeros.  The first  digit  selects  the  set
+       user  ID (4) and set group ID (2) and restricted deletion or sticky (1) attributes.  The second digit selects permissions for the user who owns the file: read (4), write (2), and execute (1); the
+       third selects permissions for other users in the file's group, with the same values; and the fourth for other users not in the file's group, with the same values.
+
+       chmod never changes the permissions of symbolic links; the chmod system call cannot change their permissions.  This is not a problem since the permissions of symbolic links are never used.   How‐
+       ever,  for  each  symbolic link listed on the command line, chmod changes the permissions of the pointed-to file.  In contrast, chmod ignores symbolic links encountered during recursive directory
+       traversals.
+
+SETUID AND SETGID BITS
+       chmod clears the set-group-ID bit of a regular file if the file's group ID does not match the user's effective group ID or one of the user's supplementary group IDs, unless the user has appropri‐
+       ate  privileges.   Additional restrictions may cause the set-user-ID and set-group-ID bits of MODE or RFILE to be ignored.  This behavior depends on the policy and functionality of the underlying
+       chmod system call.  When in doubt, check the underlying system behavior.
+
+       For directories chmod preserves set-user-ID and set-group-ID bits unless you explicitly specify otherwise.  You can set or clear the bits with symbolic modes like u+s and  g-s.   To  clear  these
+       bits for directories with a numeric mode requires an additional leading zero like 00755, leading minus like -6000, or leading equals like =755.
+
+RESTRICTED DELETION FLAG OR STICKY BIT
+       The restricted deletion flag or sticky bit is a single bit, whose interpretation depends on the file type.  For directories, it prevents unprivileged users from removing or renaming a file in the
+       directory unless they own the file or the directory; this is called the restricted deletion flag for the directory, and is commonly found on world-writable directories  like  /tmp.   For  regular
+       files on some older systems, the bit saves the program's text image on the swap device so it will load more quickly when run; this is called the sticky bit.
+
+OPTIONS
+       Change the mode of each FILE to MODE.  With --reference, change the mode of each FILE to that of RFILE.
+
+       -c, --changes
+              like verbose but report only when a change is made
+
+       -f, --silent, --quiet
+              suppress most error messages
+
+       -v, --verbose
+              output a diagnostic for every file processed
+
+       --no-preserve-root
+              do not treat '/' specially (the default)
+
+       --preserve-root
+              fail to operate recursively on '/'
+
+       --reference=RFILE
+              use RFILE's mode instead of specifying MODE values.  RFILE is always dereferenced if a symbolic link.
+
+       -R, --recursive
+              change files and directories recursively
+
+       --help display this help and exit
+
+       --version
+              output version information and exit
+
+       Each MODE is of the form '[ugoa]*([-+=]([rwxXst]*|[ugo]))+|[-+=][0-7]+'.
+
+AUTHOR
+       Written by David MacKenzie and Jim Meyering.
+
+REPORTING BUGS
+       GNU coreutils online help: <https://www.gnu.org/software/coreutils/>
+       Report any translation bugs to <https://translationproject.org/team/>
+
+COPYRIGHT
+       Copyright © 2023 Free Software Foundation, Inc.  License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+       This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       chmod(2)
+
+       Full documentation <https://www.gnu.org/software/coreutils/chmod>
+       or available locally via: info '(coreutils) chmod invocation'
+
+GNU coreutils 9.2                                                                               April 2023                                                                                        CHMOD(1)
+CHMOD(1P)                                                                                POSIX Programmer's Manual                                                                               CHMOD(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       chmod — change the file modes
+
+SYNOPSIS
+       chmod [-R] mode file...
+
+DESCRIPTION
+       The chmod utility shall change any or all of the file mode bits of the file named by each file operand in the way specified by the mode operand.
+
+       It is implementation-defined whether and how the chmod utility affects any alternate or additional file access control mechanism (see the Base Definitions volume  of  POSIX.1‐2017,  Section  4.5,
+       File Access Permissions) being used for the specified file.
+
+       Only a process whose effective user ID matches the user ID of the file, or a process with appropriate privileges, shall be permitted to change the file mode bits of a file.
+
+       Upon successfully changing the file mode bits of a file, the chmod utility shall mark for update the last file status change timestamp of the file.
+
+OPTIONS
+       The chmod utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following option shall be supported:
+
+       -R        Recursively change file mode bits. For each file operand that names a directory, chmod shall change the file mode bits of the directory and all files in the file hierarchy below it.
+
+OPERANDS
+       The following operands shall be supported:
+
+       mode      Represents the change to be made to the file mode bits of each file named by one of the file operands; see the EXTENDED DESCRIPTION section.
+
+       file      A pathname of a file whose file mode bits shall be modified.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of chmod:
+
+       LANG      Provide  a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       The mode operand shall be either a symbolic_mode expression or a non-negative octal integer. The symbolic_mode form is described by the grammar later in this section.
+
+       Each clause shall specify an operation to be performed on the current file mode bits of each file.  The operations shall be performed on each file in the order in which the clauses are specified.
+
+       The who symbols u, g, and o shall specify the user, group, and other parts of the file mode bits, respectively. A who consisting of the symbol a shall be equivalent to ugo.
+
+       The perm symbols r, w, and x represent the read, write, and execute/search portions of file mode bits, respectively. The perm symbol s shall represent the set-user-ID-on-execution (when who  con‐
+       tains or implies u) and set-group-ID-on-execution (when who contains or implies g) bits.
+
+       The  perm  symbol X shall represent the execute/search portion of the file mode bits if the file is a directory or if the current (unmodified) file mode bits have at least one of the execute bits
+       (S_IXUSR, S_IXGRP, or S_IXOTH) set. It shall be ignored if the file is not a directory and none of the execute bits are set in the current file mode bits.
+
+       The permcopy symbols u, g, and o shall represent the current permissions associated with the user, group, and other parts of the file mode bits, respectively. For the remainder of  this  section,
+       perm refers to the non-terminals perm and permcopy in the grammar.
+
+       If  multiple actionlists are grouped with a single wholist in the grammar, each actionlist shall be applied in the order specified with that wholist.  The op symbols shall represent the operation
+       performed, as follows:
+
+       +     If perm is not specified, the '+' operation shall not change the file mode bits.
+
+             If who is not specified, the file mode bits represented by perm for the owner, group, and other permissions, except for those with corresponding bits in the file mode creation mask  of  the
+             invoking process, shall be set.
+
+             Otherwise, the file mode bits represented by the specified who and perm values shall be set.
+
+       -     If perm is not specified, the '-' operation shall not change the file mode bits.
+
+             If  who  is not specified, the file mode bits represented by perm for the owner, group, and other permissions, except for those with corresponding bits in the file mode creation mask of the
+             invoking process, shall be cleared.
+
+             Otherwise, the file mode bits represented by the specified who and perm values shall be cleared.
+
+       =     Clear the file mode bits specified by the who value, or, if no who value is specified, all of the file mode bits specified in this volume of POSIX.1‐2017.
+
+             If perm is not specified, the '=' operation shall make no further modifications to the file mode bits.
+
+             If who is not specified, the file mode bits represented by perm for the owner, group, and other permissions, except for those with corresponding bits in the file mode creation mask  of  the
+             invoking process, shall be set.
+
+             Otherwise, the file mode bits represented by the specified who and perm values shall be set.
+
+       When using the symbolic mode form on a regular file, it is implementation-defined whether or not:
+
+        *  Requests to set the set-user-ID-on-execution or set-group-ID-on-execution bit when all execute bits are currently clear and none are being set are ignored.
+
+        *  Requests to clear all execute bits also clear the set-user-ID-on-execution and set-group-ID-on-execution bits.
+
+        *  Requests  to  clear the set-user-ID-on-execution or set-group-ID-on-execution bits when all execute bits are currently clear are ignored. However, if the command ls -l file writes an s in the
+           position indicating that the set-user-ID-on-execution or set-group-ID-on-execution is set, the commands chmod u-s file or chmod g-s file, respectively, shall not be ignored.
+
+       When using the symbolic mode form on other file types, it is implementation-defined whether or not requests to set or clear the set-user-ID-on-execution or set-group-ID-on-execution bits are hon‐
+       ored.
+
+       If the who symbol o is used in conjunction with the perm symbol s with no other who symbols being specified, the set-user-ID-on-execution and set-group-ID-on-execution bits shall not be modified.
+       It shall not be an error to specify the who symbol o in conjunction with the perm symbol s.
+
+       The perm symbol t shall specify the S_ISVTX bit. When used with a file of type directory, it can be used with the who symbol a, or with no who symbol. It shall not be an error to  specify  a  who
+       symbol  of  u, g, or o in conjunction with the perm symbol t, but the meaning of these combinations is unspecified. The effect when using the perm symbol t with any file type other than directory
+       is unspecified.
+
+       For an octal integer mode operand, the file mode bits shall be set absolutely.
+
+       For each bit set in the octal number, the corresponding file permission bit shown in the following table shall be set; all other file permission bits shall be cleared. For regular files, for each
+       bit  set in the octal number corresponding to the set-user-ID-on-execution or the set-group-ID-on-execution, bits shown in the following table shall be set; if these bits are not set in the octal
+       number, they are cleared. For other file types, it is implementation-defined whether or not requests to set or clear the set-user-ID-on-execution or set-group-ID-on-execution bits are honored.
+
+                                                                   ┌─────────────────┬──────────────────┬──────────────────┬──────────────────┐
+                                                                   │Octal   Mode Bit │ Octal   Mode Bit │ Octal   Mode Bit │ Octal   Mode Bit │
+                                                                   ├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+                                                                   │4000    S_ISUID  │ 0400    S_IRUSR  │ 0040    S_IRGRP  │ 0004    S_IROTH  │
+                                                                   ├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+                                                                   │2000    S_ISGID  │ 0200    S_IWUSR  │ 0020    S_IWGRP  │ 0002    S_IWOTH  │
+                                                                   ├─────────────────┼──────────────────┼──────────────────┼──────────────────┤
+                                                                   │1000    S_ISVTX  │ 0100    S_IXUSR  │ 0010    S_IXGRP  │ 0001    S_IXOTH  │
+                                                                   └─────────────────┴──────────────────┴──────────────────┴──────────────────┘
+       When bits are set in the octal number other than those listed in the table above, the behavior is unspecified.
+
+   Grammar for chmod
+       The grammar and lexical conventions in this section describe the syntax for the symbolic_mode operand. The general conventions for this style of grammar are described in Section 1.3, Grammar Con‐
+       ventions.  A valid symbolic_mode can be represented as the non-terminal symbol symbolic_mode in the grammar. This formal syntax shall take precedence over the preceding text syntax description.
+
+       The lexical processing is based entirely on single characters.  Implementations need not allow <blank> characters within the single argument being processed.
+
+           %start    symbolic_mode
+           %%
+
+           symbolic_mode    : clause
+                            | symbolic_mode ',' clause
+                            ;
+
+           clause           : actionlist
+                            | wholist actionlist
+                            ;
+
+           wholist          : who
+                            | wholist who
+                            ;
+
+           who              : 'u' | 'g' | 'o' | 'a'
+                            ;
+
+           actionlist       : action
+                            | actionlist action
+                            ;
+
+           action           : op
+                            | op permlist
+                            | op permcopy
+                            ;
+
+           permcopy         : 'u' | 'g' | 'o'
+                            ;
+
+           op               : '+' | '-' | '='
+                            ;
+
+           permlist         : perm
+                            | perm permlist
+                            ;
+
+           perm             : 'r' | 'w' | 'x' | 'X' | 's' | 't'
+                            ;
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    The utility executed successfully and all requested changes were made.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       Some  implementations  of the chmod utility change the mode of a directory before the files in the directory when performing a recursive (-R option) change; others change the directory mode after
+       the files in the directory. If an application tries to remove read or search permission for a file hierarchy, the removal attempt fails if the directory is changed first; on the other hand,  try‐
+       ing to re-enable permissions to a restricted hierarchy fails if directories are changed last. Users should not try to make a hierarchy inaccessible to themselves.
+
+       Some implementations of chmod never used the umask of the process when changing modes; systems conformant with this volume of POSIX.1‐2017 do so when who is not specified. Note the difference be‐
+       tween:
+
+           chmod a-w file
+
+       which removes all write permissions, and:
+
+           chmod -- -w file
+
+       which removes write permissions that would be allowed if file was created with the same umask.
+
+       Conforming applications should never assume that they know how the set-user-ID and set-group-ID bits on directories are interpreted.
+
+EXAMPLES
+                                                                                    ┌──────┬────────────────────────────────┐
+                                                                                    │Mode  │            Results             │
+                                                                                    ├──────┼────────────────────────────────┤
+                                                                                    │a+=   │ Equivalent to a+,a=; clears    │
+                                                                                    │      │ all file mode bits.            │
+                                                                                    │go+-w │ Equivalent to go+,go-w; clears │
+                                                                                    │      │ group and other write bits.    │
+                                                                                    │g=o-w │ Equivalent to g=o,g-w; sets    │
+                                                                                    │      │ group bit to match other bits  │
+                                                                                    │      │ and then clears group write    │
+                                                                                    │      │ bit.                           │
+                                                                                    │g-r+w │ Equivalent to g-r,g+w; clears  │
+                                                                                    │      │ group read bit and sets group  │
+                                                                                    │      │ write bit.                     │
+                                                                                    │uo=g  │ Sets owner bits to match group │
+                                                                                    │      │ bits and sets other bits to    │
+                                                                                    │      │ match group bits.              │
+                                                                                    └──────┴────────────────────────────────┘
+RATIONALE
+       The  functionality of chmod is described substantially through references to concepts defined in the System Interfaces volume of POSIX.1‐2017. In this way, there is less duplication of effort re‐
+       quired for describing the interactions of permissions. However, the behavior of this utility is not described in terms of the chmod() function from the System Interfaces  volume  of  POSIX.1‐2017
+       because that specification requires certain side-effects upon alternate file access control mechanisms that might not be appropriate, depending on the implementation.
+
+       Implementations  that  support mandatory file and record locking as specified by the 1984 /usr/group standard historically used the combination of set-group-ID bit set and group execute bit clear
+       to indicate mandatory locking. This condition is usually set or cleared with the symbolic mode perm symbol l instead of the perm symbols s and x so that the mandatory locking mode is not  changed
+       without  explicit  indication  that  that was what the user intended. Therefore, the details on how the implementation treats these conditions must be defined in the documentation. This volume of
+       POSIX.1‐2017 does not require mandatory locking (nor does the System Interfaces volume of POSIX.1‐2017), but does allow it as an extension. However, this volume of POSIX.1‐2017 does require  that
+       the  ls and chmod utilities work consistently in this area. If ls -l file indicates that the set-group-ID bit is set, chmod g-s file must clear it (assuming appropriate privileges exist to change
+       modes).
+
+       The System V and BSD versions use different exit status codes. Some implementations used the exit status as a count of the number of errors that occurred; this practice is unworkable since it can
+       overflow the range of valid exit status values. This problem is avoided here by specifying only 0 and >0 as exit values.
+
+       The  System Interfaces volume of POSIX.1‐2017 indicates that implementation-defined restrictions may cause the S_ISUID and S_ISGID bits to be ignored. This volume of POSIX.1‐2017 allows the chmod
+       utility to choose to modify these bits before calling chmod() (or some function providing equivalent capabilities) for non-regular files. Among other things, this allows implementations that  use
+       the set-user-ID and set-group-ID bits on directories to enable extended features to handle these extensions in an intelligent manner.
+
+       The  X  perm  symbol was adopted from BSD-based systems because it provides commonly desired functionality when doing recursive (-R option) modifications. Similar functionality is not provided by
+       the find utility. Historical BSD versions of chmod, however, only supported X with op+; it has been extended in this volume of POSIX.1‐2017 because it is also useful with op=.  (It has also  been
+       added for op- even though it duplicates x, in this case, because it is intuitive and easier to explain.)
+
+       The  grammar  was  extended with the permcopy non-terminal to allow historical-practice forms of symbolic modes like o=u -g (that is, set the ``other'' permissions to the permissions of ``owner''
+       minus the permissions of ``group'').
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       ls, umask
+
+       The Base Definitions volume of POSIX.1‐2017, Section 4.5, File Access Permissions, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+       The System Interfaces volume of POSIX.1‐2017, chmod()
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          CHMOD(1P)
+CHMOD(3P)                                                                                POSIX Programmer's Manual                                                                               CHMOD(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       chmod, fchmodat — change mode of a file
+
+SYNOPSIS
+       #include <sys/stat.h>
+
+       int chmod(const char *path, mode_t mode);
+
+       #include <fcntl.h>
+
+       int fchmodat(int fd, const char *path, mode_t mode, int flag);
+
+DESCRIPTION
+       The chmod() function shall change S_ISUID, S_ISGID, S_ISVTX, and the file permission bits of the file named by the pathname pointed to by the path argument to the corresponding bits in  the  mode
+       argument. The application shall ensure that the effective user ID of the process matches the owner of the file or the process has appropriate privileges in order to do this.
+
+       S_ISUID, S_ISGID, S_ISVTX, and the file permission bits are described in <sys/stat.h>.
+
+       If the calling process does not have appropriate privileges, and if the group ID of the file does not match the effective group ID or one of the supplementary group IDs and if the file is a regu‐
+       lar file, bit S_ISGID (set-group-ID on execution) in the file's mode shall be cleared upon successful return from chmod().
+
+       Additional implementation-defined restrictions may cause the S_ISUID and S_ISGID bits in mode to be ignored.
+
+       Upon successful completion, chmod() shall mark for update the last file status change timestamp of the file.
+
+       The fchmodat() function shall be equivalent to the chmod() function except in the case where path specifies a relative path. In this case the file to be changed is determined relative to the  di‐
+       rectory  associated  with the file descriptor fd instead of the current working directory. If the access mode of the open file description associated with the file descriptor is not O_SEARCH, the
+       function shall check whether directory searches are permitted using the current permissions of the directory underlying the file descriptor. If the access mode is O_SEARCH, the function shall not
+       perform the check.
+
+       Values for flag are constructed by a bitwise-inclusive OR of flags from the following list, defined in <fcntl.h>:
+
+       AT_SYMLINK_NOFOLLOW
+             If path names a symbolic link, then the mode of the symbolic link is changed.
+
+       If fchmodat() is passed the special value AT_FDCWD in the fd parameter, the current working directory shall be used. If also flag is zero, the behavior shall be identical to a call to chmod().
+
+RETURN VALUE
+       Upon successful completion, these functions shall return 0.  Otherwise, these functions shall return -1 and set errno to indicate the error. If -1 is returned, no change to the file mode occurs.
+
+ERRORS
+       These functions shall fail if:
+
+       EACCES Search permission is denied on a component of the path prefix.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a component of a pathname is longer than {NAME_MAX}.
+
+       ENOENT A component of path does not name an existing file or path is an empty string.
+
+       ENOTDIR
+              A  component  of the path prefix names an existing file that is neither a directory nor a symbolic link to a directory, or the path argument contains at least one non-<slash> character and
+              ends with one or more trailing <slash> characters and the last pathname component names an existing file that is neither a directory nor a symbolic link to a directory.
+
+       EPERM  The effective user ID does not match the owner of the file and the process does not have appropriate privileges.
+
+       EROFS  The named file resides on a read-only file system.
+
+       The fchmodat() function shall fail if:
+
+       EACCES The access mode of the open file description associated with fd is not O_SEARCH and the permissions of the directory underlying fd do not permit directory searches.
+
+       EBADF  The path argument does not specify an absolute path and the fd argument is neither AT_FDCWD nor a valid file descriptor open for reading or searching.
+
+       ENOTDIR
+              The path argument is not an absolute path and fd is a file descriptor associated with a non-directory file.
+
+       These functions may fail if:
+
+       EINTR  A signal was caught during execution of the function.
+
+       EINVAL The value of the mode argument is invalid.
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were encountered during resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolution of a symbolic link produced an intermediate result with a length that exceeds {PATH_MAX}.
+
+       The fchmodat() function may fail if:
+
+       EINVAL The value of the flag argument is invalid.
+
+       EOPNOTSUPP
+              The AT_SYMLINK_NOFOLLOW bit is set in the flag argument, path names a symbolic link, and the system does not support changing the mode of a symbolic link.
+
+       The following sections are informative.
+
+EXAMPLES
+   Setting Read Permissions for User, Group, and Others
+       The following example sets read permissions for the owner, group, and others.
+
+           #include <sys/stat.h>
+
+           const char *path;
+           ...
+           chmod(path, S_IRUSR|S_IRGRP|S_IROTH);
+
+   Setting Read, Write, and Execute Permissions for the Owner Only
+       The following example sets read, write, and execute permissions for the owner, and no permissions for group and others.
+
+           #include <sys/stat.h>
+
+           const char *path;
+           ...
+           chmod(path, S_IRWXU);
+
+   Setting Different Permissions for Owner, Group, and Other
+       The following example sets owner permissions for CHANGEFILE to read, write, and execute, group permissions to read and execute, and other permissions to read.
+
+           #include <sys/stat.h>
+
+           #define CHANGEFILE "/etc/myfile"
+           ...
+           chmod(CHANGEFILE, S_IRWXU|S_IRGRP|S_IXGRP|S_IROTH);
+
+   Setting and Checking File Permissions
+       The following example sets the file permission bits for a file named /home/cnd/mod1, then calls the stat() function to verify the permissions.
+
+           #include <sys/types.h>
+           #include <sys/stat.h>
+
+           int status;
+           struct stat buffer
+           ...
+           chmod("/home/cnd/mod1", S_IRWXU|S_IRWXG|S_IROTH|S_IWOTH);
+           status = stat("/home/cnd/mod1", &buffer);
+
+APPLICATION USAGE
+       In order to ensure that the S_ISUID and S_ISGID bits are set, an application requiring this should use stat() after a successful chmod() to verify this.
+
+       Any file descriptors currently open by any process on the file could possibly become invalid if the mode of the file is changed to a value which would deny access to that process.  One  situation
+       where this could occur is on a stateless file system. This behavior will not occur in a conforming environment.
+
+RATIONALE
+       This  volume  of  POSIX.1‐2017  specifies that the S_ISGID bit is cleared by chmod() on a regular file under certain conditions. This is specified on the assumption that regular files may be exe‐
+       cuted, and the system should prevent users from making executable setgid() files perform with privileges that the caller does not have. On implementations that support  execution  of  other  file
+       types, the S_ISGID bit should be cleared for those file types under the same circumstances.
+
+       Implementations  that use the S_ISUID bit to indicate some other function (for example, mandatory record locking) on non-executable files need not clear this bit on writing. They should clear the
+       bit for executable files and any other cases where the bit grants special powers to processes that change the file contents. Similar comments apply to the S_ISGID bit.
+
+       The purpose of the fchmodat() function is to enable changing the mode of files in directories other than the current working directory without exposure to race conditions.  Any part of  the  path
+       of  a  file could be changed in parallel to a call to chmod(), resulting in unspecified behavior. By opening a file descriptor for the target directory and using the fchmodat() function it can be
+       guaranteed that the changed file is located relative to the desired directory. Some implementations might allow changing the mode of symbolic links. This is not supported by the interfaces in the
+       POSIX specification. Systems with such support provide an interface named lchmod().  To support such implementations fchmodat() has a flag parameter.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       access(), chown(), exec, fstatat(), fstatvfs(), mkdir(), mkfifo(), mknod(), open()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <sys_stat.h>, <sys_types.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          CHMOD(3P)
+chmod(2)                                                                                    System Calls Manual                                                                                   chmod(2)
+
+NAME
+       chmod, fchmod, fchmodat - change permissions of a file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/stat.h>
+
+       int chmod(const char *pathname, mode_t mode);
+       int fchmod(int fd, mode_t mode);
+
+       #include <fcntl.h>           /* Definition of AT_* constants */
+       #include <sys/stat.h>
+
+       int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       fchmod():
+           Since glibc 2.24:
+               _POSIX_C_SOURCE >= 199309L
+           glibc 2.19 to glibc 2.23
+               _POSIX_C_SOURCE
+           glibc 2.16 to glibc 2.19:
+               _BSD_SOURCE || _POSIX_C_SOURCE
+           glibc 2.12 to glibc 2.16:
+               _BSD_SOURCE || _XOPEN_SOURCE >= 500
+                   || _POSIX_C_SOURCE >= 200809L
+           glibc 2.11 and earlier:
+               _BSD_SOURCE || _XOPEN_SOURCE >= 500
+
+       fchmodat():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _ATFILE_SOURCE
+
+DESCRIPTION
+       The  chmod()  and  fchmod()  system calls change a file's mode bits.  (The file mode consists of the file permission bits plus the set-user-ID, set-group-ID, and sticky bits.)  These system calls
+       differ only in how the file is specified:
+
+       •  chmod() changes the mode of the file specified whose pathname is given in pathname, which is dereferenced if it is a symbolic link.
+
+       •  fchmod() changes the mode of the file referred to by the open file descriptor fd.
+
+       The new file mode is specified in mode, which is a bit mask created by ORing together zero or more of the following:
+
+       S_ISUID  (04000)  set-user-ID (set process effective user ID on execve(2))
+
+       S_ISGID  (02000)  set-group-ID (set process effective group ID on execve(2); mandatory locking, as described in fcntl(2); take a new file's group from parent directory, as described  in  chown(2)
+                         and mkdir(2))
+
+       S_ISVTX  (01000)  sticky bit (restricted deletion flag, as described in unlink(2))
+
+       S_IRUSR  (00400)  read by owner
+
+       S_IWUSR  (00200)  write by owner
+
+       S_IXUSR  (00100)  execute/search by owner ("search" applies for directories, and means that entries within the directory can be accessed)
+
+       S_IRGRP  (00040)  read by group
+
+       S_IWGRP  (00020)  write by group
+
+       S_IXGRP  (00010)  execute/search by group
+
+       S_IROTH  (00004)  read by others
+
+       S_IWOTH  (00002)  write by others
+
+       S_IXOTH  (00001)  execute/search by others
+
+       The effective UID of the calling process must match the owner of the file, or the process must be privileged (Linux: it must have the CAP_FOWNER capability).
+
+       If  the calling process is not privileged (Linux: does not have the CAP_FSETID capability), and the group of the file does not match the effective group ID of the process or one of its supplemen‐
+       tary group IDs, the S_ISGID bit will be turned off, but this will not cause an error to be returned.
+
+       As a security measure, depending on the filesystem, the set-user-ID and set-group-ID execution bits may be turned off if a file is written.  (On Linux, this occurs if the writing process does not
+       have  the CAP_FSETID capability.)  On some filesystems, only the superuser can set the sticky bit, which may have a special meaning.  For the sticky bit, and for set-user-ID and set-group-ID bits
+       on directories, see inode(7).
+
+       On NFS filesystems, restricting the permissions will immediately influence already open files, because the access control is done on the server, but open  files  are  maintained  by  the  client.
+       Widening the permissions may be delayed for other clients if attribute caching is enabled on them.
+
+   fchmodat()
+       The fchmodat() system call operates in exactly the same way as chmod(), except for the differences described here.
+
+       If  the pathname given in pathname is relative, then it is interpreted relative to the directory referred to by the file descriptor dirfd (rather than relative to the current working directory of
+       the calling process, as is done by chmod() for a relative pathname).
+
+       If pathname is relative and dirfd is the special value AT_FDCWD, then pathname is interpreted relative to the current working directory of the calling process (like chmod()).
+
+       If pathname is absolute, then dirfd is ignored.
+
+       flags can either be 0, or include the following flag:
+
+       AT_SYMLINK_NOFOLLOW
+              If pathname is a symbolic link, do not dereference it: instead operate on the link itself.  This flag is not currently implemented.
+
+       See openat(2) for an explanation of the need for fchmodat().
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       Depending on the filesystem, errors other than those listed below can be returned.
+
+       The more general errors for chmod() are listed below:
+
+       EACCES Search permission is denied on a component of the path prefix.  (See also path_resolution(7).)
+
+       EBADF  (fchmod()) The file descriptor fd is not valid.
+
+       EBADF  (fchmodat()) pathname is relative but dirfd is neither AT_FDCWD nor a valid file descriptor.
+
+       EFAULT pathname points outside your accessible address space.
+
+       EINVAL (fchmodat()) Invalid flag specified in flags.
+
+       EIO    An I/O error occurred.
+
+       ELOOP  Too many symbolic links were encountered in resolving pathname.
+
+       ENAMETOOLONG
+              pathname is too long.
+
+       ENOENT The file does not exist.
+
+       ENOMEM Insufficient kernel memory was available.
+
+       ENOTDIR
+              A component of the path prefix is not a directory.
+
+       ENOTDIR
+              (fchmodat()) pathname is relative and dirfd is a file descriptor referring to a file other than a directory.
+
+       ENOTSUP
+              (fchmodat()) flags specified AT_SYMLINK_NOFOLLOW, which is not supported.
+
+       EPERM  The effective UID does not match the owner of the file, and the process is not privileged (Linux: it does not have the CAP_FOWNER capability).
+
+       EPERM  The file is marked immutable or append-only.  (See ioctl_iflags(2).)
+
+       EROFS  The named file resides on a read-only filesystem.
+
+VERSIONS
+   C library/kernel differences
+       The GNU C library fchmodat() wrapper function implements the POSIX-specified interface described in this page.  This interface differs from the underlying Linux system call, which does not have a
+       flags argument.
+
+   glibc notes
+       On older kernels where fchmodat() is unavailable, the glibc wrapper function falls back to the use of chmod().  When pathname is a relative pathname, glibc constructs a pathname based on the sym‐
+       bolic link in /proc/self/fd that corresponds to the dirfd argument.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       chmod()
+       fchmod()
+              4.4BSD, SVr4, POSIX.1-2001.
+
+       fchmodat()
+              POSIX.1-2008.  Linux 2.6.16, glibc 2.4.
+
+SEE ALSO
+       chmod(1), chown(2), execve(2), open(2), stat(2), inode(7), path_resolution(7), symlink(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        chmod(2)

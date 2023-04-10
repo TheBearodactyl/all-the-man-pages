@@ -1,0 +1,104 @@
+hwlocality_memattrs_manage(3)                                                            Hardware Locality (hwloc)                                                           hwlocality_memattrs_manage(3)
+
+NAME
+       hwlocality_memattrs_manage - Managing memory attributes
+
+SYNOPSIS
+   Enumerations
+       enum hwloc_memattr_flag_e { HWLOC_MEMATTR_FLAG_HIGHER_FIRST = (1UL<<0), HWLOC_MEMATTR_FLAG_LOWER_FIRST = (1UL<<1), HWLOC_MEMATTR_FLAG_NEED_INITIATOR = (1UL<<2) }
+
+   Functions
+       int hwloc_memattr_get_name (hwloc_topology_t topology, hwloc_memattr_id_t attribute, const char **name)
+       int hwloc_memattr_get_flags (hwloc_topology_t topology, hwloc_memattr_id_t attribute, unsigned long *flags)
+       int hwloc_memattr_register (hwloc_topology_t topology, const char *name, unsigned long flags, hwloc_memattr_id_t *id)
+       int hwloc_memattr_set_value (hwloc_topology_t topology, hwloc_memattr_id_t attribute, hwloc_obj_t target_node, struct hwloc_location *initiator, unsigned long flags, hwloc_uint64_t value)
+       int hwloc_memattr_get_targets (hwloc_topology_t topology, hwloc_memattr_id_t attribute, struct hwloc_location *initiator, unsigned long flags, unsigned *nr, hwloc_obj_t *targets, hwloc_uint64_t
+           *values)
+       int hwloc_memattr_get_initiators (hwloc_topology_t topology, hwloc_memattr_id_t attribute, hwloc_obj_t target_node, unsigned long flags, unsigned *nr, struct hwloc_location *initiators,
+           hwloc_uint64_t *values)
+
+Detailed Description
+Enumeration Type Documentation
+   enum hwloc_memattr_flag_e
+       Memory attribute flags. Given to hwloc_memattr_register() and returned by hwloc_memattr_get_flags().
+
+       Enumerator
+
+       HWLOC_MEMATTR_FLAG_HIGHER_FIRST
+              The best nodes for this memory attribute are those with the higher values. For instance Bandwidth.
+
+       HWLOC_MEMATTR_FLAG_LOWER_FIRST
+              The best nodes for this memory attribute are those with the lower values. For instance Latency.
+
+       HWLOC_MEMATTR_FLAG_NEED_INITIATOR
+              The value returned for this memory attribute depends on the given initiator. For instance Bandwidth and Latency, but not Capacity.
+
+Function Documentation
+   int hwloc_memattr_get_flags (hwloc_topology_t topology, hwloc_memattr_id_t attribute, unsigned long * flags)
+       Return the flags of the given attribute. Flags are a OR'ed set of hwloc_memattr_flag_e.
+
+   int hwloc_memattr_get_initiators (hwloc_topology_t topology, hwloc_memattr_id_t attribute, hwloc_obj_t target_node, unsigned long flags, unsigned * nr, struct hwloc_location * initiators,
+       hwloc_uint64_t * values)
+       Return the initiators that have values for a given attribute for a specific target NUMA node. Return initiators for the given attribute and target node in the initiators array. If values is not
+       NULL, the corresponding attribute values are stored in the array it points to.
+
+       On input, nr points to the number of initiators that may be stored in the array initiators (and values). On output, nr points to the number of initiators (and values) that were actually found,
+       even if some of them couldn't be stored in the array. Initiators that couldn't be stored are ignored, but the function still returns success (0). The caller may find out by comparing the value
+       pointed by nr before and after the function call.
+
+       The returned initiators should not be modified or freed, they belong to the topology.
+
+       flags must be 0 for now.
+
+       If the attribute does not relate to a specific initiator (it does not have the flag HWLOC_MEMATTR_FLAG_NEED_INITIATOR), no initiator is returned.
+
+       Note
+           This function is meant for tools and debugging (listing internal information) rather than for application queries. Applications should rather select useful NUMA nodes with
+           hwloc_get_local_numanode_objs() and then look at their attribute values for some relevant initiators.
+
+   int hwloc_memattr_get_name (hwloc_topology_t topology, hwloc_memattr_id_t attribute, const char ** name)
+       Return the name of a memory attribute.
+
+   int hwloc_memattr_get_targets (hwloc_topology_t topology, hwloc_memattr_id_t attribute, struct hwloc_location * initiator, unsigned long flags, unsigned * nr, hwloc_obj_t * targets, hwloc_uint64_t *
+       values)
+       Return the target NUMA nodes that have some values for a given attribute. Return targets for the given attribute in the targets array (for the given initiator if any). If values is not NULL, the
+       corresponding attribute values are stored in the array it points to.
+
+       On input, nr points to the number of targets that may be stored in the array targets (and values). On output, nr points to the number of targets (and values) that were actually found, even if
+       some of them couldn't be stored in the array. Targets that couldn't be stored are ignored, but the function still returns success (0). The caller may find out by comparing the value pointed by nr
+       before and after the function call.
+
+       The returned targets should not be modified or freed, they belong to the topology.
+
+       Argument initiator is ignored if the attribute does not relate to a specific initiator (it does not have the flag HWLOC_MEMATTR_FLAG_NEED_INITIATOR). Otherwise initiator may be non NULL to report
+       only targets that have a value for that initiator.
+
+       flags must be 0 for now.
+
+       Note
+           This function is meant for tools and debugging (listing internal information) rather than for application queries. Applications should rather select useful NUMA nodes with
+           hwloc_get_local_numanode_objs() and then look at their attribute values.
+
+           The initiator initiator should be of type HWLOC_LOCATION_TYPE_CPUSET when referring to accesses performed by CPU cores. HWLOC_LOCATION_TYPE_OBJECT is currently unused internally by hwloc, but
+           users may for instance use it to provide custom information about host memory accesses performed by GPUs.
+
+   int hwloc_memattr_register (hwloc_topology_t topology, const char * name, unsigned long flags, hwloc_memattr_id_t * id)
+       Register a new memory attribute. Add a specific memory attribute that is not defined in hwloc_memattr_id_e. Flags are a OR'ed set of hwloc_memattr_flag_e. It must contain at least one of
+       HWLOC_MEMATTR_FLAG_HIGHER_FIRST or HWLOC_MEMATTR_FLAG_LOWER_FIRST.
+
+   int hwloc_memattr_set_value (hwloc_topology_t topology, hwloc_memattr_id_t attribute, hwloc_obj_t target_node, struct hwloc_location * initiator, unsigned long flags, hwloc_uint64_t value)
+       Set an attribute value for a specific target NUMA node. If the attribute does not relate to a specific initiator (it does not have the flag HWLOC_MEMATTR_FLAG_NEED_INITIATOR), location initiator
+       is ignored and may be NULL.
+
+       The initiator will be copied into the topology, the caller should free anything allocated to store the initiator, for instance the cpuset.
+
+       flags must be 0 for now.
+
+       Note
+           The initiator initiator should be of type HWLOC_LOCATION_TYPE_CPUSET when referring to accesses performed by CPU cores. HWLOC_LOCATION_TYPE_OBJECT is currently unused internally by hwloc, but
+           users may for instance use it to provide custom information about host memory accesses performed by GPUs.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                hwlocality_memattrs_manage(3)

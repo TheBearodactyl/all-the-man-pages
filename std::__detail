@@ -1,0 +1,488 @@
+std::__detail(3)           Library Functions Manual           std::__detail(3)
+
+NAME
+       std::__detail - Implementation details not part of the namespace std
+       interface.
+
+SYNOPSIS
+   Classes
+       struct _BracketMatcher
+           Matches a character range (bracket expression)
+       class _Compiler
+           Builds an NFA from an input iterator range.
+       class _Executor
+           Takes a regex and an input string and does the matching.
+       struct _List_node_base
+           Common part of a node in the list.
+       struct _List_node_header
+           The list node header.
+       struct _Quoted_string
+           Struct for delimited strings.
+       class _Scanner
+           Scans an input range for regex tokens.
+       class _StateSeq
+           Describes a sequence of one or more _State, its current start and
+           end(s). This structure contains fragments of an NFA during
+           construction.
+
+   Typedefs
+       using __bare_timed_wait = __timed_waiter< std::false_type >
+       using __bare_wait = __waiter< std::false_type >
+       template<typename _Cat , typename _Limit , typename _Otherwise  = _Cat>
+           using __clamp_iter_cat = __conditional_t< derived_from< _Cat,
+           _Limit >, _Limit, _Otherwise >
+       template<typename _Tp , typename _Up > using __cmp3way_res_t =
+           decltype(std::declval< _Tp >()<=> std::declval< _Up >())
+       template<typename _Tp > using __cref = const remove_reference_t< _Tp >
+           &
+       using __enters_timed_wait = __timed_waiter< std::true_type >
+       using __enters_wait = __waiter< std::true_type >
+       template<typename _Tp > using __integer_from_chars_result_type =
+           enable_if_t< __or_< __is_signed_integer< _Tp >,
+           __is_unsigned_integer< _Tp >, is_same< char, remove_cv_t< _Tp > >
+           >::value, from_chars_result >
+       template<typename _Tp > using __integer_to_chars_result_type =
+           enable_if_t< __or_< __is_signed_integer< _Tp >,
+           __is_unsigned_integer< _Tp >, is_same< char, remove_cv_t< _Tp > >
+           >::value, to_chars_result >
+       template<typename _Iter > using __iter_concept = typename
+           __iter_concept_impl< _Iter >::type
+       template<typename _Tp > using __iter_diff_t = typename __iter_traits<
+           _Tp, incrementable_traits< _Tp > >::difference_type
+       template<typename _Iter , typename _Tp  = _Iter> using __iter_traits =
+           typename __iter_traits_impl< _Iter, _Tp >::type
+       template<typename _Tp > using __iter_value_t = typename __iter_traits<
+           _Tp, indirectly_readable_traits< _Tp > >::value_type
+       using __platform_wait_t = uint64_t
+       template<typename _Tp > using __range_iter_t =
+           decltype(ranges::__cust_access::__begin(std::declval< _Tp & >()))
+       template<typename _Tp , typename _Up  = _Tp> using __synth3way_t =
+           decltype(__detail::__synth3way(std::declval< _Tp & >(),
+           std::declval< _Up & >()))
+       template<typename _Tp > using __unsigned_least_t = typename
+           __to_chars_unsigned_type< _Tp >::type
+       using __wait_clock_t = chrono::steady_clock
+       template<typename _Tp > using __with_ref = _Tp &
+       template<typename _CharT > using _Matcher = std::function<
+           bool(_CharT)>
+       typedef long _StateIdT
+
+   Enumerations
+       enum _Opcode : int { _S_opcode_unknown, _S_opcode_alternative,
+           _S_opcode_repeat, _S_opcode_backref,
+           _S_opcode_line_begin_assertion, _S_opcode_line_end_assertion,
+           _S_opcode_word_boundary, _S_opcode_subexpr_lookahead,
+           _S_opcode_subexpr_begin, _S_opcode_subexpr_end, _S_opcode_dummy,
+           _S_opcode_match, _S_opcode_accept }
+           Operation codes that define the type of transitions within the base
+           NFA that represents the regular expression.
+       enum class _RegexExecutorPolicy : int { _S_auto, _S_alternate }
+
+   Functions
+       template<typename _Res , typename _Tp > constexpr _Res __abs_r (_Tp
+           __val)
+       template<typename > void __abs_r (bool)=delete
+       template<typename _Tp > bool __atomic_compare (const _Tp &__a, const
+           _Tp &__b)
+       template<typename _Pred , typename _Spin  = __default_spin_policy> bool
+           __atomic_spin (_Pred &__pred, _Spin __spin=_Spin{ }) noexcept
+       template<typename... _Ts> constexpr auto __common_cmp_cat ()
+       template<typename _Clock , typename _Dur > bool __cond_wait_until
+           (__condvar &__cv, mutex &__mx, const chrono::time_point< _Clock,
+           _Dur > &__atime)
+       template<typename _Clock , typename _Dur > bool __cond_wait_until_impl
+           (__condvar &__cv, mutex &__mx, const chrono::time_point< _Clock,
+           _Dur > &__atime)
+       template<typename _Container , typename _UnsafeContainer , typename
+           _Predicate > _Container::size_type __erase_nodes_if (_Container
+           &__cont, const _UnsafeContainer &__ucont, _Predicate __pred)
+       template<typename _ValT , typename _CharT , typename _Traits >
+           basic_istream< _CharT, _Traits > & __extract_params (basic_istream<
+           _CharT, _Traits > &__is, vector< _ValT > &__vals, size_t __n)
+       template<bool _DecOnly, typename _Tp > bool __from_chars_alnum (const
+           char *&__first, const char *__last, _Tp &__val, int __base)
+           std::from_chars implementation for integers in any base. If
+           _DecOnly is true, then we may assume __base is at most 10.
+       template<bool _DecOnly = false> unsigned char __from_chars_alnum_to_val
+           (unsigned char __c)
+       constexpr auto __from_chars_alnum_to_val_table ()
+       template<bool _DecOnly, typename _Tp > bool __from_chars_pow2_base
+           (const char *&__first, const char *__last, _Tp &__val, int __base)
+           std::from_chars implementation for integers in a power-of-two base.
+           If _DecOnly is true, then we may assume __base is at most 8.
+       template<typename _Tp > constexpr _Tp __gcd (_Tp __m, _Tp __n)
+       template<typename _Tp > constexpr bool __p1_representable_as_double
+           (_Tp __x) noexcept
+       template<typename _Tp > bool __raise_and_add (_Tp &__val, int __base,
+           unsigned char __c)
+       template<typename _BiIter , typename _Alloc , typename _CharT ,
+           typename _TraitsT > bool __regex_algo_impl (_BiIter __s, _BiIter
+           __e, match_results< _BiIter, _Alloc > &__m, const basic_regex<
+           _CharT, _TraitsT > &__re, regex_constants::match_flag_type __flags,
+           _RegexExecutorPolicy __policy, bool __match_mode)
+       template<typename _Tp > constexpr bool __representable_as_double (_Tp
+           __x) noexcept
+       template<typename _Tp > void __return_temporary_buffer (_Tp *__p,
+           size_t __len)
+       void __thread_relax () noexcept
+       void __thread_yield () noexcept
+       template<typename _Tp > to_chars_result __to_chars (char *__first, char
+           *__last, _Tp __val, int __base) noexcept
+       template<typename _Tp > __integer_to_chars_result_type< _Tp >
+           __to_chars_10 (char *__first, char *__last, _Tp __val) noexcept
+       template<typename _Tp > void __to_chars_10_impl (char *__first,
+           unsigned __len, _Tp __val) noexcept
+       template<typename _Tp > __integer_to_chars_result_type< _Tp >
+           __to_chars_16 (char *__first, char *__last, _Tp __val) noexcept
+       template<typename _Tp > __integer_to_chars_result_type< _Tp >
+           __to_chars_2 (char *__first, char *__last, _Tp __val) noexcept
+       template<typename _Tp > __integer_to_chars_result_type< _Tp >
+           __to_chars_8 (char *__first, char *__last, _Tp __val) noexcept
+       template<typename _Tp > constexpr unsigned __to_chars_len (_Tp __value,
+           int __base) noexcept
+       template<typename _Tp > constexpr unsigned __to_chars_len_2 (_Tp
+           __value) noexcept
+       template<typename _Dur > __wait_clock_t::time_point __to_wait_clock
+           (const chrono::time_point< __wait_clock_t, _Dur > &__atime)
+           noexcept
+       template<typename _Clock , typename _Dur > __wait_clock_t::time_point
+           __to_wait_clock (const chrono::time_point< _Clock, _Dur > &__atime)
+           noexcept
+       template<typename _Tp > constexpr bool _Power_of_2 (_Tp __x)
+       template<typename _CharT , typename _Traits , typename _String >
+           std::basic_ostream< _CharT, _Traits > & operator<<
+           (std::basic_ostream< _CharT, _Traits > &__os, const _Quoted_string<
+           _String, _CharT > &__str)
+           Inserter for quoted strings.
+       template<typename _CharT , typename _Traits > std::basic_ostream<
+           _CharT, _Traits > & operator<< (std::basic_ostream< _CharT, _Traits
+           > &__os, const _Quoted_string< const _CharT *, _CharT > &__str)
+           Inserter for quoted strings.
+       template<typename _CharT , typename _Traits , typename _Alloc >
+           std::basic_istream< _CharT, _Traits > & operator>>
+           (std::basic_istream< _CharT, _Traits > &__is, const _Quoted_string<
+           basic_string< _CharT, _Traits, _Alloc > &, _CharT > &__str)
+           Extractor for delimited strings. The left and right delimiters can
+           be different.
+
+   Variables
+       constexpr auto __atomic_spin_count
+       constexpr auto __atomic_spin_count_relax
+       template<typename _Tp > constexpr unsigned __cmp_cat_id
+       template<> constexpr unsigned __cmp_cat_id< partial_ordering >
+       template<> constexpr unsigned __cmp_cat_id< strong_ordering >
+       template<> constexpr unsigned __cmp_cat_id< weak_ordering >
+       template<typename _Tp > constexpr bool __is_span
+       template<typename _Tp , size_t _Num> constexpr bool __is_span< span<
+           _Tp, _Num > >
+       template<typename _Tp > constexpr bool __is_std_array
+       static constexpr size_t __platform_wait_alignment
+       constexpr struct std::__detail::_Synth3way __synth3way
+       static const _StateIdT _S_invalid_state_id
+
+Detailed Description
+       Implementation details not part of the namespace std interface.
+
+Typedef Documentation
+   using std::__detail::__bare_timed_wait = typedef
+       __timed_waiter<std::false_type>
+       Definition at line 380 of file atomic_timed_wait.h.
+
+   using std::__detail::__bare_wait = typedef __waiter<std::false_type>
+       Definition at line 412 of file atomic_wait.h.
+
+   template<typename _Cat , typename _Limit , typename _Otherwise  = _Cat>
+       using std::__detail::__clamp_iter_cat = typedef
+       __conditional_t<derived_from<_Cat, _Limit>, _Limit, _Otherwise>
+       Definition at line 103 of file bits/stl_iterator.h.
+
+   template<typename _Tp , typename _Up > using std::__detail::__cmp3way_res_t
+       = typedef decltype(std::declval<_Tp>() <=> std::declval<_Up>())
+       Definition at line 493 of file compare.
+
+   template<typename _Tp > using std::__detail::__cref = typedef const
+       remove_reference_t<_Tp>&
+       Definition at line 114 of file concepts.
+
+   using std::__detail::__enters_timed_wait = typedef
+       __timed_waiter<std::true_type>
+       Definition at line 379 of file atomic_timed_wait.h.
+
+   using std::__detail::__enters_wait = typedef __waiter<std::true_type>
+       Definition at line 411 of file atomic_wait.h.
+
+   template<typename _Tp > using
+       std::__detail::__integer_from_chars_result_type = typedef
+       enable_if_t<__or_<__is_signed_integer<_Tp>, __is_unsigned_integer<_Tp>,
+       is_same<char, remove_cv_t<_Tp> >>::value, from_chars_result>
+       Definition at line 539 of file charconv.
+
+   template<typename _Tp > using std::__detail::__integer_to_chars_result_type
+       = typedef enable_if_t<__or_<__is_signed_integer<_Tp>,
+       __is_unsigned_integer<_Tp>, is_same<char, remove_cv_t<_Tp> >>::value,
+       to_chars_result>
+       Definition at line 82 of file charconv.
+
+   template<typename _Iter > using std::__detail::__iter_concept = typedef
+       typename __iter_concept_impl<_Iter>::type
+       Definition at line 529 of file iterator_concepts.h.
+
+   template<typename _Tp > using std::__detail::__iter_diff_t = typedef
+       typename __iter_traits<_Tp, incrementable_traits<_Tp>
+       >::difference_type
+       Definition at line 226 of file iterator_concepts.h.
+
+   template<typename _Iter , typename _Tp  = _Iter> using
+       std::__detail::__iter_traits = typedef typename
+       __iter_traits_impl<_Iter, _Tp>::type
+       Definition at line 223 of file iterator_concepts.h.
+
+   template<typename _Tp > using std::__detail::__iter_value_t = typedef
+       typename __iter_traits<_Tp, indirectly_readable_traits<_Tp>
+       >::value_type
+       Definition at line 297 of file iterator_concepts.h.
+
+   using std::__detail::__platform_wait_t = typedef uint64_t
+       Definition at line 67 of file atomic_wait.h.
+
+   template<typename _Tp > using std::__detail::__range_iter_t = typedef
+       decltype(ranges::__cust_access::__begin(std::declval<_Tp&>()))
+       Definition at line 997 of file iterator_concepts.h.
+
+   template<typename _Tp , typename _Up  = _Tp> using
+       std::__detail::__synth3way_t = typedef
+       decltype(__detail::__synth3way(std::declval<_Tp&>(),
+       std::declval<_Up&>()))
+       Definition at line 1235 of file compare.
+
+   template<typename _Tp > using std::__detail::__unsigned_least_t = typedef
+       typename __to_chars_unsigned_type<_Tp>::type
+       Definition at line 105 of file charconv.
+
+   using std::__detail::__wait_clock_t = typedef chrono::steady_clock
+       Definition at line 52 of file atomic_timed_wait.h.
+
+   template<typename _Tp > using std::__detail::__with_ref = typedef _Tp&
+       Definition at line 83 of file iterator_concepts.h.
+
+Enumeration Type Documentation
+   enum class std::__detail::_RegexExecutorPolicy : int [strong]
+       Definition at line 49 of file regex.h.
+
+Function Documentation
+   template<typename _Res , typename _Tp > constexpr _Res
+       std::__detail::__abs_r (_Tp __val) [constexpr]
+       Definition at line 101 of file numeric.
+
+   template<typename _Tp > bool std::__detail::__atomic_compare (const _Tp &
+       __a, const _Tp & __b)
+       Definition at line 182 of file atomic_wait.h.
+
+   template<typename _Pred , typename _Spin  = __default_spin_policy> bool
+       std::__detail::__atomic_spin (_Pred & __pred, _Spin __spin = _Spin{ })
+       [noexcept]
+       Definition at line 158 of file atomic_wait.h.
+
+   template<typename... _Ts> constexpr auto std::__detail::__common_cmp_cat ()
+       [constexpr]
+       Definition at line 400 of file compare.
+
+   template<typename _Clock , typename _Dur > bool
+       std::__detail::__cond_wait_until (__condvar & __cv, mutex & __mx, const
+       chrono::time_point< _Clock, _Dur > & __atime)
+       Definition at line 172 of file atomic_timed_wait.h.
+
+   template<typename _Clock , typename _Dur > bool
+       std::__detail::__cond_wait_until_impl (__condvar & __cv, mutex & __mx,
+       const chrono::time_point< _Clock, _Dur > & __atime)
+       Definition at line 145 of file atomic_timed_wait.h.
+
+   template<typename _Container , typename _UnsafeContainer , typename
+       _Predicate > _Container::size_type std::__detail::__erase_nodes_if
+       (_Container & __cont, const _UnsafeContainer & __ucont, _Predicate
+       __pred)
+       Definition at line 52 of file erase_if.h.
+
+   template<typename _ValT , typename _CharT , typename _Traits >
+       basic_istream< _CharT, _Traits > & std::__detail::__extract_params
+       (basic_istream< _CharT, _Traits > & __is, vector< _ValT > & __vals,
+       size_t __n)
+       Definition at line 2782 of file bits/random.tcc.
+
+   template<bool _DecOnly, typename _Tp > bool
+       std::__detail::__from_chars_alnum (const char *& __first, const char *
+       __last, _Tp & __val, int __base)
+       std::from_chars implementation for integers in any base. If _DecOnly is
+       true, then we may assume __base is at most 10.
+
+       Definition at line 510 of file charconv.
+
+   template<bool _DecOnly = false> unsigned char
+       std::__detail::__from_chars_alnum_to_val (unsigned char __c)
+       Definition at line 436 of file charconv.
+
+   constexpr auto std::__detail::__from_chars_alnum_to_val_table ()
+       [constexpr]
+       Definition at line 413 of file charconv.
+
+   template<bool _DecOnly, typename _Tp > bool
+       std::__detail::__from_chars_pow2_base (const char *& __first, const
+       char * __last, _Tp & __val, int __base)
+       std::from_chars implementation for integers in a power-of-two base. If
+       _DecOnly is true, then we may assume __base is at most 8.
+
+       Definition at line 453 of file charconv.
+
+   template<typename _Tp > constexpr _Tp std::__detail::__gcd (_Tp __m, _Tp
+       __n) [constexpr]
+       Definition at line 120 of file numeric.
+
+   template<typename _Tp > constexpr bool
+       std::__detail::__p1_representable_as_double (_Tp __x) [constexpr],
+       [noexcept]
+       Definition at line 831 of file bits/random.tcc.
+
+   template<typename _Tp > bool std::__detail::__raise_and_add (_Tp & __val,
+       int __base, unsigned char __c)
+       Definition at line 402 of file charconv.
+
+   template<typename _Tp > constexpr bool
+       std::__detail::__representable_as_double (_Tp __x) [constexpr],
+       [noexcept]
+       Definition at line 818 of file bits/random.tcc.
+
+   template<typename _Tp > void std::__detail::__return_temporary_buffer (_Tp
+       * __p, size_t __len) [inline]
+       Definition at line 70 of file stl_tempbuf.h.
+
+   void std::__detail::__thread_relax () [inline],  [noexcept]
+       Definition at line 136 of file atomic_wait.h.
+
+   void std::__detail::__thread_yield () [inline],  [noexcept]
+       Definition at line 128 of file atomic_wait.h.
+
+   template<typename _Tp > to_chars_result std::__detail::__to_chars (char *
+       __first, char * __last, _Tp __val, int __base) [noexcept]
+       Definition at line 121 of file charconv.
+
+   template<typename _Tp > __integer_to_chars_result_type< _Tp >
+       std::__detail::__to_chars_10 (char * __first, char * __last, _Tp __val)
+       [inline],  [noexcept]
+       Definition at line 209 of file charconv.
+
+   template<typename _Tp > void std::__detail::__to_chars_10_impl (char *
+       __first, unsigned __len, _Tp __val) [noexcept]
+       Definition at line 72 of file charconv.h.
+
+   template<typename _Tp > __integer_to_chars_result_type< _Tp >
+       std::__detail::__to_chars_16 (char * __first, char * __last, _Tp __val)
+       [noexcept]
+       Definition at line 162 of file charconv.
+
+   template<typename _Tp > __integer_to_chars_result_type< _Tp >
+       std::__detail::__to_chars_2 (char * __first, char * __last, _Tp __val)
+       [noexcept]
+       Definition at line 287 of file charconv.
+
+   template<typename _Tp > __integer_to_chars_result_type< _Tp >
+       std::__detail::__to_chars_8 (char * __first, char * __last, _Tp __val)
+       [noexcept]
+       Definition at line 233 of file charconv.
+
+   template<typename _Tp > constexpr unsigned std::__detail::__to_chars_len
+       (_Tp __value, int __base = 10) [constexpr],  [noexcept]
+       Definition at line 47 of file charconv.h.
+
+   template<typename _Tp > constexpr unsigned std::__detail::__to_chars_len_2
+       (_Tp __value) [constexpr],  [noexcept]
+       Definition at line 115 of file charconv.
+
+   template<typename _Dur > __wait_clock_t::time_point
+       std::__detail::__to_wait_clock (const chrono::time_point<
+       __wait_clock_t, _Dur > & __atime) [noexcept]
+       Definition at line 67 of file atomic_timed_wait.h.
+
+   template<typename _Clock , typename _Dur > __wait_clock_t::time_point
+       std::__detail::__to_wait_clock (const chrono::time_point< _Clock, _Dur
+       > & __atime) [noexcept]
+       Definition at line 56 of file atomic_timed_wait.h.
+
+   template<typename _Tp > constexpr bool std::__detail::_Power_of_2 (_Tp __x)
+       [constexpr]
+       Definition at line 65 of file uniform_int_dist.h.
+
+   template<typename _CharT , typename _Traits , typename _String >
+       std::basic_ostream< _CharT, _Traits > & std::__detail::operator<<
+       (std::basic_ostream< _CharT, _Traits > & __os, const _Quoted_string<
+       _String, _CharT > & __str)
+       Inserter for quoted strings. _GLIBCXX_RESOLVE_LIB_DEFECTS DR 2344
+       quoted()'s interaction with padding is unclear
+
+       Definition at line 1 of file quoted_string.h.
+
+   template<typename _CharT , typename _Traits > std::basic_ostream< _CharT,
+       _Traits > & std::__detail::operator<< (std::basic_ostream< _CharT,
+       _Traits > & __os, const _Quoted_string< const _CharT *, _CharT > &
+       __str)
+       Inserter for quoted strings. _GLIBCXX_RESOLVE_LIB_DEFECTS DR 2344
+       quoted()'s interaction with padding is unclear
+
+       Definition at line 1 of file quoted_string.h.
+
+   template<typename _CharT , typename _Traits , typename _Alloc >
+       std::basic_istream< _CharT, _Traits > & std::__detail::operator>>
+       (std::basic_istream< _CharT, _Traits > & __is, const _Quoted_string<
+       basic_string< _CharT, _Traits, _Alloc > &, _CharT > & __str)
+       Extractor for delimited strings. The left and right delimiters can be
+       different.
+
+       Definition at line 139 of file quoted_string.h.
+
+       References std::basic_ios< _CharT, _Traits >::clear(),
+       std::ios_base::flags(), std::basic_ios< _CharT, _Traits >::good(),
+       std::ios_base::setf(), std::ios_base::skipws, and std::basic_istream<
+       _CharT, _Traits >::unget().
+
+Variable Documentation
+   constexpr auto std::__detail::__atomic_spin_count [constexpr]
+       Definition at line 146 of file atomic_wait.h.
+
+   constexpr auto std::__detail::__atomic_spin_count_relax [constexpr]
+       Definition at line 145 of file atomic_wait.h.
+
+   template<typename _Tp > constexpr unsigned std::__detail::__cmp_cat_id
+       [inline],  [constexpr]
+       Definition at line 391 of file compare.
+
+   template<> constexpr unsigned std::__detail::__cmp_cat_id< partial_ordering
+       > [inline],  [constexpr]
+       Definition at line 393 of file compare.
+
+   template<> constexpr unsigned std::__detail::__cmp_cat_id< strong_ordering
+       > [inline],  [constexpr]
+       Definition at line 397 of file compare.
+
+   template<> constexpr unsigned std::__detail::__cmp_cat_id< weak_ordering >
+       [inline],  [constexpr]
+       Definition at line 395 of file compare.
+
+   template<typename _Tp > constexpr bool std::__detail::__is_span [inline],
+       [constexpr]
+       Definition at line 61 of file span.
+
+   template<typename _Tp , size_t _Num> constexpr bool
+       std::__detail::__is_span< span< _Tp, _Num > > [inline],  [constexpr]
+       Definition at line 64 of file span.
+
+   template<typename _Tp > constexpr bool std::__detail::__is_std_array
+       [inline],  [constexpr]
+       Definition at line 67 of file span.
+
+   constexpr size_t std::__detail::__platform_wait_alignment [static],
+       [constexpr]
+       Definition at line 68 of file atomic_wait.h.
+
+Author
+       Generated automatically by Doxygen for libstdc++ from the source code.
+
+libstdc++                       Wed Feb 1 2023                std::__detail(3)

@@ -1,0 +1,54 @@
+deprecate(3perl)                                                                     Perl Programmers Reference Guide                                                                     deprecate(3perl)
+
+NAME
+       deprecate - Perl pragma for deprecating the inclusion of a module in core
+
+SYNOPSIS
+           use deprecate;  # warn about future absence if loaded from core
+
+DESCRIPTION
+       This pragma simplifies the maintenance of dual-life modules that will no longer be included in the Perl core in a future Perl release, but are still included currently.
+
+       The purpose of the pragma is to alert users to the status of such a module by issuing a warning that encourages them to install the module from CPAN, so that a future upgrade to a perl which
+       omits the module will not break their code.
+
+       This warning will only be issued if the module was loaded from a core library directory, which allows the "use deprecate" line to be included in the CPAN version of the module. Because the pragma
+       remains silent when the module is run from a non-core library directory, the pragma call does not need to be patched into or out of either the core or CPAN version of the module. The exact same
+       code can be shipped for either purpose.
+
+   Important Caveat
+       Note that when a module installs from CPAN to a core library directory rather than the site library directories, the user gains no protection from having installed it.
+
+       At the same time, this pragma cannot detect when such a module has installed from CPAN to the core library, and so it would endlessly and uselessly exhort the user to upgrade.
+
+       Therefore modules that can install from CPAN to the core library must make sure not to call this pragma when they have done so. Generally this means that the exact logic from the installer must
+       be mirrored inside the module. E.g.:
+
+           # Makefile.PL
+           WriteMakefile(
+               # ...
+               INSTALLDIRS => ( "$]" >= 5.011 ? 'site' : 'perl' ),
+           );
+
+           # lib/Foo/Bar.pm
+           use if "$]" >= 5.011, 'deprecate';
+
+       (The above example shows the most important case of this: when the target is a Perl older than 5.12 (where the core library directories take precedence over the site library directories) and the
+       module being installed was included in core in that Perl version. Under those circumstances, an upgrade of the module from CPAN is only possible by installing to the core library.)
+
+EXPORT
+       None by default.  The only method is "import", called by "use deprecate;".
+
+SEE ALSO
+       First example to "use deprecate;" was Switch.
+
+AUTHOR
+       Original version by Nicholas Clark
+
+COPYRIGHT AND LICENSE
+       Copyright (C) 2009, 2011
+
+       This library is free software; you can redistribute it and/or modify it under the same terms as Perl itself, either Perl version 5.10.0 or, at your option, any later version of Perl 5 you may
+       have available.
+
+perl v5.36.0                                                                                    2022-12-12                                                                                deprecate(3perl)

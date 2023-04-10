@@ -1,0 +1,92 @@
+LIBTRACEEVENT(3)                                                                           libtraceevent Manual                                                                           LIBTRACEEVENT(3)
+
+NAME
+       tep_set_flag, tep_clear_flag, tep_test_flag - Manage flags of trace event parser context.
+
+SYNOPSIS
+       #include <event-parse.h>
+
+       enum tep_flag {
+               TEP_NSEC_OUTPUT,
+               TEP_DISABLE_SYS_PLUGINS,
+               TEP_DISABLE_PLUGINS
+       };
+       void tep_set_flag(struct tep_handle *tep, enum tep_flag flag);
+       void tep_clear_flag(struct tep_handle *tep, enum tep_flag flag);
+       bool tep_test_flag(struct tep_handle *tep, enum tep_flag flag);
+
+DESCRIPTION
+       Trace event parser context flags are defined in enum tep_flag:
+
+           TEP_NSEC_OUTPUT - print event’s timestamp in nano seconds, instead of micro seconds.
+           TEP_DISABLE_SYS_PLUGINS - disable plugins, located in system’s plugin
+                                   directory. This directory is defined at library compile
+                                   time, and usually depends on library installation
+                                   prefix: (install_preffix)/lib/traceevent/plugins
+           TEP_DISABLE_PLUGINS - disable all library plugins:
+                                   - in system’s plugin directory
+                                   - in directory, defined by the environment variable TRACEEVENT_PLUGIN_DIR
+                                   - in user’s home directory, ~/.traceevent/plugins
+
+       Note: plugin related flags must me set before calling tep_load_plugins() API.
+
+       The tep_set_flag() function sets flag to tep context.
+
+       The tep_clear_flag() function clears flag from tep context.
+
+       The tep_test_flag() function tests if flag is set to tep context.
+
+RETURN VALUE
+       tep_test_flag() function returns true if flag is set, false otherwise.
+
+EXAMPLE
+           #include <event-parse.h>
+           ...
+           struct tep_handle *tep = tep_alloc();
+           ...
+           /* Print timestamps in nanoseconds */
+           tep_set_flag(tep,  TEP_NSEC_OUTPUT);
+           ...
+           if (tep_test_flag(tep, TEP_NSEC_OUTPUT)) {
+                   /* print timestamps in nanoseconds */
+           } else {
+                   /* print timestamps in microseconds */
+           }
+           ...
+           /* Print timestamps in microseconds */
+           tep_clear_flag(tep, TEP_NSEC_OUTPUT);
+           ...
+
+FILES
+           event-parse.h
+                   Header file to include in order to have access to the library APIs.
+           -ltraceevent
+                   Linker switch to add when building a program that uses the library.
+
+SEE ALSO
+       libtraceevent(3), trace-cmd(1)
+
+AUTHOR
+           Steven Rostedt <rostedt@goodmis.org[1]>, author of libtraceevent.
+           Tzvetomir Stoyanov <tz.stoyanov@gmail.com[2]>, author of this man page.
+
+REPORTING BUGS
+       Report bugs to <linux-trace-devel@vger.kernel.org[3]>
+
+LICENSE
+       libtraceevent is Free Software licensed under the GNU LGPL 2.1
+
+RESOURCES
+       https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/
+
+NOTES
+        1. rostedt@goodmis.org
+           mailto:rostedt@goodmis.org
+
+        2. tz.stoyanov@gmail.com
+           mailto:tz.stoyanov@gmail.com
+
+        3. linux-trace-devel@vger.kernel.org
+           mailto:linux-trace-devel@vger.kernel.org
+
+libtraceevent                                                                                   03/28/2023                                                                                LIBTRACEEVENT(3)

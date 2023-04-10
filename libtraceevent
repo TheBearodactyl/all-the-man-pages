@@ -1,0 +1,235 @@
+LIBTRACEEVENT(3)                                                                           libtraceevent Manual                                                                           LIBTRACEEVENT(3)
+
+NAME
+       libtraceevent - Linux kernel trace event library
+
+SYNOPSIS
+       #include <event-parse.h>
+
+       Management of tep handler data structure and access of its members:
+               struct tep_handle *tep_alloc(void);
+               void tep_free(struct tep_handle *tep);
+               void tep_ref(struct tep_handle *tep);
+               void tep_unref(struct tep_handle *tep);
+               int tep_get_ref(struct tep_handle *tep);
+               void tep_set_flag(struct tep_handle *tep, enum tep_flag flag);
+               void tep_clear_flag(struct tep_handle *tep, enum tep_flag flag);
+               bool tep_test_flag(struct tep_handle *tep, enum tep_flag flags);
+               int tep_get_cpus(struct tep_handle *tep);
+               void tep_set_cpus(struct tep_handle *tep, int cpus);
+               int tep_get_long_size(strucqt tep_handle *tep);
+               void tep_set_long_size(struct tep_handle *tep, int long_size);
+               int tep_get_page_size(struct tep_handle *tep);
+               void tep_set_page_size(struct tep_handle *tep, int page_size);
+               int tep_get_sub_buffer_size(struct tep_handle *tep);
+               int tep_get_header_page_size(struct tep_handle *tep);
+               int tep_get_header_timestamp_size(struct tep_handle *tep);
+               bool tep_is_old_format(struct tep_handle *tep);
+               int tep_strerror(struct tep_handle *tep, enum tep_errno errnum, char *buf, size_t buflen);
+               struct kbuffer *tep_kbuffer(struct tep_handle *:_tep_);
+
+       Register / unregister APIs:
+               int tep_register_function(struct tep_handle *tep, char *name, unsigned long long addr, char *mod);
+               int tep_register_event_handler(struct tep_handle *tep, int id, const char *sys_name, const char *event_name, tep_event_handler_func func, void *context);
+               int tep_unregister_event_handler(struct tep_handle *tep, int id, const char *sys_name, const char *event_name, tep_event_handler_func func, void *context);
+               int tep_register_print_string(struct tep_handle *tep, const char *fmt, unsigned long long addr);
+               int tep_register_print_function(struct tep_handle *tep, tep_func_handler func, enum tep_func_arg_type ret_type, char *name, ...);
+               int tep_unregister_print_function(struct tep_handle *tep, tep_func_handler func, char *name);
+               int tep_get_function_count(struct tep_handle tep);
+
+       Trace printk parsing:
+               void *tep_print_printk(struct tep_handle *tep);
+               void tep_print_funcs(struct tep_handle *tep);
+               void tep_set_test_filters(struct tep_handle *tep, int test_filters);
+               void tep_plugin_print_options(struct trace_seq *s);
+               int tep_plugin_add_option(const char *name, const char *val);
+
+       Meta data parsing:
+               int tep_parse_saved_cmdlines(struct tep_handle *tep, const char *buf);
+               int tep_parse_printk_formats(struct tep_handle *tep, const char *buf);
+               int tep_parse_kallsyms(struct tep_handle *tep, const char *buf);
+
+       Plugins management:
+               struct tep_plugin_list *tep_load_plugins(struct tep_handle *tep);
+               void tep_unload_plugins(struct tep_plugin_list *plugin_list, struct tep_handle *tep);
+               char **tep_plugin_list_options(void);
+               void tep_plugin_free_options_list(char **list);
+               int tep_plugin_add_options(const char *name, struct tep_plugin_option *options);
+               void tep_plugin_remove_options(struct tep_plugin_option *options);
+               void tep_print_plugins(struct trace_seq *s, const char *prefix, const char *suffix, const struct tep_plugin_list *list);
+               void tep_load_plugins_hook(struct tep_handle *tep, const char *suffix,
+                                  void (*load_plugin)(struct tep_handle *tep,
+                                                      const char *path,
+                                                      const char *name,
+                                                      void *data),
+                                  void *data);
+               int tep_add_plugin_path(struct tep_handle *tep, char *path,
+                                 enum tep_plugin_load_priority prio);
+
+       Event related APIs:
+               struct tep_event *tep_get_event(struct tep_handle *tep, int index);
+               struct tep_event *tep_get_first_event(struct tep_handle *tep);
+               int tep_get_events_count(struct tep_handle *tep);
+               struct tep_event **tep_list_events(struct tep_handle *tep, enum tep_event_sort_type sort_type);
+               struct tep_event **tep_list_events_copy(struct tep_handle *tep, enum tep_event_sort_type sort_type);
+               void tep_print_event(struct tep_handle *tep, struct trace_seq *s, struct tep_record *record, const char *fmt, ...);
+
+       Event finding:
+               struct tep_event *tep_find_event(struct tep_handle *tep, int id);
+               struct tep_event *tep_find_event_by_name(struct tep_handle *tep, const char *sys, const char *name);
+               struct tep_event *tep_find_event_by_record(struct tep_handle *tep, struct tep_record *record);
+
+       Parsing of event files:
+               int tep_parse_header_page(struct tep_handle *tep, char *buf, unsigned long size, int long_size);
+               enum tep_errno tep_parse_event(struct tep_handle *tep, const char *buf, unsigned long size, const char *sys);
+               enum tep_errno tep_parse_format(struct tep_handle *tep, struct tep_event **eventp, const char *buf, unsigned long size, const char *sys);
+
+       APIs related to fields from event’s format files:
+               struct tep_format_field **tep_event_common_fields(struct tep_event *event);
+               struct tep_format_field **tep_event_fields(struct tep_event *event);
+               void *tep_get_field_raw(struct trace_seq *s, struct tep_event *event, const char *name, struct tep_record *record, int *len, int err);
+               int tep_get_field_val(struct trace_seq *s, struct tep_event *event, const char *name, struct tep_record *record, unsigned long long *val, int err);
+               int tep_get_common_field_val(struct trace_seq *s, struct tep_event *event, const char *name, struct tep_record *record, unsigned long long *val, int err);
+               int tep_get_any_field_val(struct trace_seq *s, struct tep_event *event, const char *name, struct tep_record *record, unsigned long long *val, int err);
+               int tep_read_number_field(struct tep_format_field *field, const void *data, unsigned long long *value);
+
+       Event fields printing:
+               void tep_print_field_content(struct trace_seq *s, void *data, int size, struct tep_format_field *field);
+               void tep_print_fields(struct trace_seq *s, void *data, int size, struct tep_event *event);
+               int tep_print_num_field(struct trace_seq *s, const char *fmt, struct tep_event *event, const char *name, struct tep_record *record, int err);
+               int tep_print_func_field(struct trace_seq *s, const char *fmt, struct tep_event *event, const char *name, struct tep_record *record, int err);
+               void tep_record_print_fields(struct trace_seq *s, struct tep_record *record, struct tep_event *event);
+               void tep_record_print_selected_fields(struct trace_seq *s, struct tep_record *record, struct tep_event *event, int select_mask);
+
+       Event fields finding:
+               struct tep_format_field *tep_find_common_field(struct tep_event *event, const char *name);
+               struct tep_format_field *tep_find_field(struct tep_event_ormat *event, const char *name);
+               struct tep_format_field *tep_find_any_field(struct tep_event *event, const char *name);
+
+       Functions resolver:
+               int tep_set_function_resolver(struct tep_handle *tep, tep_func_resolver_t *func, void *priv);
+               void tep_reset_function_resolver(struct tep_handle *tep);
+               const char *tep_find_function(struct tep_handle *tep, unsigned long long addr);
+               unsigned long long tep_find_function_address(struct tep_handle *tep, unsigned long long addr);
+               int tep_find_function_info(struct tep_handle *tep, unsigned long long addr, const char **name,
+                                  unsigned long long *start, unsigned long *size);
+
+       Filter management:
+               struct tep_event_filter *tep_filter_alloc(struct tep_handle *tep);
+               enum tep_errno tep_filter_add_filter_str(struct tep_event_filter *filter, const char *filter_str);
+               enum tep_errno tep_filter_match(struct tep_event_filter *filter, struct tep_record *record);
+               int tep_filter_strerror(struct tep_event_filter *filter, enum tep_errno err, char *buf, size_t buflen);
+               int tep_event_filtered(struct tep_event_filter *filter, int event_id);
+               void tep_filter_reset(struct tep_event_filter *filter);
+               void tep_filter_free(struct tep_event_filter *filter);
+               char *tep_filter_make_string(struct tep_event_filter *filter, int event_id);
+               int tep_filter_remove_event(struct tep_event_filter *filter, int event_id);
+               int tep_filter_copy(struct tep_event_filter *dest, struct tep_event_filter *source);
+               int tep_filter_compare(struct tep_event_filter *filter1, struct tep_event_filter *filter2);
+
+       Parsing various data from the records:
+               int tep_data_type(struct tep_handle *tep, struct tep_record *rec);
+               int tep_data_pid(struct tep_handle *tep, struct tep_record *rec);
+               int tep_data_preempt_count(struct tep_handle *tep, struct tep_record *rec);
+               int tep_data_flags(struct tep_handle *tep, struct tep_record *rec);
+
+       Command and task related APIs:
+               const char *tep_data_comm_from_pid(struct tep_handle *tep, int pid);
+               struct cmdline *tep_data_pid_from_comm(struct tep_handle *tep, const char *comm, struct cmdline *next);
+               int tep_register_comm(struct tep_handle *tep, const char *comm, int pid);
+               int tep_override_comm(struct tep_handle *tep, const char *comm, int pid);
+               bool tep_is_pid_registered(struct tep_handle *tep, int pid);
+               int tep_cmdline_pid(struct tep_handle *tep, struct cmdline *cmdline);
+
+       Endian related APIs:
+               int tep_is_bigendian(void);
+               unsigned long long tep_read_number(struct tep_handle *tep, const void *ptr, int size);
+               bool tep_is_file_bigendian(struct tep_handle *tep);
+               void tep_set_file_bigendian(struct tep_handle *tep, enum tep_endian endian);
+               bool tep_is_local_bigendian(struct tep_handle *tep);
+               void tep_set_local_bigendian(struct tep_handle *tep, enum tep_endian endian);
+
+       Control library logs:
+               int tep_set_loglevel(enum tep_loglevel level);
+
+       KVM plugin calllbacks: (Defined by the application and complied with -rdynamic)
+               const char *tep_plugin_kvm_get_func(struct tep_event *event,
+                                           struct tep_record *record,
+                                           unsigned long long *paddr);
+               void tep_plugin_kvm_put_func(const char *func);
+
+       Trace sequences:
+       #include <trace-seq.h>
+               void trace_seq_init(struct trace_seq *s);
+               void trace_seq_reset(struct trace_seq *s);
+               void trace_seq_destroy(struct trace_seq *s);
+               int trace_seq_printf(struct trace_seq *s, const char *fmt, ...);
+               int trace_seq_vprintf(struct trace_seq *s, const char *fmt, va_list args);
+               int trace_seq_puts(struct trace_seq *s, const char *str);
+               int trace_seq_putc(struct trace_seq *s, unsigned char c);
+               void trace_seq_terminate(struct trace_seq *s);
+               int trace_seq_do_fprintf(struct trace_seq *s, FILE *fp);
+               int trace_seq_do_printf(struct trace_seq *s);
+
+       kbuffer parsing:
+       #include <kbuffer.h>
+               struct kbuffer *kbuffer_alloc(enum kbuffer_long_size size, enum kbuffer_endian endian);
+               void kbuffer_free(struct kbuffer *kbuf);
+               int kbuffer_load_subbuffer(struct kbuffer *kbuf, void *subbuffer);
+               int kbuffer_subbuffer_size(struct kbuffer *kbuf);
+               int kbuffer_start_of_data(struct kbuffer *_kbuf);
+               unsigned long long kbuffer_timestamp(struct kbuffer *kbuf);
+               unsigned long long kbuffer_subbuf_timestamp(struct kbuffer *kbuf, void *subbuf);
+               void *kbuffer_read_event(struct kbuffer *kbuf, unsigned long long *ts);
+               void *kbuffer_next_event(struct kbuffer *kbuf, unsigned long long *ts);
+               void *kbuffer_read_at_offset(struct kbuffer *kbuf, int offset, unsigned long long *ts);
+               int kbuffer_missed_events(struct kbuffer *kbuf);
+               int kbuffer_event_size(struct kbuffer *kbuf);
+               int kbuffer_curr_size(struct kbuffer *kbuf);
+               int kbuffer_curr_offset(struct kbuffer *kbuf);
+               int kbuffer_curr_index(struct kbuffer *kbuf);
+
+DESCRIPTION
+       The libtraceevent(3) library provides APIs to access kernel tracepoint events, located in the tracefs file system under the events directory.
+
+ENVIRONMENT
+           TRACEEVENT_PLUGIN_DIR
+                   Additional plugin directory. All shared object files, located in this directory will be loaded as traceevent plugins.
+
+FILES
+           event-parse.h
+                   Header file to include in order to have access to the library APIs.
+           trace-seq.h
+                   Header file to include in order to have access to trace sequences related APIs.
+                   Trace sequences are used to allow a function to call several other functions
+                   to create a string of data to use.
+           -ltraceevent
+                   Linker switch to add when building a program that uses the library.
+
+SEE ALSO
+       trace-cmd(1)
+
+AUTHOR
+           Steven Rostedt <rostedt@goodmis.org[1]>, author of libtraceevent.
+           Tzvetomir Stoyanov <tz.stoyanov@gmail.com[2]>, author of this man page.
+
+REPORTING BUGS
+       Report bugs to <linux-trace-devel@vger.kernel.org[3]>
+
+LICENSE
+       libtraceevent is Free Software licensed under the GNU LGPL 2.1
+
+RESOURCES
+       https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/
+
+NOTES
+        1. rostedt@goodmis.org
+           mailto:rostedt@goodmis.org
+
+        2. tz.stoyanov@gmail.com
+           mailto:tz.stoyanov@gmail.com
+
+        3. linux-trace-devel@vger.kernel.org
+           mailto:linux-trace-devel@vger.kernel.org
+
+libtraceevent                                                                                   03/28/2023                                                                                LIBTRACEEVENT(3)

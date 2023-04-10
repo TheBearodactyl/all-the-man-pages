@@ -1,0 +1,325 @@
+fmtmsg(3)                                                                                Library Functions Manual                                                                                fmtmsg(3)
+
+NAME
+       fmtmsg - print formatted error messages
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <fmtmsg.h>
+
+       int fmtmsg(long classification, const char *label,
+                  int severity, const char *text,
+                  const char *action, const char *tag);
+
+DESCRIPTION
+       This  function displays a message described by its arguments on the device(s) specified in the classification argument.  For messages written to stderr, the format depends on the MSGVERB environ‐
+       ment variable.
+
+       The label argument identifies the source of the message.  The string must consist of two colon separated parts where the first part has not more than 10 and the second part not more than 14 char‐
+       acters.
+
+       The text argument describes the condition of the error.
+
+       The action argument describes possible steps to recover from the error.  If it is printed, it is prefixed by "TO FIX: ".
+
+       The tag argument is a reference to the online documentation where more information can be found.  It should contain the label value and a unique identification number.
+
+   Dummy arguments
+       Each  of the arguments can have a dummy value.  The dummy classification value MM_NULLMC (0L) does not specify any output, so nothing is printed.  The dummy severity value NO_SEV (0) says that no
+       severity is supplied.  The values MM_NULLLBL, MM_NULLTXT, MM_NULLACT, MM_NULLTAG are synonyms for ((char *) 0), the empty string, and MM_NULLSEV is a synonym for NO_SEV.
+
+   The classification argument
+       The classification argument is the sum of values describing 4 types of information.
+
+       The first value defines the output channel.
+
+       MM_PRINT    Output to stderr.
+
+       MM_CONSOLE  Output to the system console.
+
+       MM_PRINT | MM_CONSOLE
+                   Output to both.
+
+       The second value is the source of the error:
+
+       MM_HARD     A hardware error occurred.
+
+       MM_FIRM     A firmware error occurred.
+
+       MM_SOFT     A software error occurred.
+
+       The third value encodes the detector of the problem:
+
+       MM_APPL     It is detected by an application.
+
+       MM_UTIL     It is detected by a utility.
+
+       MM_OPSYS    It is detected by the operating system.
+
+       The fourth value shows the severity of the incident:
+
+       MM_RECOVER  It is a recoverable error.
+
+       MM_NRECOV   It is a nonrecoverable error.
+
+   The severity argument
+       The severity argument can take one of the following values:
+
+       MM_NOSEV    No severity is printed.
+
+       MM_HALT     This value is printed as HALT.
+
+       MM_ERROR    This value is printed as ERROR.
+
+       MM_WARNING  This value is printed as WARNING.
+
+       MM_INFO     This value is printed as INFO.
+
+       The numeric values are between 0 and 4.  Using addseverity(3) or the environment variable SEV_LEVEL you can add more levels and strings to print.
+
+RETURN VALUE
+       The function can return 4 values:
+
+       MM_OK       Everything went smooth.
+
+       MM_NOTOK    Complete failure.
+
+       MM_NOMSG    Error writing to stderr.
+
+       MM_NOCON    Error writing to the console.
+
+ENVIRONMENT
+       The environment variable MSGVERB ("message verbosity") can be used to suppress parts of the output to stderr.  (It does not influence output to the console.)  When this variable  is  defined,  is
+       non-NULL,  and  is  a  colon-separated list of valid keywords, then only the parts of the message corresponding to these keywords is printed.  Valid keywords are "label", "severity", "text", "ac‐
+       tion", and "tag".
+
+       The environment variable SEV_LEVEL can be used to introduce new severity levels.  By default, only the five severity levels described above are available.  Any  other  numeric  value  would  make
+       fmtmsg() print nothing.  If the user puts SEV_LEVEL with a format like
+
+              SEV_LEVEL=[description[:description[:...]]]
+
+       in the environment of the process before the first call to fmtmsg(), where each description is of the form
+
+              severity-keyword,level,printstring
+
+       then fmtmsg() will also accept the indicated values for the level (in addition to the standard levels 0–4), and use the indicated printstring when such a level occurs.
+
+       The severity-keyword part is not used by fmtmsg() but it has to be present.  The level part is a string representation of a number.  The numeric value must be a number greater than 4.  This value
+       must be used in the severity argument of fmtmsg() to select this class.  It is not possible to overwrite any of the predefined classes.  The printstring is the string printed when  a  message  of
+       this class is processed by fmtmsg().
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌──────────┬───────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface │ Attribute     │ Value                                                                                                                                                                 │
+       ├──────────┼───────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │fmtmsg()  │ Thread safety │ glibc >= 2.16: MT-Safe; glibc < 2.16: MT-Unsafe                                                                                                                       │
+       └──────────┴───────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+       Before glibc 2.16, the fmtmsg() function uses a static variable that is not protected, so it is not thread-safe.
+
+       Since glibc 2.16, the fmtmsg() function uses a lock to protect the static variable, so it is thread-safe.
+
+STANDARDS
+       fmtmsg()
+       MSGVERB
+              POSIX.1-2008.
+
+HISTORY
+       fmtmsg()
+              System V.  POSIX.1-2001 and POSIX.1-2008.  glibc 2.1.
+
+       MSGVERB
+              System V.  POSIX.1-2001 and POSIX.1-2008.
+
+       SEV_LEVEL
+              System V.
+
+       System V and UnixWare man pages tell us that these functions have been replaced by "pfmt() and addsev()" or by "pfmt(), vpfmt(), lfmt(), and vlfmt()", and will be removed later.
+
+EXAMPLES
+       #include <fmtmsg.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+
+       int
+       main(void)
+       {
+           long class = MM_PRINT | MM_SOFT | MM_OPSYS | MM_RECOVER;
+           int err;
+
+           err = fmtmsg(class, "util-linux:mount", MM_ERROR,
+                        "unknown mount option", "See mount(8).",
+                        "util-linux:mount:017");
+           switch (err) {
+           case MM_OK:
+               break;
+           case MM_NOTOK:
+               printf("Nothing printed\n");
+               break;
+           case MM_NOMSG:
+               printf("Nothing printed to stderr\n");
+               break;
+           case MM_NOCON:
+               printf("No console output\n");
+               break;
+           default:
+               printf("Unknown error from fmtmsg()\n");
+           }
+           exit(EXIT_SUCCESS);
+       }
+
+       The output should be:
+
+           util-linux:mount: ERROR: unknown mount option
+           TO FIX: See mount(8).  util-linux:mount:017
+
+       and after
+
+           MSGVERB=text:action; export MSGVERB
+
+       the output becomes:
+
+           unknown mount option
+           TO FIX: See mount(8).
+
+SEE ALSO
+       addseverity(3), perror(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       fmtmsg(3)
+FMTMSG(3P)                                                                               POSIX Programmer's Manual                                                                              FMTMSG(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       fmtmsg — display a message in the specified format on standard error and/or a system console
+
+SYNOPSIS
+       #include <fmtmsg.h>
+
+       int fmtmsg(long classification, const char *label, int severity,
+           const char *text, const char *action, const char *tag);
+
+DESCRIPTION
+       The fmtmsg() function shall display messages in a specified format instead of the traditional printf() function.
+
+       Based on a message's classification component, fmtmsg() shall write a formatted message either to standard error, to the console, or to both.
+
+       A formatted message consists of up to five components as defined below. The component classification is not part of a message displayed to the user, but defines the source of the message and  di‐
+       rects the display of the formatted message.
+
+       classification
+                   Contains the sum of identifying values constructed from the constants defined below. Any one identifier from a subclass may be used in combination with a single identifier from a dif‐
+                   ferent subclass. Two or more identifiers from the same subclass should not be used together, with the exception of identifiers from the display subclass. (Both display subclass  iden‐
+                   tifiers may be used so that messages can be displayed to both standard error and the system console.)
+
+                   Major Classifications
+                         Identifies the source of the condition. Identifiers are: MM_HARD (hardware), MM_SOFT (software), and MM_FIRM (firmware).
+
+                   Message Source Subclassifications
+                         Identifies the type of software in which the problem is detected.  Identifiers are: MM_APPL (application), MM_UTIL (utility), and MM_OPSYS (operating system).
+
+                   Display Subclassifications
+                         Indicates  where  the  message is to be displayed. Identifiers are: MM_PRINT to display the message on the standard error stream, MM_CONSOLE to display the message on the system
+                         console. One or both identifiers may be used.
+
+                   Status Subclassifications
+                         Indicates whether the application can recover from the condition.  Identifiers are: MM_RECOVER (recoverable) and MM_NRECOV (non-recoverable).
+
+                   An additional identifier, MM_NULLMC, indicates that no classification component is supplied for the message.
+
+       label       Identifies the source of the message. The format is two fields separated by a <colon>.  The first field is up to 10 bytes, the second is up to 14 bytes.
+
+       severity    Indicates the seriousness of the condition. Identifiers for the levels of severity are:
+
+                   MM_HALT     Indicates that the application has encountered a severe fault and is halting. Produces the string "HALT".
+
+                   MM_ERROR    Indicates that the application has detected a fault. Produces the string "ERROR".
+
+                   MM_WARNING  Indicates a condition that is out of the ordinary, that might be a problem, and should be watched. Produces the string "WARNING".
+
+                   MM_INFO     Provides information about a condition that is not in error. Produces the string "INFO".
+
+                   MM_NOSEV    Indicates that no severity level is supplied for the message.
+
+       text        Describes the error condition that produced the message. The character string is not limited to a specific size. If the character string is empty, then the text produced  is  unspeci‐
+                   fied.
+
+       action      Describes the first step to be taken in the error-recovery process.  The fmtmsg() function precedes the action string with the prefix: "TOFIX:".  The action string is not limited to a
+                   specific size.
+
+       tag         An identifier that references on-line documentation for the message.  Suggested usage is that tag includes the label and a unique identifying number. A sample tag is "XSI:cat:146".
+
+       The MSGVERB environment variable (for message verbosity) shall determine for fmtmsg() which message components it is to select when writing messages to standard error. The value of MSGVERB  shall
+       be  a  <colon>-separated  list of optional keywords. Valid keywords are: label, severity, text, action, and tag. If MSGVERB contains a keyword for a component and the component's value is not the
+       component's null value, fmtmsg() shall include that component in the message when writing the message to standard error. If MSGVERB does not include a keyword for a message component, that compo‐
+       nent shall not be included in the display of the message. The keywords may appear in any order. If MSGVERB is not defined, if its value is the null string, if its value is not of the correct for‐
+       mat, or if it contains keywords other than the valid ones listed above, fmtmsg() shall select all components.
+
+       MSGVERB shall determine which components are selected for display to standard error. All message components shall be included in console messages.
+
+RETURN VALUE
+       The fmtmsg() function shall return one of the following values:
+
+       MM_OK       The function succeeded.
+
+       MM_NOTOK    The function failed completely.
+
+       MM_NOMSG    The function was unable to generate a message on standard error, but otherwise succeeded.
+
+       MM_NOCON    The function was unable to generate a console message, but otherwise succeeded.
+
+ERRORS
+       None.
+
+       The following sections are informative.
+
+EXAMPLES
+        1. The following example of fmtmsg():
+
+               fmtmsg(MM_PRINT, "XSI:cat", MM_ERROR, "illegal option",
+               "refer to cat in user's reference manual", "XSI:cat:001")
+
+           produces a complete message in the specified message format:
+
+               XSI:cat: ERROR: illegal option
+               TO FIX: refer to cat in user's reference manual XSI:cat:001
+
+        2. When the environment variable MSGVERB is set as follows:
+
+               MSGVERB=severity:text:action
+
+           and Example 1 is used, fmtmsg() produces:
+
+               ERROR: illegal option
+               TO FIX: refer to cat in user's reference manual
+
+APPLICATION USAGE
+       One or more message components may be systematically omitted from messages generated by an application by using the null value of the argument for that component.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fprintf()
+
+       The Base Definitions volume of POSIX.1‐2017, <fmtmsg.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         FMTMSG(3P)

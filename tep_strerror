@@ -1,0 +1,66 @@
+LIBTRACEEVENT(3)                                                                           libtraceevent Manual                                                                           LIBTRACEEVENT(3)
+
+NAME
+       tep_strerror - Returns a string describing regular errno and tep error number.
+
+SYNOPSIS
+       #include <event-parse.h>
+
+       int tep_strerror(struct tep_handle *tep, enum tep_errno errnum, char *buf, size_t buflen);
+
+DESCRIPTION
+       The tep_strerror() function converts tep error number into a human readable string. The tep argument is trace event parser context. The errnum is a regular errno, defined in errno.h, or a tep
+       error number. The string, describing this error number is copied in the buf argument. The buflen argument is the size of the buf.
+
+       It as a thread safe wrapper around strerror_r(). The library function has two different behaviors - POSIX and GNU specific. The tep_strerror() API always behaves as the POSIX version - the error
+       string is copied in the user supplied buffer.
+
+RETURN VALUE
+       The tep_strerror() function returns 0, if a valid errnum is passed and the string is copied into buf. If errnum is not a valid error number, -1 is returned and buf is not modified.
+
+EXAMPLE
+           #include <event-parse.h>
+           ...
+           struct tep_handle *tep = tep_alloc();
+           ...
+           char buf[32];
+           char *pool = calloc(1, 128);
+           if (tep == NULL) {
+                   tep_strerror(tep, TEP_ERRNO__MEM_ALLOC_FAILED, buf, 32);
+                   printf ("The pool is not initialized, %s", buf);
+           }
+           ...
+
+FILES
+           event-parse.h
+                   Header file to include in order to have access to the library APIs.
+           -ltraceevent
+                   Linker switch to add when building a program that uses the library.
+
+SEE ALSO
+       libtraceevent(3), trace-cmd(1)
+
+AUTHOR
+           Steven Rostedt <rostedt@goodmis.org[1]>, author of libtraceevent.
+           Tzvetomir Stoyanov <tz.stoyanov@gmail.com[2]>, author of this man page.
+
+REPORTING BUGS
+       Report bugs to <linux-trace-devel@vger.kernel.org[3]>
+
+LICENSE
+       libtraceevent is Free Software licensed under the GNU LGPL 2.1
+
+RESOURCES
+       https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/
+
+NOTES
+        1. rostedt@goodmis.org
+           mailto:rostedt@goodmis.org
+
+        2. tz.stoyanov@gmail.com
+           mailto:tz.stoyanov@gmail.com
+
+        3. linux-trace-devel@vger.kernel.org
+           mailto:linux-trace-devel@vger.kernel.org
+
+libtraceevent                                                                                   03/28/2023                                                                                LIBTRACEEVENT(3)

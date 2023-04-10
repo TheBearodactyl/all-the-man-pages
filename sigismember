@@ -1,0 +1,180 @@
+SIGSETOPS(3)               Library Functions Manual               SIGSETOPS(3)
+
+NAME
+       sigemptyset, sigfillset, sigaddset, sigdelset, sigismember - POSIX sig‐
+       nal set operations
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <signal.h>
+
+       int sigemptyset(sigset_t *set);
+       int sigfillset(sigset_t *set);
+
+       int sigaddset(sigset_t *set, int signum);
+       int sigdelset(sigset_t *set, int signum);
+
+       int sigismember(const sigset_t *set, int signum);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       sigemptyset(), sigfillset(), sigaddset(), sigdelset(), sigismember():
+           _POSIX_C_SOURCE
+
+DESCRIPTION
+       These functions allow the manipulation of POSIX signal sets.
+
+       sigemptyset() initializes the signal set given by set  to  empty,  with
+       all signals excluded from the set.
+
+       sigfillset() initializes set to full, including all signals.
+
+       sigaddset()  and  sigdelset() add and delete respectively signal signum
+       from set.
+
+       sigismember() tests whether signum is a member of set.
+
+       Objects of type sigset_t must  be  initialized  by  a  call  to  either
+       sigemptyset()  or  sigfillset()  before  being  passed to the functions
+       sigaddset(), sigdelset(), and sigismember()  or  the  additional  glibc
+       functions  described  below  (sigisemptyset(),  sigandset(),  and  sig‐
+       orset()).  The results are undefined if this is not done.
+
+RETURN VALUE
+       sigemptyset(), sigfillset(), sigaddset(), and sigdelset() return  0  on
+       success and -1 on error.
+
+       sigismember()  returns  1  if signum is a member of set, 0 if signum is
+       not a member, and -1 on error.
+
+       On error, these functions set errno to indicate the error.
+
+ERRORS
+       EINVAL signum is not a valid signal.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │sigemptyset(), sigfillset(), sigaddset(),   │ Thread safety │ MT-Safe │
+       │sigdelset(), sigismember(),                 │               │         │
+       │sigisemptyset(), sigorset(), sigandset()    │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+   GNU
+       If  the  _GNU_SOURCE feature test macro is defined, then <signal.h> ex‐
+       poses three other functions for manipulating signal sets:
+
+       int sigisemptyset(const sigset_t *set);
+       int sigorset(sigset_t *dest, const sigset_t *left,
+                     const sigset_t *right);
+       int sigandset(sigset_t *dest, const sigset_t *left,
+                     const sigset_t *right);
+
+       sigisemptyset() returns 1 if set contains no signals, and 0 otherwise.
+
+       sigorset() places the union  of  the  sets  left  and  right  in  dest.
+       sigandset() places the intersection of the sets left and right in dest.
+       Both functions return 0 on success, and -1 on failure.
+
+       These functions are nonstandard (a few other  systems  provide  similar
+       functions) and their use should be avoided in portable applications.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+NOTES
+       When creating a filled signal set, the glibc sigfillset() function does
+       not include the two real-time  signals  used  internally  by  the  NPTL
+       threading implementation.  See nptl(7) for details.
+
+SEE ALSO
+       sigaction(2), sigpending(2), sigprocmask(2), sigsuspend(2)
+
+Linux man-pages 6.04              2023-03-30                      SIGSETOPS(3)
+SIGISMEMBER(3P)            POSIX Programmer's Manual           SIGISMEMBER(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       sigismember — test for a signal in a signal set
+
+SYNOPSIS
+       #include <signal.h>
+
+       int sigismember(const sigset_t *set, int signo);
+
+DESCRIPTION
+       The sigismember() function shall test whether the signal  specified  by
+       signo is a member of the set pointed to by set.
+
+       Applications  should call either sigemptyset() or sigfillset() at least
+       once for each object of type sigset_t prior to any other  use  of  that
+       object.  If such an object is not initialized in this way, but is none‐
+       theless supplied as an argument to  any  of  pthread_sigmask(),  sigac‐
+       tion(), sigaddset(), sigdelset(), sigismember(), sigpending(), sigproc‐
+       mask(), sigsuspend(), sigtimedwait(), sigwait(), or sigwaitinfo(),  the
+       results are undefined.
+
+RETURN VALUE
+       Upon  successful completion, sigismember() shall return 1 if the speci‐
+       fied signal is a member of the specified set, or 0 if it is not. Other‐
+       wise, it shall return -1 and set errno to indicate the error.
+
+ERRORS
+       The sigismember() function may fail if:
+
+       EINVAL The signo argument is not a valid signal number, or is an unsup‐
+              ported signal number.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section   2.4,   Signal   Concepts,   pthread_sigmask(),   sigaction(),
+       sigaddset(),  sigdelset(),  sigfillset(),  sigemptyset(), sigpending(),
+       sigsuspend()
+
+       The Base Definitions volume of POSIX.1‐2017, <signal.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                      SIGISMEMBER(3P)

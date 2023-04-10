@@ -1,0 +1,54 @@
+IPQ_READ(3)                                                                              Linux Programmer's Manual                                                                             IPQ_READ(3)
+
+NAME
+       ipq_read — read queue messages from ip_queue and read into supplied buffer
+
+SYNOPSIS
+       #include <linux/netfilter.h>
+       #include <libipq.h>
+
+       ssize_t ipq_read(const struct ipq_handle *h, unsigned char *buf, size_t len, int timeout);
+
+DESCRIPTION
+       The ipq_read function reads a queue message from the kernel and copies it to the memory pointed to by buf to a maximum length of len.
+
+       The h parameter is a context handle which must previously have been returned successfully from a call to ipq_create_handle.
+
+       The caller is responsible for ensuring that the memory pointed to by buf is large enough to contain len bytes.
+
+       The  timeout  parameter may be used to set a timeout for the operation, specified in microseconds.  This is implemented internally by the library via the select system call.  A value of zero pro‐
+       vides normal, backwards-compatible blocking behaviour with no timeout.  A negative value causes the function to return immediately.
+
+       Data returned via buf should not be accessed directly.  Use the ipq_message_type, ipq_get_packet, and ipq_get_msgerr functions to access the queue message in the buffer.
+
+RETURN VALUE
+       On failure, -1 is returned.
+       On success, a non-zero positive value is returned when no timeout value is specified.
+       On success with a timeout value specified, zero is returned if no data was available to read, or if a non-blocked signal was caught.  In the latter case, the global errno value  will  be  set  to
+       EINTR.
+
+ERRORS
+       On error, a descriptive error message will be available via the ipq_errstr function.
+
+DIAGNOSTICS
+       While the ipq_read function may return successfully, the queue message copied to the buffer may itself be an error message from a higher level kernel component.  Use ipq_message_type to determine
+       if it is an error message, and ipq_get_msgerr to access the value of the message.
+
+BUGS
+       None known.
+
+AUTHOR
+       James Morris <jmorris@intercode.com.au>
+
+COPYRIGHT
+       Copyright (c) 2000-2001 Netfilter Core Team.
+
+       Distributed under the GNU General Public License.
+
+CREDITS
+       Joost Remijn implemented the timeout feature, which appeared in the 1.2.4 release of iptables.
+
+SEE ALSO
+       iptables(8), libipq(3), select(2).
+
+Linux iptables 1.2                                                                            16 October 2001                                                                                  IPQ_READ(3)

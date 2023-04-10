@@ -1,0 +1,49 @@
+UNW_INIT_LOCAL(3)                                                                          Programming Library                                                                           UNW_INIT_LOCAL(3)
+
+NAME
+       unw_init_local -- initialize cursor for local unwinding
+
+SYNOPSIS
+       #include <libunwind.h>
+
+       int unw_init_local(unw_cursor_t *c, unw_context_t *ctxt);
+       int unw_init_local2(unw_cursor_t *c, unw_context_t *ctxt, int flag);
+
+DESCRIPTION
+       The unw_init_local() routine initializes the unwind cursor pointed to by c with the machine-state in the context structure pointed to by ctxt.  As such, the machine-state pointed to by ctxt iden‐
+       tifies the initial stack frame at which unwinding starts. The machine-state is expected to be one provided by a call to unw_getcontext; as such, the instruction pointer may point to the  instruc‐
+       tion  after  the last instruction of a function, and libunwind will back-up the instruction pointer before beginning a walk up the call stack. The machine-state must remain valid for the duration
+       for which the cursor c is in use.
+
+       The unw_init_local() routine can be used only for unwinding in the address space of the current process (i.e., for local unwinding).  For all other cases, unw_init_remote() must be used  instead.
+       However,  unwind  performance  may  be  better  when using unw_init_local().  Also, unw_init_local() is available even when UNW_LOCAL_ONLY has been defined before including <libunwind.h>, whereas
+       unw_init_remote() is not.
+
+       If the unw_context_t is known to be a signal frame (i.e., from the third argument in a sigaction handler on linux), unw_init_local2() should be used for correct initialization on some  platforms,
+       passing the UNW_INIT_SIGNAL_FRAME flag.
+
+RETURN VALUE
+       On successful completion, unw_init_local() returns 0.  Otherwise the negative value of one of the error-codes below is returned.
+
+THREAD AND SIGNAL SAFETY
+       unw_init_local() is thread-safe as well as safe to use from a signal handler.
+
+ERRORS
+       UNW_EINVAL
+               unw_init_local() was called in a version of libunwind which supports remote unwinding only (this normally happens when calling unw_init_local() for a cross-platform version of libunwind).
+
+       UNW_EUNSPEC
+               An unspecified error occurred.
+
+       UNW_EBADREG
+               A register needed by unw_init_local() wasn't accessible.
+
+SEE ALSO
+       libunwind(3), unw_init_remote(3)
+
+AUTHOR
+       David Mosberger-Tang
+       Email: dmosberger@gmail.com
+       WWW: http://www.nongnu.org/libunwind/.
+
+Programming Library                                                                           16 August 2017                                                                             UNW_INIT_LOCAL(3)

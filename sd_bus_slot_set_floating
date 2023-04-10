@@ -1,0 +1,70 @@
+SD_BUS_SLOT_SET_FLOATING(3)sd_bus_slot_set_floatingSD_BUS_SLOT_SET_FLOATING(3)
+
+NAME
+       sd_bus_slot_set_floating, sd_bus_slot_get_floating - Control whether a
+       bus slot object is "floating"
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_slot_set_floating(sd_bus_slot *slot, int b);
+
+       int sd_bus_slot_get_floating(sd_bus_slot *slot);
+
+DESCRIPTION
+       sd_bus_slot_set_floating() controls whether the specified bus slot
+       object slot shall be "floating" or not. A floating bus slot object's
+       lifetime is bound to the lifetime of the bus object it is associated
+       with, meaning that it remains allocated as long as the bus object
+       itself and is freed automatically when the bus object is freed. Regular
+       (i.e. non-floating) bus slot objects keep the bus referenced, hence the
+       bus object remains allocated at least as long as there remains at least
+       one referenced bus slot object around. The floating state hence
+       controls the direction of referencing between the bus object and the
+       bus slot objects: if floating the bus pins the bus slot, and otherwise
+       the bus slot pins the bus objects. Use sd_bus_slot_set_floating() to
+       switch between both modes: if the b parameter is zero, the slot object
+       is considered floating, otherwise it is made a regular (non-floating)
+       slot object.
+
+       Bus slot objects may be allocated with calls such as
+       sd_bus_add_match(3). If the slot of these functions is non-NULL the
+       slot object will be of the regular kind (i.e. non-floating), otherwise
+       it will be created floating. With sd_bus_slot_set_floating() a bus slot
+       object allocated as regular can be converted into a floating object and
+       back. This is particularly useful for creating a bus slot object, then
+       changing parameters of it, and then turning it into a floating object,
+       whose lifecycle is managed by the bus object.
+
+       sd_bus_slot_get_floating() returns the current floating state of the
+       specified bus slot object. It returns negative on error, zero if the
+       bus slot object is a regular (non-floating) object and positive
+       otherwise.
+
+RETURN VALUE
+       On success, these functions return 0 or a positive integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           The slot parameter is NULL.
+
+       -ECHILD
+           The bus connection has been created in a different process.
+
+       -ESTALE
+           The bus object the specified bus slot object is associated with has
+           already been freed, and hence no change in the floating state can
+           be made anymore.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_slot_set_destroy_callback(3),
+       sd_bus_add_match(3)
+
+systemd 253                                        SD_BUS_SLOT_SET_FLOATING(3)

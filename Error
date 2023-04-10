@@ -1,0 +1,479 @@
+Error(3)                                                                            User Contributed Perl Documentation                                                                           Error(3)
+
+NAME
+       Error - Error/exception handling in an OO-ish way
+
+VERSION
+       version 0.17029
+
+SYNOPSIS
+           use Error qw(:try);
+
+           throw Error::Simple( "A simple error");
+
+           sub xyz {
+               ...
+               record Error::Simple("A simple error")
+                   and return;
+           }
+
+           unlink($file) or throw Error::Simple("$file: $!",$!);
+
+           try {
+               do_some_stuff();
+               die "error!" if $condition;
+               throw Error::Simple "Oops!" if $other_condition;
+           }
+           catch Error::IO with {
+               my $E = shift;
+               print STDERR "File ", $E->{'-file'}, " had a problem\n";
+           }
+           except {
+               my $E = shift;
+               my $general_handler=sub {send_message $E->{-description}};
+               return {
+                   UserException1 => $general_handler,
+                   UserException2 => $general_handler
+               };
+           }
+           otherwise {
+               print STDERR "Well I don't know what to say\n";
+           }
+           finally {
+               close_the_garage_door_already(); # Should be reliable
+           }; # Don't forget the trailing ; or you might be surprised
+
+DESCRIPTION
+       The "Error" package provides two interfaces. Firstly "Error" provides a procedural interface to exception handling. Secondly "Error" is a base class for errors/exceptions that can either be
+       thrown, for subsequent catch, or can simply be recorded.
+
+       Errors in the class "Error" should not be thrown directly, but the user should throw errors from a sub-class of "Error".
+
+WARNING
+       Using the "Error" module is no longer recommended due to the black-magical nature of its syntactic sugar, which often tends to break. Its maintainers have stopped actively writing code that uses
+       it, and discourage people from doing so. See the "SEE ALSO" section below for better recommendations.
+
+PROCEDURAL INTERFACE
+       "Error" exports subroutines to perform exception handling. These will be exported if the ":try" tag is used in the "use" line.
+
+       try BLOCK CLAUSES
+           "try" is the main subroutine called by the user. All other subroutines exported are clauses to the try subroutine.
+
+           The BLOCK will be evaluated and, if no error is throw, try will return the result of the block.
+
+           "CLAUSES" are the subroutines below, which describe what to do in the event of an error being thrown within BLOCK.
+
+       catch CLASS with BLOCK
+           This clauses will cause all errors that satisfy "$err->isa(CLASS)" to be caught and handled by evaluating "BLOCK".
+
+           "BLOCK" will be passed two arguments. The first will be the error being thrown. The second is a reference to a scalar variable. If this variable is set by the catch block then, on return from
+           the catch block, try will continue processing as if the catch block was never found. The error will also be available in $@.
+
+           To propagate the error the catch block may call "$err->throw"
+
+           If the scalar reference by the second argument is not set, and the error is not thrown. Then the current try block will return with the result from the catch block.
+
+       except BLOCK
+           When "try" is looking for a handler, if an except clause is found "BLOCK" is evaluated. The return value from this block should be a HASHREF or a list of key-value pairs, where the keys are
+           class names and the values are CODE references for the handler of errors of that type.
+
+       otherwise BLOCK
+           Catch any error by executing the code in "BLOCK"
+
+           When evaluated "BLOCK" will be passed one argument, which will be the error being processed. The error will also be available in $@.
+
+           Only one otherwise block may be specified per try block
+
+       finally BLOCK
+           Execute the code in "BLOCK" either after the code in the try block has successfully completed, or if the try block throws an error then "BLOCK" will be executed after the handler has
+           completed.
+
+           If the handler throws an error then the error will be caught, the finally block will be executed and the error will be re-thrown.
+
+           Only one finally block may be specified per try block
+
+COMPATIBILITY
+       Moose exports a keyword called "with" which clashes with Error's. This example returns a prototype mismatch error:
+
+           package MyTest;
+
+           use warnings;
+           use Moose;
+           use Error qw(:try);
+
+       (Thanks to "maik.hentsche@amd.com" for the report.).
+
+CLASS INTERFACE
+   CONSTRUCTORS
+       The "Error" object is implemented as a HASH. This HASH is initialized with the arguments that are passed to it's constructor. The elements that are used by, or are retrievable by the "Error"
+       class are listed below, other classes may add to these.
+
+               -file
+               -line
+               -text
+               -value
+               -object
+
+       If "-file" or "-line" are not specified in the constructor arguments then these will be initialized with the file name and line number where the constructor was called from.
+
+       If the error is associated with an object then the object should be passed as the "-object" argument. This will allow the "Error" package to associate the error with the object.
+
+       The "Error" package remembers the last error created, and also the last error associated with a package. This could either be the last error created by a sub in that package, or the last error
+       which passed an object blessed into that package as the "-object" argument.
+
+       Error->new()
+           See the Error::Simple documentation.
+
+       throw ( [ ARGS ] )
+           Create a new "Error" object and throw an error, which will be caught by a surrounding "try" block, if there is one. Otherwise it will cause the program to exit.
+
+           "throw" may also be called on an existing error to re-throw it.
+
+       with ( [ ARGS ] )
+           Create a new "Error" object and returns it. This is defined for syntactic sugar, eg
+
+               die with Some::Error ( ... );
+
+       record ( [ ARGS ] )
+           Create a new "Error" object and returns it. This is defined for syntactic sugar, eg
+
+               record Some::Error ( ... )
+                   and return;
+
+   STATIC METHODS
+       prior ( [ PACKAGE ] )
+           Return the last error created, or the last error associated with "PACKAGE"
+
+       flush ( [ PACKAGE ] )
+           Flush the last error created, or the last error associated with "PACKAGE".It is necessary to clear the error stack before exiting the package or uncaught errors generated using "record" will
+           be reported.
+
+                $Error->flush;
+
+   OBJECT METHODS
+       stacktrace
+           If the variable $Error::Debug was non-zero when the error was created, then "stacktrace" returns a string created by calling "Carp::longmess". If the variable was zero the "stacktrace"
+           returns the text of the error appended with the filename and line number of where the error was created, providing the text does not end with a newline.
+
+       object
+           The object this error was associated with
+
+       file
+           The file where the constructor of this error was called from
+
+       line
+           The line where the constructor of this error was called from
+
+       text
+           The text of the error
+
+       $err->associate($obj)
+           Associates an error with an object to allow error propagation. I.e:
+
+               $ber->encode(...) or
+                   return Error->prior($ber)->associate($ldap);
+
+   OVERLOAD METHODS
+       stringify
+           A method that converts the object into a string. This method may simply return the same as the "text" method, or it may append more information. For example the file name and line number.
+
+           By default this method returns the "-text" argument that was passed to the constructor, or the string "Died" if none was given.
+
+       value
+           A method that will return a value that can be associated with the error. For example if an error was created due to the failure of a system call, then this may return the numeric value of $!
+           at the time.
+
+           By default this method returns the "-value" argument that was passed to the constructor.
+
+PRE-DEFINED ERROR CLASSES
+   Error::Simple
+       This class can be used to hold simple error strings and values. It's constructor takes two arguments. The first is a text value, the second is a numeric value. These values are what will be
+       returned by the overload methods.
+
+       If the text value ends with "at file line 1" as $@ strings do, then this information will be used to set the "-file" and "-line" arguments of the error object.
+
+       This class is used internally if an eval'd block die's with an error that is a plain string. (Unless $Error::ObjectifyCallback is modified)
+
+$Error::ObjectifyCallback
+       This variable holds a reference to a subroutine that converts errors that are plain strings to objects. It is used by Error.pm to convert textual errors to objects, and can be overridden by the
+       user.
+
+       It accepts a single argument which is a hash reference to named parameters.  Currently the only named parameter passed is 'text' which is the text of the error, but others may be available in the
+       future.
+
+       For example the following code will cause Error.pm to throw objects of the class MyError::Bar by default:
+
+           sub throw_MyError_Bar
+           {
+               my $args = shift;
+               my $err = MyError::Bar->new();
+               $err->{'MyBarText'} = $args->{'text'};
+               return $err;
+           }
+
+           {
+               local $Error::ObjectifyCallback = \&throw_MyError_Bar;
+
+               # Error handling here.
+           }
+
+MESSAGE HANDLERS
+       "Error" also provides handlers to extend the output of the "warn()" perl function, and to handle the printing of a thrown "Error" that is not caught or otherwise handled. These are not installed
+       by default, but are requested using the ":warndie" tag in the "use" line.
+
+        use Error qw( :warndie );
+
+       These new error handlers are installed in $SIG{__WARN__} and $SIG{__DIE__}. If these handlers are already defined when the tag is imported, the old values are stored, and used during the new
+       code. Thus, to arrange for custom handling of warnings and errors, you will need to perform something like the following:
+
+        BEGIN {
+          $SIG{__WARN__} = sub {
+            print STDERR "My special warning handler: $_[0]"
+          };
+        }
+
+        use Error qw( :warndie );
+
+       Note that setting $SIG{__WARN__} after the ":warndie" tag has been imported will overwrite the handler that "Error" provides. If this cannot be avoided, then the tag can be explicitly "import"ed
+       later
+
+        use Error;
+
+        $SIG{__WARN__} = ...;
+
+        import Error qw( :warndie );
+
+   EXAMPLE
+       The "__DIE__" handler turns messages such as
+
+        Can't call method "foo" on an undefined value at examples/warndie.pl line 16.
+
+       into
+
+        Unhandled perl error caught at toplevel:
+
+          Can't call method "foo" on an undefined value
+
+        Thrown from: examples/warndie.pl:16
+
+        Full stack trace:
+
+                main::inner('undef') called at examples/warndie.pl line 20
+                main::outer('undef') called at examples/warndie.pl line 23
+
+SEE ALSO
+       See Exception::Class for a different module providing Object-Oriented exception handling, along with a convenient syntax for declaring hierarchies for them. It doesn't provide Error's syntactic
+       sugar of "try { ... }", "catch { ... }", etc. which may be a good thing or a bad thing based on what you want. (Because Error's syntactic sugar tends to break.)
+
+       Error::Exception aims to combine Error and Exception::Class "with correct stringification".
+
+       TryCatch and Try::Tiny are similar in concept to Error.pm only providing a syntax that hopefully breaks less.
+
+KNOWN BUGS
+       None, but that does not mean there are not any.
+
+AUTHORS
+       Graham Barr <gbarr@pobox.com>
+
+       The code that inspired me to write this was originally written by Peter Seibel <peter@weblogic.com> and adapted by Jesse Glick <jglick@sig.bsh.com>.
+
+       ":warndie" handlers added by Paul Evans <leonerd@leonerd.org.uk>
+
+MAINTAINER
+       Shlomi Fish, <http://www.shlomifish.org/> .
+
+PAST MAINTAINERS
+       Arun Kumar U <u_arunkumar@yahoo.com>
+
+COPYRIGHT
+       Copyright (c) 1997-8  Graham Barr. All rights reserved.  This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+SUPPORT
+   Websites
+       The following websites have more information about this module, and may be of help to you. As always, in addition to those websites please use your favorite search engine to discover more
+       resources.
+
+       •   MetaCPAN
+
+           A modern, open-source CPAN search engine, useful to view POD in HTML format.
+
+           <https://metacpan.org/release/Error>
+
+       •   Search CPAN
+
+           The default CPAN search engine, useful to view POD in HTML format.
+
+           <http://search.cpan.org/dist/Error>
+
+       •   RT: CPAN's Bug Tracker
+
+           The RT ( Request Tracker ) website is the default bug/issue tracking system for CPAN.
+
+           <https://rt.cpan.org/Public/Dist/Display.html?Name=Error>
+
+       •   CPAN Ratings
+
+           The CPAN Ratings is a website that allows community ratings and reviews of Perl modules.
+
+           <http://cpanratings.perl.org/d/Error>
+
+       •   CPANTS
+
+           The CPANTS is a website that analyzes the Kwalitee ( code metrics ) of a distribution.
+
+           <http://cpants.cpanauthors.org/dist/Error>
+
+       •   CPAN Testers
+
+           The CPAN Testers is a network of smoke testers who run automated tests on uploaded CPAN distributions.
+
+           <http://www.cpantesters.org/distro/E/Error>
+
+       •   CPAN Testers Matrix
+
+           The CPAN Testers Matrix is a website that provides a visual overview of the test results for a distribution on various Perls/platforms.
+
+           <http://matrix.cpantesters.org/?dist=Error>
+
+       •   CPAN Testers Dependencies
+
+           The CPAN Testers Dependencies is a website that shows a chart of the test results of all dependencies for a distribution.
+
+           <http://deps.cpantesters.org/?module=Error>
+
+   Bugs / Feature Requests
+       Please report any bugs or feature requests by email to "bug-error at rt.cpan.org", or through the web interface at <https://rt.cpan.org/Public/Bug/Report.html?Queue=Error>. You will be
+       automatically notified of any progress on the request by the system.
+
+   Source Code
+       The code is open to the world, and available for you to hack on. Please feel free to browse it and play with it, or whatever. If you want to contribute patches, please send me a diff or prod me
+       to pull from your repository :)
+
+       <https://github.com/shlomif/perl-error.pm>
+
+         git clone git://github.com/shlomif/perl-error.pm.git
+
+AUTHOR
+       Shlomi Fish ( http://www.shlomifish.org/ )
+
+BUGS
+       Please report any bugs or feature requests on the bugtracker website <https://github.com/shlomif/perl-error.pm/issues>
+
+       When submitting a bug or request, please include a test-file or a patch to an existing test-file that illustrates the bug or desired feature.
+
+COPYRIGHT AND LICENSE
+       This software is copyright (c) 2020 by Shlomi Fish ( http://www.shlomifish.org/ ).
+
+       This is free software; you can redistribute it and/or modify it under the same terms as the Perl 5 programming language system itself.
+
+perl v5.36.0                                                                                    2022-05-29                                                                                        Error(3)
+error(n)                                                                                   Tcl Built-In Commands                                                                                  error(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       error - Generate an error
+
+SYNOPSIS
+       error message ?info? ?code?
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       Returns a TCL_ERROR code, which causes command interpretation to be unwound.  Message is a string that is returned to the application to indicate what went wrong.
+
+       The  -errorinfo return option of an interpreter is used to accumulate a stack trace of what was in progress when an error occurred; as nested commands unwind, the Tcl interpreter adds information
+       to the -errorinfo return option.  If the info argument is present, it is used to initialize the -errorinfo return options and the first increment of unwind information will not be  added  by  the
+       Tcl  interpreter.  In other words, the command containing the error command will not appear in the stack trace; in its place will be info.  Historically, this feature had been most useful in con‐
+       junction with the catch command: if a caught error cannot be handled successfully, info can be used to return a stack trace reflecting the original point of occurrence of the error:
+
+              catch {...} errMsg
+              set savedInfo $::errorInfo
+              ...
+              error $errMsg $savedInfo
+
+       When working with Tcl 8.5 or later, the following code should be used instead:
+
+              catch {...} errMsg options
+              ...
+              return -options $options $errMsg
+
+       If the code argument is present, then its value is stored in the -errorcode return option.  The -errorcode return option is intended to hold a machine-readable description of the error  in  cases
+       where such information is available; see the return manual page for information on the proper format for this option's value.
+
+EXAMPLE
+       Generate an error if a basic mathematical operation fails:
+
+              if {1+2 != 3} {
+                  error "something is very wrong with addition"
+              }
+
+SEE ALSO
+       catch(n), return(n)
+
+KEYWORDS
+       error, exception
+
+Tcl                                                                                                                                                                                               error(n)
+error(3)                                                                                 Library Functions Manual                                                                                 error(3)
+
+NAME
+       error, error_at_line, error_message_count, error_one_per_line, error_print_progname - glibc error reporting functions
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <error.h>
+
+       void error(int status, int errnum, const char *format, ...);
+       void error_at_line(int status, int errnum, const char *filename,
+                          unsigned int linenum, const char *format, ...);
+
+       extern unsigned int error_message_count;
+       extern int error_one_per_line;
+
+       extern void (*error_print_progname)(void);
+
+DESCRIPTION
+       error()  is  a  general  error-reporting function.  It flushes stdout, and then outputs to stderr the program name, a colon and a space, the message specified by the printf(3)-style format string
+       format, and, if errnum is nonzero, a second colon and a space followed by the string given by strerror(errnum).  Any arguments required for format should follow format in the argument list.   The
+       output is terminated by a newline character.
+
+       The  program  name printed by error() is the value of the global variable program_invocation_name(3).  program_invocation_name initially has the same value as main()'s argv[0].  The value of this
+       variable can be modified to change the output of error().
+
+       If status has a nonzero value, then error() calls exit(3) to terminate the program using the given value as the exit status; otherwise it returns after printing the error message.
+
+       The error_at_line() function is exactly the same as error(), except for the addition of the arguments filename and linenum.  The output produced is as for error(), except that after  the  program
+       name  are  written:  a colon, the value of filename, a colon, and the value of linenum.  The preprocessor values __LINE__ and __FILE__ may be useful when calling error_at_line(), but other values
+       can also be used.  For example, these arguments could refer to a location in an input file.
+
+       If the global variable error_one_per_line is set nonzero, a sequence of error_at_line() calls with the same value of filename and linenum will result in only one message (the first) being output.
+
+       The global variable error_message_count counts the number of messages that have been output by error() and error_at_line().
+
+       If the global variable error_print_progname is assigned the address of a function (i.e., is not NULL), then that function is called instead of prefixing the message  with  the  program  name  and
+       colon.  The function should print a suitable string to stderr.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────┬───────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface       │ Attribute     │ Value                                                                                                                                                           │
+       ├────────────────┼───────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │error()         │ Thread safety │ MT-Safe locale                                                                                                                                                  │
+       ├────────────────┼───────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │error_at_line() │ Thread safety │ MT-Unsafe race: error_at_line/error_one_per_line locale                                                                                                         │
+       └────────────────┴───────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+       The  internal  error_one_per_line  variable is accessed (without any form of synchronization, but since it's an int used once, it should be safe enough) and, if error_one_per_line is set nonzero,
+       the internal static variables (not exposed to users) used to hold the last printed filename and line number are accessed and modified without synchronization; the update is not atomic and it  oc‐
+       curs before disabling cancelation, so it can be interrupted only after one of the two variables is modified.  After that, error_at_line() is very much like error().
+
+STANDARDS
+       GNU.
+
+SEE ALSO
+       err(3), errno(3), exit(3), perror(3), program_invocation_name(3), strerror(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        error(3)

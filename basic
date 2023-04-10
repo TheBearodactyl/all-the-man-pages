@@ -1,0 +1,598 @@
+basic(3)                                                                                          libmtp                                                                                          basic(3)
+
+NAME
+       basic - The basic device management API.
+
+SYNOPSIS
+   Macros
+       #define LIBMTP_STORAGE_SORTBY_NOTSORTED   0
+       #define LIBMTP_STORAGE_SORTBY_FREESPACE   1
+       #define LIBMTP_STORAGE_SORTBY_MAXSPACE   2
+
+   Functions
+       LIBMTP_error_number_t LIBMTP_Detect_Raw_Devices (LIBMTP_raw_device_t **, int *)
+       int LIBMTP_Check_Specific_Device (int busno, int devno)
+       LIBMTP_mtpdevice_t * LIBMTP_Open_Raw_Device (LIBMTP_raw_device_t *)
+       LIBMTP_mtpdevice_t * LIBMTP_Open_Raw_Device_Uncached (LIBMTP_raw_device_t *)
+       LIBMTP_mtpdevice_t * LIBMTP_Get_Device (int)
+       LIBMTP_mtpdevice_t * LIBMTP_Get_First_Device (void)
+       LIBMTP_error_number_t LIBMTP_Get_Connected_Devices (LIBMTP_mtpdevice_t **)
+       uint32_t LIBMTP_Number_Devices_In_List (LIBMTP_mtpdevice_t *)
+       void LIBMTP_Release_Device_List (LIBMTP_mtpdevice_t *)
+       void LIBMTP_Release_Device (LIBMTP_mtpdevice_t *)
+       void LIBMTP_Dump_Device_Info (LIBMTP_mtpdevice_t *)
+       int LIBMTP_Reset_Device (LIBMTP_mtpdevice_t *)
+       char * LIBMTP_Get_Manufacturername (LIBMTP_mtpdevice_t *)
+       char * LIBMTP_Get_Modelname (LIBMTP_mtpdevice_t *)
+       char * LIBMTP_Get_Serialnumber (LIBMTP_mtpdevice_t *)
+       char * LIBMTP_Get_Deviceversion (LIBMTP_mtpdevice_t *)
+       char * LIBMTP_Get_Friendlyname (LIBMTP_mtpdevice_t *)
+       int LIBMTP_Set_Friendlyname (LIBMTP_mtpdevice_t *, char const *const)
+       char * LIBMTP_Get_Syncpartner (LIBMTP_mtpdevice_t *)
+       int LIBMTP_Set_Syncpartner (LIBMTP_mtpdevice_t *, char const *const)
+       int LIBMTP_Get_Batterylevel (LIBMTP_mtpdevice_t *, uint8_t *const, uint8_t *const)
+       int LIBMTP_Get_Secure_Time (LIBMTP_mtpdevice_t *, char **const)
+       int LIBMTP_Get_Device_Certificate (LIBMTP_mtpdevice_t *, char **const)
+       int LIBMTP_Get_Supported_Filetypes (LIBMTP_mtpdevice_t *, uint16_t **const, uint16_t *const)
+       int LIBMTP_Check_Capability (LIBMTP_mtpdevice_t *, LIBMTP_devicecap_t)
+       LIBMTP_error_t * LIBMTP_Get_Errorstack (LIBMTP_mtpdevice_t *)
+       void LIBMTP_Clear_Errorstack (LIBMTP_mtpdevice_t *)
+       void LIBMTP_Dump_Errorstack (LIBMTP_mtpdevice_t *)
+       int LIBMTP_Get_Storage (LIBMTP_mtpdevice_t *, int const)
+       int LIBMTP_Format_Storage (LIBMTP_mtpdevice_t *, LIBMTP_devicestorage_t *)
+       char * LIBMTP_Get_String_From_Object (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const)
+       uint64_t LIBMTP_Get_u64_From_Object (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint64_t const)
+       uint32_t LIBMTP_Get_u32_From_Object (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint32_t const)
+       uint16_t LIBMTP_Get_u16_From_Object (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint16_t const)
+       uint8_t LIBMTP_Get_u8_From_Object (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint8_t const)
+       int LIBMTP_Set_Object_String (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, char const *const)
+       int LIBMTP_Set_Object_u32 (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint32_t const)
+       int LIBMTP_Set_Object_u16 (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint16_t const)
+       int LIBMTP_Set_Object_u8 (LIBMTP_mtpdevice_t *, uint32_t const, LIBMTP_property_t const, uint8_t const)
+       char const * LIBMTP_Get_Property_Description (LIBMTP_property_t inproperty)
+       int LIBMTP_Is_Property_Supported (LIBMTP_mtpdevice_t *, LIBMTP_property_t const, LIBMTP_filetype_t const)
+       int LIBMTP_Get_Allowed_Property_Values (LIBMTP_mtpdevice_t *, LIBMTP_property_t const, LIBMTP_filetype_t const, LIBMTP_allowed_values_t *)
+       void LIBMTP_destroy_allowed_values_t (LIBMTP_allowed_values_t *)
+
+Detailed Description
+Function Documentation
+   int LIBMTP_Check_Capability (LIBMTP_mtpdevice_t * device, LIBMTP_devicecap_t cap)
+       This function checks if the device has some specific capabilities, in order to avoid calling APIs that may disturb the device.
+
+       Parameters
+           device a pointer to the device to check the capability on.
+           cap the capability to check.
+
+       Returns
+           0 if not supported, any other value means the device has the requested capability.
+
+       References LIBMTP_DEVICECAP_CopyObject, LIBMTP_DEVICECAP_EditObjects, LIBMTP_DEVICECAP_GetPartialObject, LIBMTP_DEVICECAP_MoveObject, LIBMTP_DEVICECAP_SendPartialObject, and
+       LIBMTP_mtpdevice_struct::params.
+
+   int LIBMTP_Check_Specific_Device (int busno, int devno)
+       Checks if a specific device with a certain bus and device number has an MTP type device descriptor.
+
+       Parameters
+           busno the bus number of the device to check
+           deviceno the device number of the device to check
+
+       Returns
+           1 if the device is MTP else 0
+
+   void LIBMTP_Clear_Errorstack (LIBMTP_mtpdevice_t * device)
+       This function clears the error stack of a device and frees any memory used by it. Call this when you're finished with using the errors.
+
+       Parameters
+           device a pointer to the MTP device to clear the error stack for.
+
+       References LIBMTP_mtpdevice_struct::errorstack.
+
+   void LIBMTP_destroy_allowed_values_t (LIBMTP_allowed_values_t * allowed_vals)
+       Destroys a LIBMTP_allowed_values_t struct
+
+       Parameters
+           allowed_vals the struct to destroy
+
+       References LIBMTP_allowed_values_struct::datatype, and LIBMTP_allowed_values_struct::is_range.
+
+   LIBMTP_error_number_t LIBMTP_Detect_Raw_Devices (LIBMTP_raw_device_t ** devices, int * numdevs)
+       Detect the raw MTP device descriptors and return a list of of the devices found.
+
+       Parameters
+           devices a pointer to a variable that will hold the list of raw devices found. This may be NULL on return if the number of detected devices is zero. The user shall simply free() this variable
+           when finished with the raw devices, in order to release memory.
+           numdevs a pointer to an integer that will hold the number of devices in the list. This may be 0.
+
+       Returns
+           0 if successful, any other value means failure.
+
+       Examples
+           detect.c, files.c, folders.c, and tracks.c.
+
+       Referenced by LIBMTP_Get_Connected_Devices(), and LIBMTP_Get_Device().
+
+   void LIBMTP_Dump_Device_Info (LIBMTP_mtpdevice_t * device)
+       This function dumps out a large chunk of textual information provided from the PTP protocol and additionally some extra MTP-specific information where applicable.
+
+       Parameters
+           device a pointer to the MTP device to report info from.
+
+       References dump_usbinfo(), LIBMTP_mtpdevice_struct::extensions, LIBMTP_device_extension_struct::major, LIBMTP_device_extension_struct::minor, LIBMTP_device_extension_struct::name,
+       LIBMTP_device_extension_struct::next, LIBMTP_mtpdevice_struct::object_bitsize, LIBMTP_mtpdevice_struct::params, LIBMTP_mtpdevice_struct::storage, and LIBMTP_mtpdevice_struct::usbinfo.
+
+   void LIBMTP_Dump_Errorstack (LIBMTP_mtpdevice_t * device)
+       This function dumps the error stack to stderr. (You still have to clear the stack though.)
+
+       Parameters
+           device a pointer to the MTP device to dump the error stack for.
+
+       References LIBMTP_mtpdevice_struct::errorstack.
+
+   int LIBMTP_Format_Storage (LIBMTP_mtpdevice_t * device, LIBMTP_devicestorage_t * storage)
+       Formats device storage (if the device supports the operation). WARNING: This WILL delete all data from the device. Make sure you've got confirmation from the user BEFORE you call this function.
+
+       Parameters
+           device a pointer to the device containing the storage to format.
+           storage the actual storage to format.
+
+       Returns
+           0 on success, any other value means failure.
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   int LIBMTP_Get_Allowed_Property_Values (LIBMTP_mtpdevice_t * device, LIBMTP_property_t const property, LIBMTP_filetype_t const filetype, LIBMTP_allowed_values_t * allowed_vals)
+       Gets the allowed values (range or enum) for a property
+
+       Parameters
+           device a pointer to an MTP device
+           property the property to query
+           filetype the filetype of the object you want to set values for
+           allowed_vals pointer to a LIBMTP_allowed_values_t struct to receive the allowed values. Call LIBMTP_destroy_allowed_values_t on this on successful completion.
+
+       Returns
+           0 on success, any other value means failure
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   int LIBMTP_Get_Batterylevel (LIBMTP_mtpdevice_t * device, uint8_t *const maximum_level, uint8_t *const current_level)
+       This function retrieves the current battery level on the device.
+
+       Parameters
+           device a pointer to the device to get the battery level for.
+           maximum_level a pointer to a variable that will hold the maximum level of the battery if the call was successful.
+           current_level a pointer to a variable that will hold the current level of the battery if the call was successful. A value of 0 means that the device is on external power.
+
+       Returns
+           0 if the storage info was successfully retrieved, any other means failure. A typical cause of failure is that the device does not support the battery level property.
+
+       References LIBMTP_mtpdevice_struct::params, and LIBMTP_mtpdevice_struct::usbinfo.
+
+   LIBMTP_error_number_t LIBMTP_Get_Connected_Devices (LIBMTP_mtpdevice_t ** device_list)
+       Get the first connected MTP device node in the linked list of devices. Currently this only provides access to USB devices
+
+       Parameters
+           device_list A list of devices ready to be used by the caller. You need to know how many there are.
+
+       Returns
+           Any error information gathered from device connections
+
+       See also
+           LIBMTP_Number_Devices_In_List()
+
+       References LIBMTP_Detect_Raw_Devices().
+
+   LIBMTP_mtpdevice_t * LIBMTP_Get_Device (int device_nr)
+       Get connected MTP device by list position.
+
+       Returns
+           a device pointer.
+
+       See also
+           LIBMTP_Get_Connected_Devices()
+
+       References LIBMTP_Detect_Raw_Devices().
+
+       Referenced by LIBMTP_Get_First_Device().
+
+   int LIBMTP_Get_Device_Certificate (LIBMTP_mtpdevice_t * device, char **const devcert)
+       This function returns the device (public key) certificate as an XML document string from the device.
+
+       Parameters
+           device a pointer to the device to get the device certificate for.
+           devcert the device certificate as an XML string or NULL if the call failed or the device certificate property is not supported. This string must be free():ed by the caller after use.
+
+       Returns
+           0 on success, any other value means failure.
+
+   char * LIBMTP_Get_Deviceversion (LIBMTP_mtpdevice_t * device)
+       This retrieves the device version (hardware and firmware version) of an MTP device.
+
+       Parameters
+           device a pointer to the device to get the device version for.
+
+       Returns
+           a newly allocated UTF-8 string representing the device version. The string must be freed by the caller after use. If the call was unsuccessful this will contain NULL.
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   LIBMTP_error_t * LIBMTP_Get_Errorstack (LIBMTP_mtpdevice_t * device)
+       This returns the error stack for a device in case you need to either reference the error numbers (e.g. when creating multilingual apps with multiple-language text representations for each error
+       number) or when you need to build a multi-line error text widget or something like that. You need to call the LIBMTP_Clear_Errorstack to clear it when you're finished with it.
+
+       Parameters
+           device a pointer to the MTP device to get the error stack for.
+
+       Returns
+           the error stack or NULL if there are no errors on the stack.
+
+       See also
+           LIBMTP_Clear_Errorstack()
+
+           LIBMTP_Dump_Errorstack()
+
+       References LIBMTP_mtpdevice_struct::errorstack.
+
+   LIBMTP_mtpdevice_t * LIBMTP_Get_First_Device (void)
+       Get the first (as in 'first in the list of') connected MTP device.
+
+       Returns
+           a device pointer.
+
+       See also
+           LIBMTP_Get_Connected_Devices()
+
+       References LIBMTP_Get_Device().
+
+   char * LIBMTP_Get_Friendlyname (LIBMTP_mtpdevice_t * device)
+       This retrieves the 'friendly name' of an MTP device. Usually this is simply the name of the owner or something like 'John Doe's Digital Audio Player'. This property should be supported by all MTP
+       devices.
+
+       Parameters
+           device a pointer to the device to get the friendly name for.
+
+       Returns
+           a newly allocated UTF-8 string representing the friendly name. The string must be freed by the caller after use.
+
+       See also
+           LIBMTP_Set_Friendlyname()
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   char * LIBMTP_Get_Manufacturername (LIBMTP_mtpdevice_t * device)
+       This retrieves the manufacturer name of an MTP device.
+
+       Parameters
+           device a pointer to the device to get the manufacturer name for.
+
+       Returns
+           a newly allocated UTF-8 string representing the manufacturer name. The string must be freed by the caller after use. If the call was unsuccessful this will contain NULL.
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   char * LIBMTP_Get_Modelname (LIBMTP_mtpdevice_t * device)
+       This retrieves the model name (often equal to product name) of an MTP device.
+
+       Parameters
+           device a pointer to the device to get the model name for.
+
+       Returns
+           a newly allocated UTF-8 string representing the model name. The string must be freed by the caller after use. If the call was unsuccessful this will contain NULL.
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   char const  * LIBMTP_Get_Property_Description (LIBMTP_property_t inproperty)
+       This helper function returns a textual description for a libmtp property to be used in dialog boxes etc.
+
+       Parameters
+           inproperty the libmtp internal property to get a description for.
+
+       Returns
+           a string representing the filetype, this must NOT be free():ed by the caller!
+
+   int LIBMTP_Get_Secure_Time (LIBMTP_mtpdevice_t * device, char **const sectime)
+       This function returns the secure time as an XML document string from the device.
+
+       Parameters
+           device a pointer to the device to get the secure time for.
+           sectime the secure time string as an XML document or NULL if the call failed or the secure time property is not supported. This string must be free():ed by the caller after use.
+
+       Returns
+           0 on success, any other value means failure.
+
+   char * LIBMTP_Get_Serialnumber (LIBMTP_mtpdevice_t * device)
+       This retrieves the serial number of an MTP device.
+
+       Parameters
+           device a pointer to the device to get the serial number for.
+
+       Returns
+           a newly allocated UTF-8 string representing the serial number. The string must be freed by the caller after use. If the call was unsuccessful this will contain NULL.
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   int LIBMTP_Get_Storage (LIBMTP_mtpdevice_t * device, int const sortby)
+       This function updates all the storage id's of a device and their properties, then creates a linked list and puts the list head into the device struct. It also optionally sorts this list. If you
+       want to display storage information in your application you should call this function, then dereference the device struct (device->storage) to get out information on the storage.
+
+       You need to call this every time you want to update the device->storage list, for example anytime you need to check available storage somewhere.
+
+       WARNING: since this list is dynamically updated, do not reference its fields in external applications by pointer! E.g do not put a reference to any char * field. instead strncpy() it!
+
+       Parameters
+           device a pointer to the device to get the storage for.
+           sortby an integer that determines the sorting of the storage list. Valid sort methods are defined in libmtp.h with beginning with LIBMTP_STORAGE_SORTBY_. 0 or LIBMTP_STORAGE_SORTBY_NOTSORTED
+           to not sort.
+
+       Returns
+           0 on success, 1 success but only with storage id's, storage properities could not be retrieved and -1 means failure.
+
+       References LIBMTP_mtpdevice_struct::params, and LIBMTP_mtpdevice_struct::storage.
+
+   char * LIBMTP_Get_String_From_Object (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id)
+       Get/set arbitrary properties. These do not update the cache; should only be used on properties not stored in structs
+
+       Retrieves a string from an object
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+
+       Returns
+           valid string or NULL on failure. The returned string must bee free():ed by the caller after use.
+
+   int LIBMTP_Get_Supported_Filetypes (LIBMTP_mtpdevice_t * device, uint16_t **const filetypes, uint16_t *const length)
+       This function retrieves a list of supported file types, i.e. the file types that this device claims it supports, e.g. audio file types that the device can play etc. This list is mitigated to
+       include the file types that libmtp can handle, i.e. it will not list filetypes that libmtp will handle internally like playlists and folders.
+
+       Parameters
+           device a pointer to the device to get the filetype capabilities for.
+           filetypes a pointer to a pointer that will hold the list of supported filetypes if the call was successful. This list must be free():ed by the caller after use.
+           length a pointer to a variable that will hold the length of the list of supported filetypes if the call was successful.
+
+       Returns
+           0 on success, any other value means failure.
+
+       See also
+           LIBMTP_Get_Filetype_Description()
+
+       References LIBMTP_mtpdevice_struct::params, and LIBMTP_mtpdevice_struct::usbinfo.
+
+   char * LIBMTP_Get_Syncpartner (LIBMTP_mtpdevice_t * device)
+       This retrieves the synchronization partner of an MTP device. This property should be supported by all MTP devices.
+
+       Parameters
+           device a pointer to the device to get the sync partner for.
+
+       Returns
+           a newly allocated UTF-8 string representing the synchronization partner. The string must be freed by the caller after use.
+
+       See also
+           LIBMTP_Set_Syncpartner()
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   uint16_t LIBMTP_Get_u16_From_Object (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint16_t const value_default)
+       Retrieves an unsigned 16-bit integer from an object attribute
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value_default Default value to return on failure
+
+       Returns
+           a value
+
+   uint32_t LIBMTP_Get_u32_From_Object (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint32_t const value_default)
+       Retrieves an unsigned 32-bit integer from an object attribute
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value_default Default value to return on failure
+
+       Returns
+           the value
+
+   uint64_t LIBMTP_Get_u64_From_Object (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint64_t const value_default)
+       Retrieves an unsigned 64-bit integer from an object attribute
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value_default Default value to return on failure
+
+       Returns
+           the value
+
+   uint8_t LIBMTP_Get_u8_From_Object (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint8_t const value_default)
+       Retrieves an unsigned 8-bit integer from an object attribute
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value_default Default value to return on failure
+
+       Returns
+           a value
+
+   int LIBMTP_Is_Property_Supported (LIBMTP_mtpdevice_t * device, LIBMTP_property_t const property, LIBMTP_filetype_t const filetype)
+       Determine if a property is supported for a given file type
+
+       Parameters
+           device a pointer to an MTP device
+           property the property to query
+           filetype the filetype of the object you want to set values for
+
+       Returns
+           0 if not supported, positive if supported, negative on error
+
+   uint32_t LIBMTP_Number_Devices_In_List (LIBMTP_mtpdevice_t * device_list)
+       Get the number of devices that are available in the listed device list
+
+       Parameters
+           device_list Pointer to a linked list of devices
+
+       Returns
+           Number of devices in the device list device_list
+
+       See also
+           LIBMTP_Get_Connected_Devices()
+
+       References LIBMTP_mtpdevice_struct::next.
+
+   LIBMTP_mtpdevice_t * LIBMTP_Open_Raw_Device_Uncached (LIBMTP_raw_device_t * rawdevice)
+       This function opens a device from a raw device. It is the preferred way to access devices in the new interface where several devices can come and go as the library is working on a certain device.
+
+       Parameters
+           rawdevice the raw device to open a 'real' device for.
+
+       Returns
+           an open device.
+
+       References LIBMTP_raw_device_struct::bus_location, LIBMTP_mtpdevice_struct::cached, LIBMTP_raw_device_struct::device_entry, LIBMTP_device_entry_struct::device_flags, and
+       LIBMTP_raw_device_struct::devnum.
+
+   void LIBMTP_Release_Device (LIBMTP_mtpdevice_t * device)
+       This closes and releases an allocated MTP device.
+
+       Parameters
+           device a pointer to the MTP device to release.
+
+       References LIBMTP_mtpdevice_struct::params, and LIBMTP_mtpdevice_struct::usbinfo.
+
+       Referenced by LIBMTP_Release_Device_List().
+
+   void LIBMTP_Release_Device_List (LIBMTP_mtpdevice_t * device)
+       This closes and releases an allocated MTP device.
+
+       Parameters
+           device a pointer to the MTP device to release.
+
+       References LIBMTP_Release_Device(), LIBMTP_Release_Device_List(), and LIBMTP_mtpdevice_struct::next.
+
+       Referenced by LIBMTP_Release_Device_List().
+
+   int LIBMTP_Reset_Device (LIBMTP_mtpdevice_t * device)
+       This resets a device in case it supports the PTP_OC_ResetDevice operation code (0x1010).
+
+       Parameters
+           device a pointer to the device to reset.
+
+       Returns
+           0 on success, any other value means failure.
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   int LIBMTP_Set_Friendlyname (LIBMTP_mtpdevice_t * device, char const *const friendlyname)
+       Sets the 'friendly name' of an MTP device.
+
+       Parameters
+           device a pointer to the device to set the friendly name for.
+           friendlyname the new friendly name for the device.
+
+       Returns
+           0 on success, any other value means failure.
+
+       See also
+           LIBMTP_Get_Friendlyname()
+
+       References LIBMTP_mtpdevice_struct::params.
+
+   int LIBMTP_Set_Object_String (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, char const *const string)
+       Sets an object attribute from a string
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           string string value to set
+
+       Returns
+           0 on success, any other value means failure
+
+   int LIBMTP_Set_Object_u16 (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint16_t const value)
+       Sets an object attribute from an unsigned 16-bit integer
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value 16-bit unsigned integer to set
+
+       Returns
+           0 on success, any other value means failure
+
+   int LIBMTP_Set_Object_u32 (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint32_t const value)
+       Sets an object attribute from an unsigned 32-bit integer
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value 32-bit unsigned integer to set
+
+       Returns
+           0 on success, any other value means failure
+
+   int LIBMTP_Set_Object_u8 (LIBMTP_mtpdevice_t * device, uint32_t const object_id, LIBMTP_property_t const attribute_id, uint8_t const value)
+       Sets an object attribute from an unsigned 8-bit integer
+
+       Parameters
+           device a pointer to an MTP device.
+           object_id Object reference
+           attribute_id MTP attribute ID
+           value 8-bit unsigned integer to set
+
+       Returns
+           0 on success, any other value means failure
+
+   int LIBMTP_Set_Syncpartner (LIBMTP_mtpdevice_t * device, char const *const syncpartner)
+       Sets the synchronization partner of an MTP device. Note that we have no idea what the effect of setting this to 'foobar' may be. But the general idea seems to be to tell which program shall
+       synchronize with this device and tell others to leave it alone.
+
+       Parameters
+           device a pointer to the device to set the sync partner for.
+           syncpartner the new synchronization partner for the device.
+
+       Returns
+           0 on success, any other value means failure.
+
+       See also
+           LIBMTP_Get_Syncpartner()
+
+       References LIBMTP_mtpdevice_struct::params.
+
+Author
+       Generated automatically by Doxygen for libmtp from the source code.
+
+Version 1.1.20                                                                                Mon Jul 4 2022                                                                                      basic(3)
+Basic classifier in tc(8)                                                                          Linux                                                                         Basic classifier in tc(8)
+
+NAME
+       basic - basic traffic control filter
+
+SYNOPSIS
+       tc filter ... basic [ match EMATCH_TREE ] [ action ACTION_SPEC ] [ classid CLASSID ]
+
+DESCRIPTION
+       The basic filter allows one to classify packets using the extended match infrastructure.
+
+OPTIONS
+       action ACTION_SPEC
+              Apply an action from the generic actions framework on matching packets.
+
+       classid CLASSID
+              Push matching packets into the class identified by CLASSID.
+
+       match EMATCH_TREE
+              Match packets using the extended match infrastructure. See tc-ematch(8) for a detailed description of the allowed syntax in EMATCH_TREE.
+
+SEE ALSO
+       tc(8), tc-ematch(8)
+
+iproute2                                                                                        21 Oct 2015                                                                      Basic classifier in tc(8)

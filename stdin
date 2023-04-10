@@ -1,0 +1,176 @@
+stdin(3)                   Library Functions Manual                   stdin(3)
+
+NAME
+       stdin, stdout, stderr - standard I/O streams
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       extern FILE *stdin;
+       extern FILE *stdout;
+       extern FILE *stderr;
+
+DESCRIPTION
+       Under  normal circumstances every UNIX program has three streams opened
+       for it when it starts up, one for input, one for output,  and  one  for
+       printing diagnostic or error messages.  These are typically attached to
+       the user's terminal (see tty(4)) but might instead refer  to  files  or
+       other  devices,  depending  on what the parent process chose to set up.
+       (See also the "Redirection" section of sh(1).)
+
+       The input stream is referred to as "standard input"; the output  stream
+       is  referred  to as "standard output"; and the error stream is referred
+       to as "standard error".  These terms are abbreviated to form  the  sym‐
+       bols used to refer to these files, namely stdin, stdout, and stderr.
+
+       Each  of these symbols is a stdio(3) macro of type pointer to FILE, and
+       can be used with functions like fprintf(3) or fread(3).
+
+       Since FILEs are a buffering wrapper around UNIX file  descriptors,  the
+       same  underlying files may also be accessed using the raw UNIX file in‐
+       terface, that is, the functions like read(2) and lseek(2).
+
+       On program startup, the integer file descriptors  associated  with  the
+       streams  stdin,  stdout, and stderr are 0, 1, and 2, respectively.  The
+       preprocessor symbols STDIN_FILENO, STDOUT_FILENO, and STDERR_FILENO are
+       defined  with  these values in <unistd.h>.  (Applying freopen(3) to one
+       of these streams can change the file descriptor number associated  with
+       the stream.)
+
+       Note  that mixing use of FILEs and raw file descriptors can produce un‐
+       expected results and should generally be avoided.  (For the masochistic
+       among  you: POSIX.1, section 8.2.3, describes in detail how this inter‐
+       action is supposed to work.)  A general rule is that  file  descriptors
+       are  handled  in the kernel, while stdio is just a library.  This means
+       for example, that after an exec(3), the child inherits  all  open  file
+       descriptors, but all old streams have become inaccessible.
+
+       Since the symbols stdin, stdout, and stderr are specified to be macros,
+       assigning to them is nonportable.  The standard streams can be made  to
+       refer  to different files with help of the library function freopen(3),
+       specially introduced to make it possible to reassign stdin, stdout, and
+       stderr.   The  standard  streams are closed by a call to exit(3) and by
+       normal program termination.
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+       The standards also stipulate that these three streams shall be open  at
+       program startup.
+
+HISTORY
+       C89, POSIX.1-2001.
+
+NOTES
+       The  stream  stderr  is unbuffered.  The stream stdout is line-buffered
+       when it points to a terminal.  Partial  lines  will  not  appear  until
+       fflush(3) or exit(3) is called, or a newline is printed.  This can pro‐
+       duce unexpected results, especially with debugging output.  The buffer‐
+       ing  mode  of the standard streams (or any other stream) can be changed
+       using the setbuf(3) or setvbuf(3) call.  Note that in case stdin is as‐
+       sociated with a terminal, there may also be input buffering in the ter‐
+       minal driver, entirely unrelated to stdio buffering.  (Indeed, normally
+       terminal input is line buffered in the kernel.)  This kernel input han‐
+       dling can be modified using calls like tcsetattr(3); see also  stty(1),
+       and termios(3).
+
+SEE ALSO
+       csh(1), sh(1), open(2), fopen(3), stdio(3)
+
+Linux man-pages 6.04              2023-03-30                          stdin(3)
+STDIN(3P)                  POSIX Programmer's Manual                 STDIN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       stderr, stdin, stdout — standard I/O streams
+
+SYNOPSIS
+       #include <stdio.h>
+
+       extern FILE *stderr, *stdin, *stdout;
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with  the
+       ISO C  standard.  Any  conflict between the requirements described here
+       and the ISO C standard is unintentional. This  volume  of  POSIX.1‐2017
+       defers to the ISO C standard.
+
+       A  file with associated buffering is called a stream and is declared to
+       be a pointer to a defined type FILE.  The fopen() function shall create
+       certain descriptive data for a stream and return a pointer to designate
+       the stream in all further transactions. Normally, there are three  open
+       streams with constant pointers declared in the <stdio.h> header and as‐
+       sociated with the standard open files.
+
+       At program start-up, three streams shall be predefined and need not  be
+       opened  explicitly:  standard  input  (for reading conventional input),
+       standard output (for writing conventional output), and  standard  error
+       (for writing diagnostic output). When opened, the standard error stream
+       is not fully buffered; the standard input and standard  output  streams
+       are  fully  buffered if and only if the stream can be determined not to
+       refer to an interactive device.
+
+       The following symbolic values in <unistd.h> define the file descriptors
+       that  shall be associated with the C-language stdin, stdout, and stderr
+       when the application is started:
+
+       STDIN_FILENO  Standard input value, stdin.  Its value is 0.
+
+       STDOUT_FILENO Standard output value, stdout.  Its value is 1.
+
+       STDERR_FILENO Standard error value, stderr.  Its value is 2.
+
+       The stderr stream is expected to be open for reading and writing.
+
+RETURN VALUE
+       None.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fclose(), feof(), ferror(), fileno(), fopen(), fprintf(), fread(),  fs‐
+       canf(),  fseek(), getc(), gets(), popen(), putc(), puts(), read(), set‐
+       buf(), setvbuf(), tmpfile(), ungetc(), vfprintf()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                            STDIN(3P)

@@ -1,0 +1,58 @@
+avahi.service(5)                                                                            File Formats Manual                                                                           avahi.service(5)
+
+NAME
+       avahi.service - avahi-daemon static service file
+
+SYNOPSIS
+       /etc/avahi/services/*.service
+
+DESCRIPTION
+       /etc/avahi/services/*.service  are  XML  fragments containing static DNS-SD service data. Every service file can contain multiple service definitions which share the same name. This is useful for
+       publishing service data for services which implement multiple protocols. (i.e. a printer implementing _ipp._tcp and _printer._tcp)
+
+XML TAGS
+       <service-group> The document tag of avahi service files. Should contain one <name> and one or more <service> elements.
+
+       <name replace-wildcards="yes|no"> The service name. If replace-wildcards is "yes", any occurence of the string "%h" will be replaced by the local host name. This can be  used  for  service  names
+       like "Remote Terminal on %h". If replace-wildcards is not specified, defaults to "no".
+
+       <service  protocol="ipv4|ipv6|any">  Contains  the service information for exactly one service type. Should contain one <type> and one <port> element. Optionally it may contain one <domain-name>,
+       one <host-name>, any number of <subtype> and any number of <txt-record> elements. The attribute protocol specifies the protocol to advertise the service on. If any is used (which is the default),
+       the service will be advertised on both IPv4 and IPv6.
+
+       <type> Contains the DNS-SD service type for this service. e.g. "_http._tcp".
+
+       <subtype> Contains an additional DNS-SD service subtype for this service. e.g. "_anon._sub._ftp._tcp".
+
+       <domain-name> The domain name this service should be registered. If omited defaults to the default domain of the avahi daemon. (probably .local)
+
+       <host-name>  The host name of the host that provides this service. This should be a host that is resolvable by multicast or unicast DNS. Please note that you need to specify a fully-qualified do‐
+       main name (FQDN) here, i.e. .local is not appended implicitly! The host name doesn't need to be part of the domain specified in <domain-name>. See avahi.hosts(5) for more information how to  pub‐
+       lish additional host name mappings.
+
+       <port> The IP port number the service listens on.
+
+       <txt-record  value-format="text|binary-hex|binary-base64">  DNS-SD  TXT record data. If value-format is "text", the value of the TXT record is taken verbatim. If value-format is "binary-hex" then
+       the value of TXT record is decoded by taking pairs of characters after the "=" char and interpreting them as the textual representation of the two-digit hexadecimal  number.  Both  uppercase  and
+       lowercase  hexadecimal digits are allowed. The 0x or 0X prefix is not allowed. This requires the length of the value to be even. If value-format is "binary-base64" then the value of TXT record is
+       decoded with a base64 decoder. The character set used is A-Za-z0-9+/. This requires the length of the value to be a multiple of 4, with "=" as padding at the end. If value-format  is  not  speci‐
+       fied, defaults to "text". Examples (all the values are decoded to the string "value" without quotes):
+
+              <txt-record>key=value<txt-record>
+
+              <txt-record value-format="text">key=value<txt-record>
+
+              <txt-record value-format="binary-hex">key=76616c7565<txt-record>
+
+              <txt-record value-format="binary-base64">key=dmFsdWU=<txt-record>
+
+AUTHORS
+       The Avahi Developers <avahi (at) lists (dot) freedesktop (dot) org>; Avahi is available from http://avahi.org/
+
+SEE ALSO
+       avahi-daemon(8), avahi.hosts(5)
+
+COMMENTS
+       This man page was written using xml2man(1) by Oliver Kurth.
+
+Manuals                                                                                            User                                                                                   avahi.service(5)

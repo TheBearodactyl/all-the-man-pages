@@ -1,0 +1,117 @@
+arc4random(3)                                                                            Library Functions Manual                                                                            arc4random(3)
+
+NAME
+       arc4random, arc4random_uniform, arc4random_buf - cryptographically-secure pseudorandom number generator
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       uint32_t arc4random(void);
+       uint32_t arc4random_uniform(uint32_t upper_bound);
+       void arc4random_buf(void buf[.n], size_t n);
+
+DESCRIPTION
+       These functions give cryptographically-secure pseudorandom numbers.
+
+       arc4random() returns a uniformly-distributed value.
+
+       arc4random_uniform() returns a uniformly-distributed value less than upper_bound (see BUGS).
+
+       arc4random_buf() fills the memory pointed to by buf, with n bytes of pseudorandom data.
+
+       The  rand(3)  and  drand48(3) families of functions should only be used where the quality of the pseudorandom numbers is not a concern and there's a need for repeatability of the results.  Unless
+       you meet both of those conditions, use the arc4random() functions.
+
+RETURN VALUE
+       arc4random() returns a pseudorandom number.
+
+       arc4random_uniform() returns a pseudorandom number less than upper_bound for valid input, or 0 when upper_bound is invalid.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │arc4random(), arc4random_uniform(), arc4random_buf()                                                                                                                    │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       BSD.
+
+HISTORY
+       OpenBSD 2.1, FreeBSD 3.0, NetBSD 1.6, DragonFly 1.0, libbsd, glibc 2.36.
+
+BUGS
+       An upper_bound of 0 doesn't make sense in a call to arc4random_uniform().  Such a call will fail, and return 0.  Be careful, since that value is not less than upper_bound.  In some cases, such as
+       accessing an array, using that value could result in Undefined Behavior.
+
+SEE ALSO
+       getrandom(3), rand(3), drand48(3), random(7)
+
+Linux man-pages 6.04                                                                            2023-03-18                                                                                   arc4random(3)
+arc4random(3bsd)                                                                                   LOCAL                                                                                  arc4random(3bsd)
+
+NAME
+     arc4random, arc4random_buf, arc4random_uniform, arc4random_stir, arc4random_addrandom — random number generator
+
+LIBRARY
+     Utility functions from BSD systems (libbsd, -lbsd)
+
+SYNOPSIS
+     #include <stdlib.h>
+     (See libbsd(7) for include usage.)
+
+     uint32_t
+     arc4random(void);
+
+     void
+     arc4random_buf(void *buf, size_t nbytes);
+
+     uint32_t
+     arc4random_uniform(uint32_t upper_bound);
+
+     void
+     arc4random_stir(void);
+
+     void
+     arc4random_addrandom(unsigned char *dat, int datlen);
+
+DESCRIPTION
+     This family of functions provides higher quality data than those described in rand(3), random(3), and rand48(3).
+
+     Use of these functions is encouraged for almost all random number consumption because the other interfaces are deficient in either quality, portability, standardization, or availability.  These
+     functions can be called in almost all coding environments, including pthreads(3) and chroot(2).
+
+     High quality 32-bit pseudo-random numbers are generated very quickly.  On each call, a cryptographic pseudo-random number generator is used to generate a new result.  One data pool is used for all
+     consumers in a process, so that consumption under program flow can act as additional stirring.  The subsystem is re-seeded from the kernel random number subsystem using getentropy(2) on a regular
+     basis, and also upon fork(2).
+
+     The arc4random() function returns a single 32-bit value.
+
+     The arc4random_buf() function fills the region buf of length nbytes with random data.
+
+     arc4random_uniform() will return a single 32-bit value, uniformly distributed but less than upper_bound.  This is recommended over constructions like “arc4random() % upper_bound” as it avoids "mod‐
+     ulo bias" when the upper bound is not a power of two.  In the worst case, this function may consume multiple iterations to ensure uniformity; see the source code to understand the problem and solu‐
+     tion.
+
+     The arc4random_stir() function reads data from getentropy(2) and uses it to re-seed the subsystem via arc4random_addrandom().
+
+     There is no need to call arc4random_stir() before using arc4random() functions family, since they automatically initialize themselves.
+
+RETURN VALUES
+     These functions are always successful, and no return value is reserved to indicate an error.
+
+SEE ALSO
+     rand(3), rand48(3), random(3)
+
+HISTORY
+     These functions first appeared in OpenBSD 2.1, FreeBSD 3.0, NetBSD 1.6, and DragonFly 1.0.
+
+     The original version of this random number generator used the RC4 (also known as ARC4) algorithm.  In OpenBSD 5.5 it was replaced with the ChaCha20 cipher, and it may be replaced again in the fu‐
+     ture as cryptographic techniques advance.  A good mnemonic is “A Replacement Call for Random”.
+
+BSD                                                                                         September 29, 2019                                                                                         BSD

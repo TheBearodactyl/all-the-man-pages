@@ -1,0 +1,52 @@
+BIO_F_READBUFFER(3ssl)              OpenSSL             BIO_F_READBUFFER(3ssl)
+
+NAME
+       BIO_f_readbuffer - read only buffering BIO that supports BIO_tell() and
+       BIO_seek()
+
+SYNOPSIS
+        #include <openssl/bio.h>
+
+        const BIO_METHOD *BIO_f_readbuffer(void);
+
+DESCRIPTION
+       BIO_f_readbuffer() returns the read buffering BIO method.
+
+       This BIO filter can be inserted on top of BIO's that do not support
+       BIO_tell() or BIO_seek() (e.g. A file BIO that uses stdin).
+
+       Data read from a read buffering BIO comes from an internal buffer which
+       is filled from the next BIO in the chain.
+
+       BIO_gets() is supported for read buffering BIOs.  Writing data to a
+       read buffering BIO is not supported.
+
+       Calling BIO_reset() on a read buffering BIO does not clear any buffered
+       data.
+
+NOTES
+       Read buffering BIOs implement BIO_read_ex() by using BIO_read_ex()
+       operations on the next BIO (e.g. a file BIO) in the chain and storing
+       the result in an internal buffer, from which bytes are given back to
+       the caller as appropriate for the call. BIO_read_ex() is guaranteed to
+       give the caller the number of bytes it asks for, unless there's an
+       error or end of communication is reached in the next BIO. The internal
+       buffer can grow to cache the entire contents of the next BIO in the
+       chain. BIO_seek() uses the internal buffer, so that it can only seek
+       into data that is already read.
+
+RETURN VALUES
+       BIO_f_readbuffer() returns the read buffering BIO method.
+
+SEE ALSO
+       bio(7), BIO_read(3), BIO_gets(3), BIO_reset(3), BIO_ctrl(3).
+
+COPYRIGHT
+       Copyright 2021 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use
+       this file except in compliance with the License.  You can obtain a copy
+       in the file LICENSE in the source distribution or at
+       <https://www.openssl.org/source/license.html>.
+
+3.0.8                             2023-02-07            BIO_F_READBUFFER(3ssl)

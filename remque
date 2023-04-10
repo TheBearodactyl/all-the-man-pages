@@ -1,0 +1,228 @@
+insque(3)                  Library Functions Manual                  insque(3)
+
+NAME
+       insque, remque - insert/remove an item from a queue
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <search.h>
+
+       void insque(void *elem, void *prev);
+       void remque(void *elem);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       insque(), remque():
+           _XOPEN_SOURCE >= 500
+               || /* glibc >= 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _SVID_SOURCE
+
+DESCRIPTION
+       The  insque()  and  remque()  functions manipulate doubly linked lists.
+       Each element in the list is a structure of which the first two elements
+       are  a  forward  and a backward pointer.  The linked list may be linear
+       (i.e., NULL forward pointer at the end of the list  and  NULL  backward
+       pointer at the start of the list) or circular.
+
+       The  insque()  function  inserts the element pointed to by elem immedi‐
+       ately after the element pointed to by prev.
+
+       If the list is linear, then the call insque(elem, NULL) can be used  to
+       insert  the  initial  list  element,  and the call sets the forward and
+       backward pointers of elem to NULL.
+
+       If the list is circular, the caller should ensure that the forward  and
+       backward pointers of the first element are initialized to point to that
+       element, and the prev argument of the insque() call should  also  point
+       to the element.
+
+       The  remque()  function removes the element pointed to by elem from the
+       doubly linked list.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │insque(), remque()                          │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+       On  ancient  systems,  the  arguments  of  these functions were of type
+       struct qelem *, defined as:
+
+           struct qelem {
+               struct qelem *q_forw;
+               struct qelem *q_back;
+               char          q_data[1];
+           };
+
+       This is still what you will get if _GNU_SOURCE is  defined  before  in‐
+       cluding <search.h>.
+
+       The  location  of the prototypes for these functions differs among sev‐
+       eral versions of UNIX.  The above is the POSIX version.   Some  systems
+       place them in <string.h>.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+BUGS
+       In  glibc 2.4 and earlier, it was not possible to specify prev as NULL.
+       Consequently, to build a linear list, the caller had to  build  a  list
+       using  an  initial  call  that  contained the first two elements of the
+       list, with the forward and backward pointers in each  element  suitably
+       initialized.
+
+EXAMPLES
+       The program below demonstrates the use of insque().  Here is an example
+       run of the program:
+
+           $ ./a.out -c a b c
+           Traversing completed list:
+               a
+               b
+               c
+           That was a circular list
+
+   Program source
+
+       #include <search.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       struct element {
+           struct element *forward;
+           struct element *backward;
+           char *name;
+       };
+
+       static struct element *
+       new_element(void)
+       {
+           struct element *e;
+
+           e = malloc(sizeof(*e));
+           if (e == NULL) {
+               fprintf(stderr, "malloc() failed\n");
+               exit(EXIT_FAILURE);
+           }
+
+           return e;
+       }
+
+       int
+       main(int argc, char *argv[])
+       {
+           struct element *first, *elem, *prev;
+           int circular, opt, errfnd;
+
+           /* The "-c" command-line option can be used to specify that the
+              list is circular. */
+
+           errfnd = 0;
+           circular = 0;
+           while ((opt = getopt(argc, argv, "c")) != -1) {
+               switch (opt) {
+               case 'c':
+                   circular = 1;
+                   break;
+               default:
+                   errfnd = 1;
+                   break;
+               }
+           }
+
+           if (errfnd || optind >= argc) {
+               fprintf(stderr,  "Usage: %s [-c] string...\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           /* Create first element and place it in the linked list. */
+
+           elem = new_element();
+           first = elem;
+
+           elem->name = argv[optind];
+
+           if (circular) {
+               elem->forward = elem;
+               elem->backward = elem;
+               insque(elem, elem);
+           } else {
+               insque(elem, NULL);
+           }
+
+           /* Add remaining command-line arguments as list elements. */
+
+           while (++optind < argc) {
+               prev = elem;
+
+               elem = new_element();
+               elem->name = argv[optind];
+               insque(elem, prev);
+           }
+
+           /* Traverse the list from the start, printing element names. */
+
+           printf("Traversing completed list:\n");
+           elem = first;
+           do {
+               printf("    %s\n", elem->name);
+               elem = elem->forward;
+           } while (elem != NULL && elem != first);
+
+           if (elem == first)
+               printf("That was a circular list\n");
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       queue(7)
+
+Linux man-pages 6.04              2023-03-30                         insque(3)
+REMQUE(3P)                 POSIX Programmer's Manual                REMQUE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       remque — remove an element from a queue
+
+SYNOPSIS
+       #include <search.h>
+
+       void remque(void *element);
+
+DESCRIPTION
+       Refer to insque().
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           REMQUE(3P)

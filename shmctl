@@ -1,0 +1,397 @@
+SHMCTL(3P)                 POSIX Programmer's Manual                SHMCTL(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       shmctl — XSI shared memory control operations
+
+SYNOPSIS
+       #include <sys/shm.h>
+
+       int shmctl(int shmid, int cmd, struct shmid_ds *buf);
+
+DESCRIPTION
+       The shmctl() function operates on XSI shared memory (see the Base Defi‐
+       nitions  volume  of POSIX.1‐2017, Section 3.346, Shared Memory Object).
+       It is unspecified whether this function interoperates with the realtime
+       interprocess communication facilities defined in Section 2.8, Realtime.
+
+       The shmctl() function provides a variety of shared memory control oper‐
+       ations as specified by cmd.  The following values for  cmd  are  avail‐
+       able:
+
+       IPC_STAT    Place the current value of each member of the shmid_ds data
+                   structure associated with shmid into the structure  pointed
+                   to  by  buf.   The contents of the structure are defined in
+                   <sys/shm.h>.
+
+       IPC_SET     Set the value of the following members of the shmid_ds data
+                   structure  associated with shmid to the corresponding value
+                   found in the structure pointed to by buf:
+
+                       shm_perm.uid
+                       shm_perm.gid
+                       shm_perm.mode    Low-order nine bits.
+
+                   Also, the shm_ctime timestamp shall be set to  the  current
+                   time,  as  described in Section 2.7.1, IPC General Descrip‐
+                   tion.
+
+                   IPC_SET can only be executed by a process that has  an  ef‐
+                   fective  user ID equal to either that of a process with ap‐
+                   propriate privileges or to the value  of  shm_perm.cuid  or
+                   shm_perm.uid in the shmid_ds data structure associated with
+                   shmid.
+
+       IPC_RMID    Remove the shared memory identifier specified by shmid from
+                   the  system  and  destroy  the  shared  memory  segment and
+                   shmid_ds data structure associated with  it.  IPC_RMID  can
+                   only be executed by a process that has an effective user ID
+                   equal to either that of a process with  appropriate  privi‐
+                   leges  or  to the value of shm_perm.cuid or shm_perm.uid in
+                   the shmid_ds data structure associated with shmid.
+
+RETURN VALUE
+       Upon successful completion, shmctl()  shall  return  0;  otherwise,  it
+       shall return -1 and set errno to indicate the error.
+
+ERRORS
+       The shmctl() function shall fail if:
+
+       EACCES The  argument  cmd  is equal to IPC_STAT and the calling process
+              does not have read permission; see Section 2.7, XSI Interprocess
+              Communication.
+
+       EINVAL The  value  of shmid is not a valid shared memory identifier, or
+              the value of cmd is not a valid command.
+
+       EPERM  The argument cmd is equal to IPC_RMID or IPC_SET and the  effec‐
+              tive  user  ID  of the calling process is not equal to that of a
+              process with appropriate privileges and it is not equal  to  the
+              value of shm_perm.cuid or shm_perm.uid in the data structure as‐
+              sociated with shmid.
+
+       The shmctl() function may fail if:
+
+       EOVERFLOW
+              The cmd argument is IPC_STAT and the gid or  uid  value  is  too
+              large  to be stored in the structure pointed to by the buf argu‐
+              ment.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The POSIX Realtime Extension defines alternative interfaces for  inter‐
+       process  communication.  Application  developers  who  need  to use IPC
+       should design their applications so that modules using the IPC routines
+       described  in Section 2.7, XSI Interprocess Communication can be easily
+       modified to use the alternative interfaces.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.7, XSI Interprocess  Communication,  Section  2.8,  Realtime,
+       shmat(), shmdt(), shmget(), shm_open(), shm_unlink()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 3.346, Shared Mem‐
+       ory Object, <sys_shm.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SHMCTL(3P)
+shmctl(2)                     System Calls Manual                    shmctl(2)
+
+NAME
+       shmctl - System V shared memory control
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/shm.h>
+
+       int shmctl(int shmid, int cmd, struct shmid_ds *buf);
+
+DESCRIPTION
+       shmctl()  performs  the  control operation specified by cmd on the Sys‐
+       tem V shared memory segment whose identifier is given in shmid.
+
+       The buf argument is a pointer  to  a  shmid_ds  structure,  defined  in
+       <sys/shm.h> as follows:
+
+           struct shmid_ds {
+               struct ipc_perm shm_perm;    /* Ownership and permissions */
+               size_t          shm_segsz;   /* Size of segment (bytes) */
+               time_t          shm_atime;   /* Last attach time */
+               time_t          shm_dtime;   /* Last detach time */
+               time_t          shm_ctime;   /* Creation time/time of last
+                                               modification via shmctl() */
+               pid_t           shm_cpid;    /* PID of creator */
+               pid_t           shm_lpid;    /* PID of last shmat(2)/shmdt(2) */
+               shmatt_t        shm_nattch;  /* No. of current attaches */
+               ...
+           };
+
+       The fields of the shmid_ds structure are as follows:
+
+       shm_perm    This  is  an  ipc_perm structure (see below) that specifies
+                   the access permissions on the shared memory segment.
+
+       shm_segsz   Size in bytes of the shared memory segment.
+
+       shm_atime   Time of the last shmat(2) system call  that  attached  this
+                   segment.
+
+       shm_dtime   Time  of  the  last shmdt(2) system call that detached tgis
+                   segment.
+
+       shm_ctime   Time of creation of segment or time of  the  last  shmctl()
+                   IPC_SET operation.
+
+       shm_cpid    ID of the process that created the shared memory segment.
+
+       shm_lpid    ID of the last process that executed a shmat(2) or shmdt(2)
+                   system call on this segment.
+
+       shm_nattch  Number of processes that have this segment attached.
+
+       The ipc_perm structure is defined as follows  (the  highlighted  fields
+       are settable using IPC_SET):
+
+           struct ipc_perm {
+               key_t          __key;    /* Key supplied to shmget(2) */
+               uid_t          uid;      /* Effective UID of owner */
+               gid_t          gid;      /* Effective GID of owner */
+               uid_t          cuid;     /* Effective UID of creator */
+               gid_t          cgid;     /* Effective GID of creator */
+               unsigned short mode;     /* Permissions + SHM_DEST and
+                                           SHM_LOCKED flags */
+               unsigned short __seq;    /* Sequence number */
+           };
+
+       The  least  significant 9 bits of the mode field of the ipc_perm struc‐
+       ture define the access permissions for the shared memory segment.   The
+       permission bits are as follows:
+
+       0400   Read by user
+       0200   Write by user
+       0040   Read by group
+       0020   Write by group
+       0004   Read by others
+       0002   Write by others
+
+       Bits  0100, 0010, and 0001 (the execute bits) are unused by the system.
+       (It is not necessary to have execute permission on a segment  in  order
+       to perform a shmat(2) call with the SHM_EXEC flag.)
+
+       Valid values for cmd are:
+
+       IPC_STAT
+              Copy  information from the kernel data structure associated with
+              shmid into the shmid_ds structure pointed to by buf.  The caller
+              must have read permission on the shared memory segment.
+
+       IPC_SET
+              Write  the  values  of  some  members  of the shmid_ds structure
+              pointed to by buf to the kernel data structure  associated  with
+              this shared memory segment, updating also its shm_ctime member.
+
+              The  following  fields  are updated: shm_perm.uid, shm_perm.gid,
+              and (the least significant 9 bits of) shm_perm.mode.
+
+              The effective UID of the calling process must  match  the  owner
+              (shm_perm.uid)  or  creator (shm_perm.cuid) of the shared memory
+              segment, or the caller must be privileged.
+
+       IPC_RMID
+              Mark the segment to be destroyed.  The segment will actually  be
+              destroyed  only  after  the last process detaches it (i.e., when
+              the shm_nattch member of the associated  structure  shmid_ds  is
+              zero).   The caller must be the owner or creator of the segment,
+              or be privileged.  The buf argument is ignored.
+
+              If a segment has been marked for destruction, then the (nonstan‐
+              dard) SHM_DEST flag of the shm_perm.mode field in the associated
+              data structure retrieved by IPC_STAT will be set.
+
+              The caller must ensure that a segment is  eventually  destroyed;
+              otherwise  its  pages that were faulted in will remain in memory
+              or swap.
+
+              See also the description of /proc/sys/kernel/shm_rmid_forced  in
+              proc(5).
+
+       IPC_INFO (Linux-specific)
+              Return  information  about  system-wide shared memory limits and
+              parameters in the structure pointed to by buf.   This  structure
+              is  of  type  shminfo  (thus,  a  cast  is required), defined in
+              <sys/shm.h> if the _GNU_SOURCE feature test macro is defined:
+
+                  struct shminfo {
+                      unsigned long shmmax; /* Maximum segment size */
+                      unsigned long shmmin; /* Minimum segment size;
+                                               always 1 */
+                      unsigned long shmmni; /* Maximum number of segments */
+                      unsigned long shmseg; /* Maximum number of segments
+                                               that a process can attach;
+                                               unused within kernel */
+                      unsigned long shmall; /* Maximum number of pages of
+                                               shared memory, system-wide */
+                  };
+
+              The shmmni, shmmax, and shmall settings can be changed via /proc
+              files of the same name; see proc(5) for details.
+
+       SHM_INFO (Linux-specific)
+              Return  a  shm_info  structure  whose fields contain information
+              about system resources consumed by shared memory.   This  struc‐
+              ture  is  defined in <sys/shm.h> if the _GNU_SOURCE feature test
+              macro is defined:
+
+                  struct shm_info {
+                      int           used_ids; /* # of currently existing
+                                                 segments */
+                      unsigned long shm_tot;  /* Total number of shared
+                                                 memory pages */
+                      unsigned long shm_rss;  /* # of resident shared
+                                                 memory pages */
+                      unsigned long shm_swp;  /* # of swapped shared
+                                                 memory pages */
+                      unsigned long swap_attempts;
+                                              /* Unused since Linux 2.4 */
+                      unsigned long swap_successes;
+                                              /* Unused since Linux 2.4 */
+                  };
+
+       SHM_STAT (Linux-specific)
+              Return a shmid_ds structure as for IPC_STAT.  However, the shmid
+              argument  is not a segment identifier, but instead an index into
+              the kernel's internal array that maintains information about all
+              shared memory segments on the system.
+
+       SHM_STAT_ANY (Linux-specific, since Linux 4.17)
+              Return   a   shmid_ds   structure  as  for  SHM_STAT.   However,
+              shm_perm.mode is not checked for read access for shmid,  meaning
+              that  any  user  can employ this operation (just as any user may
+              read /proc/sysvipc/shm to obtain the same information).
+
+       The caller can prevent or allow swapping of  a  shared  memory  segment
+       with the following cmd values:
+
+       SHM_LOCK (Linux-specific)
+              Prevent  swapping of the shared memory segment.  The caller must
+              fault in any pages that are required to be present after locking
+              is  enabled.   If  a segment has been locked, then the (nonstan‐
+              dard) SHM_LOCKED flag of the shm_perm.mode field in the  associ‐
+              ated data structure retrieved by IPC_STAT will be set.
+
+       SHM_UNLOCK (Linux-specific)
+              Unlock the segment, allowing it to be swapped out.
+
+       Before  Linux  2.6.10,  only a privileged process could employ SHM_LOCK
+       and SHM_UNLOCK.  Since Linux 2.6.10, an unprivileged process can employ
+       these  operations if its effective UID matches the owner or creator UID
+       of the segment, and (for SHM_LOCK) the amount of memory  to  be  locked
+       falls within the RLIMIT_MEMLOCK resource limit (see setrlimit(2)).
+
+RETURN VALUE
+       A  successful  IPC_INFO  or SHM_INFO operation returns the index of the
+       highest used entry in the kernel's internal array recording information
+       about  all  shared memory segments.  (This information can be used with
+       repeated SHM_STAT or  SHM_STAT_ANY  operations  to  obtain  information
+       about all shared memory segments on the system.)  A successful SHM_STAT
+       operation returns the identifier of the shared memory segment whose in‐
+       dex was given in shmid.  Other operations return 0 on success.
+
+       On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EACCES IPC_STAT or SHM_STAT is requested and shm_perm.mode does not al‐
+              low read access for shmid, and the calling process does not have
+              the  CAP_IPC_OWNER capability in the user namespace that governs
+              its IPC namespace.
+
+       EFAULT The argument cmd has value IPC_SET or IPC_STAT but  the  address
+              pointed to by buf isn't accessible.
+
+       EIDRM  shmid points to a removed identifier.
+
+       EINVAL shmid  is not a valid identifier, or cmd is not a valid command.
+              Or: for a SHM_STAT or SHM_STAT_ANY operation,  the  index  value
+              specified  in  shmid referred to an array slot that is currently
+              unused.
+
+       ENOMEM (Since Linux 2.6.9), SHM_LOCK was specified and the size of  the
+              to-be-locked  segment  would mean that the total bytes in locked
+              shared memory segments would exceed the limit for the real  user
+              ID  of  the  calling  process.   This  limit  is  defined by the
+              RLIMIT_MEMLOCK soft resource limit (see setrlimit(2)).
+
+       EOVERFLOW
+              IPC_STAT is attempted, and the GID or UID value is too large  to
+              be stored in the structure pointed to by buf.
+
+       EPERM  IPC_SET  or  IPC_RMID is attempted, and the effective user ID of
+              the calling process  is  not  that  of  the  creator  (found  in
+              shm_perm.cuid),  or  the  owner (found in shm_perm.uid), and the
+              process was not privileged (Linux: did not have the  CAP_SYS_AD‐
+              MIN capability).
+
+              Or  (before  Linux 2.6.9), SHM_LOCK or SHM_UNLOCK was specified,
+              but the process was not privileged  (Linux:  did  not  have  the
+              CAP_IPC_LOCK  capability).   (Since  Linux 2.6.9, this error can
+              also occur if the RLIMIT_MEMLOCK is 0  and  the  caller  is  not
+              privileged.)
+
+VERSIONS
+       Linux  permits  a  process to attach (shmat(2)) a shared memory segment
+       that has already been marked for deletion using shmctl(IPC_RMID).  This
+       feature is not available on other UNIX implementations; portable appli‐
+       cations should avoid relying on it.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4.
+
+       Various fields in a struct shmid_ds were typed as short under Linux 2.2
+       and have become long under Linux 2.4.  To take advantage of this, a re‐
+       compilation under glibc-2.1.91 or later should  suffice.   (The  kernel
+       distinguishes old and new calls by an IPC_64 flag in cmd.)
+
+NOTES
+       The IPC_INFO, SHM_STAT, and SHM_INFO operations are used by the ipcs(1)
+       program to provide information on allocated resources.  In the  future,
+       these may modified or moved to a /proc filesystem interface.
+
+SEE ALSO
+       mlock(2),    setrlimit(2),    shmget(2),   shmop(2),   capabilities(7),
+       sysvipc(7)
+
+Linux man-pages 6.04              2023-03-30                         shmctl(2)

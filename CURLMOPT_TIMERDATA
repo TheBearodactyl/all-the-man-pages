@@ -1,0 +1,66 @@
+CURLMOPT_TIMERDATA(3)                                                                    curl_multi_setopt options                                                                   CURLMOPT_TIMERDATA(3)
+
+NAME
+       CURLMOPT_TIMERDATA - custom pointer to pass to timer callback
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_TIMERDATA, void *pointer);
+
+DESCRIPTION
+       A data pointer to pass to the timer callback set with the CURLMOPT_TIMERFUNCTION(3) option.
+
+       This pointer will not be touched by libcurl but will only be passed in to the timer callbacks's clientp argument.
+
+DEFAULT
+       NULL
+
+PROTOCOLS
+       All
+
+EXAMPLE
+       static gboolean timeout_cb(gpointer user_data)
+       {
+         int running;
+         if(user_data) {
+           g_free(user_data);
+           curl_multi_setopt(curl_handle, CURLMOPT_TIMERDATA, NULL);
+         }
+         curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &running);
+         return G_SOURCE_REMOVE;
+       }
+
+       static int timerfunc(CURLM *multi, long timeout_ms, void *clientp)
+       {
+         guint *id = clientp;
+
+         if(id)
+           g_source_remove(*id);
+
+         /* -1 means we should just delete our timer. */
+         if(timeout_ms == -1) {
+           g_free(id);
+           id = NULL;
+         }
+         else {
+           if(!id)
+             id = g_new(guint, 1);
+           *id = g_timeout_add(timeout_ms, timeout_cb, id);
+         }
+         current_timer = id;
+         return 0;
+       }
+
+       curl_multi_setopt(multi, CURLMOPT_TIMERFUNCTION, timerfunc);
+
+AVAILABILITY
+       Added in 7.16.0
+
+RETURN VALUE
+       Returns CURLM_OK if the option is supported, and CURLM_UNKNOWN_OPTION if not.
+
+SEE ALSO
+       CURLMOPT_TIMERFUNCTION(3), CURLMOPT_SOCKETFUNCTION(3),
+
+libcurl 7.37.0                                                                                  17 Jun 2014                                                                          CURLMOPT_TIMERDATA(3)

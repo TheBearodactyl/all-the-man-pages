@@ -1,0 +1,138 @@
+wcrtomb(3)                                                                               Library Functions Manual                                                                               wcrtomb(3)
+
+NAME
+       wcrtomb - convert a wide character to a multibyte sequence
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <wchar.h>
+
+       size_t wcrtomb(char *restrict s, wchar_t wc, mbstate_t *restrict ps);
+
+DESCRIPTION
+       The  main case for this function is when s is not NULL and wc is not a null wide character (L'\0').  In this case, the wcrtomb() function converts the wide character wc to its multibyte represen‐
+       tation and stores it at the beginning of the character array pointed to by s.  It updates the shift state *ps, and returns the length of said multibyte representation,  that  is,  the  number  of
+       bytes written at s.
+
+       A  different  case is when s is not NULL, but wc is a null wide character (L'\0').  In this case, the wcrtomb() function stores at the character array pointed to by s the shift sequence needed to
+       bring *ps back to the initial state, followed by a '\0' byte.  It updates the shift state *ps (i.e., brings it into the initial state), and returns the length of the shift sequence plus one, that
+       is, the number of bytes written at s.
+
+       A third case is when s is NULL.  In this case, wc is ignored, and the function effectively returns
+
+           wcrtomb(buf, L'\0', ps)
+
+       where buf is an internal anonymous buffer.
+
+       In all of the above cases, if ps is NULL, a static anonymous state known only to the wcrtomb() function is used instead.
+
+RETURN VALUE
+       The  wcrtomb()  function returns the number of bytes that have been or would have been written to the byte array at s.  If wc can not be represented as a multibyte sequence (according to the cur‐
+       rent locale), (size_t) -1 is returned, and errno set to EILSEQ.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────────────────┐
+       │Interface                                                                                                                                            │ Attribute     │ Value                      │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────────────────┤
+       │wcrtomb()                                                                                                                                            │ Thread safety │ MT-Unsafe race:wcrtomb/!ps │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────────────────┘
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, C99.
+
+NOTES
+       The behavior of wcrtomb() depends on the LC_CTYPE category of the current locale.
+
+       Passing NULL as ps is not multithread safe.
+
+SEE ALSO
+       mbsinit(3), wcsrtombs(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      wcrtomb(3)
+WCRTOMB(3P)                                                                              POSIX Programmer's Manual                                                                             WCRTOMB(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       wcrtomb — convert a wide-character code to a character (restartable)
+
+SYNOPSIS
+       #include <wchar.h>
+
+       size_t wcrtomb(char *restrict s, wchar_t wc, mbstate_t *restrict ps);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       If s is a null pointer, the wcrtomb() function shall be equivalent to the call:
+
+           wcrtomb(buf, L'\0', ps)
+
+       where buf is an internal buffer.
+
+       If  s  is  not a null pointer, the wcrtomb() function shall determine the number of bytes needed to represent the character that corresponds to the wide character given by wc (including any shift
+       sequences), and store the resulting bytes in the array whose first element is pointed to by s.  At most {MB_CUR_MAX} bytes are stored. If wc is a null wide character, a null byte shall be stored,
+       preceded by any shift sequence needed to restore the initial shift state. The resulting state described shall be the initial conversion state.
+
+       If ps is a null pointer, the wcrtomb() function shall use its own internal mbstate_t object, which is initialized at program start-up to the initial conversion state. Otherwise, the mbstate_t ob‐
+       ject pointed to by ps shall be used to completely describe the current conversion state of the associated character sequence. The implementation shall behave as if no  function  defined  in  this
+       volume of POSIX.1‐2017 calls wcrtomb().
+
+       The wcrtomb() function need not be thread-safe if called with a NULL ps argument.
+
+       The behavior of this function shall be affected by the LC_CTYPE category of the current locale.
+
+       The wcrtomb() function shall not change the setting of errno if successful.
+
+RETURN VALUE
+       The  wcrtomb()  function shall return the number of bytes stored in the array object (including any shift sequences). When wc is not a valid wide character, an encoding error shall occur. In this
+       case, the function shall store the value of the macro [EILSEQ] in errno and shall return (size_t)-1; the conversion state shall be undefined.
+
+ERRORS
+       The wcrtomb() function shall fail if:
+
+       EILSEQ An invalid wide-character code is detected.
+
+       The wcrtomb() function may fail if:
+
+       EINVAL ps points to an object that contains an invalid conversion state.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       mbsinit(), wcsrtombs()
+
+       The Base Definitions volume of POSIX.1‐2017, <wchar.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                        WCRTOMB(3P)

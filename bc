@@ -1,0 +1,1439 @@
+bc(1)                                                                                     General Commands Manual                                                                                    bc(1)
+
+NAME
+       bc - An arbitrary precision calculator language
+
+SYNTAX
+       bc [ -hlwsqv ] [long-options] [  file ... ]
+
+DESCRIPTION
+       bc is a language that supports arbitrary precision numbers with interactive execution of statements.  There are some similarities in the syntax to the C programming language.  A standard math li‐
+       brary is available by command line option.  If requested, the math library is defined before processing any files.  bc starts by processing code from all the files listed on the command  line  in
+       the  order listed.  After all files have been processed, bc reads from the standard input.  All code is executed as it is read.  (If a file contains a command to halt the processor, bc will never
+       read from the standard input.)
+
+       This version of bc contains several extensions beyond traditional bc implementations and the POSIX draft standard.  Command line options can cause these extensions to print a warning or to be re‐
+       jected.  This document describes the language accepted by this processor.  Extensions will be identified as such.
+
+   OPTIONS
+       -h, --help
+              Print the usage and exit.
+
+       -i, --interactive
+              Force interactive mode.
+
+       -l, --mathlib
+              Define the standard math library.
+
+       -w, --warn
+              Give warnings for extensions to POSIX bc.
+
+       -s, --standard
+              Process exactly the POSIX bc language.
+
+       -q, --quiet
+              Do not print the normal GNU bc welcome.
+
+       -v, --version
+              Print the version number and copyright and quit.
+
+   NUMBERS
+       The  most basic element in bc is the number.  Numbers are arbitrary precision numbers.  This precision is both in the integer part and the fractional part.  All numbers are represented internally
+       in decimal and all computation is done in decimal.  (This version truncates results from divide and multiply operations.)  There are two attributes of numbers, the  length  and  the  scale.   The
+       length is the total number of decimal digits used by bc to represent a number and the scale is the total number of decimal digits after the decimal point.  For example:
+               .000001 has a length of 6 and scale of 6.
+               1935.000 has a length of 7 and a scale of 3.
+
+   VARIABLES
+       Numbers are stored in two types of variables, simple variables and arrays.  Both simple variables and array variables are named.  Names begin with a letter followed by any number of letters, dig‐
+       its and underscores.  All letters must be lower case.  (Full alpha-numeric names are an extension. In POSIX bc all names are a single lower case letter.)  The type of variable  is  clear  by  the
+       context because all array variable names will be followed by brackets ([]).
+
+       There  are  four  special variables, scale, ibase, obase, and last.  scale defines how some operations use digits after the decimal point.  The default value of scale is 0. ibase and obase define
+       the conversion base for input and output numbers.  The default for both input and output is base 10.  last (an extension) is a variable that has the value of the last printed number.  These  will
+       be discussed in further detail where appropriate.  All of these variables may have values assigned to them as well as used in expressions.
+
+   COMMENTS
+       Comments  in  bc start with the characters /* and end with the characters */.  Comments may start anywhere and appear as a single space in the input.  (This causes comments to delimit other input
+       items.  For example, a comment can not be found in the middle of a variable name.)  Comments include any newlines (end of line) between the start and the end of the comment.
+
+       To support the use of scripts for bc, a single line comment has been added as an extension.  A single line comment starts at a # character and continues to the next end of the line.  The  end  of
+       line character is not part of the comment and is processed normally.
+
+   EXPRESSIONS
+       The  numbers  are  manipulated  by expressions and statements.  Since the language was designed to be interactive, statements and expressions are executed as soon as possible.  There is no "main"
+       program.  Instead, code is executed as it is encountered.  (Functions, discussed in detail later, are defined when encountered.)
+
+       A simple expression is just a constant. bc converts constants into internal decimal numbers using the current input base, specified by the variable ibase. (There is an  exception  in  functions.)
+       The  legal  values of ibase are 2 through 36. (Bases greater than 16 are an extension.) Assigning a value outside this range to ibase will result in a value of 2 or 36.  Input numbers may contain
+       the characters 0-9 and A-Z. (Note: They must be capitals.  Lower case letters are variable names.)  Single digit numbers always have the value of the digit regardless of the value of ibase. (i.e.
+       A  =  10.)   For  multi-digit  numbers, bc changes all input digits greater or equal to ibase to the value of ibase-1.  This makes the number ZZZ always be the largest 3 digit number of the input
+       base.
+
+       Full expressions are similar to many other high level languages.  Since there is only one kind of number, there are no rules for mixing types.  Instead, there are rules on the  scale  of  expres‐
+       sions.  Every expression has a scale.  This is derived from the scale of original numbers, the operation performed and in many cases, the value of the variable scale. Legal values of the variable
+       scale are 0 to the maximum number representable by a C integer.
+
+       In the following descriptions of legal expressions, "expr" refers to a complete expression and "var" refers to a simple or an array variable.  A simple variable is just a
+              name
+       and an array variable is specified as
+              name[expr]
+       Unless specifically mentioned the scale of the result is the maximum scale of the expressions involved.
+
+       - expr The result is the negation of the expression.
+
+       ++ var The variable is incremented by one and the new value is the result of the expression.
+
+       -- var The variable is decremented by one and the new value is the result of the expression.
+
+       var ++
+               The result of the expression is the value of the variable and then the variable is incremented by one.
+
+       var -- The result of the expression is the value of the variable and then the variable is decremented by one.
+
+       expr + expr
+              The result of the expression is the sum of the two expressions.
+
+       expr - expr
+              The result of the expression is the difference of the two expressions.
+
+       expr * expr
+              The result of the expression is the product of the two expressions.
+
+       expr / expr
+              The result of the expression is the quotient of the two expressions.  The scale of the result is the value of the variable scale.
+
+       expr % expr
+              The result of the expression is the "remainder" and it is computed in the following way.  To compute a%b, first a/b is computed to scale digits.  That result is used to  compute  a-(a/b)*b
+              to the scale of the maximum of scale+scale(b) and scale(a).  If scale is set to zero and both expressions are integers this expression is the integer remainder function.
+
+       expr ^ expr
+              The  result of the expression is the value of the first raised to the second. The second expression must be an integer.  (If the second expression is not an integer, a warning is generated
+              and the expression is truncated to get an integer value.)  The scale of the result is scale if the exponent is negative.  If the exponent is positive the scale of the result is the minimum
+              of  the  scale  of  the  first  expression  times  the value of the exponent and the maximum of scale and the scale of the first expression.  (e.g. scale(a^b) = min(scale(a)*b, max( scale,
+              scale(a))).)  It should be noted that expr^0 will always return the value of 1.
+
+       ( expr )
+              This alters the standard precedence to force the evaluation of the expression.
+
+       var = expr
+              The variable is assigned the value of the expression.
+
+       var <op>= expr
+              This is equivalent to "var = var <op> expr" with the exception that the "var" part is evaluated only once.  This can make a difference if "var" is an array.
+
+       Relational expressions are a special kind of expression that always evaluate to 0 or 1, 0 if the relation is false and 1 if the relation is true.   These  may  appear  in  any  legal  expression.
+       (POSIX bc requires that relational expressions are used only in if, while, and for statements and that only one relational test may be done in them.)  The relational operators are
+
+       expr1 < expr2
+              The result is 1 if expr1 is strictly less than expr2.
+
+       expr1 <= expr2
+              The result is 1 if expr1 is less than or equal to expr2.
+
+       expr1 > expr2
+              The result is 1 if expr1 is strictly greater than expr2.
+
+       expr1 >= expr2
+              The result is 1 if expr1 is greater than or equal to expr2.
+
+       expr1 == expr2
+              The result is 1 if expr1 is equal to expr2.
+
+       expr1 != expr2
+              The result is 1 if expr1 is not equal to expr2.
+
+       Boolean  operations  are also legal.  (POSIX bc does NOT have boolean operations). The result of all boolean operations are 0 and 1 (for false and true) as in relational expressions.  The boolean
+       operators are:
+
+       !expr  The result is 1 if expr is 0.
+
+       expr && expr
+              The result is 1 if both expressions are non-zero.
+
+       expr || expr
+              The result is 1 if either expression is non-zero.
+
+       The expression precedence is as follows: (lowest to highest)
+              || operator, left associative
+              && operator, left associative
+              ! operator, nonassociative
+              Relational operators, left associative
+              Assignment operator, right associative
+              + and - operators, left associative
+              *, / and % operators, left associative
+              ^ operator, right associative
+              unary - operator, nonassociative
+              ++ and -- operators, nonassociative
+
+       This precedence was chosen so that POSIX compliant bc programs will run correctly. This will cause the use of the relational and logical operators to have some unusual behavior when used with as‐
+       signment expressions.  Consider the expression:
+              a = 3 < 5
+
+       Most C programmers would assume this would assign the result of "3 < 5" (the value 1) to the variable "a".  What this does in bc is assign the value 3 to the variable "a" and then compare 3 to 5.
+       It is best to use parenthesis when using relational and logical operators with the assignment operators.
+
+       There are a few more special expressions that are provided in bc.  These have to do with user defined functions and standard functions.  They all appear as "name(parameters)".  See the section on
+       functions for user defined functions.  The standard functions are:
+
+       length ( expression )
+              The value of the length function is the number of significant digits in the expression.
+
+       read ( )
+              The  read function (an extension) will read a number from the standard input, regardless of where the function occurs.   Beware, this can cause problems with the mixing of data and program
+              in the standard input.  The best use for this function is in a previously written program that needs input from the user, but never allows program code to be  input  from  the  user.   The
+              value of the read function is the number read from the standard input using the current value of the variable ibase for the conversion base.
+
+       scale ( expression )
+              The value of the scale function is the number of digits after the decimal point in the expression.
+
+       sqrt ( expression )
+              The value of the sqrt function is the square root of the expression.  If the expression is negative, a run time error is generated.
+
+   STATEMENTS
+       Statements (as in most algebraic languages) provide the sequencing of expression evaluation.  In bc statements are executed "as soon as possible."  Execution happens when a newline in encountered
+       and there is one or more complete statements.  Due to this immediate execution, newlines are very important in bc. In fact, both a semicolon and a newline are used as  statement  separators.   An
+       improperly  placed  newline  will cause a syntax error.  Because newlines are statement separators, it is possible to hide a newline by using the backslash character.  The sequence "\<nl>", where
+       <nl> is the newline appears to bc as whitespace instead of a newline.  A statement list is a series of statements separated by semicolons and newlines.  The following is a list of  bc  statements
+       and what they do: (Things enclosed in brackets ([]) are optional parts of the statement.)
+
+       expression
+              This statement does one of two things.  If the expression starts with "<variable> <assignment> ...", it is considered to be an assignment statement.  If the expression is not an assignment
+              statement, the expression is evaluated and printed to the output.  After the number is printed, a newline is printed.  For example, "a=1" is an assignment statement and "(a=1)" is  an  ex‐
+              pression that has an embedded assignment.  All numbers that are printed are printed in the base specified by the variable obase. The legal values for obase are 2 through BC_BASE_MAX.  (See
+              the section LIMITS.)  For bases 2 through 16, the usual method of writing numbers is used.  For bases greater than 16, bc uses a multi-character digit method of printing the numbers  where
+              each higher base digit is printed as a base 10 number.  The multi-character digits are separated by spaces.  Each digit contains the number of characters required to represent the base ten
+              value of "obase-1".  Since numbers are of arbitrary precision, some numbers may not be printable on a single output line.  These long numbers will be split across lines using  the  "\"  as
+              the  last  character  on  a  line.  The maximum number of characters printed per line is 70.  Due to the interactive nature of bc, printing a number causes the side effect of assigning the
+              printed value to the special variable last. This allows the user to recover the last value printed without having to retype the expression that printed the number.  Assigning  to  last  is
+              legal and will overwrite the last printed value with the assigned value.  The newly assigned value will remain until the next number is printed or another value is assigned to last.  (Some
+              installations may allow the use of a single period (.) which is not part of a number as a short hand notation for for last.)
+
+       string The string is printed to the output.  Strings start with a double quote character and contain all characters until the next double quote character.  All characters are take literally,  in‐
+              cluding any newline.  No newline character is printed after the string.
+
+       print list
+              The print statement (an extension) provides another method of output.  The "list" is a list of strings and expressions separated by commas.  Each string or expression is printed in the or‐
+              der of the list.  No terminating newline is printed.  Expressions are evaluated and their value is printed and assigned to the variable last. Strings in the print statement are printed  to
+              the  output  and  may  contain  special  characters.   Special  characters  start  with  the  backslash character (\).  The special characters recognized by bc are "a" (alert or bell), "b"
+              (backspace), "f" (form feed), "n" (newline), "r" (carriage return), "q" (double quote), "t" (tab), and "\" (backslash).  Any other character following the backslash will be ignored.
+
+       { statement_list }
+              This is the compound statement.  It allows multiple statements to be grouped together for execution.
+
+       if ( expression ) statement1 [else statement2]
+              The if statement evaluates the expression and executes statement1 or statement2 depending on the value of the expression.  If the expression is non-zero, statement1 is executed.  If state‐
+              ment2 is present and the value of the expression is 0, then statement2 is executed.  (The else clause is an extension.)
+
+       while ( expression ) statement
+              The while statement will execute the statement while the expression is non-zero.  It evaluates the expression before each execution of the statement.   Termination of the loop is caused by
+              a zero expression value or the execution of a break statement.
+
+       for ( [expression1] ; [expression2] ; [expression3] ) statement
+              The for statement controls repeated execution of the statement.  Expression1 is evaluated before the loop.  Expression2 is evaluated before each execution of the statement.  If it is  non-
+              zero,  the  statement is evaluated.  If it is zero, the loop is terminated.  After each execution of the statement, expression3 is evaluated before the reevaluation of expression2.  If ex‐
+              pression1 or expression3 are missing, nothing is evaluated at the point they would be evaluated.  If expression2 is missing, it is the same as substituting the  value  1  for  expression2.
+              (The optional expressions are an extension. POSIX bc requires all three expressions.)  The following is equivalent code for the for statement:
+              expression1;
+              while (expression2) {
+                 statement;
+                 expression3;
+              }
+
+       break  This statement causes a forced exit of the most recent enclosing while statement or for statement.
+
+       continue
+              The continue statement (an extension)  causes the most recent enclosing for statement to start the next iteration.
+
+       halt   The  halt  statement  (an extension) is an executed statement that causes the bc processor to quit only when it is executed.  For example, "if (0 == 1) halt" will not cause bc to terminate
+              because the halt is not executed.
+
+       return Return the value 0 from a function.  (See the section on functions.)
+
+       return ( expression )
+              Return the value of the expression from a function.  (See the section on functions.)  As an extension, the parenthesis are not required.
+
+   PSEUDO STATEMENTS
+       These statements are not statements in the traditional sense.  They are not executed statements.  Their function is performed at "compile" time.
+
+       limits Print the local limits enforced by the local version of bc.  This is an extension.
+
+       quit   When the quit statement is read, the bc processor is terminated, regardless of where the quit statement is found.  For example, "if (0 == 1) quit" will cause bc to terminate.
+
+       warranty
+              Print a longer warranty notice.  This is an extension.
+
+   FUNCTIONS
+       Functions provide a method of defining a computation that can be executed later.  Functions in bc always compute a value and return it to the caller.  Function definitions are  "dynamic"  in  the
+       sense that a function is undefined until a definition is encountered in the input.  That definition is then used until another definition function for the same name is encountered.  The new defi‐
+       nition then replaces the older definition.  A function is defined as follows:
+              define name ( parameters ) { newline
+                  auto_list   statement_list }
+       A function call is just an expression of the form "name(parameters)".
+
+       Parameters are numbers or arrays (an extension).  In the function definition, zero or more parameters are defined by listing their names separated by commas.  All parameters are call by value pa‐
+       rameters.   Arrays  are specified in the parameter definition by the notation "name[]".   In the function call, actual parameters are full expressions for number parameters.  The same notation is
+       used for passing arrays as for defining array parameters.  The named array is passed by value to the function.  Since function definitions are dynamic, parameter numbers  and  types  are  checked
+       when a function is called.  Any mismatch in number or types of parameters will cause a runtime error.  A runtime error will also occur for the call to an undefined function.
+
+       The  auto_list  is an optional list of variables that are for "local" use.  The syntax of the auto list (if present) is "auto name, ... ;".  (The semicolon is optional.)  Each name is the name of
+       an auto variable.  Arrays may be specified by using the same notation as used in parameters.  These variables have their values pushed onto a stack at the start of the  function.   The  variables
+       are  then  initialized  to  zero  and used throughout the execution of the function.  At function exit, these variables are popped so that the original value (at the time of the function call) of
+       these variables are restored.  The parameters are really auto variables that are initialized to a value provided in the function call.  Auto variables are different than traditional  local  vari‐
+       ables  because  if  function A calls function B, B may access function A's auto variables by just using the same name, unless function B has called them auto variables.  Due to the fact that auto
+       variables and parameters are pushed onto a stack, bc supports recursive functions.
+
+       The function body is a list of bc statements.  Again, statements are separated by semicolons or newlines.  Return statements cause the termination of a function and the return of a value.   There
+       are two versions of the return statement.  The first form, "return", returns the value 0 to the calling expression.  The second form, "return ( expression )", computes the value of the expression
+       and returns that value to the calling expression.  There is an implied "return (0)" at the end of every function.  This allows a function to terminate and return  0  without  an  explicit  return
+       statement.
+
+       Functions  also  change the usage of the variable ibase.  All constants in the function body will be converted using the value of ibase at the time of the function call.  Changes of ibase will be
+       ignored during the execution of the function except for the standard function read, which will always use the current value of ibase for conversion of numbers.
+
+       Several extensions have been added to functions.  First, the format of the definition has been slightly relaxed.  The standard requires the opening brace be on the same line as the define keyword
+       and  all  other parts must be on following lines.  This version of bc will allow any number of newlines before and after the opening brace of the function.  For example, the following definitions
+       are legal.
+              define d (n) { return (2*n); }
+              define d (n)
+                { return (2*n); }
+
+       Functions may be defined as void.  A void funtion returns no value and thus may not be used in any place that needs a value.  A void function does not produce any output when called by itself  on
+       an input line.  The key word void is placed between the key word define and the function name.  For example, consider the following session.
+              define py (y) { print "--->", y, "<---", "\n"; }
+              define void px (x) { print "--->", x, "<---", "\n"; }
+              py(1)
+              --->1<---
+              0
+              px(1)
+              --->1<---
+       Since  py  is not a void function, the call of py(1) prints the desired output and then prints a second line that is the value of the function.  Since the value of a function that is not given an
+       explicit return statement is zero, the zero is printed.  For px(1), no zero is printed because the function is a void function.
+
+       Also, call by variable for arrays was added.  To declare a call by variable array, the declaration of the array parameter in the function definition looks like "*name[]".  The call to  the  func‐
+       tion remains the same as call by value arrays.
+
+   MATH LIBRARY
+       If  bc is invoked with the -l option, a math library is preloaded and the default scale is set to 20.   The math functions will calculate their results to the scale set at the time of their call.
+       The math library defines the following functions:
+
+       s (x)  The sine of x, x is in radians.
+
+       c (x)  The cosine of x, x is in radians.
+
+       a (x)  The arctangent of x, arctangent returns radians.
+
+       l (x)  The natural logarithm of x.
+
+       e (x)  The exponential function of raising e to the value x.
+
+       j (n,x)
+              The Bessel function of integer order n of x.
+
+   EXAMPLES
+       In /bin/sh,  the following will assign the value of "pi" to the shell variable pi.
+               pi=$(echo "scale=10; 4*a(1)" | bc -l)
+
+       The following is the definition of the exponential function used in the math library.  This function is written in POSIX bc.
+              scale = 20
+
+              /* Uses the fact that e^x = (e^(x/2))^2
+                 When x is small enough, we use the series:
+                   e^x = 1 + x + x^2/2! + x^3/3! + ...
+              */
+
+              define e(x) {
+                auto  a, d, e, f, i, m, v, z
+
+                /* Check the sign of x. */
+                if (x<0) {
+                  m = 1
+                  x = -x
+                }
+
+                /* Precondition x. */
+                z = scale;
+                scale = 4 + z + .44*x;
+                while (x > 1) {
+                  f += 1;
+                  x /= 2;
+                }
+
+                /* Initialize the variables. */
+                v = 1+x
+                a = x
+                d = 1
+
+                for (i=2; 1; i++) {
+                  e = (a *= x) / (d *= i)
+                  if (e == 0) {
+                    if (f>0) while (f--)  v = v*v;
+                    scale = z
+                    if (m) return (1/v);
+                    return (v/1);
+                  }
+                  v += e
+                }
+              }
+
+       The following is code that uses the extended features of bc to implement a simple program for calculating checkbook balances.  This program is best kept in a file so that  it  can  be  used  many
+       times without having to retype it at every use.
+              scale=2
+              print "\nCheck book program!\n"
+              print "  Remember, deposits are negative transactions.\n"
+              print "  Exit by a 0 transaction.\n\n"
+
+              print "Initial balance? "; bal = read()
+              bal /= 1
+              print "\n"
+              while (1) {
+                "current balance = "; bal
+                "transaction? "; trans = read()
+                if (trans == 0) break;
+                bal -= trans
+                bal /= 1
+              }
+              quit
+
+       The following is the definition of the recursive factorial function.
+              define f (x) {
+                if (x <= 1) return (1);
+                return (f(x-1) * x);
+              }
+
+   READLINE AND LIBEDIT OPTIONS
+       GNU  bc  can  be compiled (via a configure option) to use the GNU readline input editor library or the BSD libedit library.  This allows the user to do editing of lines before sending them to bc.
+       It also allows for a history of previous lines typed.  When this option is selected, bc has one more special variable.  This special variable, history is the number of lines of history  retained.
+       For  readline,  a  value of -1 means that an unlimited number of history lines are retained.  Setting the value of history to a positive number restricts the number of history lines to the number
+       given.  The value of 0 disables the history feature.  The default value is 100. For more information, read the user manuals for the GNU readline, history and BSD libedit libraries.  One  can  not
+       enable both readline and libedit at the same time.
+
+   DIFFERENCES
+       This  version  of bc was implemented from the POSIX P1003.2/D11 draft and contains several differences and extensions relative to the draft and traditional implementations.  It is not implemented
+       in the traditional way using dc(1).  This version is a single process which parses and runs a byte code translation of the program.  There is an "undocumented" option (-c) that causes the program
+       to output the byte code to the standard output instead of running it.  It was mainly used for debugging the parser and preparing the math library.
+
+       A  major  source of differences is extensions, where a feature is extended to add more functionality and additions, where new features are added.  The following is the list of differences and ex‐
+       tensions.
+
+       LANG environment
+              This version does not conform to the POSIX standard in the processing of the LANG environment variable and all environment variables starting with LC_.
+
+       names  Traditional and POSIX bc have single letter names for functions, variables and arrays.  They have been extended to be multi-character names that start with a letter and  may  contain  let‐
+              ters, numbers and the underscore character.
+
+       Strings
+              Strings are not allowed to contain NUL characters.  POSIX says all characters must be included in strings.
+
+       last   POSIX bc does not have a last variable.  Some implementations of bc use the period (.) in a similar way.
+
+       comparisons
+              POSIX  bc allows comparisons only in the if statement, the while statement, and the second expression of the for statement.  Also, only one relational operation is allowed in each of those
+              statements.
+
+       if statement, else clause
+              POSIX bc does not have an else clause.
+
+       for statement
+              POSIX bc requires all expressions to be present in the for statement.
+
+       &&, ||, !
+              POSIX bc does not have the logical operators.
+
+       read function
+              POSIX bc does not have a read function.
+
+       print statement
+              POSIX bc does not have a print statement .
+
+       continue statement
+              POSIX bc does not have a continue statement.
+
+       return statement
+              POSIX bc requires parentheses around the return expression.
+
+       array parameters
+              POSIX bc does not (currently) support array parameters in full.  The POSIX grammar allows for arrays in function definitions, but does not provide a method to specify an array as an actual
+              parameter.  (This is most likely an oversight in the grammar.)  Traditional implementations of bc have only call by value array parameters.
+
+       function format
+              POSIX bc requires the opening brace on the same line as the define key word and the auto statement on the next line.
+
+       =+, =-, =*, =/, =%, =^
+              POSIX  bc  does  not  require these "old style" assignment operators to be defined.  This version may allow these "old style" assignments.  Use the limits statement to see if the installed
+              version supports them.  If it does support the "old style" assignment operators, the statement "a =- 1" will decrement a by 1 instead of setting a to the value -1.
+
+       spaces in numbers
+              Other implementations of bc allow spaces in numbers.  For example, "x=1 3" would assign the value 13 to the variable x.  The same statement would cause a syntax error in  this  version  of
+              bc.
+
+       errors and execution
+              This  implementation  varies from other implementations in terms of what code will be executed when syntax and other errors are found in the program.  If a syntax error is found in a func‐
+              tion definition, error recovery tries to find the beginning of a statement and continue to parse the function.  Once a syntax error is found in the  function,  the  function  will  not  be
+              callable  and becomes undefined.  Syntax errors in the interactive execution code will invalidate the current execution block.  The execution block is terminated by an end of line that ap‐
+              pears after a complete sequence of statements.  For example,
+              a = 1
+              b = 2
+       has two execution blocks and
+              { a = 1
+                b = 2 }
+       has one execution block.  Any runtime error will terminate the execution of the current execution block.  A runtime warning will not terminate the current execution block.
+
+       Interrupts
+              During an interactive session, the SIGINT signal (usually generated by the control-C character from the terminal) will cause execution of the current execution block to be interrupted.  It
+              will  display a "runtime" error indicating which function was interrupted.  After all runtime structures have been cleaned up, a message will be printed to notify the user that bc is ready
+              for more input.  All previously defined functions remain defined and the value of all non-auto variables are the value at the point of interruption.  All auto variables and function param‐
+              eters are removed during the clean up process.  During a non-interactive session, the SIGINT signal will terminate the entire run of bc.
+
+   LIMITS
+       The following are the limits currently in place for this bc processor.  Some of them may have been changed by an installation.  Use the limits statement to see the actual values.
+
+       BC_BASE_MAX
+              The maximum output base is currently set at 999.  The maximum input base is 16.
+
+       BC_DIM_MAX
+              This is currently an arbitrary limit of 65535 as distributed.  Your installation may be different.
+
+       BC_SCALE_MAX
+              The number of digits after the decimal point is limited to INT_MAX digits.  Also, the number of digits before the decimal point is limited to INT_MAX digits.
+
+       BC_STRING_MAX
+              The limit on the number of characters in a string is INT_MAX characters.
+
+       exponent
+              The value of the exponent in the raise operation (^) is limited to LONG_MAX.
+
+       variable names
+              The current limit on the number of unique names is 32767 for each of simple variables, arrays and functions.
+
+ENVIRONMENT VARIABLES
+       The following environment variables are processed by bc:
+
+       POSIXLY_CORRECT
+              This is the same as the -s option.
+
+       BC_ENV_ARGS
+              This  is another mechanism to get arguments to bc.  The format is the same as the command line arguments.  These arguments are processed first, so any files listed in the environment argu‐
+              ments are processed before any command line argument files.  This allows the user to set up "standard" options and files to be processed at every invocation of bc.  The files in the  envi‐
+              ronment variables would typically contain function definitions for functions the user wants defined every time bc is run.
+
+       BC_LINE_LENGTH
+              This  should  be  an  integer  specifying the number of characters in an output line for numbers. This includes the backslash and newline characters for long numbers.  As an extension, the
+              value of zero disables the multi-line feature.  Any other value of this variable that is less than 3 sets the line length to 70.
+
+DIAGNOSTICS
+       If any file on the command line can not be opened, bc will report that the file is unavailable and terminate.  Also, there are compile and run time diagnostics that should be self-explanatory.
+
+BUGS
+       Error recovery is not very good yet.
+
+       Email bug reports to bug-bc@gnu.org.  Be sure to include the word ``bc'' somewhere in the ``Subject:'' field.
+
+AUTHOR
+       Philip A. Nelson
+       philnelson@acm.org
+
+ACKNOWLEDGEMENTS
+       The author would like to thank Steve Sommars (Steve.Sommars@att.com) for his extensive help in testing the implementation.  Many great suggestions were given.  This is a much better  product  due
+       to his involvement.
+
+GNU Project                                                                                     2006-06-11                                                                                           bc(1)
+BC(1P)                                                                                   POSIX Programmer's Manual                                                                                  BC(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       bc — arbitrary-precision arithmetic language
+
+SYNOPSIS
+       bc [-l] [file...]
+
+DESCRIPTION
+       The bc utility shall implement an arbitrary precision calculator. It shall take input from any files given, then read from the standard input. If the standard input and standard output to bc  are
+       attached to a terminal, the invocation of bc shall be considered to be interactive, causing behavioral constraints described in the following sections.
+
+OPTIONS
+       The bc utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following option shall be supported:
+
+       -l        (The letter ell.) Define the math functions and initialize scale to 20, instead of the default zero; see the EXTENDED DESCRIPTION section.
+
+OPERANDS
+       The following operand shall be supported:
+
+       file      A pathname of a text file containing bc program statements. After all files have been read, bc shall read the standard input.
+
+STDIN
+       See the INPUT FILES section.
+
+INPUT FILES
+       Input files shall be text files containing a sequence of comments, statements, and function definitions that shall be executed as they are read.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of bc:
+
+       LANG      Provide  a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments and input files).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       The output of the bc utility shall be controlled by the program read, and consist of zero or more lines containing the value of all executed expressions without assignments. The radix and  preci‐
+       sion of the output shall be controlled by the values of the obase and scale variables; see the EXTENDED DESCRIPTION section.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+   Grammar
+       The  grammar  in  this  section  and the lexical conventions in the following section shall together describe the syntax for bc programs. The general conventions for this style of grammar are de‐
+       scribed in Section 1.3, Grammar Conventions.  A valid program can be represented as the non-terminal symbol program in the grammar. This formal syntax shall take precedence over the  text  syntax
+       description.
+
+           %token    EOF NEWLINE STRING LETTER NUMBER
+
+           %token    MUL_OP
+           /*        '*', '/', '%'                           */
+
+           %token    ASSIGN_OP
+           /*        '=', '+=', '-=', '*=', '/=', '%=', '^=' */
+
+           %token    REL_OP
+           /*        '==', '<=', '>=', '!=', '<', '>'        */
+
+           %token    INCR_DECR
+           /*        '++', '--'                              */
+
+           %token    Define    Break    Quit    Length
+           /*        'define', 'break', 'quit', 'length'     */
+
+           %token    Return    For    If    While    Sqrt
+           /*        'return', 'for', 'if', 'while', 'sqrt'  */
+
+           %token    Scale    Ibase    Obase    Auto
+           /*        'scale', 'ibase', 'obase', 'auto'       */
+
+           %start    program
+
+           %%
+
+           program              : EOF
+                                | input_item program
+                                ;
+
+           input_item           : semicolon_list NEWLINE
+                                | function
+                                ;
+
+           semicolon_list       : /* empty */
+                                | statement
+                                | semicolon_list ';' statement
+                                | semicolon_list ';'
+                                ;
+
+           statement_list       : /* empty */
+                                | statement
+                                | statement_list NEWLINE
+                                | statement_list NEWLINE statement
+                                | statement_list ';'
+                                | statement_list ';' statement
+                                ;
+
+           statement            : expression
+                                | STRING
+                                | Break
+                                | Quit
+                                | Return
+                                | Return '(' return_expression ')'
+                                | For '(' expression ';'
+                                      relational_expression ';'
+                                      expression ')' statement
+                                | If '(' relational_expression ')' statement
+                                | While '(' relational_expression ')' statement
+                                | '{' statement_list '}'
+                                ;
+
+           function             : Define LETTER '(' opt_parameter_list ')'
+                                      '{' NEWLINE opt_auto_define_list
+                                      statement_list '}'
+                                ;
+
+           opt_parameter_list   : /* empty */
+                                | parameter_list
+                                ;
+
+           parameter_list       : LETTER
+                                | define_list ',' LETTER
+                                ;
+
+           opt_auto_define_list : /* empty */
+                                | Auto define_list NEWLINE
+                                | Auto define_list ';'
+                                ;
+
+           define_list          : LETTER
+                                | LETTER '[' ']'
+                                | define_list ',' LETTER
+                                | define_list ',' LETTER '[' ']'
+                                ;
+
+           opt_argument_list    : /* empty */
+                                | argument_list
+                                ;
+
+           argument_list        : expression
+                                | LETTER '[' ']' ',' argument_list
+                                ;
+
+           relational_expression : expression
+                                | expression REL_OP expression
+                                ;
+
+           return_expression    : /* empty */
+                                | expression
+                                ;
+
+           expression           : named_expression
+                                | NUMBER
+                                | '(' expression ')'
+                                | LETTER '(' opt_argument_list ')'
+                                | '-' expression
+                                | expression '+' expression
+                                | expression '-' expression
+                                | expression MUL_OP expression
+                                | expression '^' expression
+                                | INCR_DECR named_expression
+                                | named_expression INCR_DECR
+                                | named_expression ASSIGN_OP expression
+                                | Length '(' expression ')'
+                                | Sqrt '(' expression ')'
+                                | Scale '(' expression ')'
+                                ;
+
+           named_expression     : LETTER
+                                | LETTER '[' expression ']'
+                                | Scale
+                                | Ibase
+                                | Obase
+                                ;
+
+   Lexical Conventions in bc
+       The lexical conventions for bc programs, with respect to the preceding grammar, shall be as follows:
+
+        1. Except as noted, bc shall recognize the longest possible token or delimiter beginning at a given point.
+
+        2. A  comment  shall  consist of any characters beginning with the two adjacent characters "/*" and terminated by the next occurrence of the two adjacent characters "*/".  Comments shall have no
+           effect except to delimit lexical tokens.
+
+        3. The <newline> shall be recognized as the token NEWLINE.
+
+        4. The token STRING shall represent a string constant; it shall consist of any characters beginning with the double-quote character ('"') and terminated by another occurrence of the double-quote
+           character.  The  value of the string is the sequence of all characters between, but not including, the two double-quote characters. All characters shall be taken literally from the input, and
+           there is no way to specify a string containing a double-quote character. The length of the value of each string shall be limited to {BC_STRING_MAX} bytes.
+
+        5. A <blank> shall have no effect except as an ordinary character if it appears within a STRING token, or to delimit a lexical token other than STRING.
+
+        6. The combination of a <backslash> character immediately followed by a <newline> shall have no effect other than to delimit lexical tokens with the following exceptions:
+
+            *  It shall be interpreted as the character sequence "\<newline>" in STRING tokens.
+
+            *  It shall be ignored as part of a multi-line NUMBER token.
+
+        7. The token NUMBER shall represent a numeric constant. It shall be recognized by the following grammar:
+
+               NUMBER  : integer
+                       | '.' integer
+                       | integer '.'
+                       | integer '.' integer
+                       ;
+
+               integer : digit
+                       | integer digit
+                       ;
+
+               digit   : 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7
+                       | 8 | 9 | A | B | C | D | E | F
+                       ;
+
+        8. The value of a NUMBER token shall be interpreted as a numeral in the base specified by the value of the internal register ibase (described below). Each of the digit characters shall have  the
+           value from 0 to 15 in the order listed here, and the <period> character shall represent the radix point. The behavior is undefined if digits greater than or equal to the value of ibase appear
+           in the token. However, note the exception for single-digit values being assigned to ibase and obase themselves, in Operations in bc.
+
+        9. The following keywords shall be recognized as tokens:
+
+           auto     ibase    length   return   while
+           break    if       obase    scale
+           define   for      quit     sqrt
+
+       10. Any of the following characters occurring anywhere except within a keyword shall be recognized as the token LETTER:
+
+               a b c d e f g h i j k l m n o p q r s t u v w x y z
+
+       11. The following single-character and two-character sequences shall be recognized as the token ASSIGN_OP:
+
+               =   +=   -=   *=   /=   %=   ^=
+
+       12. If an '=' character, as the beginning of a token, is followed by a '-' character with no intervening delimiter, the behavior is undefined.
+
+       13. The following single-characters shall be recognized as the token MUL_OP:
+
+               *   /   %
+
+       14. The following single-character and two-character sequences shall be recognized as the token REL_OP:
+
+               ==   <=   >=   !=   <   >
+
+       15. The following two-character sequences shall be recognized as the token INCR_DECR:
+
+               ++   --
+
+       16. The following single characters shall be recognized as tokens whose names are the character:
+
+               <newline>  (  )  ,  +  -  ;  [  ]  ^  {  }
+
+       17. The token EOF is returned when the end of input is reached.
+
+   Operations in bc
+       There are three kinds of identifiers: ordinary identifiers, array identifiers, and function identifiers.  All three types consist of single lowercase letters. Array identifiers shall be  followed
+       by  square brackets ("[]").  An array subscript is required except in an argument or auto list.  Arrays are singly dimensioned and can contain up to {BC_DIM_MAX} elements. Indexing shall begin at
+       zero so an array is indexed from 0 to {BC_DIM_MAX}-1.  Subscripts shall be truncated to integers. The application shall ensure that function identifiers are followed by parentheses, possibly  en‐
+       closing arguments. The three types of identifiers do not conflict.
+
+       The following table summarizes the rules for precedence and associativity of all operators. Operators on the same line shall have the same precedence; rows are in order of decreasing precedence.
+
+                                                                                             Table: Operators in bc
+
+                                                                                   ┌──────────────────────────┬───────────────┐
+                                                                                   │        Operator          │ Associativity │
+                                                                                   ├──────────────────────────┼───────────────┤
+                                                                                   │++, --                    │ N/A           │
+                                                                                   │unary -                   │ N/A           │
+                                                                                   │^                         │ Right to left │
+                                                                                   │*, /, %                   │ Left to right │
+                                                                                   │+, binary -               │ Left to right │
+                                                                                   │=, +=, -=, *=, /=, %=, ^= │ Right to left │
+                                                                                   │==, <=, >=, !=, <, >      │ None          │
+                                                                                   └──────────────────────────┴───────────────┘
+       Each expression or named expression has a scale, which is the number of decimal digits that shall be maintained as the fractional portion of the expression.
+
+       Named  expressions  are  places where values are stored. Named expressions shall be valid on the left side of an assignment. The value of a named expression shall be the value stored in the place
+       named. Simple identifiers and array elements are named expressions; they have an initial value of zero and an initial scale of zero.
+
+       The internal registers scale, ibase, and obase are all named expressions. The scale of an expression consisting of the name of one of these registers shall be zero;  values  assigned  to  any  of
+       these registers are truncated to integers. The scale register shall contain a global value used in computing the scale of expressions (as described below). The value of the register scale is lim‐
+       ited to 0 ≤ scale ≤ {BC_SCALE_MAX} and shall have a default value of zero. The ibase and obase registers are the input and output number radix, respectively. The value of ibase shall  be  limited
+       to:
+
+           2 ≤ ibase ≤ 16
+
+       The value of obase shall be limited to:
+
+           2 ≤ obase ≤ {BC_BASE_MAX}
+
+       When  either ibase or obase is assigned a single digit value from the list in Lexical Conventions in bc, the value shall be assumed in hexadecimal. (For example, ibase=A sets to base ten, regard‐
+       less of the current ibase value.) Otherwise, the behavior is undefined when digits greater than or equal to the value of ibase appear in the input. Both ibase and obase shall have initial  values
+       of 10.
+
+       Internal  computations shall be conducted as if in decimal, regardless of the input and output bases, to the specified number of decimal digits. When an exact result is not achieved (for example,
+       scale=0; 3.2/1), the result shall be truncated.
+
+       For all values of obase specified by this volume of POSIX.1‐2017, bc shall output numeric values by performing each of the following steps in order:
+
+        1. If the value is less than zero, a <hyphen-minus> ('-') character shall be output.
+
+        2. One of the following is output, depending on the numerical value:
+
+            *  If the absolute value of the numerical value is greater than or equal to one, the integer portion of the value shall be output as a series of digits appropriate to obase (as described be‐
+               low), most significant digit first. The most significant non-zero digit shall be output next, followed by each successively less significant digit.
+
+            *  If the absolute value of the numerical value is less than one but greater than zero and the scale of the numerical value is greater than zero, it is unspecified whether the character 0 is
+               output.
+
+            *  If the numerical value is zero, the character 0 shall be output.
+
+        3. If the scale of the value is greater than zero and the numeric value is not zero, a <period> character shall be output, followed by a series of digits appropriate to obase (as  described  be‐
+           low) representing the most significant portion of the fractional part of the value. If s represents the scale of the value being output, the number of digits output shall be s if obase is 10,
+           less than or equal to s if obase is greater than 10, or greater than or equal to s if obase is less than 10. For obase values other than 10, this should be the number of digits needed to rep‐
+           resent a precision of 10s.
+
+       For obase values from 2 to 16, valid digits are the first obase of the single characters:
+
+           0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+
+       which represent the values zero to 15, inclusive, respectively.
+
+       For  bases  greater  than  16, each digit shall be written as a separate multi-digit decimal number. Each digit except the most significant fractional digit shall be preceded by a single <space>.
+       For bases from 17 to 100, bc shall write two-digit decimal numbers; for bases from 101 to 1000, three-digit decimal strings, and so on. For example, the decimal number 1024 in base  25  would  be
+       written as:
+
+            01 15 24
+
+       and in base 125, as:
+
+            008 024
+
+       Very  large numbers shall be split across lines with 70 characters per line in the POSIX locale; other locales may split at different character boundaries. Lines that are continued shall end with
+       a <backslash>.
+
+       A function call shall consist of a function name followed by parentheses containing a <comma>-separated list of expressions, which are the function arguments. A whole array passed as an  argument
+       shall be specified by the array name followed by empty square brackets. All function arguments shall be passed by value. As a result, changes made to the formal parameters shall have no effect on
+       the actual arguments. If the function terminates by executing a return statement, the value of the function shall be the value of the expression in the parentheses  of  the  return  statement  or
+       shall be zero if no expression is provided or if there is no return statement.
+
+       The  result of sqrt(expression) shall be the square root of the expression. The result shall be truncated in the least significant decimal place. The scale of the result shall be the scale of the
+       expression or the value of scale, whichever is larger.
+
+       The result of length(expression) shall be the total number of significant decimal digits in the expression. The scale of the result shall be zero.
+
+       The result of scale(expression) shall be the scale of the expression. The scale of the result shall be zero.
+
+       A numeric constant shall be an expression. The scale shall be the number of digits that follow the radix point in the input representing the constant, or zero if no radix point appears.
+
+       The sequence ( expression ) shall be an expression with the same value and scale as expression.  The parentheses can be used to alter the normal precedence.
+
+       The semantics of the unary and binary operators are as follows:
+
+       -expression
+             The result shall be the negative of the expression.  The scale of the result shall be the scale of expression.
+
+       The unary increment and decrement operators shall not modify the scale of the named expression upon which they operate. The scale of the result shall be the scale of that named expression.
+
+       ++named-expression
+             The named expression shall be incremented by one. The result shall be the value of the named expression after incrementing.
+
+       --named-expression
+             The named expression shall be decremented by one. The result shall be the value of the named expression after decrementing.
+
+       named-expression++
+             The named expression shall be incremented by one. The result shall be the value of the named expression before incrementing.
+
+       named-expression--
+             The named expression shall be decremented by one. The result shall be the value of the named expression before decrementing.
+
+       The exponentiation operator, <circumflex> ('^'), shall bind right to left.
+
+       expression^expression
+             The result shall be the first expression raised to the power of the second expression.  If the second expression is not an integer, the behavior is undefined.  If a is the scale of the left
+             expression and b is the absolute value of the right expression, the scale of the result shall be:
+
+                 if b >= 0 min(a * b, max(scale, a)) if b < 0 scale
+
+       The multiplicative operators ('*', '/', '%') shall bind left to right.
+
+       expression*expression
+             The result shall be the product of the two expressions. If a and b are the scales of the two expressions, then the scale of the result shall be:
+
+                 min(a+b,max(scale,a,b))
+
+       expression/expression
+             The result shall be the quotient of the two expressions. The scale of the result shall be the value of scale.
+
+       expression%expression
+             For expressions a and b, a%b shall be evaluated equivalent to the steps:
+
+              1. Compute a/b to current scale.
+
+              2. Use the result to compute:
+
+                     a - (a / b) * b
+
+                 to scale:
+
+                     max(scale + scale(b), scale(a))
+
+             The scale of the result shall be:
+
+                 max(scale + scale(b), scale(a))
+
+             When scale is zero, the '%' operator is the mathematical remainder operator.
+
+       The additive operators ('+', '-') shall bind left to right.
+
+       expression+expression
+             The result shall be the sum of the two expressions. The scale of the result shall be the maximum of the scales of the expressions.
+
+       expression-expression
+             The result shall be the difference of the two expressions. The scale of the result shall be the maximum of the scales of the expressions.
+
+       The assignment operators ('=', "+=", "-=", "*=", "/=", "%=", "^=") shall bind right to left.
+
+       named-expression=expression
+             This  expression  shall  result in assigning the value of the expression on the right to the named expression on the left. The scale of both the named expression and the result shall be the
+             scale of expression.
+
+       The compound assignment forms:
+
+           named-expression <operator>= expression
+
+       shall be equivalent to:
+
+           named-expression=named-expression <operator> expression
+
+       except that the named-expression shall be evaluated only once.
+
+       Unlike all other operators, the relational operators ('<', '>', "<=", ">=", "==", "!=") shall be only valid as the object of an if, while, or inside a for statement.
+
+       expression1<expression2
+             The relation shall be true if the value of expression1 is strictly less than the value of expression2.
+
+       expression1>expression2
+             The relation shall be true if the value of expression1 is strictly greater than the value of expression2.
+
+       expression1<=expression2
+             The relation shall be true if the value of expression1 is less than or equal to the value of expression2.
+
+       expression1>=expression2
+             The relation shall be true if the value of expression1 is greater than or equal to the value of expression2.
+
+       expression1==expression2
+             The relation shall be true if the values of expression1 and expression2 are equal.
+
+       expression1!=expression2
+             The relation shall be true if the values of expression1 and expression2 are unequal.
+
+       There are only two storage classes in bc: global and automatic (local).  Only identifiers that are local to a function need be declared with the auto command. The arguments to a function shall be
+       local to the function.  All other identifiers are assumed to be global and available to all functions. All identifiers, global and local, have initial values of zero. Identifiers declared as auto
+       shall be allocated on entry to the function and released on returning from the function. They therefore do not retain values between function calls. Auto arrays shall be specified  by  the  array
+       name  followed  by empty square brackets. On entry to a function, the old values of the names that appear as parameters and as automatic variables shall be pushed onto a stack. Until the function
+       returns, reference to these names shall refer only to the new values.
+
+       References to any of these names from other functions that are called from this function also refer to the new value until one of those functions uses the same name for a local variable.
+
+       When a statement is an expression, unless the main operator is an assignment, execution of the statement shall write the value of the expression followed by a <newline>.
+
+       When a statement is a string, execution of the statement shall write the value of the string.
+
+       Statements separated by <semicolon> or <newline> characters shall be executed sequentially. In an interactive invocation of bc, each time a <newline> is read that satisfies the  grammatical  pro‐
+       duction:
+
+           input_item : semicolon_list NEWLINE
+
+       the sequential list of statements making up the semicolon_list shall be executed immediately and any output produced by that execution shall be written without any delay due to buffering.
+
+       In an if statement (if(relation) statement), the statement shall be executed if the relation is true.
+
+       The  while statement (while(relation) statement) implements a loop in which the relation is tested; each time the relation is true, the statement shall be executed and the relation retested. When
+       the relation is false, execution shall resume after statement.
+
+       A for statement(for(expression; relation; expression) statement) shall be the same as:
+
+           first-expression
+           while (relation) {
+               statement
+               last-expression
+           }
+
+       The application shall ensure that all three expressions are present.
+
+       The break statement shall cause termination of a for or while statement.
+
+       The auto statement (auto identifier [,identifier] ...) shall cause the values of the identifiers to be pushed down.  The identifiers can be ordinary identifiers or array identifiers. Array  iden‐
+       tifiers shall be specified by following the array name by empty square brackets. The application shall ensure that the auto statement is the first statement in a function definition.
+
+       A define statement:
+
+           define LETTER ( opt_parameter_list ) {
+               opt_auto_define_list
+               statement_list
+           }
+
+       defines a function named LETTER.  If a function named LETTER was previously defined, the define statement shall replace the previous definition. The expression:
+
+           LETTER ( opt_argument_list )
+
+       shall  invoke  the function named LETTER.  The behavior is undefined if the number of arguments in the invocation does not match the number of parameters in the definition. Functions shall be de‐
+       fined before they are invoked. A function shall be considered to be defined within its own body, so recursive calls are valid. The values of numeric constants within a function  shall  be  inter‐
+       preted in the base specified by the value of the ibase register when the function is invoked.
+
+       The  return  statements (return and return(expression)) shall cause termination of a function, popping of its auto variables, and specification of the result of the function. The first form shall
+       be equivalent to return(0).  The value and scale of the result returned by the function shall be the value and scale of the expression returned.
+
+       The quit statement (quit) shall stop execution of a bc program at the point where the statement occurs in the input, even if it occurs in a function definition, or in an if, for, or while  state‐
+       ment.
+
+       The following functions shall be defined when the -l option is specified:
+
+       s( expression )
+             Sine of argument in radians.
+
+       c( expression )
+             Cosine of argument in radians.
+
+       a( expression )
+             Arctangent of argument.
+
+       l( expression )
+             Natural logarithm of argument.
+
+       e( expression )
+             Exponential function of argument.
+
+       j( expression1, expression2 )
+             Bessel function of expression2 of the first kind of integer order expression1.
+
+       The  scale  of the result returned by these functions shall be the value of the scale register at the time the function is invoked. The value of the scale register after these functions have com‐
+       pleted their execution shall be the same value it had upon invocation. The behavior is undefined if any of these functions is invoked with an argument outside the domain of the mathematical func‐
+       tion.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+       0         All input files were processed successfully.
+
+       unspecified
+                 An error occurred.
+
+CONSEQUENCES OF ERRORS
+       If any file operand is specified and the named file cannot be accessed, bc shall write a diagnostic message to standard error and terminate without any further action.
+
+       In  an  interactive invocation of bc, the utility should print an error message and recover following any error in the input. In a non-interactive invocation of bc, invalid input causes undefined
+       behavior.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       Automatic variables in bc do not work in exactly the same way as in either C or PL/1.
+
+       For historical reasons, the exit status from bc cannot be relied upon to indicate that an error has occurred.  Returning zero after an error is possible. Therefore, bc should be used primarily by
+       interactive users (who can react to error messages) or by application programs that can somehow validate the answers returned as not including error messages.
+
+       The bc utility always uses the <period> ('.')  character to represent a radix point, regardless of any decimal-point character specified as part of the current locale. In languages like C or awk,
+       the <period> character is used in program source, so it can be portable and unambiguous, while the locale-specific character is used in input and output. Because there is no  distinction  between
+       source  and input in bc, this arrangement would not be possible. Using the locale-specific character in bc's input would introduce ambiguities into the language; consider the following example in
+       a locale with a <comma> as the decimal-point character:
+
+           define f(a,b) {
+               ...
+           }
+           ...
+
+           f(1,2,3)
+
+       Because of such ambiguities, the <period> character is used in input. Having input follow different conventions from output would be confusing in either pipeline usage or  interactive  usage,  so
+       the <period> is also used in output.
+
+EXAMPLES
+       In the shell, the following assigns an approximation of the first ten digits of 'π' to the variable x:
+
+           x=$(printf "%s\n" 'scale = 10; 104348/33215' | bc)
+
+       The following bc program prints the same approximation of 'π', with a label, to standard output:
+
+           scale = 10
+           "pi equals "
+           104348 / 33215
+
+       The following defines a function to compute an approximate value of the exponential function (note that such a function is predefined if the -l option is specified):
+
+           scale = 20
+           define e(x){
+               auto a, b, c, i, s
+               a = 1
+               b = 1
+               s = 1
+               for (i = 1; 1 == 1; i++){
+                   a = a*x
+                   b = b*i
+                   c = a/b
+                   if (c == 0) {
+                        return(s)
+                   }
+                   s = s+c
+               }
+           }
+
+       The following prints approximate values of the exponential function of the first ten integers:
+
+           for (i = 1; i <= 10; ++i) {
+               e(i)
+           }
+
+RATIONALE
+       The  bc utility is implemented historically as a front-end processor for dc; dc was not selected to be part of this volume of POSIX.1‐2017 because bc was thought to have a more intuitive program‐
+       matic interface. Current implementations that implement bc using dc are expected to be compliant.
+
+       The exit status for error conditions has been left unspecified for several reasons:
+
+        *  The bc utility is used in both interactive and non-interactive situations.  Different exit codes may be appropriate for the two uses.
+
+        *  It is unclear when a non-zero exit should be given; divide-by-zero, undefined functions, and syntax errors are all possibilities.
+
+        *  It is not clear what utility the exit status has.
+
+        *  In the 4.3 BSD, System V, and Ninth Edition implementations, bc works in conjunction with dc.  The dc utility is the parent, bc is the child. This was done  to  cleanly  terminate  bc  if  dc
+           aborted.
+
+       The  decision  to  have  bc  exit  upon  encountering  an inaccessible input file is based on the belief that bc file1 file2 is used most often when at least file1 contains data/function declara‐
+       tions/initializations. Having bc continue with prerequisite files missing is probably not useful. There is no implication in the CONSEQUENCES OF ERRORS section that bc must check  all  its  files
+       for accessibility before opening any of them.
+
+       There  was  considerable  debate on the appropriateness of the language accepted by bc.  Several reviewers preferred to see either a pure subset of the C language or some changes to make the lan‐
+       guage more compatible with C.  While the bc language has some obvious similarities to C, it has never claimed to be compatible with any version of C. An interpreter for a subset of C might  be  a
+       very worthwhile utility, and it could potentially make bc obsolete. However, no such utility is known in historical practice, and it was not within the scope of this volume of POSIX.1‐2017 to de‐
+       fine such a language and utility. If and when they are defined, it may be appropriate to include them in a future version of this standard. This left the following alternatives:
+
+        1. Exclude any calculator language from this volume of POSIX.1‐2017.
+
+           The consensus of the standard developers was that a simple programmatic calculator language is very useful for both applications and interactive users. The only arguments  for  excluding  any
+           calculator  were  that it would become obsolete if and when a C-compatible one emerged, or that the absence would encourage the development of such a C-compatible one. These arguments did not
+           sufficiently address the needs of current application developers.
+
+        2. Standardize the historical dc, possibly with minor modifications.
+
+           The consensus of the standard developers was that dc is a fundamentally less usable language and that that would be far too severe a penalty for avoiding the issue of being similar to but in‐
+           compatible with C.
+
+        3. Standardize the historical bc, possibly with minor modifications.
+
+           This  was  the approach taken. Most of the proponents of changing the language would not have been satisfied until most or all of the incompatibilities with C were resolved. Since most of the
+           changes considered most desirable would break historical applications and require significant modification to historical implementations, almost no modifications were made. The  one  signifi‐
+           cant  modification  that  was made was the replacement of the historical bc assignment operators "=+", and so on, with the more modern "+=", and so on. The older versions are considered to be
+           fundamentally flawed because of the lexical ambiguity in uses like a=-1.
+
+           In order to permit implementations to deal with backwards-compatibility as they see fit, the behavior of this one ambiguous construct was made undefined. (At least three implementations  have
+           been known to support this change already, so the degree of change involved should not be great.)
+
+       The  '%'  operator  is the mathematical remainder operator when scale is zero. The behavior of this operator for other values of scale is from historical implementations of bc, and has been main‐
+       tained for the sake of historical applications despite its non-intuitive nature.
+
+       Historical implementations permit setting ibase and obase to a broader range of values. This includes values less than 2, which were not seen as sufficiently useful to standardize.  These  imple‐
+       mentations  do  not  interpret  input properly for values of ibase that are greater than 16. This is because numeric constants are recognized syntactically, rather than lexically, as described in
+       this volume of POSIX.1‐2017. They are built from lexical tokens of single hexadecimal digits and <period> characters. Since <blank> characters between tokens are  not  visible  at  the  syntactic
+       level, it is not possible to recognize the multi-digit ``digits'' used in the higher bases properly. The ability to recognize input in these bases was not considered useful enough to require mod‐
+       ifying these implementations.  Note that the recognition of numeric constants at the syntactic level is not a problem with conformance to this volume of POSIX.1‐2017, as it does  not  impact  the
+       behavior of conforming applications (and correct bc programs). Historical implementations also accept input with all of the digits '0'-'9' and 'A'-'F' regardless of the value of ibase; since dig‐
+       its with value greater than or equal to ibase are not really appropriate, the behavior when they appear is undefined, except for the common case of:
+
+           ibase=8;
+               /* Process in octal base. */
+           ...
+           ibase=A
+               /* Restore decimal base. */
+
+       In some historical implementations, if the expression to be written is an uninitialized array element, a leading <space> and/or up to four leading 0 characters may be output before the  character
+       zero. This behavior is considered a bug; it is unlikely that any currently conforming application relies on:
+
+           echo 'b[3]' | bc
+
+       returning 00000 rather than 0.
+
+       Exact  calculation of the number of fractional digits to output for a given value in a base other than 10 can be computationally expensive.  Historical implementations use a faster approximation,
+       and this is permitted. Note that the requirements apply only to values of obase that this volume of POSIX.1‐2017 requires implementations to support (in particular,  not  to  1,  0,  or  negative
+       bases, if an implementation supports them as an extension).
+
+       Historical  implementations  of bc did not allow array parameters to be passed as the last parameter to a function. New implementations are encouraged to remove this restriction even though it is
+       not required by the grammar.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 1.3, Grammar Conventions, awk
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                             BC(1P)
+curs_termcap(3X)                                                                                                                                                                          curs_termcap(3X)
+
+NAME
+       PC, UP, BC, ospeed, tgetent, tgetflag, tgetnum, tgetstr, tgoto, tputs - curses emulation of termcap
+
+SYNOPSIS
+       #include <curses.h>
+       #include <term.h>
+
+       extern char PC;
+       extern char * UP;
+       extern char * BC;
+       extern short ospeed;
+
+       int tgetent(char *bp, const char *name);
+       int tgetflag(const char *id);
+       int tgetnum(const char *id);
+       char *tgetstr(const char *id, char **area);
+       char *tgoto(const char *cap, int col, int row);
+       int tputs(const char *str, int affcnt, int (*putc)(int));
+
+DESCRIPTION
+       These  routines  are included as a conversion aid for programs that use the termcap library.  Their parameters are the same, but the routines are emulated using the terminfo database.  Thus, they
+       can only be used to query the capabilities of entries for which a terminfo entry has been compiled.
+
+   Initialization
+       The tgetent routine loads the entry for name.  It returns:
+
+          1  on success,
+
+          0  if there is no such entry (or that it is a generic type, having too little information for curses applications to run), and
+
+          -1 if the terminfo database could not be found.
+
+       This differs from the termcap library in two ways:
+
+          •   The emulation ignores the buffer pointer bp.  The termcap library would store a copy of the terminal description in the area referenced by this pointer.  However, ncurses stores its termi‐
+              nal descriptions in compiled binary form, which is not the same thing.
+
+          •   There  is a difference in return codes.  The termcap library does not check if the terminal description is marked with the generic capability, or if the terminal description has cursor-ad‐
+              dressing.
+
+   Capability Values
+       The tgetflag routine gets the boolean entry for id, or zero if it is not available.
+
+       The tgetnum routine gets the numeric entry for id, or -1 if it is not available.
+
+       The tgetstr routine returns the string entry for id, or zero if it is not available.  Use tputs to output the returned string.  The area parameter is used as follows:
+
+          •   It is assumed to be the address of a pointer to a buffer managed by the calling application.
+
+          •   However, ncurses checks to ensure that area is not NULL, and also that the resulting buffer pointer is not NULL.  If either check fails, the area parameter is ignored.
+
+          •   If the checks succeed, ncurses also copies the return value to the buffer pointed to by area, and the area value will be updated to point past the null ending this value.
+
+          •   The return value itself is an address in the terminal description which is loaded into memory.
+
+       Only the first two characters of the id parameter of tgetflag, tgetnum and tgetstr are compared in lookups.
+
+   Formatting Capabilities
+       The tgoto routine expands the given capability using the parameters.
+
+       •   Because the capability may have padding characters, the output of tgoto should be passed to tputs rather than some other output function such as printf(3).
+
+       •   While tgoto is assumed to be used for the two-parameter cursor positioning capability, termcap applications also use it for single-parameter capabilities.
+
+           Doing this shows a quirk in tgoto: most hardware terminals use cursor addressing with row first, but the original developers of the termcap interface chose to put the column parameter  first.
+           The tgoto function swaps the order of parameters.  It does this also for calls requiring only a single parameter.  In that case, the first parameter is merely a placeholder.
+
+       •   Normally the ncurses library is compiled with terminfo support.  In that case, tgoto uses tparm(3X) (a more capable formatter).
+
+           However, tparm is not a termcap feature, and portable termcap applications should not rely upon its availability.
+
+       The tputs routine is described on the curs_terminfo(3X) manual page.  It can retrieve capabilities by either termcap or terminfo name.
+
+   Global Variables
+       The  variables  PC,  UP  and  BC are set by tgetent to the terminfo entry's data for pad_char, cursor_up and backspace_if_not_bs, respectively.  UP is not used by ncurses.  PC is used in the tde‐
+       lay_output function.  BC is used in the tgoto emulation.  The variable ospeed is set by ncurses in a system-specific coding to reflect the terminal speed.
+
+   Releasing Memory
+       The termcap functions provide no means for freeing memory, because legacy termcap implementations used only the buffer areas provided by the caller via tgetent and tgetstr.  Those buffers are un‐
+       used in terminfo.
+
+       On the other hand, terminfo allocates memory.  It uses setupterm to retrieve the data used by tgetent and the functions which return capability values such as tgetstr.  One could use
+
+            del_curterm(cur_term);
+
+       to  free  this  memory,  but  there  is an additional complication with ncurses.  It uses a fixed-size pool of storage locations, one per setting of the TERM variable when tgetent is called.  The
+       screen(1) program relies upon this arrangement, to improve its performance.
+
+       An application which uses only the low-level termcap functions could free the memory using del_curterm, because the pool is freed using other functions (see curs_memleaks(3X)).
+
+RETURN VALUE
+       Except where explicitly noted, routines that return an integer return ERR upon failure and OK (SVr4 only specifies "an integer value other than ERR") upon successful completion.
+
+       Routines that return pointers return NULL on error.
+
+BUGS
+       If you call tgetstr to fetch ca or any other parameterized string, be aware that it will be returned in terminfo notation, not the older and not-quite-compatible termcap notation.  This will  not
+       cause problems if all you do with it is call tgoto or tparm, which both expand terminfo-style strings as terminfo.  (The tgoto function, if configured to support termcap, will check if the string
+       is indeed terminfo-style by looking for "%p" parameters or "$<..>" delays, and invoke a termcap-style parser if the string does not appear to be terminfo).
+
+       Because terminfo conventions for representing padding in string capabilities differ from termcap's, users can be surprised:
+
+       •   tputs("50") in a terminfo system will put out a literal “50” rather than busy-waiting for 50 milliseconds.
+
+       •   However, if ncurses is configured to support termcap, it may also have been configured to support the BSD-style padding.
+
+           In that case, tputs inspects strings passed to it, looking for digits at the beginning of the string.
+
+           tputs("50") in a termcap system may wait for 50 milliseconds rather than put out a literal “50”
+
+       Note that termcap has nothing analogous to terminfo's sgr string.  One consequence of this is that termcap applications assume me (terminfo sgr0) does not reset the alternate character set.  This
+       implementation checks for, and modifies the data shown to the termcap interface to accommodate termcap's limitation in this respect.
+
+PORTABILITY
+   Standards
+       These functions are provided for supporting legacy applications, and should not be used in new programs:
+
+       •   The XSI Curses standard, Issue 4 describes these functions.  However, they are marked TO BE WITHDRAWN and may be removed in future versions.
+
+       •   X/Open Curses, Issue 5 (December 2007) marked the termcap interface (along with vwprintw and vwscanw) as withdrawn.
+
+       Neither  the  XSI  Curses standard nor the SVr4 man pages documented the return values of tgetent correctly, though all three were in fact returned ever since SVr1.  In particular, an omission in
+       the XSI Curses documentation has been misinterpreted to mean that tgetent returns OK or ERR.  Because the purpose of these functions is to provide compatibility with the termcap library, that  is
+       a defect in XCurses, Issue 4, Version 2 rather than in ncurses.
+
+   Compatibility with BSD Termcap
+       External  variables  are  provided for support of certain termcap applications.  However, termcap applications' use of those variables is poorly documented, e.g., not distinguishing between input
+       and output.  In particular, some applications are reported to declare and/or modify ospeed.
+
+       The comment that only the first two characters of the id parameter are used escapes many application developers.  The original BSD 4.2 termcap library (and historical relics thereof) did not  re‐
+       quire  a  trailing null NUL on the parameter name passed to tgetstr, tgetnum and tgetflag.  Some applications assume that the termcap interface does not require the trailing NUL for the parameter
+       name.  Taking into account these issues:
+
+       •   As a special case, tgetflag matched against a single-character identifier provided that was at the end of the terminal description.  You should not rely upon this behavior  in  portable  pro‐
+           grams.  This implementation disallows matches against single-character capability names.
+
+       •   This implementation disallows matches by the termcap interface against extended capability names which are longer than two characters.
+
+       The  BSD termcap function tgetent returns the text of a termcap entry in the buffer passed as an argument.  This library (like other terminfo implementations) does not store terminal descriptions
+       as text.  It sets the buffer contents to a null-terminated string.
+
+   Other Compatibility
+       This library includes a termcap.h header, for compatibility with other implementations.  But the header is rarely used because the other implementations are not strictly compatible.
+
+       The original BSD termcap (through 4.3BSD) had no header file which gave function prototypes, because that was a feature of ANSI C.  BSD termcap was written several years before  C  was  standard‐
+       ized.  However, there were two different termcap.h header files in the BSD sources:
+
+       •   One was used internally by the jove editor in 2BSD through 4.4BSD.  It defined global symbols for the termcap variables which it used.
+
+       •   The  other  appeared  in 4.4BSD Lite Release 2 (mid-1993) as part of libedit (also known as the editline library).  The CSRG source history shows that this was added in mid-1992.  The libedit
+           header file was used internally, as a convenience for compiling the editline library.  It declared function prototypes, but no global variables.
+
+       The header file from libedit was added to NetBSD's termcap library in mid-1994.
+
+       Meanwhile, GNU termcap was under development, starting in 1990.  The first release (termcap 1.0) in 1991 included a termcap.h header.  The second release (termcap 1.1) in September 1992  modified
+       the header to use const for the function prototypes in the header where one would expect the parameters to be read-only.  This was a difference versus the original BSD termcap.  The prototype for
+       tputs also differed, but in that instance, it was libedit which differed from BSD termcap.
+
+       A copy of GNU termcap 1.3 was bundled with bash in mid-1993, to support the readline(3) library.
+
+       A termcap.h file was provided in ncurses 1.8.1 (November 1993).  That reflected influence by emacs(1) (rather than jove(1)) and GNU termcap:
+
+       •   it provided declarations for a few global symbols used by emacs
+
+       •   it provided function prototypes (using const).
+
+       •   a prototype for tparam (a GNU termcap feature) was provided.
+
+       Later (in mid-1996) the tparam function was removed from ncurses.  As a result, there are differences between any of the four implementations, which must be taken into account by  programs  which
+       can work with all termcap library interfaces.
+
+SEE ALSO
+       curses(3X), putc(3), term_variables(3X), terminfo(5).
+
+       https://invisible-island.net/ncurses/tctest.html
+
+                                                                                                                                                                                          curs_termcap(3X)

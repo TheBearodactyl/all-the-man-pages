@@ -1,0 +1,131 @@
+uselocale(3)                                                                             Library Functions Manual                                                                             uselocale(3)
+
+NAME
+       uselocale - set/get the locale for the calling thread
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <locale.h>
+
+       locale_t uselocale(locale_t newloc);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       uselocale():
+           Since glibc 2.10:
+               _XOPEN_SOURCE >= 700
+           Before glibc 2.10:
+               _GNU_SOURCE
+
+DESCRIPTION
+       The  uselocale()  function sets the current locale for the calling thread, and returns the thread's previously current locale.  After a successful call to uselocale(), any calls by this thread to
+       functions that depend on the locale will operate as though the locale has been set to newloc.
+
+       The newloc argument can have one of the following values:
+
+       A handle returned by a call to newlocale(3) or duplocale(3)
+              The calling thread's current locale is set to the specified locale.
+
+       The special locale object handle LC_GLOBAL_LOCALE
+              The calling thread's current locale is set to the global locale determined by setlocale(3).
+
+       (locale_t) 0
+              The calling thread's current locale is left unchanged (and the current locale is returned as the function result).
+
+RETURN VALUE
+       On success, uselocale() returns the locale handle that was set by the previous call to uselocale() in this thread, or LC_GLOBAL_LOCALE if there was no such previous call.  On  error,  it  returns
+       (locale_t) 0, and sets errno to indicate the error.
+
+ERRORS
+       EINVAL newloc does not refer to a valid locale object.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.3.  POSIX.1-2008.
+
+NOTES
+       Unlike setlocale(3), uselocale() does not allow selective replacement of individual locale categories.  To employ a locale that differs in only a few categories from the current locale, use calls
+       to duplocale(3) and newlocale(3) to obtain a locale object equivalent to the current locale and modify the desired categories in that object.
+
+EXAMPLES
+       See newlocale(3) and duplocale(3).
+
+SEE ALSO
+       locale(1), duplocale(3), freelocale(3), newlocale(3), setlocale(3), locale(5), locale(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                    uselocale(3)
+USELOCALE(3P)                                                                            POSIX Programmer's Manual                                                                           USELOCALE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       uselocale — use locale in current thread
+
+SYNOPSIS
+       #include <locale.h>
+
+       locale_t uselocale(locale_t newloc);
+
+DESCRIPTION
+       The uselocale() function shall set or query the current locale for the calling thread.
+
+       The value for the newloc argument shall be one of the following:
+
+        1. A value returned by the newlocale() or duplocale() functions
+
+        2. The special locale object descriptor LC_GLOBAL_LOCALE
+
+        3. (locale_t)0
+
+       If the newloc argument is (locale_t)0, the current locale shall not be changed; this value can be used to query the current locale setting. If the newloc argument is LC_GLOBAL_LOCALE, any thread-
+       local  locale for the calling thread shall be uninstalled; the thread shall again use the global locale as the current locale, and changes to the global locale shall affect the thread. Otherwise,
+       the locale represented by newloc shall be installed as a thread-local locale to be used as the current locale for the calling thread.
+
+       Once the uselocale() function has been called to install a thread-local locale, the behavior of every interface using data from the current locale shall be affected for the  calling  thread.  The
+       current locale for other threads shall remain unchanged.
+
+RETURN VALUE
+       Upon  successful  completion,  the uselocale() function shall return a handle for the thread-local locale that was in use as the current locale for the calling thread on entry to the function, or
+       LC_GLOBAL_LOCALE if no thread-local locale was in use. Otherwise, uselocale() shall return (locale_t)0 and set errno to indicate the error.
+
+ERRORS
+       The uselocale() function may fail if:
+
+       EINVAL newloc is not a valid locale object and is not (locale_t)0.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Unlike the setlocale() function, the uselocale() function does not allow replacing some locale categories only. Applications that need to install a locale which differs only in a  few  categories
+       must use newlocale() to change a locale object equivalent to the currently used locale and install it.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       duplocale(), freelocale(), newlocale(), setlocale()
+
+       The Base Definitions volume of POSIX.1‐2017, <locale.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                      USELOCALE(3P)

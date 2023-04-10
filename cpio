@@ -1,0 +1,412 @@
+CPIO(5)                                                                                   BSD File Formats Manual                                                                                  CPIO(5)
+
+NAME
+     cpio — format of cpio archive files
+
+DESCRIPTION
+     The cpio archive format collects any number of files, directories, and other file system objects (symbolic links, device nodes, etc.) into a single stream of bytes.
+
+   General Format
+     Each file system object in a cpio archive comprises a header record with basic numeric metadata followed by the full pathname of the entry and the file data.  The header record stores a series of
+     integer values that generally follow the fields in struct stat.  (See stat(2) for details.)  The variants differ primarily in how they store those integers (binary, octal, or hexadecimal).  The
+     header is followed by the pathname of the entry (the length of the pathname is stored in the header) and any file data.  The end of the archive is indicated by a special record with the pathname
+     “TRAILER!!!”.
+
+   PWB format
+     The PWB binary cpio format is the original format, when cpio was introduced as part of the Programmer's Work Bench system, a variant of 6th Edition UNIX.  It stores numbers as 2-byte and 4-byte bi‐
+     nary values.  Each entry begins with a header in the following format:
+
+           struct header_pwb_cpio {
+                   short   h_magic;
+                   short   h_dev;
+                   short   h_ino;
+                   short   h_mode;
+                   short   h_uid;
+                   short   h_gid;
+                   short   h_nlink;
+                   short   h_majmin;
+                   long    h_mtime;
+                   short   h_namesize;
+                   long    h_filesize;
+           };
+
+     The short fields here are 16-bit integer values, while the long fields are 32 bit integers.  Since PWB UNIX, like the 6th Edition UNIX it was based on, only ran on PDP-11 computers, they are in
+     PDP-endian format, which has little-endian shorts, and big-endian longs.  That is, the long integer whose hexadecimal representation is 0x12345678 would be stored in four successive bytes as 0x34,
+     0x12, 0x78, 0x56.  The fields are as follows:
+
+     h_magic
+             The integer value octal 070707.
+
+     h_dev, h_ino
+             The device and inode numbers from the disk.  These are used by programs that read cpio archives to determine when two entries refer to the same file.  Programs that synthesize cpio archives
+             should be careful to set these to distinct values for each entry.
+
+     h_mode  The mode specifies both the regular permissions and the file type, and it also holds a couple of bits that are irrelevant to the cpio format, because the field is actually a raw copy of the
+             mode field in the inode representing the file.  These are the IALLOC flag, which shows that the inode entry is in use, and the ILARG flag, which shows that the file it represents is large
+             enough to have indirect blocks pointers in the inode.  The mode is decoded as follows:
+
+             0100000  IALLOC flag - irrelevant to cpio.
+             0060000  This masks the file type bits.
+             0040000  File type value for directories.
+             0020000  File type value for character special devices.
+             0060000  File type value for block special devices.
+             0010000  ILARG flag - irrelevant to cpio.
+             0004000  SUID bit.
+             0002000  SGID bit.
+             0001000  Sticky bit.
+             0000777  The lower 9 bits specify read/write/execute permissions for world, group, and user following standard POSIX conventions.
+
+     h_uid, h_gid
+             The numeric user id and group id of the owner.
+
+     h_nlink
+             The number of links to this file.  Directories always have a value of at least two here.  Note that hardlinked files include file data with every copy in the archive.
+
+     h_majmin
+             For block special and character special entries, this field contains the associated device number, with the major number in the high byte, and the minor number in the low byte.  For all
+             other entry types, it should be set to zero by writers and ignored by readers.
+
+     h_mtime
+             Modification time of the file, indicated as the number of seconds since the start of the epoch, 00:00:00 UTC January 1, 1970.
+
+     h_namesize
+             The number of bytes in the pathname that follows the header.  This count includes the trailing NUL byte.
+
+     h_filesize
+             The size of the file.  Note that this archive format is limited to 16 megabyte file sizes, because PWB UNIX, like 6th Edition, only used an unsigned 24 bit integer for the file size inter‐
+             nally.
+
+     The pathname immediately follows the fixed header.  If h_namesize is odd, an additional NUL byte is added after the pathname.  The file data is then appended, again with an additional NUL appended
+     if needed to get the next header at an even offset.
+
+     Hardlinked files are not given special treatment; the full file contents are included with each copy of the file.
+
+   New Binary Format
+     The new binary cpio format showed up when cpio was adopted into late 7th Edition UNIX.  It is exactly like the PWB binary format, described above, except for three changes:
+
+     First, UNIX now ran on more than one hardware type, so the endianness of 16 bit integers must be determined by observing the magic number at the start of the header.  The 32 bit integers are still
+     always stored with the most significant word first, though, so each of those two, in the struct shown above, was stored as an array of two 16 bit integers, in the traditional order.  Those 16 bit
+     integers, like all the others in the struct, were accessed using a macro that byte swapped them if necessary.
+
+     Next, 7th Edition had more file types to store, and the IALLOC and ILARG flag bits were re-purposed to accommodate these.  The revised use of the various bits is as follows:
+
+     0170000  This masks the file type bits.
+     0140000  File type value for sockets.
+     0120000  File type value for symbolic links.  For symbolic links, the link body is stored as file data.
+     0100000  File type value for regular files.
+     0060000  File type value for block special devices.
+     0040000  File type value for directories.
+     0020000  File type value for character special devices.
+     0010000  File type value for named pipes or FIFOs.
+     0004000  SUID bit.
+     0002000  SGID bit.
+     0001000  Sticky bit.
+     0000777  The lower 9 bits specify read/write/execute permissions for world, group, and user following standard POSIX conventions.
+
+     Finally, the file size field now represents a signed 32 bit integer in the underlying file system, so the maximum file size has increased to 2 gigabytes.
+
+     Note that there is no obvious way to tell which of the two binary formats an archive uses, other than to see which one makes more sense.  The typical error scenario is that a PWB format archive un‐
+     packed as if it were in the new format will create named sockets instead of directories, and then fail to unpack files that should go in those directories.  Running bsdcpio -itv on an unknown ar‐
+     chive will make it obvious which it is: if it's PWB format, directories will be listed with an 's' instead of a 'd' as the first character of the mode string, and the larger files will have a '?'
+     in that position.
+
+   Portable ASCII Format
+     Version 2 of the Single UNIX Specification (“SUSv2”) standardized an ASCII variant that is portable across all platforms.  It is commonly known as the “old character” format or as the “odc” format.
+     It stores the same numeric fields as the old binary format, but represents them as 6-character or 11-character octal values.
+
+           struct cpio_odc_header {
+                   char    c_magic[6];
+                   char    c_dev[6];
+                   char    c_ino[6];
+                   char    c_mode[6];
+                   char    c_uid[6];
+                   char    c_gid[6];
+                   char    c_nlink[6];
+                   char    c_rdev[6];
+                   char    c_mtime[11];
+                   char    c_namesize[6];
+                   char    c_filesize[11];
+           };
+
+     The fields are identical to those in the new binary format.  The name and file body follow the fixed header.  Unlike the binary formats, there is no additional padding after the pathname or file
+     contents.  If the files being archived are themselves entirely ASCII, then the resulting archive will be entirely ASCII, except for the NUL byte that terminates the name field.
+
+   New ASCII Format
+     The "new" ASCII format uses 8-byte hexadecimal fields for all numbers and separates device numbers into separate fields for major and minor numbers.
+
+           struct cpio_newc_header {
+                   char    c_magic[6];
+                   char    c_ino[8];
+                   char    c_mode[8];
+                   char    c_uid[8];
+                   char    c_gid[8];
+                   char    c_nlink[8];
+                   char    c_mtime[8];
+                   char    c_filesize[8];
+                   char    c_devmajor[8];
+                   char    c_devminor[8];
+                   char    c_rdevmajor[8];
+                   char    c_rdevminor[8];
+                   char    c_namesize[8];
+                   char    c_check[8];
+           };
+
+     Except as specified below, the fields here match those specified for the new binary format above.
+
+     magic   The string “070701”.
+
+     check   This field is always set to zero by writers and ignored by readers.  See the next section for more details.
+
+     The pathname is followed by NUL bytes so that the total size of the fixed header plus pathname is a multiple of four.  Likewise, the file data is padded to a multiple of four bytes.  Note that this
+     format supports only 4 gigabyte files (unlike the older ASCII format, which supports 8 gigabyte files).
+
+     In this format, hardlinked files are handled by setting the filesize to zero for each entry except the first one that appears in the archive.
+
+   New CRC Format
+     The CRC format is identical to the new ASCII format described in the previous section except that the magic field is set to “070702” and the check field is set to the sum of all bytes in the file
+     data.  This sum is computed treating all bytes as unsigned values and using unsigned arithmetic.  Only the least-significant 32 bits of the sum are stored.
+
+   HP variants
+     The cpio implementation distributed with HPUX used XXXX but stored device numbers differently XXX.
+
+   Other Extensions and Variants
+     Sun Solaris uses additional file types to store extended file data, including ACLs and extended attributes, as special entries in cpio archives.
+
+     XXX Others? XXX
+
+SEE ALSO
+     cpio(1), tar(5)
+
+STANDARDS
+     The cpio utility is no longer a part of POSIX or the Single Unix Standard.  It last appeared in Version 2 of the Single UNIX Specification (“SUSv2”).  It has been supplanted in subsequent standards
+     by pax(1).  The portable ASCII format is currently part of the specification for the pax(1) utility.
+
+HISTORY
+     The original cpio utility was written by Dick Haight while working in AT&T's Unix Support Group.  It appeared in 1977 as part of PWB/UNIX 1.0, the “Programmer's Work Bench” derived from Version 6
+     AT&T UNIX that was used internally at AT&T.  Both the new binary and old character formats were in use by 1980, according to the System III source released by SCO under their “Ancient Unix” li‐
+     cense.  The character format was adopted as part of IEEE Std 1003.1-1988 (“POSIX.1”).  XXX when did "newc" appear?  Who invented it?  When did HP come out with their variant?  When did Sun intro‐
+     duce ACLs and extended attributes? XXX
+
+BUGS
+     The “CRC” format is mis-named, as it uses a simple checksum and not a cyclic redundancy check.
+
+     The binary formats are limited to 16 bits for user id, group id, device, and inode numbers.  They are limited to 16 megabyte and 2 gigabyte file sizes for the older and newer variants, respec‐
+     tively.
+
+     The old ASCII format is limited to 18 bits for the user id, group id, device, and inode numbers.  It is limited to 8 gigabyte file sizes.
+
+     The new ASCII format is limited to 4 gigabyte file sizes.
+
+     None of the cpio formats store user or group names, which are essential when moving files between systems with dissimilar user or group numbering.
+
+     Especially when writing older cpio variants, it may be necessary to map actual device/inode values to synthesized values that fit the available fields.  With very large filesystems, this may be
+     necessary even for the newer formats.
+
+BSD                                                                                          December 23, 2011                                                                                         BSD
+CPIO(1)                                                                                 BSD General Commands Manual                                                                                CPIO(1)
+
+NAME
+     cpio — copy files to and from archives
+
+SYNOPSIS
+     cpio -i [options] [pattern ...] [< archive]
+     cpio -o [options] < name-list [> archive]
+     cpio -p [options] dest-dir < name-list
+
+DESCRIPTION
+     cpio copies files between archives and directories.  This implementation can extract from tar, pax, cpio, zip, jar, ar, and ISO 9660 cdrom images and can create tar, pax, cpio, ar, and shar ar‐
+     chives.
+
+     The first option to cpio is a mode indicator from the following list:
+     -i      Input.  Read an archive from standard input (unless overridden) and extract the contents to disk or (if the -t option is specified) list the contents to standard output.  If one or more
+             file patterns are specified, only files matching one of the patterns will be extracted.
+     -o      Output.  Read a list of filenames from standard input and produce a new archive on standard output (unless overridden) containing the specified items.
+     -p      Pass-through.  Read a list of filenames from standard input and copy the files to the specified directory.
+
+OPTIONS
+     Unless specifically stated otherwise, options are applicable in all operating modes.
+
+     -0, --null
+             Read filenames separated by NUL characters instead of newlines.  This is necessary if any of the filenames being read might contain newlines.
+
+     -6, --pwb
+             When reading a binary format archive, assume it's the earlier one, from the PWB variant of 6th Edition UNIX.  When writing a cpio archive, use the PWB format.
+
+     -7, --binary
+             (o mode only) When writing a cpio archive, use the (newer, non-PWB) binary format.
+
+     -A      (o mode only) Append to the specified archive.  (Not yet implemented.)
+
+     -a      (o and p modes) Reset access times on files after they are read.
+
+     -B      (o mode only) Block output to records of 5120 bytes.
+
+     -C size
+             (o mode only) Block output to records of size bytes.
+
+     -c      (o mode only) Use the old POSIX portable character format.  Equivalent to --format odc.
+
+     -d, --make-directories
+             (i and p modes) Create directories as necessary.
+
+     -E file
+             (i mode only) Read list of file name patterns from file to list and extract.
+
+     -F file, --file file
+             Read archive from or write archive to file.
+
+     -f pattern
+             (i mode only) Ignore files that match pattern.
+
+     -H format, --format format
+             (o mode only) Produce the output archive in the specified format.  Supported formats include:
+
+             cpio     Synonym for odc.
+             newc     The SVR4 portable cpio format.
+             odc      The old POSIX.1 portable octet-oriented cpio format.
+             pax      The POSIX.1 pax format, an extension of the ustar format.
+             ustar    The POSIX.1 tar format.
+
+             The default format is odc.  See libarchive-formats(5) for more complete information about the formats currently supported by the underlying libarchive(3) library.
+
+     -h, --help
+             Print usage information.
+
+     -I file
+             Read archive from file.
+
+     -i, --extract
+             Input mode.  See above for description.
+
+     --insecure
+             (i and p mode only) Disable security checks during extraction or copying.  This allows extraction via symbolic links, absolute paths, and path names containing ‘..’ in the name.
+
+     -J, --xz
+             (o mode only) Compress the file with xz-compatible compression before writing it.  In input mode, this option is ignored; xz compression is recognized automatically on input.
+
+     -j      Synonym for -y.
+
+     -L      (o and p modes) All symbolic links will be followed.  Normally, symbolic links are archived and copied as symbolic links.  With this option, the target of the link will be archived or
+             copied instead.
+
+     -l, --link
+             (p mode only) Create links from the target directory to the original files, instead of copying.
+
+     --lrzip
+             (o mode only) Compress the resulting archive with lrzip(1).  In input mode, this option is ignored.
+
+     --lz4   (o mode only) Compress the archive with lz4-compatible compression before writing it.  In input mode, this option is ignored; lz4 compression is recognized automatically on input.
+
+     --zstd  (o mode only) Compress the archive with zstd-compatible compression before writing it.  In input mode, this option is ignored; zstd compression is recognized automatically on input.
+
+     --lzma  (o mode only) Compress the file with lzma-compatible compression before writing it.  In input mode, this option is ignored; lzma compression is recognized automatically on input.
+
+     --lzop  (o mode only) Compress the resulting archive with lzop(1).  In input mode, this option is ignored.
+
+     --passphrase passphrase
+             The passphrase is used to extract or create an encrypted archive.  Currently, zip is only a format that cpio can handle encrypted archives.  You shouldn't use this option unless you realize
+             how insecure use of this option is.
+
+     -m, --preserve-modification-time
+             (i and p modes) Set file modification time on created files to match those in the source.
+
+     -n, --numeric-uid-gid
+             (i mode, only with -t) Display numeric uid and gid.  By default, cpio displays the user and group names when they are provided in the archive, or looks up the user and group names in the
+             system password database.
+
+     --no-preserve-owner
+             (i mode only) Do not attempt to restore file ownership.  This is the default when run by non-root users.
+
+     -O file
+             Write archive to file.
+
+     -o, --create
+             Output mode.  See above for description.
+
+     -p, --pass-through
+             Pass-through mode.  See above for description.
+
+     --preserve-owner
+             (i mode only) Restore file ownership.  This is the default when run by the root user.
+
+     --quiet
+             Suppress unnecessary messages.
+
+     -R [user][:][group], --owner [user][:][group]
+             Set the owner and/or group on files in the output.  If group is specified with no user (for example, -R :wheel) then the group will be set but not the user.  If the user is specified with a
+             trailing colon and no group (for example, -R root:) then the group will be set to the user's default group.  If the user is specified with no trailing colon, then the user will be set but
+             not the group.  In -i and -p modes, this option can only be used by the super-user.  (For compatibility, a period can be used in place of the colon.)
+
+     -r      (All modes.)  Rename files interactively.  For each file, a prompt is written to /dev/tty containing the name of the file and a line is read from /dev/tty.  If the line read is blank, the
+             file is skipped.  If the line contains a single period, the file is processed normally.  Otherwise, the line is taken to be the new name of the file.
+
+     -t, --list
+             (i mode only) List the contents of the archive to stdout; do not restore the contents to disk.
+
+     -u, --unconditional
+             (i and p modes) Unconditionally overwrite existing files.  Ordinarily, an older file will not overwrite a newer file on disk.
+
+     -V, --dot
+             Print a dot to stderr for each file as it is processed.  Superseded by -v.
+
+     -v, --verbose
+             Print the name of each file to stderr as it is processed.  With -t, provide a detailed listing of each file.
+
+     --version
+             Print the program version information and exit.
+
+     -y      (o mode only) Compress the archive with bzip2-compatible compression before writing it.  In input mode, this option is ignored; bzip2 compression is recognized automatically on input.
+
+     -Z      (o mode only) Compress the archive with compress-compatible compression before writing it.  In input mode, this option is ignored; compression is recognized automatically on input.
+
+     -z      (o mode only) Compress the archive with gzip-compatible compression before writing it.  In input mode, this option is ignored; gzip compression is recognized automatically on input.
+
+EXIT STATUS
+     The cpio utility exits 0 on success, and >0 if an error occurs.
+
+ENVIRONMENT
+     The following environment variables affect the execution of cpio:
+
+     LANG       The locale to use.  See environ(7) for more information.
+
+     TZ         The timezone to use when displaying dates.  See environ(7) for more information.
+
+EXAMPLES
+     The cpio command is traditionally used to copy file hierarchies in conjunction with the find(1) command.  The first example here simply copies all files from src to dest:
+           find src | cpio -pmud dest
+
+     By carefully selecting options to the find(1) command and combining it with other standard utilities, it is possible to exercise very fine control over which files are copied.  This next example
+     copies files from src to dest that are more than 2 days old and whose names match a particular pattern:
+           find src -mtime +2 | grep foo[bar] | cpio -pdmu dest
+
+     This example copies files from src to dest that are more than 2 days old and which contain the word “foobar”:
+           find src -mtime +2 | xargs grep -l foobar | cpio -pdmu dest
+
+COMPATIBILITY
+     The mode options i, o, and p and the options a, B, c, d, f, l, m, r, t, u, and v comply with SUSv2.
+
+     The old POSIX.1 standard specified that only -i, -o, and -p were interpreted as command-line options.  Each took a single argument of a list of modifier characters.  For example, the standard syn‐
+     tax allows -imu but does not support -miu or -i -m -u, since m and u are only modifiers to -i, they are not command-line options in their own right.  The syntax supported by this implementation is
+     backwards-compatible with the standard.  For best compatibility, scripts should limit themselves to the standard syntax.
+
+SEE ALSO
+     bzip2(1), gzip(1), mt(1), pax(1), tar(1), libarchive(3), cpio(5), libarchive-formats(5), tar(5)
+
+STANDARDS
+     There is no current POSIX standard for the cpio command; it appeared in ISO/IEC 9945-1:1996 (“POSIX.1”) but was dropped from IEEE Std 1003.1-2001 (“POSIX.1”).
+
+     The cpio, ustar, and pax interchange file formats are defined by IEEE Std 1003.1-2001 (“POSIX.1”) for the pax command.
+
+HISTORY
+     The original cpio and find utilities were written by Dick Haight while working in AT&T's Unix Support Group.  They first appeared in 1977 in PWB/UNIX 1.0, the “Programmer's Work Bench” system de‐
+     veloped for use within AT&T.  They were first released outside of AT&T as part of System III Unix in 1981.  As a result, cpio actually predates tar, even though it was not well-known outside of
+     AT&T until some time later.
+
+     This is a complete re-implementation based on the libarchive(3) library.
+
+BUGS
+     The cpio archive format has several basic limitations: It does not store user and group names, only numbers.  As a result, it cannot be reliably used to transfer files between systems with dissimi‐
+     lar user and group numbering.  Older cpio formats limit the user and group numbers to 16 or 18 bits, which is insufficient for modern systems.  The cpio archive formats cannot support files over 4
+     gigabytes, except for the “odc” variant, which can support files up to 8 gigabytes.
+
+BSD                                                                                         September 16, 2014                                                                                         BSD

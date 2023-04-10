@@ -1,0 +1,102 @@
+ESYS_CONTEXT(3)                                                                                  tpm2-tss                                                                                  ESYS_CONTEXT(3)
+
+NAME
+       ESYS_CONTEXT - Esys Context ESYS_CONTEXT
+
+SYNOPSIS
+   Typedefs
+       typedef struct ESYS_CONTEXT ESYS_CONTEXT
+
+   Functions
+       TSS2_RC Esys_Initialize (ESYS_CONTEXT **esys_context, TSS2_TCTI_CONTEXT *tcti, TSS2_ABI_VERSION *abiVersion)
+       TSS2_RC Esys_GetTcti (ESYS_CONTEXT *esys_context, TSS2_TCTI_CONTEXT **tcti)
+       TSS2_RC Esys_GetPollHandles (ESYS_CONTEXT *esys_context, TSS2_TCTI_POLL_HANDLE **handles, size_t *count)
+       TSS2_RC Esys_SetTimeout (ESYS_CONTEXT *esys_context, int32_t timeout)
+       TSS2_RC Esys_GetSysContext (ESYS_CONTEXT *esys_context, TSS2_SYS_CONTEXT **sys_context)
+       void Esys_Free (void *__ptr)
+
+Detailed Description
+       An ESYS_CONTEXT holds tdata for the connection to the TPM as well as the metadata for TPM Resource; such as Transient key, Persistent objects, NV spaces, Sessions or PCRs.
+
+Typedef Documentation
+   ESYS_CONTEXT
+       Reference to the ESYS_CONTEXT that holds data for the connection to the TPM as well as the metadata for TPM Resource; such as Transient key, Persistent objects, NV spaces, Sessions or PCRs.
+
+Function Documentation
+   TSS2_RC Esys_GetPollHandles (ESYS_CONTEXT * esys_context, TSS2_TCTI_POLL_HANDLE ** handles, size_t * count)
+       Return the poll handles of the used TCTI.
+
+       The connection to the TPM is held using a TCTI. These may optionally provide handles that can be used to poll for incoming data. This is useful when using the asynchronous function of ESAPI in an
+       event-loop model.
+
+       Parameters
+           esys_context [in] The ESYS_CONTEXT.
+           handles [out] The poll handles (callee-allocated, use free())
+           count [out] The number of poll handles.
+
+       Return values
+           TSS2_RC_SUCCESS on Success.
+           TSS2_ESYS_RC_BAD_REFERENCE if esysContext, handles or count is NULL.
+           TSS2_RCs produced by lower layers of the software stack.
+
+   TSS2_RC Esys_GetSysContext (ESYS_CONTEXT * esys_context, TSS2_SYS_CONTEXT ** sys_context)
+       Helper function that returns sys contest from the give esys context.
+
+       Function returns sys contest from the give esys context.
+
+       Parameters
+           esys_context [in] ESYS context.
+           sys_context [out] SYS context.
+
+       Return values
+           TSS2_RC_SUCCESS on Success.
+           TSS2_ESYS_RC_BAD_REFERENCE if esys_context of sys_context are NULL.
+
+   TSS2_RC Esys_GetTcti (ESYS_CONTEXT * esys_context, TSS2_TCTI_CONTEXT ** tcti)
+       Return the used TCTI context.
+
+       If a tcti context was passed into Esys_Initialize then this tcti context is return. If NULL was passed in, then NULL will be returned. This function is useful before Esys_Finalize to retrieve the
+       tcti context and perform a clean Tss2_Tcti_Finalize.
+
+       Parameters
+           esys_context [in] The ESYS_CONTEXT.
+           tcti [out] The TCTI context used to connect to the TPM (may be NULL).
+
+       Return values
+           TSS2_RC_SUCCESS on Success.
+           TSS2_ESYS_RC_BAD_REFERENCE if esysContext or tcti is NULL.
+
+   TSS2_RC Esys_Initialize (ESYS_CONTEXT ** esys_context, TSS2_TCTI_CONTEXT * tcti, TSS2_ABI_VERSION * abiVersion)
+       Initialize an ESYS_CONTEXT for further use.
+
+       Initialize an ESYS_CONTEXT that holds all the state and metadata information during an interaction with the TPM. If not specified, load a TCTI in this order: Library libtss2-tcti-default.so (link
+       to the preferred TCTI) Library libtss2-tcti-tabrmd.so (tabrmd) Device /dev/tpmrm0 (kernel resident resource manager) Device /dev/tpm0 (hardware TPM) TCP socket localhost:2321 (TPM simulator)
+
+       Parameters
+           esys_context [out] The ESYS_CONTEXT.
+           tcti [in] The TCTI context used to connect to the TPM (may be NULL).
+           abiVersion [in,out] The abi version to check and the abi version supported by this implementation (may be NULL).
+
+       Return values
+           TSS2_ESYS_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if esysContext is NULL.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory to create the context.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+
+   TSS2_RC Esys_SetTimeout (ESYS_CONTEXT * esys_context, int32_t timeout)
+       Set the timeout of Esys asynchronous functions.
+
+       Sets the timeout for the _finish() functions in the asynchronous versions of the Esys commands.
+
+       Parameters
+           esys_context [in] The ESYS_CONTEXT.
+           timeout [in] The timeout in ms or -1 to block indefinately.
+
+       Return values
+           TSS2_RC_SUCCESS on Success.
+           TSS2_ESYS_RC_BAD_REFERENCE if esysContext is NULL.
+
+Author
+       Generated automatically by Doxygen for tpm2-tss from the source code.
+
+Version 3.2.0                                                                                 Tue Nov 1 2022                                                                               ESYS_CONTEXT(3)

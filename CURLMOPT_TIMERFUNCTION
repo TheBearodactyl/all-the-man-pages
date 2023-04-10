@@ -1,0 +1,86 @@
+CURLMOPT_TIMERFUNCTION(3)                                                                curl_multi_setopt options                                                               CURLMOPT_TIMERFUNCTION(3)
+
+NAME
+       CURLMOPT_TIMERFUNCTION - callback to receive timeout values
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       int timer_callback(CURLM *multi,    /* multi handle */
+                          long timeout_ms, /* timeout in number of ms */
+                          void *clientp);    /* private callback pointer */
+
+       CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_TIMERFUNCTION, timer_callback);
+
+DESCRIPTION
+       Pass a pointer to your callback function, which should match the prototype shown above.
+
+       Certain features, such as timeouts and retries, require you to call libcurl even when there is no activity on the file descriptors.
+
+       Your  callback  function  timer_callback  should  install  a  non-repeating timer with an expire time of timeout_ms milliseconds. When that timer fires, call either curl_multi_socket_action(3) or
+       curl_multi_perform(3), depending on which interface you use.
+
+       A timeout_ms value of -1 passed to this callback means you should delete the timer. All other values are valid expire times in number of milliseconds.
+
+       The timer_callback will only be called when the timeout expire time is changed.
+
+       The clientp pointer is set with CURLMOPT_TIMERDATA(3).
+
+       The timer callback should return 0 on success, and -1 on error. If this callback returns error, all transfers currently in progress in this multi handle will be aborted and fail.
+
+       This callback can be used instead of, or in addition to, curl_multi_timeout(3).
+
+       WARNING: do not call libcurl directly from within the callback itself when the timeout_ms value is zero, since it risks triggering an unpleasant recursive behavior that immediately calls  another
+       call to the callback with a zero timeout...
+
+DEFAULT
+       NULL
+
+PROTOCOLS
+       All
+
+EXAMPLE
+       static gboolean timeout_cb(gpointer user_data)
+       {
+         int running;
+         if(user_data) {
+           g_free(user_data);
+           curl_multi_setopt(curl_handle, CURLMOPT_TIMERDATA, NULL);
+         }
+         curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &running);
+         return G_SOURCE_REMOVE;
+       }
+
+       static int timerfunc(CURLM *multi, long timeout_ms, void *clientp)
+       {
+         guint *id = clientp;
+
+         if(id)
+           g_source_remove(*id);
+
+         /* -1 means we should just delete our timer. */
+         if(timeout_ms == -1) {
+           g_free(id);
+           id = NULL;
+         }
+         else {
+           if(!id)
+             id = g_new(guint, 1);
+           *id = g_timeout_add(timeout_ms, timeout_cb, id);
+         }
+         current_timer = id;
+         return 0;
+       }
+
+       curl_multi_setopt(multi, CURLMOPT_TIMERFUNCTION, timerfunc);
+
+AVAILABILITY
+       Added in 7.16.0
+
+RETURN VALUE
+       Returns CURLM_OK if the option is supported, and CURLM_UNKNOWN_OPTION if not.
+
+SEE ALSO
+       CURLMOPT_TIMERDATA(3), CURLMOPT_SOCKETFUNCTION(3),
+
+libcurl 7.37.0                                                                                  17 Jun 2014                                                                      CURLMOPT_TIMERFUNCTION(3)

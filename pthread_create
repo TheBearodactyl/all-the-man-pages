@@ -1,0 +1,501 @@
+pthread_create(3)          Library Functions Manual          pthread_create(3)
+
+NAME
+       pthread_create - create a new thread
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_create(pthread_t *restrict thread,
+                          const pthread_attr_t *restrict attr,
+                          void *(*start_routine)(void *),
+                          void *restrict arg);
+
+DESCRIPTION
+       The  pthread_create()  function  starts  a  new  thread  in the calling
+       process.  The new thread starts execution by invoking  start_routine();
+       arg is passed as the sole argument of start_routine().
+
+       The new thread terminates in one of the following ways:
+
+       •  It  calls  pthread_exit(3),  specifying an exit status value that is
+          available  to  another  thread  in  the  same  process  that   calls
+          pthread_join(3).
+
+       •  It  returns  from  start_routine().   This  is equivalent to calling
+          pthread_exit(3) with the value supplied in the return statement.
+
+       •  It is canceled (see pthread_cancel(3)).
+
+       •  Any of the threads in the process calls exit(3), or the main  thread
+          performs  a  return from main().  This causes the termination of all
+          threads in the process.
+
+       The attr argument points to a pthread_attr_t structure  whose  contents
+       are  used  at  thread creation time to determine attributes for the new
+       thread; this structure is initialized  using  pthread_attr_init(3)  and
+       related  functions.   If  attr is NULL, then the thread is created with
+       default attributes.
+
+       Before returning, a successful call to pthread_create() stores  the  ID
+       of  the  new thread in the buffer pointed to by thread; this identifier
+       is used to refer to the thread in subsequent calls  to  other  pthreads
+       functions.
+
+       The  new  thread  inherits  a copy of the creating thread's signal mask
+       (pthread_sigmask(3)).  The set of pending signals for the new thread is
+       empty  (sigpending(2)).   The  new thread does not inherit the creating
+       thread's alternate signal stack (sigaltstack(2)).
+
+       The new thread inherits the calling thread's floating-point environment
+       (fenv(3)).
+
+       The  initial  value  of  the  new  thread's  CPU-time  clock  is 0 (see
+       pthread_getcpuclockid(3)).
+
+   Linux-specific details
+       The new thread inherits copies of the calling thread's capability  sets
+       (see capabilities(7)) and CPU affinity mask (see sched_setaffinity(2)).
+
+RETURN VALUE
+       On  success,  pthread_create() returns 0; on error, it returns an error
+       number, and the contents of *thread are undefined.
+
+ERRORS
+       EAGAIN Insufficient resources to create another thread.
+
+       EAGAIN A system-imposed limit on the number of threads was encountered.
+              There  are  a  number of limits that may trigger this error: the
+              RLIMIT_NPROC soft resource limit (set via  setrlimit(2)),  which
+              limits  the  number of processes and threads for a real user ID,
+              was reached; the kernel's system-wide limit  on  the  number  of
+              processes and threads, /proc/sys/kernel/threads-max, was reached
+              (see proc(5)); or the maximum  number  of  PIDs,  /proc/sys/ker‐
+              nel/pid_max, was reached (see proc(5)).
+
+       EINVAL Invalid settings in attr.
+
+       EPERM  No permission to set the scheduling policy and parameters speci‐
+              fied in attr.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_create()                            │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+NOTES
+       See  pthread_self(3)  for further information on the thread ID returned
+       in *thread by pthread_create().  Unless real-time  scheduling  policies
+       are  being employed, after a call to pthread_create(), it is indetermi‐
+       nate which thread—the caller or the new thread—will next execute.
+
+       A thread may either be joinable or detached.  If a thread is  joinable,
+       then  another thread can call pthread_join(3) to wait for the thread to
+       terminate and fetch its exit status.  Only when a  terminated  joinable
+       thread  has  been joined are the last of its resources released back to
+       the system.  When a detached thread terminates, its resources are auto‐
+       matically  released back to the system: it is not possible to join with
+       the thread in order to obtain its exit status.   Making  a  thread  de‐
+       tached is useful for some types of daemon threads whose exit status the
+       application does not need to care about.  By default, a new  thread  is
+       created  in  a joinable state, unless attr was set to create the thread
+       in a detached state (using pthread_attr_setdetachstate(3)).
+
+       Under the NPTL threading implementation, if the RLIMIT_STACK  soft  re‐
+       source  limit  at the time the program started has any value other than
+       "unlimited", then it determines the default stack size of new  threads.
+       Using pthread_attr_setstacksize(3), the stack size attribute can be ex‐
+       plicitly set in the attr argument used to create a thread, in order  to
+       obtain  a  stack  size other than the default.  If the RLIMIT_STACK re‐
+       source limit is set to "unlimited", a per-architecture  value  is  used
+       for the stack size.  Here is the value for a few architectures:
+
+              ┌─────────────┬────────────────────┐
+              │Architecture │ Default stack size │
+              ├─────────────┼────────────────────┤
+              │i386         │               2 MB │
+              ├─────────────┼────────────────────┤
+              │IA-64        │              32 MB │
+              ├─────────────┼────────────────────┤
+              │PowerPC      │               4 MB │
+              ├─────────────┼────────────────────┤
+              │S/390        │               2 MB │
+              ├─────────────┼────────────────────┤
+              │Sparc-32     │               2 MB │
+              ├─────────────┼────────────────────┤
+              │Sparc-64     │               4 MB │
+              ├─────────────┼────────────────────┤
+              │x86_64       │               2 MB │
+              └─────────────┴────────────────────┘
+BUGS
+       In  the  obsolete LinuxThreads implementation, each of the threads in a
+       process has a different process ID.  This is in violation of the  POSIX
+       threads  specification, and is the source of many other nonconformances
+       to the standard; see pthreads(7).
+
+EXAMPLES
+       The program below demonstrates the use of pthread_create(), as well  as
+       a number of other functions in the pthreads API.
+
+       In  the  following run, on a system providing the NPTL threading imple‐
+       mentation, the stack size defaults to the value  given  by  the  "stack
+       size" resource limit:
+
+           $ ulimit -s
+           8192            # The stack size limit is 8 MB (0x800000 bytes)
+           $ ./a.out hola salut servus
+           Thread 1: top of stack near 0xb7dd03b8; argv_string=hola
+           Thread 2: top of stack near 0xb75cf3b8; argv_string=salut
+           Thread 3: top of stack near 0xb6dce3b8; argv_string=servus
+           Joined with thread 1; returned value was HOLA
+           Joined with thread 2; returned value was SALUT
+           Joined with thread 3; returned value was SERVUS
+
+       In  the next run, the program explicitly sets a stack size of 1 MB (us‐
+       ing pthread_attr_setstacksize(3)) for the created threads:
+
+           $ ./a.out -s 0x100000 hola salut servus
+           Thread 1: top of stack near 0xb7d723b8; argv_string=hola
+           Thread 2: top of stack near 0xb7c713b8; argv_string=salut
+           Thread 3: top of stack near 0xb7b703b8; argv_string=servus
+           Joined with thread 1; returned value was HOLA
+           Joined with thread 2; returned value was SALUT
+           Joined with thread 3; returned value was SERVUS
+
+   Program source
+
+       #include <ctype.h>
+       #include <errno.h>
+       #include <pthread.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+       #include <unistd.h>
+
+       #define handle_error_en(en, msg) \
+               do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+       #define handle_error(msg) \
+               do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+       struct thread_info {    /* Used as argument to thread_start() */
+           pthread_t thread_id;        /* ID returned by pthread_create() */
+           int       thread_num;       /* Application-defined thread # */
+           char     *argv_string;      /* From command-line argument */
+       };
+
+       /* Thread start function: display address near top of our stack,
+          and return upper-cased copy of argv_string. */
+
+       static void *
+       thread_start(void *arg)
+       {
+           struct thread_info *tinfo = arg;
+           char *uargv;
+
+           printf("Thread %d: top of stack near %p; argv_string=%s\n",
+                  tinfo->thread_num, (void *) &tinfo, tinfo->argv_string);
+
+           uargv = strdup(tinfo->argv_string);
+           if (uargv == NULL)
+               handle_error("strdup");
+
+           for (char *p = uargv; *p != '\0'; p++)
+               *p = toupper(*p);
+
+           return uargv;
+       }
+
+       int
+       main(int argc, char *argv[])
+       {
+           int                 s, opt;
+           void                *res;
+           size_t              num_threads;
+           ssize_t             stack_size;
+           pthread_attr_t      attr;
+           struct thread_info  *tinfo;
+
+           /* The "-s" option specifies a stack size for our threads. */
+
+           stack_size = -1;
+           while ((opt = getopt(argc, argv, "s:")) != -1) {
+               switch (opt) {
+               case 's':
+                   stack_size = strtoul(optarg, NULL, 0);
+                   break;
+
+               default:
+                   fprintf(stderr, "Usage: %s [-s stack-size] arg...\n",
+                           argv[0]);
+                   exit(EXIT_FAILURE);
+               }
+           }
+
+           num_threads = argc - optind;
+
+           /* Initialize thread creation attributes. */
+
+           s = pthread_attr_init(&attr);
+           if (s != 0)
+               handle_error_en(s, "pthread_attr_init");
+
+           if (stack_size > 0) {
+               s = pthread_attr_setstacksize(&attr, stack_size);
+               if (s != 0)
+                   handle_error_en(s, "pthread_attr_setstacksize");
+           }
+
+           /* Allocate memory for pthread_create() arguments. */
+
+           tinfo = calloc(num_threads, sizeof(*tinfo));
+           if (tinfo == NULL)
+               handle_error("calloc");
+
+           /* Create one thread for each command-line argument. */
+
+           for (size_t tnum = 0; tnum < num_threads; tnum++) {
+               tinfo[tnum].thread_num = tnum + 1;
+               tinfo[tnum].argv_string = argv[optind + tnum];
+
+               /* The pthread_create() call stores the thread ID into
+                  corresponding element of tinfo[]. */
+
+               s = pthread_create(&tinfo[tnum].thread_id, &attr,
+                                  &thread_start, &tinfo[tnum]);
+               if (s != 0)
+                   handle_error_en(s, "pthread_create");
+           }
+
+           /* Destroy the thread attributes object, since it is no
+              longer needed. */
+
+           s = pthread_attr_destroy(&attr);
+           if (s != 0)
+               handle_error_en(s, "pthread_attr_destroy");
+
+           /* Now join with each thread, and display its returned value. */
+
+           for (size_t tnum = 0; tnum < num_threads; tnum++) {
+               s = pthread_join(tinfo[tnum].thread_id, &res);
+               if (s != 0)
+                   handle_error_en(s, "pthread_join");
+
+               printf("Joined with thread %d; returned value was %s\n",
+                      tinfo[tnum].thread_num, (char *) res);
+               free(res);      /* Free memory allocated by thread */
+           }
+
+           free(tinfo);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       getrlimit(2), pthread_attr_init(3), pthread_cancel(3),
+       pthread_detach(3), pthread_equal(3), pthread_exit(3),
+       pthread_getattr_np(3), pthread_join(3), pthread_self(3),
+       pthread_setattr_default_np(3), pthreads(7)
+
+Linux man-pages 6.04              2023-03-30                 pthread_create(3)
+PTHREAD_CREATE(3P)         POSIX Programmer's Manual        PTHREAD_CREATE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_create — thread creation
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_create(pthread_t *restrict thread,
+           const pthread_attr_t *restrict attr,
+           void *(*start_routine)(void*), void *restrict arg);
+
+DESCRIPTION
+       The pthread_create() function shall  create  a  new  thread,  with  at‐
+       tributes  specified by attr, within a process. If attr is NULL, the de‐
+       fault attributes shall be used. If the attributes specified by attr are
+       modified  later,  the  thread's attributes shall not be affected.  Upon
+       successful completion, pthread_create() shall store the ID of the  cre‐
+       ated thread in the location referenced by thread.
+
+       The  thread is created executing start_routine with arg as its sole ar‐
+       gument. If the start_routine returns, the effect shall be as  if  there
+       was  an  implicit  call  to  pthread_exit()  using  the return value of
+       start_routine as the exit status. Note that the thread in which  main()
+       was  originally invoked differs from this. When it returns from main(),
+       the effect shall be as if there was an implicit call  to  exit()  using
+       the return value of main() as the exit status.
+
+       The signal state of the new thread shall be initialized as follows:
+
+        *  The signal mask shall be inherited from the creating thread.
+
+        *  The set of signals pending for the new thread shall be empty.
+
+       The  thread-local  current  locale and the alternate stack shall not be
+       inherited.
+
+       The floating-point environment shall be  inherited  from  the  creating
+       thread.
+
+       If pthread_create() fails, no new thread is created and the contents of
+       the location referenced by thread are undefined.
+
+       If _POSIX_THREAD_CPUTIME is defined, the new thread shall have  a  CPU-
+       time clock accessible, and the initial value of this clock shall be set
+       to zero.
+
+       The behavior is undefined if the value specified by the  attr  argument
+       to  pthread_create() does not refer to an initialized thread attributes
+       object.
+
+RETURN VALUE
+       If successful, the pthread_create() function shall return zero;  other‐
+       wise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The pthread_create() function shall fail if:
+
+       EAGAIN The  system  lacked  the  necessary  resources to create another
+              thread, or the system-imposed  limit  on  the  total  number  of
+              threads in a process {PTHREAD_THREADS_MAX} would be exceeded.
+
+       EPERM  The  caller  does not have appropriate privileges to set the re‐
+              quired scheduling parameters or scheduling policy.
+
+       The pthread_create()  function  shall  not  return  an  error  code  of
+       [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       There  is  no requirement on the implementation that the ID of the cre‐
+       ated thread be available before the newly created thread starts execut‐
+       ing. The calling thread can obtain the ID of the created thread through
+       the thread argument of the pthread_create()  function,  and  the  newly
+       created thread can obtain its ID by a call to pthread_self().
+
+RATIONALE
+       A suggested alternative to pthread_create() would be to define two sep‐
+       arate operations: create and start. Some applications would  find  such
+       behavior  more  natural. Ada, in particular, separates the ``creation''
+       of a task from its ``activation''.
+
+       Splitting the operation was rejected by  the  standard  developers  for
+       many reasons:
+
+        *  The  number of calls required to start a thread would increase from
+           one to two and thus place an additional burden on applications that
+           do  not  require  the  additional synchronization. The second call,
+           however, could be avoided  by  the  additional  complication  of  a
+           start-up state attribute.
+
+        *  An  extra  state  would be introduced: ``created but not started''.
+           This would require the standard to  specify  the  behavior  of  the
+           thread operations when the target has not yet started executing.
+
+        *  For  those  applications that require such behavior, it is possible
+           to simulate the two separate steps with  the  facilities  that  are
+           currently  provided. The start_routine() can synchronize by waiting
+           on a condition variable that is signaled by the start operation.
+
+       An Ada implementor can choose to create the thread  at  either  of  two
+       points in the Ada program: when the task object is created, or when the
+       task is activated (generally at a ``begin''). If the first approach  is
+       adopted,  the  start_routine() needs to wait on a condition variable to
+       receive the order to begin ``activation''. The second approach requires
+       no  such  condition  variable  or  extra synchronization. In either ap‐
+       proach, a separate Ada task control block would need to be created when
+       the task object is created to hold rendezvous queues, and so on.
+
+       An  extension of the preceding model would be to allow the state of the
+       thread to be modified between the create and start.  This  would  allow
+       the  thread  attributes object to be eliminated. This has been rejected
+       because:
+
+        *  All state in the thread attributes object has to be able to be  set
+           for  the  thread. This would require the definition of functions to
+           modify thread attributes. There would be no reduction in the number
+           of  function  calls  required to set up the thread. In fact, for an
+           application that creates all threads  using  identical  attributes,
+           the  number  of function calls required to set up the threads would
+           be dramatically increased. Use of a thread attributes  object  per‐
+           mits  the application to make one set of attribute setting function
+           calls.  Otherwise, the set  of  attribute  setting  function  calls
+           needs to be made for each thread creation.
+
+        *  Depending  on  the  implementation  architecture,  functions to set
+           thread state would require kernel calls, or for  other  implementa‐
+           tion reasons would not be able to be implemented as macros, thereby
+           increasing the cost of thread creation.
+
+        *  The ability for applications to segregate threads by class would be
+           lost.
+
+       Another  suggested alternative uses a model similar to that for process
+       creation, such as ``thread fork''. The  fork  semantics  would  provide
+       more  flexibility and the ``create'' function can be implemented simply
+       by doing a thread fork followed immediately by a call  to  the  desired
+       ``start routine'' for the thread. This alternative has these problems:
+
+        *  For  many  implementations,  the entire stack of the calling thread
+           would need to be duplicated, since in many architectures  there  is
+           no way to determine the size of the calling frame.
+
+        *  Efficiency  is reduced since at least some part of the stack has to
+           be copied, even though in most cases the  thread  never  needs  the
+           copied context, since it merely calls the desired start routine.
+
+       If an implementation detects that the value specified by the attr argu‐
+       ment to pthread_create() does not refer to an  initialized  thread  at‐
+       tributes  object,  it  is recommended that the function should fail and
+       report an [EINVAL] error.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fork(), pthread_exit(), pthread_join()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 4.12, Memory  Syn‐
+       chronization, <pthread.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                   PTHREAD_CREATE(3P)

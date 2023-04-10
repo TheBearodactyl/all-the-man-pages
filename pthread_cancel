@@ -1,0 +1,286 @@
+pthread_cancel(3)          Library Functions Manual          pthread_cancel(3)
+
+NAME
+       pthread_cancel - send a cancelation request to a thread
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_cancel(pthread_t thread);
+
+DESCRIPTION
+       The pthread_cancel() function sends a cancelation request to the thread
+       thread.  Whether and when the target thread reacts to  the  cancelation
+       request  depends  on  two attributes that are under the control of that
+       thread: its cancelability state and type.
+
+       A  thread's  cancelability  state,  determined  by   pthread_setcancel‐
+       state(3), can be enabled (the default for new threads) or disabled.  If
+       a thread has disabled cancelation, then a cancelation  request  remains
+       queued  until  the thread enables cancelation.  If a thread has enabled
+       cancelation, then its cancelability type  determines  when  cancelation
+       occurs.
+
+       A  thread's  cancelation  type, determined by pthread_setcanceltype(3),
+       may be either asynchronous or deferred (the default for  new  threads).
+       Asynchronous cancelability means that the thread can be canceled at any
+       time (usually immediately, but the system  does  not  guarantee  this).
+       Deferred cancelability means that cancelation will be delayed until the
+       thread next calls a function that is a cancelation point.   A  list  of
+       functions  that  are  or  may  be  cancelation  points  is  provided in
+       pthreads(7).
+
+       When a cancelation requested is acted on, the following steps occur for
+       thread (in this order):
+
+       (1)  Cancelation  clean-up  handlers  are popped (in the reverse of the
+            order   in   which   they   were   pushed)   and   called.    (See
+            pthread_cleanup_push(3).)
+
+       (2)  Thread-specific data destructors are called, in an unspecified or‐
+            der.  (See pthread_key_create(3).)
+
+       (3)  The thread is terminated.  (See pthread_exit(3).)
+
+       The above steps happen asynchronously with respect to the  pthread_can‐
+       cel()  call;  the  return status of pthread_cancel() merely informs the
+       caller whether the cancelation request was successfully queued.
+
+       After a canceled thread has terminated, a join with that  thread  using
+       pthread_join(3)  obtains  PTHREAD_CANCELED as the thread's exit status.
+       (Joining with a thread is the only way to  know  that  cancelation  has
+       completed.)
+
+RETURN VALUE
+       On  success, pthread_cancel() returns 0; on error, it returns a nonzero
+       error number.
+
+ERRORS
+       ESRCH  No thread with the ID thread could be found.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_cancel()                            │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+       On  Linux,  cancelation  is  implemented using signals.  Under the NPTL
+       threading implementation, the first real-time signal (i.e., signal  32)
+       is used for this purpose.  On LinuxThreads, the second real-time signal
+       is used, if real-time signals are available, otherwise SIGUSR2 is used.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.0 POSIX.1-2001.
+
+EXAMPLES
+       The program below creates a thread  and  then  cancels  it.   The  main
+       thread joins with the canceled thread to check that its exit status was
+       PTHREAD_CANCELED.  The following shell session shows what happens  when
+       we run the program:
+
+           $ ./a.out
+           thread_func(): started; cancelation disabled
+           main(): sending cancelation request
+           thread_func(): about to enable cancelation
+           main(): thread was canceled
+
+   Program source
+
+       #include <errno.h>
+       #include <pthread.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       #define handle_error_en(en, msg) \
+               do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+       static void *
+       thread_func(void *ignored_argument)
+       {
+           int s;
+
+           /* Disable cancelation for a while, so that we don't
+              immediately react to a cancelation request. */
+
+           s = pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
+           if (s != 0)
+               handle_error_en(s, "pthread_setcancelstate");
+
+           printf("%s(): started; cancelation disabled\n", __func__);
+           sleep(5);
+           printf("%s(): about to enable cancelation\n", __func__);
+
+           s = pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+           if (s != 0)
+               handle_error_en(s, "pthread_setcancelstate");
+
+           /* sleep() is a cancelation point. */
+
+           sleep(1000);        /* Should get canceled while we sleep */
+
+           /* Should never get here. */
+
+           printf("%s(): not canceled!\n", __func__);
+           return NULL;
+       }
+
+       int
+       main(void)
+       {
+           pthread_t thr;
+           void *res;
+           int s;
+
+           /* Start a thread and then send it a cancelation request. */
+
+           s = pthread_create(&thr, NULL, &thread_func, NULL);
+           if (s != 0)
+               handle_error_en(s, "pthread_create");
+
+           sleep(2);           /* Give thread a chance to get started */
+
+           printf("%s(): sending cancelation request\n", __func__);
+           s = pthread_cancel(thr);
+           if (s != 0)
+               handle_error_en(s, "pthread_cancel");
+
+           /* Join with thread to see what its exit status was. */
+
+           s = pthread_join(thr, &res);
+           if (s != 0)
+               handle_error_en(s, "pthread_join");
+
+           if (res == PTHREAD_CANCELED)
+               printf("%s(): thread was canceled\n", __func__);
+           else
+               printf("%s(): thread wasn't canceled (shouldn't happen!)\n",
+                      __func__);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       pthread_cleanup_push(3), pthread_create(3), pthread_exit(3),
+       pthread_join(3), pthread_key_create(3), pthread_setcancelstate(3),
+       pthread_setcanceltype(3), pthread_testcancel(3), pthreads(7)
+
+Linux man-pages 6.04              2023-03-30                 pthread_cancel(3)
+PTHREAD_CANCEL(3P)         POSIX Programmer's Manual        PTHREAD_CANCEL(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_cancel — cancel execution of a thread
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_cancel(pthread_t thread);
+
+DESCRIPTION
+       The pthread_cancel() function shall request that  thread  be  canceled.
+       The  target  thread's  cancelability state and type determines when the
+       cancellation takes effect. When the cancellation is acted on, the  can‐
+       cellation  cleanup  handlers  for thread shall be called. When the last
+       cancellation cleanup handler returns, the thread-specific data destruc‐
+       tor  functions  shall  be  called for thread.  When the last destructor
+       function returns, thread shall be terminated.
+
+       The cancellation processing  in  the  target  thread  shall  run  asyn‐
+       chronously   with   respect   to  the  calling  thread  returning  from
+       pthread_cancel().
+
+RETURN VALUE
+       If successful, the pthread_cancel() function shall return zero;  other‐
+       wise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The  pthread_cancel()  function  shall  not  return  an  error  code of
+       [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       Two alternative functions were considered for sending the  cancellation
+       notification to a thread. One would be to define a new SIGCANCEL signal
+       that had the cancellation semantics when delivered; the  other  was  to
+       define  the new pthread_cancel() function, which would trigger the can‐
+       cellation semantics.
+
+       The advantage of a new signal was that so much of the delivery criteria
+       were identical to that used when trying to deliver a signal that making
+       cancellation notification a signal was seen as consistent. Indeed, many
+       implementations  implement  cancellation using a special signal. On the
+       other hand, there would be no signal functions that could be used  with
+       this  signal  except  pthread_kill(), and the behavior of the delivered
+       cancellation signal would be unlike  any  previously  existing  defined
+       signal.
+
+       The  benefits  of  a special function include the recognition that this
+       signal would be defined because of the similar  delivery  criteria  and
+       that  this  is  the only common behavior between a cancellation request
+       and a signal. In addition, the cancellation delivery mechanism does not
+       have  to  be  implemented  as  a  signal. There are also strong, if not
+       stronger, parallels with language exception mechanisms than  with  sig‐
+       nals that are potentially obscured if the delivery mechanism is visibly
+       closer to signals.
+
+       In the end, it was considered that as there were so many exceptions  to
+       the  use  of the new signal with existing signals functions it would be
+       misleading. A special function has resolved this problem.   This  func‐
+       tion was carefully defined so that an implementation wishing to provide
+       the cancellation functions on top of signals could do so.  The  special
+       function  also  means that implementations are not obliged to implement
+       cancellation with signals.
+
+       If an implementation detects use of a thread ID after the  end  of  its
+       lifetime, it is recommended that the function should fail and report an
+       [ESRCH] error.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       pthread_exit(), pthread_cond_timedwait(), pthread_join(), pthread_set‐
+       cancelstate()
+
+       The Base Definitions volume of POSIX.1‐2017, <pthread.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                   PTHREAD_CANCEL(3P)

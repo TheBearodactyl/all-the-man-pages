@@ -1,0 +1,73 @@
+libinput-test-suite(1)                                                                        libinput Manual                                                                       libinput-test-suite(1)
+
+NAME
+       libinput-test-suite - run the libinput test suite
+
+SYNOPSIS
+       libinput test-suite [OPTIONS]
+
+DESCRIPTION
+       The  libinput  test-suite command runs the libinput test suite.  Its primary purpose is to verify distribution composes after package updates. Test suite failures usually indicate missing patches
+       and/or incompatible lower system layers.
+
+       The test suite should not be run by users. Data loss is possible.
+
+       The test suite must be run as root. The test suite installs several files on the host system (see section FILES), runs system commands and creates virtual kernel devices via uinput. These devices
+       will interfere with any active session and may cause data loss.
+
+       It is recommended that the test suite is run in a virtual machine and/or on a system not otherwise in use. A graphical environment is not required to run the test suite.
+
+OPTIONS
+       Note that the options may change in future releases of libinput. Test names, test device names and test group names may change at any time.
+
+       --filter-test "testname"
+               A glob limiting the tests to run. Specifying a filter sets the --jobs default to 1.
+
+       --filter-device "devicename"
+               A glob limiting the devices to run tests for. Specifying a filter sets the --jobs default to 1.
+
+       --filter-group "groupname"
+               A glob limiting the tests to (arbitrarily named) groups. Specifying a filter sets the --jobs default to 1.
+
+       --filter-deviceless
+               FOR INTERNAL USE ONLY
+
+       -h, --help
+               Print help
+
+       -j, --jobs 8
+               Number of parallel processes to run. Default: 8.
+
+       --list  List all test cases and the devices they are run for. Test names, test device names and test group names may change at any time.
+
+       --verbose
+               Enable verbose output, including libinput debug messages.
+
+FILES
+       The following directories are modified:
+
+       /usr/share/libinput
+               Test  device-specific  quirks  are  installed in this directory with a custom prefix. Files in this directory are untouched but new files are installed and removed on exit. Existing files
+               (e.g. from a previous aborted run) with the same name will be silently overwritten and removed.
+
+       /run/udev/rules.d
+               Test-specific udev rules are installed in this directory and removed on exit.
+
+SYSTEM SETUP
+       The xorg.conf.d(5) snippet below ensures the X server ignores the test devices created by this test suite:
+
+           Section "InputClass"
+                   Identifier "Ignore libinput test suite devices"
+                   MatchProduct "litest"
+                   Option "Ignore" "on"
+           EndSection
+
+       No configuration is required for Wayland compositors. libinput's default mode will ignore test devices from this test suite.
+
+BUGS
+       Some tests are sensitive to timing. Where a system is under heavy load, a test may fail. Re-running the test with --filter-test can help verify whether a test case failure was a true failure.
+
+LIBINPUT
+       Part of the libinput(1) suite
+
+libinput 1.23.0                                                                                                                                                                     libinput-test-suite(1)

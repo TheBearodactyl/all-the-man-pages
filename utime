@@ -1,0 +1,172 @@
+UTIME(3P)                                                                                POSIX Programmer's Manual                                                                               UTIME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       utime — set file access and modification times
+
+SYNOPSIS
+       #include <utime.h>
+
+       int utime(const char *path, const struct utimbuf *times);
+
+DESCRIPTION
+       The utime() function shall set the access and modification times of the file named by the path argument.
+
+       If times is a null pointer, the access and modification times of the file shall be set to the current time. The effective user ID of the process shall match the owner of the file, or the  process
+       has write permission to the file or has appropriate privileges, to use utime() in this manner.
+
+       If  times is not a null pointer, times shall be interpreted as a pointer to a utimbuf structure and the access and modification times shall be set to the values contained in the designated struc‐
+       ture. Only a process with the effective user ID equal to the user ID of the file or a process with appropriate privileges may use utime() this way.
+
+       The utimbuf structure is defined in the <utime.h> header. The times in the structure utimbuf are measured in seconds since the Epoch.
+
+       Upon successful completion, the utime() function shall mark the last file status change timestamp for update; see <sys/stat.h>.
+
+RETURN VALUE
+       Upon successful completion, 0 shall be returned. Otherwise, -1 shall be returned and errno shall be set to indicate the error, and the file times shall not be affected.
+
+ERRORS
+       The utime() function shall fail if:
+
+       EACCES Search permission is denied by a component of the path prefix; or the times argument is a null pointer and the effective user ID of the process does not match the owner of  the  file,  the
+              process does not have write permission for the file, and the process does not have appropriate privileges.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a component of a pathname is longer than {NAME_MAX}.
+
+       ENOENT A component of path does not name an existing file or path is an empty string.
+
+       ENOTDIR
+              A  component  of the path prefix names an existing file that is neither a directory nor a symbolic link to a directory, or the path argument contains at least one non-<slash> character and
+              ends with one or more trailing <slash> characters and the last pathname component names an existing file that is neither a directory nor a symbolic link to a directory.
+
+       EPERM  The times argument is not a null pointer and the effective user ID of the calling process does not match the owner of the file and the calling process does not have appropriate privileges.
+
+       EROFS  The file system containing the file is read-only.
+
+       The utime() function may fail if:
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were encountered during resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolution of a symbolic link produced an intermediate result with a length that exceeds {PATH_MAX}.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Since the utimbuf structure only contains time_t variables and is not accurate to fractions of a second, applications should use the utimensat() function instead of the obsolescent utime()  func‐
+       tion.
+
+RATIONALE
+       The  actime structure member must be present so that an application may set it, even though an implementation may ignore it and not change the last data access timestamp on the file. If an appli‐
+       cation intends to leave one of the times of a file unchanged while changing the other, it should use stat() or fstat() to retrieve the file's st_atim and st_mtim parameters, set actime  and  mod‐
+       time in the buffer, and change one of them before making the utime() call.
+
+FUTURE DIRECTIONS
+       The utime() function may be removed in a future version.
+
+SEE ALSO
+       fstat(), fstatat(), futimens()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_stat.h>, <utime.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          UTIME(3P)
+utime(2)                                                                                    System Calls Manual                                                                                   utime(2)
+
+NAME
+       utime, utimes - change file last access and modification times
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <utime.h>
+
+       int utime(const char *filename,
+                 const struct utimbuf *_Nullable times);
+
+       #include <sys/time.h>
+
+       int utimes(const char *filename,
+                 const struct timeval times[_Nullable 2]);
+
+DESCRIPTION
+       Note: modern applications may prefer to use the interfaces described in utimensat(2).
+
+       The  utime()  system call changes the access and modification times of the inode specified by filename to the actime and modtime fields of times respectively.  The status change time (ctime) will
+       be set to the current time, even if the other time stamps don't actually change.
+
+       If times is NULL, then the access and modification times of the file are set to the current time.
+
+       Changing timestamps is permitted when: either the process has appropriate privileges, or the effective user ID equals the user ID of the file, or times is NULL and the process has  write  permis‐
+       sion for the file.
+
+       The utimbuf structure is:
+
+           struct utimbuf {
+               time_t actime;       /* access time */
+               time_t modtime;      /* modification time */
+           };
+
+       The utime() system call allows specification of timestamps with a resolution of 1 second.
+
+       The  utimes() system call is similar, but the times argument refers to an array rather than a structure.  The elements of this array are timeval structures, which allow a precision of 1 microsec‐
+       ond for specifying timestamps.  The timeval structure is:
+
+           struct timeval {
+               long tv_sec;        /* seconds */
+               long tv_usec;       /* microseconds */
+           };
+
+       times[0] specifies the new access time, and times[1] specifies the new modification time.  If times is NULL, then analogously to utime(), the access and modification times of the file are set  to
+       the current time.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EACCES Search permission is denied for one of the directories in the path prefix of path (see also path_resolution(7)).
+
+       EACCES times  is  NULL,  the  caller's effective user ID does not match the owner of the file, the caller does not have write access to the file, and the caller is not privileged (Linux: does not
+              have either the CAP_DAC_OVERRIDE or the CAP_FOWNER capability).
+
+       ENOENT filename does not exist.
+
+       EPERM  times is not NULL, the caller's effective UID does not match the owner of the file, and the caller is not privileged (Linux: does not have the CAP_FOWNER capability).
+
+       EROFS  path resides on a read-only filesystem.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       utime()
+              SVr4, POSIX.1-2001.  POSIX.1-2008 marks it as obsolete.
+
+       utimes()
+              4.3BSD, POSIX.1-2001.
+
+NOTES
+       Linux does not allow changing the timestamps on an immutable file, or setting the timestamps to something other than the current time on an append-only file.
+
+SEE ALSO
+       chattr(1), touch(1), futimesat(2), stat(2), utimensat(2), futimens(3), futimes(3), inode(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        utime(2)

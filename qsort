@@ -1,0 +1,207 @@
+qsort(3)                   Library Functions Manual                   qsort(3)
+
+NAME
+       qsort, qsort_r - sort an array
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       void qsort(void base[.size * .nmemb], size_t nmemb, size_t size,
+                  int (*compar)(const void [.size], const void [.size]));
+       void qsort_r(void base[.size * .nmemb], size_t nmemb, size_t size,
+                  int (*compar)(const void [.size], const void [.size], void *),
+                  void *arg);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       qsort_r():
+           _GNU_SOURCE
+
+DESCRIPTION
+       The  qsort()  function sorts an array with nmemb elements of size size.
+       The base argument points to the start of the array.
+
+       The contents of the array are sorted in ascending order according to  a
+       comparison  function pointed to by compar, which is called with two ar‐
+       guments that point to the objects being compared.
+
+       The comparison function must return an integer less than, equal to,  or
+       greater  than  zero  if  the first argument is considered to be respec‐
+       tively less than, equal to, or greater than the second.  If two members
+       compare as equal, their order in the sorted array is undefined.
+
+       The qsort_r() function is identical to qsort() except that the compari‐
+       son function compar takes a third argument.  A pointer is passed to the
+       comparison function via arg.  In this way, the comparison function does
+       not need to use global variables to pass through  arbitrary  arguments,
+       and is therefore reentrant and safe to use in threads.
+
+RETURN VALUE
+       The qsort() and qsort_r() functions return no value.
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │qsort(), qsort_r()                          │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       qsort()
+              C11, POSIX.1-2008.
+
+HISTORY
+       qsort()
+              POSIX.1-2001, C89, SVr4, 4.3BSD.
+
+       qsort_r()
+              glibc 2.8.
+
+NOTES
+       To compare C strings, the comparison function can  call  strcmp(3),  as
+       shown in the example below.
+
+EXAMPLES
+       For one example of use, see the example under bsearch(3).
+
+       Another example is the following program, which sorts the strings given
+       in its command-line arguments:
+
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+
+       static int
+       cmpstringp(const void *p1, const void *p2)
+       {
+           /* The actual arguments to this function are "pointers to
+              pointers to char", but strcmp(3) arguments are "pointers
+              to char", hence the following cast plus dereference. */
+
+           return strcmp(*(const char **) p1, *(const char **) p2);
+       }
+
+       int
+       main(int argc, char *argv[])
+       {
+           if (argc < 2) {
+               fprintf(stderr, "Usage: %s <string>...\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           qsort(&argv[1], argc - 1, sizeof(char *), cmpstringp);
+
+           for (size_t j = 1; j < argc; j++)
+               puts(argv[j]);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       sort(1), alphasort(3), strcmp(3), versionsort(3)
+
+Linux man-pages 6.04              2023-03-30                          qsort(3)
+QSORT(3P)                  POSIX Programmer's Manual                 QSORT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       qsort — sort a table of data
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       void qsort(void *base, size_t nel, size_t width,
+           int (*compar)(const void *, const void *));
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with  the
+       ISO C  standard.  Any  conflict between the requirements described here
+       and the ISO C standard is unintentional. This  volume  of  POSIX.1‐2017
+       defers to the ISO C standard.
+
+       The  qsort()  function  shall sort an array of nel objects, the initial
+       element of which is pointed to by base.  The size of  each  object,  in
+       bytes,  is specified by the width argument. If the nel argument has the
+       value zero, the comparison function pointed to by compar shall  not  be
+       called and no rearrangement shall take place.
+
+       The application shall ensure that the comparison function pointed to by
+       compar does not alter the contents of the array. The implementation may
+       reorder elements of the array between calls to the comparison function,
+       but shall not alter the contents of any individual element.
+
+       When the same objects (consisting of width bytes, irrespective of their
+       current  positions  in the array) are passed more than once to the com‐
+       parison function, the results shall be  consistent  with  one  another.
+       That is, they shall define a total ordering on the array.
+
+       The  contents of the array shall be sorted in ascending order according
+       to a comparison function. The compar argument is a pointer to the  com‐
+       parison  function, which is called with two arguments that point to the
+       elements being compared. The application shall ensure that the function
+       returns an integer less than, equal to, or greater than 0, if the first
+       argument is considered respectively less than,  equal  to,  or  greater
+       than  the  second.  If two members compare as equal, their order in the
+       sorted array is unspecified.
+
+RETURN VALUE
+       The qsort() function shall not return a value.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The comparison function need not compare every byte, so arbitrary  data
+       may  be  contained in the elements in addition to the values being com‐
+       pared.
+
+RATIONALE
+       The requirement that each argument (hereafter referred to as p) to  the
+       comparison  function is a pointer to elements of the array implies that
+       for every call, for each argument separately, all of the following  ex‐
+       pressions are non-zero:
+
+           ((char *)p - (char *)base) % width == 0
+           (char *)p >= (char *)base
+           (char *)p < (char *)base + nel * width
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       alphasort()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdlib.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                            QSORT(3P)

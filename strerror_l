@@ -1,0 +1,352 @@
+strerror(3)                Library Functions Manual                strerror(3)
+
+NAME
+       strerror,  strerrorname_np,  strerrordesc_np,  strerror_r, strerror_l -
+       return string describing error number
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <string.h>
+
+       char *strerror(int errnum);
+       const char *strerrorname_np(int errnum);
+       const char *strerrordesc_np(int errnum);
+
+       int strerror_r(int errnum, char buf[.buflen], size_t buflen);
+                      /* XSI-compliant */
+
+       char *strerror_r(int errnum, char buf[.buflen], size_t buflen);
+                      /* GNU-specific */
+
+       char *strerror_l(int errnum, locale_t locale);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       strerrorname_np(), strerrordesc_np():
+           _GNU_SOURCE
+
+       strerror_r():
+           The XSI-compliant version is provided if:
+               (_POSIX_C_SOURCE >= 200112L) && ! _GNU_SOURCE
+           Otherwise, the GNU-specific version is provided.
+
+DESCRIPTION
+       The strerror() function returns a pointer to a  string  that  describes
+       the  error  code  passed  in  the  argument  errnum, possibly using the
+       LC_MESSAGES part of the current locale to select the  appropriate  lan‐
+       guage.   (For  example,  if  errnum is EINVAL, the returned description
+       will be "Invalid argument".)  This string must not be modified  by  the
+       application,  but may be modified by a subsequent call to strerror() or
+       strerror_l().  No other library  function,  including  perror(3),  will
+       modify this string.
+
+       Like  strerror(), the strerrordesc_np() function returns a pointer to a
+       string that describes the error code passed  in  the  argument  errnum,
+       with  the difference that the returned string is not translated accord‐
+       ing to the current locale.
+
+       The strerrorname_np() function returns a pointer to a string containing
+       the name of the error code passed in the argument errnum.  For example,
+       given EPERM as an argument, this function  returns  a  pointer  to  the
+       string "EPERM".
+
+   strerror_r()
+       The strerror_r() function is similar to strerror(), but is thread safe.
+       This function is available in two versions:  an  XSI-compliant  version
+       specified  in POSIX.1-2001 (available since glibc 2.3.4, but not POSIX-
+       compliant until glibc 2.13),  and  a  GNU-specific  version  (available
+       since  glibc 2.0).  The XSI-compliant version is provided with the fea‐
+       ture test macros settings shown in the SYNOPSIS; otherwise the GNU-spe‐
+       cific  version  is  provided.  If no feature test macros are explicitly
+       defined, then (since glibc 2.4) _POSIX_C_SOURCE is defined  by  default
+       with  the  value  200112L,  so  that  the XSI-compliant version of str‐
+       error_r() is provided by default.
+
+       The XSI-compliant strerror_r() is preferred for portable  applications.
+       It  returns  the error string in the user-supplied buffer buf of length
+       buflen.
+
+       The GNU-specific strerror_r() returns a pointer to a string  containing
+       the  error  message.  This may be either a pointer to a string that the
+       function stores in buf, or a pointer to some (immutable) static  string
+       (in which case buf is unused).  If the function stores a string in buf,
+       then at most buflen bytes are stored (the string may  be  truncated  if
+       buflen is too small and errnum is unknown).  The string always includes
+       a terminating null byte ('\0').
+
+   strerror_l()
+       strerror_l() is like strerror(), but maps errnum to a  locale-dependent
+       error  message in the locale specified by locale.  The behavior of str‐
+       error_l()  is  undefined  if  locale  is  the  special  locale   object
+       LC_GLOBAL_LOCALE or is not a valid locale object handle.
+
+RETURN VALUE
+       The  strerror(),  strerror_l(), and the GNU-specific strerror_r() func‐
+       tions return the appropriate error description string, or  an  "Unknown
+       error nnn" message if the error number is unknown.
+
+       On  success,  strerrorname_np() and strerrordesc_np() return the appro‐
+       priate error description string.  If errnum is an invalid error number,
+       these functions return NULL.
+
+       The  XSI-compliant  strerror_r() function returns 0 on success.  On er‐
+       ror, a (positive) error number is returned (since glibc 2.13), or -1 is
+       returned and errno is set to indicate the error (before glibc 2.13).
+
+       POSIX.1-2001  and  POSIX.1-2008  require that a successful call to str‐
+       error() or strerror_l() shall leave errno  unchanged,  and  note  that,
+       since no function return value is reserved to indicate an error, an ap‐
+       plication that wishes to check for errors should  initialize  errno  to
+       zero before the call, and then check errno after the call.
+
+ERRORS
+       EINVAL The value of errnum is not a valid error number.
+
+       ERANGE Insufficient  storage was supplied to contain the error descrip‐
+              tion string.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌───────────────────┬───────────────┬──────────────────────────────────┐
+       │Interface          │ Attribute     │ Value                            │
+       ├───────────────────┼───────────────┼──────────────────────────────────┤
+       │strerror()         │ Thread safety │ MT-Unsafe race:strerror          │
+       ├───────────────────┼───────────────┼──────────────────────────────────┤
+       │strerrorname_np(), │ Thread safety │ MT-Safe                          │
+       │strerrordesc_np()  │               │                                  │
+       ├───────────────────┼───────────────┼──────────────────────────────────┤
+       │strerror_r(),      │ Thread safety │ MT-Safe                          │
+       │strerror_l()       │               │                                  │
+       └───────────────────┴───────────────┴──────────────────────────────────┘
+
+STANDARDS
+       strerror()
+              C11, POSIX.1-2008.
+
+       strerror_r()
+       strerror_l()
+              POSIX.1-2008.
+
+       strerrorname_np()
+       strerrordesc_np()
+              GNU.
+
+       POSIX.1-2001  permits strerror() to set errno if the call encounters an
+       error, but does not specify what value should be returned as the  func‐
+       tion  result in the event of an error.  On some systems, strerror() re‐
+       turns NULL if the error number is  unknown.   On  other  systems,  str‐
+       error()  returns  a string something like "Error nnn occurred" and sets
+       errno to EINVAL if the error number is unknown.  C99  and  POSIX.1-2008
+       require the return value to be non-NULL.
+
+HISTORY
+       strerror()
+              POSIX.1-2001, C89.
+
+       strerror_r()
+              POSIX.1-2001.
+
+       strerror_l()
+              glibc 2.6.  POSIX.1-2008.
+
+       strerrorname_np()
+       strerrordesc_np()
+              glibc 2.32.
+
+NOTES
+       The  GNU  C  Library  uses  a buffer of 1024 characters for strerror().
+       This buffer size therefore should be sufficient to avoid an ERANGE  er‐
+       ror when calling strerror_r().
+
+       strerrorname_np()  and strerrordesc_np() are thread-safe and async-sig‐
+       nal-safe.
+
+SEE ALSO
+       err(3), errno(3), error(3), perror(3), strsignal(3), locale(7)
+
+Linux man-pages 6.04              2023-03-30                       strerror(3)
+STRERROR(3P)               POSIX Programmer's Manual              STRERROR(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       strerror, strerror_l, strerror_r — get error message string
+
+SYNOPSIS
+       #include <string.h>
+
+       char *strerror(int errnum);
+       char *strerror_l(int errnum, locale_t locale);
+       int strerror_r(int errnum, char *strerrbuf, size_t buflen);
+
+DESCRIPTION
+       For strerror(): The functionality described on this reference  page  is
+       aligned  with the ISO C standard. Any conflict between the requirements
+       described here and the ISO C standard is unintentional. This volume  of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  strerror()  function shall map the error number in errnum to a lo‐
+       cale-dependent error message string and shall return a pointer  to  it.
+       Typically,  the values for errnum come from errno, but strerror() shall
+       map any value of type int to a message.
+
+       The application shall not modify the  string  returned.   The  returned
+       string  pointer  might  be  invalidated  or the string content might be
+       overwritten by a subsequent call to strerror(), or by a subsequent call
+       to strerror_l() in the same thread. The returned pointer and the string
+       content might also be invalidated if the calling thread is terminated.
+
+       The string may be overwritten by a subsequent call to  strerror_l()  in
+       the same thread.
+
+       The contents of the error message strings returned by strerror() should
+       be determined by the setting of the LC_MESSAGES category in the current
+       locale.
+
+       The  implementation shall behave as if no function defined in this vol‐
+       ume of POSIX.1‐2017 calls strerror().
+
+       The strerror() and strerror_l() functions shall not change the  setting
+       of errno if successful.
+
+       Since  no  return value is reserved to indicate an error of strerror(),
+       an application wishing to check for error situations should  set  errno
+       to  0,  then  call strerror(), then check errno.  Similarly, since str‐
+       error_l() is required to return a string for some errors,  an  applica‐
+       tion  wishing  to check for all error situations should set errno to 0,
+       then call strerror_l(), then check errno.
+
+       The strerror() function need not be thread-safe.
+
+       The strerror_l() function shall map the error number in errnum to a lo‐
+       cale-dependent error message string in the locale represented by locale
+       and shall return a pointer to it.
+
+       The strerror_r() function shall map the error number in errnum to a lo‐
+       cale-dependent  error message string and shall return the string in the
+       buffer pointed to by strerrbuf, with length buflen.
+
+       If the value of errnum is a valid  error  number,  the  message  string
+       shall indicate what error occurred; if the value of errnum is zero, the
+       message string shall either be an empty string or indicate that no  er‐
+       ror  occurred; otherwise, if these functions complete successfully, the
+       message string shall indicate that an unknown error occurred.
+
+       The behavior is undefined if the locale argument to strerror_l() is the
+       special  locale object LC_GLOBAL_LOCALE or is not a valid locale object
+       handle.
+
+RETURN VALUE
+       Upon completion, whether successful or not, strerror() shall  return  a
+       pointer  to  the  generated message string.  On error errno may be set,
+       but no return value is reserved to indicate an error.
+
+       Upon successful completion, strerror_l() shall return a pointer to  the
+       generated  message string. If errnum is not a valid error number, errno
+       may be set to [EINVAL], but a pointer to a message string  shall  still
+       be  returned. If any other error occurs, errno shall be set to indicate
+       the error and a null pointer shall be returned.
+
+       Upon successful completion, strerror_r() shall return 0. Otherwise,  an
+       error number shall be returned to indicate the error.
+
+ERRORS
+       These functions may fail if:
+
+       EINVAL The value of errnum is neither a valid error number nor zero.
+
+       The strerror_r() function may fail if:
+
+       ERANGE Insufficient  storage  was  supplied via strerrbuf and buflen to
+              contain the generated message string.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Historically in some implementations, calls to perror() would overwrite
+       the  string that the pointer returned by strerror() points to. Such im‐
+       plementations did not conform to the ISO C standard; however,  applica‐
+       tion developers should be aware of this behavior if they wish their ap‐
+       plications to be portable to such implementations.
+
+RATIONALE
+       The strerror_l() function is required to be thread-safe, thereby elimi‐
+       nating the need for an equivalent to the strerror_r() function.
+
+       Earlier  versions  of this standard did not explicitly require that the
+       error message strings returned by strerror() and  strerror_r()  provide
+       any  information about the error. This version of the standard requires
+       a meaningful message for any successful completion.
+
+       Since no return value is reserved to indicate a strerror()  error,  but
+       all  calls  (whether successful or not) must return a pointer to a mes‐
+       sage string, on error strerror() can  return  a  pointer  to  an  empty
+       string or a pointer to a meaningful string that can be printed.
+
+       Note  that  the [EINVAL] error condition is a may fail error. If an in‐
+       valid error number is supplied as the  value  of  errnum,  applications
+       should be prepared to handle any of the following:
+
+        1. Error  (with  no meaningful message): errno is set to [EINVAL], the
+           return value is a pointer to an empty string.
+
+        2. Successful completion: errno is  unchanged  and  the  return  value
+           points  to  a string like "unknownerror" or "errornumberxxx" (where
+           xxx is the value of errnum).
+
+        3. Combination of #1 and #2: errno is set to [EINVAL] and  the  return
+           value  points  to  a string like "unknownerror" or "errornumberxxx"
+           (where xxx is the value of errnum).  Since applications  frequently
+           use the return value of strerror() as an argument to functions like
+           fprintf() (without checking the return value)  and  since  applica‐
+           tions  have  no  way  to parse an error message string to determine
+           whether errnum represents a valid error number, implementations are
+           encouraged  to implement #3. Similarly, implementations are encour‐
+           aged to have strerror_r() return [EINVAL] and  put  a  string  like
+           "unknownerror" or "errornumberxxx" in the buffer pointed to by str‐
+           errbuf when the value of errnum is not a valid error number.
+
+       Some applications rely on being able to set errno to 0 before calling a
+       function  with  no  reserved value to indicate an error, then call str‐
+       error(errno) afterwards to detect whether an  error  occurred  (because
+       errno  changed)  or  to indicate success (because errno remained zero).
+       This usage pattern requires that strerror(0) succeed  with  useful  re‐
+       sults.  Previous  versions of the standard did not specify the behavior
+       when errnum is zero.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       perror()
+
+       The Base Definitions volume of POSIX.1‐2017, <string.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                         STRERROR(3P)

@@ -1,0 +1,41 @@
+io_uring_prep_msg_ring(3)                                                                     liburing Manual                                                                    io_uring_prep_msg_ring(3)
+
+NAME
+       io_uring_prep_msg_ring - send a message to another ring
+
+SYNOPSIS
+       #include <liburing.h>
+
+       void io_uring_prep_msg_ring(struct io_uring_sqe *sqe,
+                               int fd,
+                               unsigned int len,
+                               __u64 data,
+                               unsigned int flags);
+
+DESCRIPTION
+       io_uring_prep_msg_ring(3)  prepares  a to send a CQE to an io_uring file descriptor. The submission queue entry sqe is setup to use the file descriptor fd, which must identify a io_uring context,
+       to post a CQE on that ring where the target CQE res field will contain the content of len and the user_data of data with the request modifier flags set by flags.  Currently  there  are  no  valid
+       flag modifiers, this field must contain 0.
+
+       The  targeted ring may be any ring that the user has access to, even the ring itself. This request can be used for simple message passing to another ring, allowing 32+64 bits of data to be trans‐
+       ferred through the len and data fields. The use case may be anything from simply waking up someone waiting on the targeted ring, or it can be used to pass messages between the two rings.
+
+RETURN VALUE
+       None
+
+ERRORS
+       These are the errors that are reported in the CQE res field.
+
+       -ENOMEM
+              The kernel was unable to allocate memory for the request.
+
+       -EINVAL
+              One of the fields set in the SQE was invalid.
+
+       -EBADFD
+              The descriptor passed in fd does not refer to an io_uring file descriptor.
+
+       -EOVERFLOW
+              The kernel was unable to fill a CQE on the target ring. This can happen if the target CQ ring is in an overflow state and the kernel wasn't able to allocate memory for a new CQE entry.
+
+liburing-2.2                                                                                  March 10, 2022                                                                     io_uring_prep_msg_ring(3)

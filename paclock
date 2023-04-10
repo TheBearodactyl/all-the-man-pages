@@ -1,0 +1,87 @@
+PACLOCK(1)                          paclock                         PACLOCK(1)
+
+NAME
+       paclock - lock/unlock the alpm database
+
+SYNOPSIS
+        paclock [options]
+        paclock (--help|--version)
+
+DESCRIPTION
+       Safe locking and unlocking of the ALPM database using identity keys for
+       scripts.
+
+OPTIONS
+       --config=path
+           Set an alternate configuration file path.
+
+       --lockfile=path
+           Set an alternate lock file path.
+
+       --root=path
+           Set an alternate installation root.
+
+       --sysroot=path
+           Set an alternate system root.  See pacutils-sysroot(7).
+
+       --lock
+           Lock the database (default).
+
+       --unlock
+           Unlock the database.
+
+       --run
+           Treat "argv" as a command to run with the database locked.  If the
+           command returns non-zero, the lock file will be left in place to
+           indicate an error unless --fail-ok is used.
+
+       --fail-ok
+           Unlock the database after running a command with --run even if the
+           command returns non-zero.  Generally, the database should be left
+           locked if it may be in an inconsistent to indicate that it may need
+           to be repaired.  This flag is intended primarily for read-only
+           operations.
+
+       --print
+           Write the lock file path to stdout and exit without modifying the
+           lock file.
+
+       --no-check-keys
+           Skip checking for an identity key match before unlocking.
+
+       --enoent-ok
+           Do not treat a non-existent lock file as an error when unlocking.
+
+       --key=identity
+           An identifier to write to the lock file.  By default, --unlock will
+           only operate if the lock file was previously locked with the same
+           key.  Defaults to the hostname followed by a colon and the process
+           id of the caller (for example: "localhost:123").
+
+       --help
+           Display usage information and exit.
+
+       --version
+           Display version information and exit.
+
+EXAMPLE
+       The system configuration that paclock relies on to construct the
+       default lock file path and identity key may change between invocations.
+       To ensure consistency, scripts should explicitly provide the path and
+       key to use each time paclock is called.
+
+        #!/bin/bash
+        lock_file="$(paclock --print)"
+        lock_key="myapp:$(hostname):$$"
+        paclock --lockfile="$lock_file" --key="$lock_key" || exit 1
+        echo "do stuff here"
+        paclock --lockfile="$lock_file" --key="$lock_key" --unlock || exit 1
+
+       Run a command lacking native lock support:
+
+        paclock --run -- paccache --dryrun --verbose
+
+SEE ALSO
+       pacconf(1)
+
+pacutils                          2021-08-14                        PACLOCK(1)

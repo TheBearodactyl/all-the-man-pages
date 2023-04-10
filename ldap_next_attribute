@@ -1,0 +1,50 @@
+LDAP_FIRST_ATTRIBUTE(3)                                                                  Library Functions Manual                                                                  LDAP_FIRST_ATTRIBUTE(3)
+
+NAME
+       ldap_first_attribute, ldap_next_attribute - step through LDAP entry attributes
+
+LIBRARY
+       OpenLDAP LDAP (libldap, -lldap)
+
+SYNOPSIS
+       #include <ldap.h>
+
+       char *ldap_first_attribute(
+            LDAP *ld, LDAPMessage *entry, BerElement **berptr )
+
+       char *ldap_next_attribute(
+            LDAP *ld, LDAPMessage *entry, BerElement *ber )
+
+       int ldap_get_attribute_ber(
+            LDAP *ld, LDAPMessage *entry, BerElement *ber,
+            BerValue *attr, BerVarray *vals )
+
+DESCRIPTION
+       The  ldap_first_attribute(),  ldap_next_attribute()  and  ldap_get_attribute_ber() routines are used to step through the attributes in an LDAP entry.  ldap_first_attribute() takes an entry as re‐
+       turned by ldap_first_entry(3) or ldap_next_entry(3) and returns a pointer to character string containing the first attribute description in the entry.  ldap_next_attribute() returns the next  at‐
+       tribute description in the entry.
+
+       It  also  returns,  in berptr, a pointer to a BerElement it has allocated to keep track of its current position.  This pointer should be passed to subsequent calls to ldap_next_attribute() and is
+       used to effectively step through the entry's attributes.  The caller is solely responsible for freeing the BerElement pointed to by berptr when it is no  longer  needed  by  calling  ber_free(3).
+       When calling ber_free(3) in this instance, be sure the second argument is 0.
+
+       The attribute names returned are suitable for inclusion in a call to ldap_get_values(3) to retrieve the attribute's values.
+
+       The ldap_get_attribute_ber() routine allows one to iterate over all attributes in-place, without allocating memory to hold text for the attribute name or its values, if requested. The use case is
+       similar to ldap_next_attribute() except that the attribute name is returned into attr and, if vals is non-NULL, the list of values is stored there. Both point into the  LDAP  message  and  remain
+       valid only while the entry is valid.  The caller is still responsible for freeing vals with ldap_memfree(3), if used.
+
+ERRORS
+       If an error occurs, NULL is returned and the ld_errno field in the ld parameter is set to indicate the error.  See ldap_error(3) for a description of possible error codes.
+
+NOTES
+       The  ldap_first_attribute() and ldap_next_attribute() return dynamically allocated memory that must be freed by the caller via ldap_memfree(3).  For ldap_get_attribute_ber(), only the actual vals
+       pointer needs to be freed with ldap_memfree(3), other data is accounted for as part of ber.
+
+SEE ALSO
+       ldap(3), ldap_first_entry(3), ldap_get_values(3), ldap_error(3)
+
+ACKNOWLEDGEMENTS
+       OpenLDAP Software is developed and maintained by The OpenLDAP Project <http://www.openldap.org/>.  OpenLDAP Software is derived from the University of Michigan LDAP 3.3 Release.
+
+OpenLDAP 2.6.4                                                                                  2023/02/08                                                                         LDAP_FIRST_ATTRIBUTE(3)

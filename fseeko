@@ -1,0 +1,170 @@
+fseeko(3)                                                                                Library Functions Manual                                                                                fseeko(3)
+
+NAME
+       fseeko, ftello - seek to or report file position
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int fseeko(FILE *stream, off_t offset, int whence);
+       off_t ftello(FILE *stream);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       fseeko(), ftello():
+           _FILE_OFFSET_BITS == 64 || _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       The  fseeko()  and  ftello() functions are identical to fseek(3) and ftell(3) (see fseek(3)), respectively, except that the offset argument of fseeko() and the return value of ftello() is of type
+       off_t instead of long.
+
+       On some architectures, both off_t and long are 32-bit types, but defining _FILE_OFFSET_BITS with the value 64 (before including any header files) will turn off_t into a 64-bit type.
+
+RETURN VALUE
+       On successful completion, fseeko() returns 0, while ftello() returns the current offset.  Otherwise, -1 is returned and errno is set to indicate the error.
+
+ERRORS
+       See the ERRORS in fseek(3).
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │fseeko(), ftello()                                                                                                                                                      │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.1.  POSIX.1-2001, SUSv2.
+
+NOTES
+       The declarations of these functions can also be obtained by defining the obsolete _LARGEFILE_SOURCE feature test macro.
+
+SEE ALSO
+       fseek(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       fseeko(3)
+FSEEK(3P)                                                                                POSIX Programmer's Manual                                                                               FSEEK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       fseek, fseeko — reposition a file-position indicator in a stream
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int fseek(FILE *stream, long offset, int whence);
+       int fseeko(FILE *stream, off_t offset, int whence);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  fseek()  function  shall  set  the  file-position indicator for the stream pointed to by stream.  If a read or write error occurs, the error indicator for the stream shall be set and fseek()
+       fails.
+
+       The new position, measured in bytes from the beginning of the file, shall be obtained by adding offset to the position specified by whence.  The specified point is the beginning of the  file  for
+       SEEK_SET, the current value of the file-position indicator for SEEK_CUR, or end-of-file for SEEK_END.
+
+       If  the  stream is to be used with wide-character input/output functions, the application shall ensure that offset is either 0 or a value returned by an earlier call to ftell() on the same stream
+       and whence is SEEK_SET.
+
+       A successful call to fseek() shall clear the end-of-file indicator for the stream and undo any effects of ungetc() and ungetwc() on the same stream. After an fseek() call, the next  operation  on
+       an update stream may be either input or output.
+
+       If  the  most  recent  operation, other than ftell(), on a given stream is fflush(), the file offset in the underlying open file description shall be adjusted to reflect the location specified by
+       fseek().
+
+       The fseek() function shall allow the file-position indicator to be set beyond the end of existing data in the file. If data is later written at this point, subsequent reads of  data  in  the  gap
+       shall return bytes with the value 0 until data is actually written into the gap.
+
+       The behavior of fseek() on devices which are incapable of seeking is implementation-defined.  The value of the file offset associated with such a device is undefined.
+
+       If the stream is writable and buffered data had not been written to the underlying file, fseek() shall cause the unwritten data to be written to the file and shall mark the last data modification
+       and last file status change timestamps of the file for update.
+
+       In a locale with state-dependent encoding, whether fseek() restores the stream's shift state is implementation-defined.
+
+       The fseeko() function shall be equivalent to the fseek() function except that the offset argument is of type off_t.
+
+RETURN VALUE
+       The fseek() and fseeko() functions shall return 0 if they succeed.
+
+       Otherwise, they shall return -1 and set errno to indicate the error.
+
+ERRORS
+       The fseek() and fseeko() functions shall fail if, either the stream is unbuffered or the stream's buffer needed to be flushed, and the call to fseek() or fseeko() causes an underlying lseek()  or
+       write() to be invoked, and:
+
+       EAGAIN The O_NONBLOCK flag is set for the file descriptor and the thread would be delayed in the write operation.
+
+       EBADF  The file descriptor underlying the stream file is not open for writing or the stream's buffer needed to be flushed and the file is not open.
+
+       EFBIG  An attempt was made to write a file that exceeds the maximum file size.
+
+       EFBIG  An attempt was made to write a file that exceeds the file size limit of the process.
+
+       EFBIG  The file is a regular file and an attempt was made to write at or beyond the offset maximum associated with the corresponding stream.
+
+       EINTR  The write operation was terminated due to the receipt of a signal, and no data was transferred.
+
+       EINVAL The whence argument is invalid. The resulting file-position indicator would be set to a negative value.
+
+       EIO    A  physical  I/O error has occurred, or the process is a member of a background process group attempting to perform a write() to its controlling terminal, TOSTOP is set, the calling thread
+              is not blocking SIGTTOU, the process is not ignoring SIGTTOU, and the process group of the process is orphaned.  This error may also be returned under implementation-defined conditions.
+
+       ENOSPC There was no free space remaining on the device containing the file.
+
+       EOVERFLOW
+              For fseek(), the resulting file offset would be a value which cannot be represented correctly in an object of type long.
+
+       EOVERFLOW
+              For fseeko(), the resulting file offset would be a value which cannot be represented correctly in an object of type off_t.
+
+       EPIPE  An attempt was made to write to a pipe or FIFO that is not open for reading by any process; a SIGPIPE signal shall also be sent to the thread.
+
+       ESPIPE The file descriptor underlying stream is associated with a pipe, FIFO, or socket.
+
+       The fseek() and fseeko() functions may fail if:
+
+       ENXIO  A request was made of a nonexistent device, or the request was outside the capabilities of the device.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.5, Standard I/O Streams, fopen(), fsetpos(), ftell(), getrlimit(), lseek(), rewind(), ulimit(), ungetc(), write()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          FSEEK(3P)

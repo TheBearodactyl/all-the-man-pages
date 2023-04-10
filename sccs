@@ -1,0 +1,305 @@
+SCCS(1P)                   POSIX Programmer's Manual                  SCCS(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       sccs — front end for the SCCS subsystem (DEVELOPMENT)
+
+SYNOPSIS
+       sccs [-r] [-d path] [-p path] command [options...] [operands...]
+
+DESCRIPTION
+       The sccs utility is a front end to the SCCS programs. It also  includes
+       the capability to run set-user-id to another user to provide additional
+       protection.
+
+       The sccs utility shall invoke the specified command with the  specified
+       options  and operands.  By default, each of the operands shall be modi‐
+       fied by prefixing it with the string "SCCS/s.".
+
+       The command can be the name of one of the SCCS utilities in this volume
+       of  POSIX.1‐2017  (admin,  delta, get, prs, rmdel, sact, unget, val, or
+       what) or one of the pseudo-utilities listed in the EXTENDED DESCRIPTION
+       section.
+
+OPTIONS
+       The  sccs  utility  shall  conform  to  the  Base Definitions volume of
+       POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines, except that  op‐
+       tions  operands  are actually options to be passed to the utility named
+       by command.  When the portion of the command:
+
+           command [options ... ] [operands ... ]
+
+       is considered, all of the pseudo-utilities used as command  shall  sup‐
+       port  the  Utility  Syntax  Guidelines. Any of the other SCCS utilities
+       that can be invoked in this manner support the Guidelines to the extent
+       indicated by their individual OPTIONS sections.
+
+       The following options shall be supported preceding the command operand:
+
+       -d path   A  pathname of a directory to be used as a root directory for
+                 the SCCS files. The default shall be the  current  directory.
+                 The -d option shall take precedence over the PROJECTDIR vari‐
+                 able. See -p.
+
+       -p path   A pathname of a directory in which the  SCCS  files  are  lo‐
+                 cated. The default shall be the SCCS directory.
+
+                 The  -p  option differs from the -d option in that the -d op‐
+                 tion-argument shall be prefixed to the  entire  pathname  and
+                 the  -p  option-argument  shall  be inserted before the final
+                 component of the pathname. For example:
+
+                     sccs -d /x -p y get a/b
+
+                 converts to:
+
+                     get /x/a/y/s.b
+
+                 This allows the creation of aliases such as:
+
+                     alias syssccs="sccs -d /usr/src"
+
+                 which is used as:
+
+                     syssccs get cmd/who.c
+
+       -r        Invoke command with the real user ID of the process, not  any
+                 effective  user  ID  that the sccs utility is set to. Certain
+                 commands (admin, check, clean, diffs, info, rmdel, and  tell)
+                 cannot  be run set-user-ID by all users, since this would al‐
+                 low anyone to change the authorizations. These  commands  are
+                 always run as the real user.
+
+OPERANDS
+       The following operands shall be supported:
+
+       command   An  SCCS utility name or the name of one of the pseudo-utili‐
+                 ties listed in the EXTENDED DESCRIPTION section.
+
+       options   An option or option-argument to be passed to command.
+
+       operands  An operand to be passed to command.
+
+STDIN
+       See the utility description for the specified command.
+
+INPUT FILES
+       See the utility description for the specified command.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of sccs:
+
+       LANG      Provide a default value for  the  internationalization  vari‐
+                 ables  that are unset or null. (See the Base Definitions vol‐
+                 ume of POSIX.1‐2017, Section 8.2, Internationalization  Vari‐
+                 ables  for  the  precedence of internationalization variables
+                 used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override  the  values  of
+                 all the other internationalization variables.
+
+       LC_CTYPE  Determine  the  locale for the interpretation of sequences of
+                 bytes of text data as characters (for example, single-byte as
+                 opposed  to  multi-byte  characters  in  arguments  and input
+                 files).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format
+                 and  contents  of diagnostic messages written to standard er‐
+                 ror.
+
+       NLSPATH   Determine the location of message catalogs for the processing
+                 of LC_MESSAGES.
+
+       PROJECTDIR
+                 Provide  a default value for the -d path option. If the value
+                 of PROJECTDIR begins with a <slash>, it shall  be  considered
+                 an  absolute  pathname; otherwise, the value of PROJECTDIR is
+                 treated as a user name and that user's initial working direc‐
+                 tory  shall be examined for a subdirectory src or source.  If
+                 such a directory is found, it shall be used.  Otherwise,  the
+                 value shall be used as a relative pathname.
+
+       Additional environment variable effects may be found in the utility de‐
+       scription for the specified command.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       See the utility description for the specified command.
+
+STDERR
+       See the utility description for the specified command.
+
+OUTPUT FILES
+       See the utility description for the specified command.
+
+EXTENDED DESCRIPTION
+       The following pseudo-utilities shall be supported as command  operands.
+       All  options  referred to in the following list are values given in the
+       options operands following command.
+
+       check   Equivalent to info, except that nothing  shall  be  printed  if
+               nothing  is  being  edited, and a non-zero exit status shall be
+               returned if anything is being edited. The  intent  is  to  have
+               this  included  in an ``install'' entry in a makefile to ensure
+               that everything is included into the SCCS file before a version
+               is installed.
+
+       clean   Remove everything from the current directory that can be recre‐
+               ated from SCCS files, but do not remove any files being edited.
+               If the -b option is given, branches shall be ignored in the de‐
+               termination of whether they are being edited; this is dangerous
+               if branches are kept in the same directory.
+
+       create  Create  an SCCS file, taking the initial contents from the file
+               of the same name. Any options to admin  are  accepted.  If  the
+               creation  is successful, the original files shall be renamed by
+               prefixing the basenames  with  a  comma.  These  renamed  files
+               should  be  removed  after  it  has been verified that the SCCS
+               files have been created successfully.
+
+       delget  Perform a delta on the named files and then get  new  versions.
+               The  new versions shall have ID keywords expanded and shall not
+               be editable. Any -m, -p, -r, -s, and -y options shall be passed
+               to  delta,  and  any -b, -c, -e, -i, -k, -l, -s, and -x options
+               shall be passed to get.
+
+       deledit Equivalent to delget, except that the get phase  shall  include
+               the -e option. This option is useful for making a checkpoint of
+               the current editing phase. The same options shall be passed  to
+               delta  as  described  above, and all the options listed for get
+               above except -e shall be passed to edit.
+
+       diffs   Write a difference listing between the current version  of  the
+               files  checked out for editing and the versions in SCCS format.
+               Any -r, -c, -i, -x, and -t options shall be passed to get;  any
+               -l,  -s, -e, -f, -h, and -b options shall be passed to diff.  A
+               -C option shall be passed to diff as -c.
+
+       edit    Equivalent to get -e.
+
+       fix     Remove the named delta, but leave a copy of the delta with  the
+               changes that were in it. It is useful for fixing small compiler
+               bugs, and so on. The application shall ensure that it  is  fol‐
+               lowed  by  a  -r  SID  option.  Since  fix does not leave audit
+               trails, it should be used carefully.
+
+       info    Write a listing of all files being edited. If the -b option  is
+               given,  branches  (that  is, SIDs with two or fewer components)
+               shall be ignored. If a -u user option is given, then only files
+               being  edited  by  the  named user shall be listed. A -U option
+               shall be equivalent to -u<current user>.
+
+       print   Write out verbose information about the named files, equivalent
+               to sccs prs.
+
+       tell    Write  a  <newline>-separated list of the files being edited to
+               standard output. Takes the -b, -u, and -U options like info and
+               check.
+
+       unedit  This is the opposite of an edit or a get -e.  It should be used
+               with caution, since any changes made since the get are lost.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       Many of the SCCS utilities take directory names as operands as well  as
+       specific  filenames. The pseudo-utilities supported by sccs are not de‐
+       scribed as having this capability, but are not  prohibited  from  doing
+       so.
+
+EXAMPLES
+        1. To get a file for editing, edit it and produce a new delta:
+
+               sccs get -e file.c
+               ex file.c
+               sccs delta file.c
+
+        2. To get a file from another directory:
+
+               sccs -p /usr/src/sccs/s. get cc.c
+
+           or:
+
+               sccs get /usr/src/sccs/s.cc.c
+
+        3. To  make  a  delta of a large number of files in the current direc‐
+           tory:
+
+               sccs delta *.c
+
+        4. To get a list of files being edited that are not on branches:
+
+               sccs info -b
+
+        5. To delta everything being edited by the current user:
+
+               sccs delta $(sccs tell -U)
+
+        6. In a makefile, to get source files from an SCCS file if it does not
+           already exist:
+
+               SRCS = <list of source files>
+               $(SRCS):
+                   sccs get $(REL) $@
+
+RATIONALE
+       sccs and its associated utilities are part of the XSI Development Util‐
+       ities option within the XSI option.
+
+       SCCS is an abbreviation for Source Code Control System. It is a mainte‐
+       nance and enhancement tracking tool. When a file is put under SCCS, the
+       source code control system maintains the file  and,  when  changes  are
+       made,  identifies  and stores them in the file with the original source
+       code and/or documentation. As other changes  are  made,  they  too  are
+       identified and retained in the file.
+
+       Retrieval  of the original and any set of changes is possible. Any ver‐
+       sion of the file as it develops can be reconstructed for inspection  or
+       additional  modification. History data can be stored with each version,
+       documenting why the changes were made, who made  them,  and  when  they
+       were made.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       admin, delta, get, make, prs, rmdel, sact, unget, val, what
+
+       The  Base  Definitions  volume  of POSIX.1‐2017, Chapter 8, Environment
+       Variables, Section 12.2, Utility Syntax Guidelines
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                             SCCS(1P)

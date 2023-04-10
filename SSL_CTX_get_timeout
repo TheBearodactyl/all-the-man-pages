@@ -1,0 +1,68 @@
+SSL_CTX_SET_TIMEOUT(3ssl)           OpenSSL          SSL_CTX_SET_TIMEOUT(3ssl)
+
+NAME
+       SSL_CTX_set_timeout, SSL_CTX_get_timeout - manipulate timeout values
+       for session caching
+
+SYNOPSIS
+        #include <openssl/ssl.h>
+
+        long SSL_CTX_set_timeout(SSL_CTX *ctx, long t);
+        long SSL_CTX_get_timeout(SSL_CTX *ctx);
+
+DESCRIPTION
+       SSL_CTX_set_timeout() sets the timeout for newly created sessions for
+       ctx to t. The timeout value t must be given in seconds.
+
+       SSL_CTX_get_timeout() returns the currently set timeout value for ctx.
+
+NOTES
+       Whenever a new session is created, it is assigned a maximum lifetime.
+       This lifetime is specified by storing the creation time of the session
+       and the timeout value valid at this time. If the actual time is later
+       than creation time plus timeout, the session is not reused.
+
+       Due to this realization, all sessions behave according to the timeout
+       value valid at the time of the session negotiation. Changes of the
+       timeout value do not affect already established sessions.
+
+       The expiration time of a single session can be modified using the
+       SSL_SESSION_get_time(3) family of functions.
+
+       Expired sessions are removed from the internal session cache, whenever
+       SSL_CTX_flush_sessions(3) is called, either directly by the application
+       or automatically (see SSL_CTX_set_session_cache_mode(3))
+
+       The default value for session timeout is decided on a per protocol
+       basis, see SSL_get_default_timeout(3).  All currently supported
+       protocols have the same default timeout value of 300 seconds.
+
+       This timeout value is used as the ticket lifetime hint for stateless
+       session tickets. It is also used as the timeout value within the ticket
+       itself.
+
+       For TLSv1.3, RFC8446 limits transmission of this value to 1 week
+       (604800 seconds).
+
+       For TLSv1.2, tickets generated during an initial handshake use the
+       value as specified. Tickets generated during a resumed handshake have a
+       value of 0 for the ticket lifetime hint.
+
+RETURN VALUES
+       SSL_CTX_set_timeout() returns the previously set timeout value.
+
+       SSL_CTX_get_timeout() returns the currently set timeout value.
+
+SEE ALSO
+       ssl(7), SSL_CTX_set_session_cache_mode(3), SSL_SESSION_get_time(3),
+       SSL_CTX_flush_sessions(3), SSL_get_default_timeout(3)
+
+COPYRIGHT
+       Copyright 2001-2022 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use
+       this file except in compliance with the License.  You can obtain a copy
+       in the file LICENSE in the source distribution or at
+       <https://www.openssl.org/source/license.html>.
+
+3.0.8                             2023-02-07         SSL_CTX_SET_TIMEOUT(3ssl)

@@ -1,0 +1,238 @@
+getlogin(3)                                                                              Library Functions Manual                                                                              getlogin(3)
+
+NAME
+       getlogin, getlogin_r, cuserid - get username
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       char *getlogin(void);
+       int getlogin_r(char buf[.bufsize], size_t bufsize);
+
+       #include <stdio.h>
+
+       char *cuserid(char *string);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       getlogin_r():
+           _POSIX_C_SOURCE >= 199506L
+
+       cuserid():
+           Since glibc 2.24:
+               (_XOPEN_SOURCE && ! (_POSIX_C_SOURCE >= 200112L)
+                   || _GNU_SOURCE
+           Up to and including glibc 2.23:
+               _XOPEN_SOURCE
+
+DESCRIPTION
+       getlogin()  returns  a  pointer  to a string containing the name of the user logged in on the controlling terminal of the process, or a null pointer if this information cannot be determined.  The
+       string is statically allocated and might be overwritten on subsequent calls to this function or to cuserid().
+
+       getlogin_r() returns this same username in the array buf of size bufsize.
+
+       cuserid() returns a pointer to a string containing a username associated with the effective user ID of the process.  If string is not a null pointer, it should be an array that can hold at  least
+       L_cuserid characters; the string is returned in this array.  Otherwise, a pointer to a string in a static area is returned.  This string is statically allocated and might be overwritten on subse‐
+       quent calls to this function or to getlogin().
+
+       The macro L_cuserid is an integer constant that indicates how long an array you might need to store a username.  L_cuserid is declared in <stdio.h>.
+
+       These functions let your program identify positively the user who is running (cuserid()) or the user who logged in this session (getlogin()).  (These can differ when set-user-ID programs are  in‐
+       volved.)
+
+       For most purposes, it is more useful to use the environment variable LOGNAME to find out who the user is.  This is more flexible precisely because the user can set LOGNAME arbitrarily.
+
+RETURN VALUE
+       getlogin() returns a pointer to the username when successful, and NULL on failure, with errno set to indicate the error.  getlogin_r() returns 0 when successful, and nonzero on failure.
+
+ERRORS
+       POSIX specifies:
+
+       EMFILE The per-process limit on the number of open file descriptors has been reached.
+
+       ENFILE The system-wide limit on the total number of open files has been reached.
+
+       ENXIO  The calling process has no controlling terminal.
+
+       ERANGE (getlogin_r) The length of the username, including the terminating null byte ('\0'), is larger than bufsize.
+
+       Linux/glibc also has:
+
+       ENOENT There was no corresponding entry in the utmp-file.
+
+       ENOMEM Insufficient memory to allocate passwd structure.
+
+       ENOTTY Standard input didn't refer to a terminal.  (See BUGS.)
+
+FILES
+       /etc/passwd
+              password database file
+
+       /var/run/utmp
+              (traditionally /etc/utmp; some libc versions used /var/adm/utmp)
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────┬───────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface    │ Attribute     │ Value                                                                                                                                                              │
+       ├─────────────┼───────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getlogin()   │ Thread safety │ MT-Unsafe race:getlogin race:utent sig:ALRM timer locale                                                                                                           │
+       ├─────────────┼───────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getlogin_r() │ Thread safety │ MT-Unsafe race:utent sig:ALRM timer locale                                                                                                                         │
+       ├─────────────┼───────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │cuserid()    │ Thread safety │ MT-Unsafe race:cuserid/!string locale                                                                                                                              │
+       └─────────────┴───────────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+       In  the  above  table,  utent in race:utent signifies that if any of the functions setutent(3), getutent(3), or endutent(3) are used in parallel in different threads of a program, then data races
+       could occur.  getlogin() and getlogin_r() call those functions, so we use race:utent to remind users.
+
+VERSIONS
+       OpenBSD has getlogin() and setlogin(), and a username associated with a session, even if it has no controlling terminal.
+
+STANDARDS
+       getlogin()
+       getlogin_r()
+              POSIX.1-2008.
+
+       cuserid()
+              None.
+
+STANDARDS
+       getlogin()
+       getlogin_r():
+              POSIX.1-2001.  OpenBSD.
+
+       cuserid()
+              System V, POSIX.1-1988.  Removed in POSIX.1-1990.  SUSv2.  Removed in POSIX.1-2001.
+
+              System V has a cuserid() function which uses the real user ID rather than the effective user ID.
+
+BUGS
+       Unfortunately, it is often rather easy to fool getlogin().  Sometimes it does not work at all, because some program messed up the utmp file.  Often, it gives only the first 8  characters  of  the
+       login name.  The user currently logged in on the controlling terminal of our program need not be the user who started it.  Avoid getlogin() for security-related purposes.
+
+       Note  that  glibc  does  not follow the POSIX specification and uses stdin instead of /dev/tty.  A bug.  (Other recent systems, like SunOS 5.8 and HP-UX 11.11 and FreeBSD 4.8 all return the login
+       name also when stdin is redirected.)
+
+       Nobody knows precisely what cuserid() does; avoid it in portable programs.  Or avoid it altogether: use getpwuid(geteuid()) instead, if that is what you meant.  Do not use cuserid().
+
+SEE ALSO
+       logname(1), geteuid(2), getuid(2), utmp(5)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                     getlogin(3)
+GETLOGIN(3P)                                                                             POSIX Programmer's Manual                                                                            GETLOGIN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       getlogin, getlogin_r — get login name
+
+SYNOPSIS
+       #include <unistd.h>
+
+       char *getlogin(void);
+       int getlogin_r(char *name, size_t namesize);
+
+DESCRIPTION
+       The getlogin() function shall return a pointer to a string containing the user name associated by the login activity with the controlling terminal of the current process. If getlogin() returns  a
+       non-null pointer, then that pointer points to the name that the user logged in under, even if there are several login names with the same user ID.
+
+       The getlogin() function need not be thread-safe.
+
+       The  getlogin_r()  function shall put the name associated by the login activity with the controlling terminal of the current process in the character array pointed to by name.  The array is name‐
+       size characters long and should have space for the name and the terminating null character. The maximum size of the login name is {LOGIN_NAME_MAX}.
+
+       If getlogin_r() is successful, name points to the name the user used at login, even if there are several login names with the same user ID.
+
+       The getlogin() and getlogin_r() functions may make use of file descriptors 0, 1, and 2 to find the controlling terminal of the current process, examining each in turn until the terminal is found.
+       If  in this case none of these three file descriptors is open to the controlling terminal, these functions may fail. The method used to find the terminal associated with a file descriptor may de‐
+       pend on the file descriptor being open to the actual terminal device, not /dev/tty.
+
+RETURN VALUE
+       Upon successful completion, getlogin() shall return a pointer to the login name or a null pointer if the user's login name cannot be found. Otherwise, it shall return a null pointer and set errno
+       to indicate the error.
+
+       The  application  shall  not  modify  the  string  returned. The returned pointer might be invalidated or the string content might be overwritten by a subsequent call to getlogin().  The returned
+       pointer and the string content might also be invalidated if the calling thread is terminated.
+
+       If successful, the getlogin_r() function shall return zero; otherwise, an error number shall be returned to indicate the error.
+
+ERRORS
+       These functions may fail if:
+
+       EMFILE All file descriptors available to the process are currently open.
+
+       ENFILE The maximum allowable number of files is currently open in the system.
+
+       ENOTTY None of the file descriptors 0, 1, or 2 is open to the controlling terminal of the current process.
+
+       ENXIO  The calling process has no controlling terminal.
+
+       The getlogin_r() function may fail if:
+
+       ERANGE The value of namesize is smaller than the length of the string to be returned including the terminating null character.
+
+       The following sections are informative.
+
+EXAMPLES
+   Getting the User Login Name S
+       The following example calls the getlogin() function to obtain the name of the user associated with the calling process, and passes this information to the getpwnam() function to get  the  associ‐
+       ated user database information.
+
+           #include <unistd.h>
+           #include <sys/types.h>
+           #include <pwd.h>
+           #include <stdio.h>
+           ...
+           char *lgn;
+           struct passwd *pw;
+           ...
+           if ((lgn = getlogin()) == NULL || (pw = getpwnam(lgn)) == NULL) {
+               fprintf(stderr, "Get of user information failed.\n"); exit(1);
+               }
+
+APPLICATION USAGE
+       Three names associated with the current process can be determined: getpwuid(geteuid()) shall return the name associated with the effective user ID of the process; getlogin() shall return the name
+       associated with the current login activity; and getpwuid(getuid()) shall return the name associated with the real user ID of the process.
+
+       The getlogin_r() function is thread-safe and returns values in a user-supplied buffer instead of possibly using a static data area that may be overwritten by each call.
+
+RATIONALE
+       The getlogin() function returns a pointer to the user's login name. The same user ID may be shared by several login names. If it is desired to get the user database entry that is used during  lo‐
+       gin, the result of getlogin() should be used to provide the argument to the getpwnam() function. (This might be used to determine the user's login shell, particularly where a single user has mul‐
+       tiple login shells with distinct login names, but the same user ID.)
+
+       The information provided by the cuserid() function, which was originally defined in the POSIX.1‐1988 standard and subsequently removed, can be obtained by the following:
+
+           getpwuid(geteuid())
+
+       while the information provided by historical implementations of cuserid() can be obtained by:
+
+           getpwuid(getuid())
+
+       The thread-safe version of this function places the user name in a user-supplied buffer and returns a non-zero value if it fails. The non-thread-safe version may return the name in a static  data
+       area that may be overwritten by each call.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       getpwnam(), getpwuid(), geteuid(), getuid()
+
+       The Base Definitions volume of POSIX.1‐2017, <limits.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       GETLOGIN(3P)

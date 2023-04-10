@@ -1,0 +1,393 @@
+libalpm_list(3)                                                                          Library Functions Manual                                                                          libalpm_list(3)
+
+NAME
+       libalpm_list - libalpm_list(3)
+
+        - Functions to manipulate alpm_list_t lists.
+
+SYNOPSIS
+   Data Structures
+       struct alpm_list_t
+           A doubly linked list.
+
+   Macros
+       #define FREELIST(p)   do { alpm_list_free_inner(p, free); alpm_list_free(p); p = NULL; } while(0)
+           Frees a list and its contents.
+
+   Typedefs
+       typedef void(* alpm_list_fn_free) (void *item)
+           item deallocation callback.
+       typedef int(* alpm_list_fn_cmp) (const void *, const void *)
+           item comparison callback
+
+   Functions
+       void alpm_list_free (alpm_list_t *list)
+           Free a list, but not the contained data.
+       void alpm_list_free_inner (alpm_list_t *list, alpm_list_fn_free fn)
+           Free the internal data of a list structure but not the list itself.
+       alpm_list_t * alpm_list_add (alpm_list_t *list, void *data)
+           Add a new item to the end of the list.
+       alpm_list_t * alpm_list_append (alpm_list_t **list, void *data)
+           Add a new item to the end of the list.
+       alpm_list_t * alpm_list_append_strdup (alpm_list_t **list, const char *data)
+           Duplicate and append a string to a list.
+       alpm_list_t * alpm_list_add_sorted (alpm_list_t *list, void *data, alpm_list_fn_cmp fn)
+           Add items to a list in sorted order.
+       alpm_list_t * alpm_list_join (alpm_list_t *first, alpm_list_t *second)
+           Join two lists.
+       alpm_list_t * alpm_list_mmerge (alpm_list_t *left, alpm_list_t *right, alpm_list_fn_cmp fn)
+           Merge the two sorted sublists into one sorted list.
+       alpm_list_t * alpm_list_msort (alpm_list_t *list, size_t n, alpm_list_fn_cmp fn)
+           Sort a list of size n using mergesort algorithm.
+       alpm_list_t * alpm_list_remove_item (alpm_list_t *haystack, alpm_list_t *item)
+           Remove an item from the list.
+       alpm_list_t * alpm_list_remove (alpm_list_t *haystack, const void *needle, alpm_list_fn_cmp fn, void **data)
+           Remove an item from the list.
+       alpm_list_t * alpm_list_remove_str (alpm_list_t *haystack, const char *needle, char **data)
+           Remove a string from a list.
+       alpm_list_t * alpm_list_remove_dupes (const alpm_list_t *list)
+           Create a new list without any duplicates.
+       alpm_list_t * alpm_list_strdup (const alpm_list_t *list)
+           Copy a string list, including data.
+       alpm_list_t * alpm_list_copy (const alpm_list_t *list)
+           Copy a list, without copying data.
+       alpm_list_t * alpm_list_copy_data (const alpm_list_t *list, size_t size)
+           Copy a list and copy the data.
+       alpm_list_t * alpm_list_reverse (alpm_list_t *list)
+           Create a new list in reverse order.
+       alpm_list_t * alpm_list_nth (const alpm_list_t *list, size_t n)
+           Return nth element from list (starting from 0).
+       alpm_list_t * alpm_list_next (const alpm_list_t *list)
+           Get the next element of a list.
+       alpm_list_t * alpm_list_previous (const alpm_list_t *list)
+           Get the previous element of a list.
+       alpm_list_t * alpm_list_last (const alpm_list_t *list)
+           Get the last item in the list.
+       size_t alpm_list_count (const alpm_list_t *list)
+           Get the number of items in a list.
+       void * alpm_list_find (const alpm_list_t *haystack, const void *needle, alpm_list_fn_cmp fn)
+           Find an item in a list.
+       void * alpm_list_find_ptr (const alpm_list_t *haystack, const void *needle)
+           Find an item in a list.
+       char * alpm_list_find_str (const alpm_list_t *haystack, const char *needle)
+           Find a string in a list.
+       void alpm_list_diff_sorted (const alpm_list_t *left, const alpm_list_t *right, alpm_list_fn_cmp fn, alpm_list_t **onlyleft, alpm_list_t **onlyright)
+           Find the differences between list left and list right
+       alpm_list_t * alpm_list_diff (const alpm_list_t *lhs, const alpm_list_t *rhs, alpm_list_fn_cmp fn)
+           Find the items in list lhs that are not present in list rhs.
+       void * alpm_list_to_array (const alpm_list_t *list, size_t n, size_t size)
+           Copy a list and data into a standard C array of fixed length.
+
+Detailed Description
+       Functions to manipulate alpm_list_t lists.
+
+       These functions are designed to create, destroy, and modify lists of type alpm_list_t. This is an internal list type used by libalpm that is publicly exposed for use by frontends if desired.
+
+       It is exposed so front ends can use it to prevent the need to reimplement lists of their own; however, it is not required that the front end uses it.
+
+Data Structure Documentation
+struct alpm_list_t
+       A doubly linked list.
+
+       Data Fields:
+           void * data data held by the list node
+
+           struct __alpm_list_t * next pointer to the next node
+
+           struct __alpm_list_t * prev pointer to the previous node
+
+Macro Definition Documentation
+   #define FREELIST(p)   do { alpm_list_free_inner(p, free); alpm_list_free(p); p = NULL; } while(0)
+       Frees a list and its contents.
+
+Typedef Documentation
+   typedef int(* alpm_list_fn_cmp) (const void *, const void *)
+       item comparison callback
+
+   typedef void(* alpm_list_fn_free) (void *item)
+       item deallocation callback.
+
+       Parameters
+           item the item to free
+
+Function Documentation
+   alpm_list_t * alpm_list_add (alpm_list_t * list, void * data)
+       Add a new item to the end of the list.
+
+       Parameters
+           list the list to add to
+           data the new item to be added to the list
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_add_sorted (alpm_list_t * list, void * data, alpm_list_fn_cmp fn)
+       Add items to a list in sorted order.
+
+       Parameters
+           list the list to add to
+           data the new item to be added to the list
+           fn the comparison function to use to determine order
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_append (alpm_list_t ** list, void * data)
+       Add a new item to the end of the list.
+
+       Parameters
+           list the list to add to
+           data the new item to be added to the list
+
+       Returns
+           the newly added item
+
+   alpm_list_t * alpm_list_append_strdup (alpm_list_t ** list, const char * data)
+       Duplicate and append a string to a list.
+
+       Parameters
+           list the list to append to
+           data the string to duplicate and append
+
+       Returns
+           the newly added item
+
+   alpm_list_t * alpm_list_copy (const alpm_list_t * list)
+       Copy a list, without copying data.
+
+       Parameters
+           list the list to copy
+
+       Returns
+           a copy of the original list
+
+   alpm_list_t * alpm_list_copy_data (const alpm_list_t * list, size_t size)
+       Copy a list and copy the data. Note that the data elements to be copied should not contain pointers and should also be of constant size.
+
+       Parameters
+           list the list to copy
+           size the size of each data element
+
+       Returns
+           a copy of the original list, data copied as well
+
+   size_t alpm_list_count (const alpm_list_t * list)
+       Get the number of items in a list.
+
+       Parameters
+           list the list
+
+       Returns
+           the number of list items
+
+   alpm_list_t * alpm_list_diff (const alpm_list_t * lhs, const alpm_list_t * rhs, alpm_list_fn_cmp fn)
+       Find the items in list lhs that are not present in list rhs.
+
+       Parameters
+           lhs the first list
+           rhs the second list
+           fn the comparison function
+
+       Returns
+           a list containing all items in lhs not present in rhs
+
+   void alpm_list_diff_sorted (const alpm_list_t * left, const alpm_list_t * right, alpm_list_fn_cmp fn, alpm_list_t ** onlyleft, alpm_list_t ** onlyright)
+       Find the differences between list left and list right The two lists must be sorted. Items only in list left are added to the onlyleft list. Items only in list right are added to the onlyright
+       list.
+
+       Parameters
+           left the first list
+           right the second list
+           fn the comparison function
+           onlyleft pointer to the first result list
+           onlyright pointer to the second result list
+
+   void * alpm_list_find (const alpm_list_t * haystack, const void * needle, alpm_list_fn_cmp fn)
+       Find an item in a list.
+
+       Parameters
+           needle the item to search
+           haystack the list
+           fn the comparison function for searching (!= NULL)
+
+       Returns
+           needle if found, NULL otherwise
+
+   void * alpm_list_find_ptr (const alpm_list_t * haystack, const void * needle)
+       Find an item in a list. Search for the item whose data matches that of the needle.
+
+       Parameters
+           needle the data to search for (== comparison)
+           haystack the list
+
+       Returns
+           needle if found, NULL otherwise
+
+   char * alpm_list_find_str (const alpm_list_t * haystack, const char * needle)
+       Find a string in a list.
+
+       Parameters
+           needle the string to search for
+           haystack the list
+
+       Returns
+           needle if found, NULL otherwise
+
+   void alpm_list_free (alpm_list_t * list)
+       Free a list, but not the contained data.
+
+       Parameters
+           list the list to free
+
+   void alpm_list_free_inner (alpm_list_t * list, alpm_list_fn_free fn)
+       Free the internal data of a list structure but not the list itself.
+
+       Parameters
+           list the list to free
+           fn a free function for the internal data
+
+   alpm_list_t * alpm_list_join (alpm_list_t * first, alpm_list_t * second)
+       Join two lists. The two lists must be independent. Do not free the original lists after calling this function, as this is not a copy operation. The list pointers passed in should be considered
+       invalid after calling this function.
+
+       Parameters
+           first the first list
+           second the second list
+
+       Returns
+           the resultant joined list
+
+   alpm_list_t * alpm_list_last (const alpm_list_t * list)
+       Get the last item in the list.
+
+       Parameters
+           list the list
+
+       Returns
+           the last element in the list
+
+   alpm_list_t * alpm_list_mmerge (alpm_list_t * left, alpm_list_t * right, alpm_list_fn_cmp fn)
+       Merge the two sorted sublists into one sorted list.
+
+       Parameters
+           left the first list
+           right the second list
+           fn comparison function for determining merge order
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_msort (alpm_list_t * list, size_t n, alpm_list_fn_cmp fn)
+       Sort a list of size n using mergesort algorithm.
+
+       Parameters
+           list the list to sort
+           n the size of the list
+           fn the comparison function for determining order
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_next (const alpm_list_t * list)
+       Get the next element of a list.
+
+       Parameters
+           list the list node
+
+       Returns
+           the next element, or NULL when no more elements exist
+
+   alpm_list_t * alpm_list_nth (const alpm_list_t * list, size_t n)
+       Return nth element from list (starting from 0).
+
+       Parameters
+           list the list
+           n the index of the item to find (n < alpm_list_count(list) IS needed)
+
+       Returns
+           an alpm_list_t node for index n
+
+   alpm_list_t * alpm_list_previous (const alpm_list_t * list)
+       Get the previous element of a list.
+
+       Parameters
+           list the list head
+
+       Returns
+           the previous element, or NULL when no previous element exist
+
+   alpm_list_t * alpm_list_remove (alpm_list_t * haystack, const void * needle, alpm_list_fn_cmp fn, void ** data)
+       Remove an item from the list.
+
+       Parameters
+           haystack the list to remove the item from
+           needle the data member of the item we're removing
+           fn the comparison function for searching
+           data output parameter containing data of the removed item
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_remove_dupes (const alpm_list_t * list)
+       Create a new list without any duplicates. This does NOT copy data members.
+
+       Parameters
+           list the list to copy
+
+       Returns
+           a new list containing non-duplicate items
+
+   alpm_list_t * alpm_list_remove_item (alpm_list_t * haystack, alpm_list_t * item)
+       Remove an item from the list. item is not freed; this is the responsibility of the caller.
+
+       Parameters
+           haystack the list to remove the item from
+           item the item to remove from the list
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_remove_str (alpm_list_t * haystack, const char * needle, char ** data)
+       Remove a string from a list.
+
+       Parameters
+           haystack the list to remove the item from
+           needle the data member of the item we're removing
+           data output parameter containing data of the removed item
+
+       Returns
+           the resultant list
+
+   alpm_list_t * alpm_list_reverse (alpm_list_t * list)
+       Create a new list in reverse order.
+
+       Parameters
+           list the list to copy
+
+       Returns
+           a new list in reverse order
+
+   alpm_list_t * alpm_list_strdup (const alpm_list_t * list)
+       Copy a string list, including data.
+
+       Parameters
+           list the list to copy
+
+       Returns
+           a copy of the original list
+
+   void * alpm_list_to_array (const alpm_list_t * list, size_t n, size_t size)
+       Copy a list and data into a standard C array of fixed length. Note that the data elements are shallow copied so any contained pointers will point to the original data.
+
+       Parameters
+           list the list to copy
+           n the size of the list
+           size the size of each data element
+
+       Returns
+           an array version of the original list, data copied as well
+
+Author
+       Generated automatically by Doxygen for libalpm from the source code.
+
+libalpm                                                                                       Sat Mar 18 2023                                                                              libalpm_list(3)

@@ -1,0 +1,643 @@
+time(1)                                                                                   General Commands Manual                                                                                  time(1)
+
+NAME
+       time - time a simple command or give resource usage
+
+SYNOPSIS
+       time [options] command [arguments...]
+
+DESCRIPTION
+       The  time  command  runs  the  specified program command with the given arguments.  When command finishes, time writes a message to standard error giving timing statistics about this program run.
+       These statistics consist of (i) the elapsed real time between invocation and termination, (ii) the user CPU time (the sum of the tms_utime and tms_cutime values in a struct  tms  as  returned  by
+       times(2)), and (iii) the system CPU time (the sum of the tms_stime and tms_cstime values in a struct tms as returned by times(2)).
+
+       Note:  some  shells  (e.g., bash(1)) have a built-in time command that provides similar information on the usage of time and possibly other resources.  To access the real command, you may need to
+       specify its pathname (something like /usr/bin/time).
+
+OPTIONS
+       -p     When in the POSIX locale, use the precise traditional format
+
+                  "real %f\nuser %f\nsys %f\n"
+
+              (with numbers in seconds) where the number of decimals in the output for %f is unspecified but is sufficient to express the clock tick accuracy, and at least one.
+
+EXIT STATUS
+       If command was invoked, the exit status is that of command.  Otherwise, it is 127 if command could not be found, 126 if it could be found but could not be invoked, and some  other  nonzero  value
+       (1–125) if something else went wrong.
+
+ENVIRONMENT
+       The variables LANG, LC_ALL, LC_CTYPE, LC_MESSAGES, LC_NUMERIC, and NLSPATH are used for the text and formatting of the output.  PATH is used to search for command.
+
+GNU VERSION
+       Below  a  description  of the GNU 1.7 version of time.  Disregarding the name of the utility, GNU makes it output lots of useful information, not only about time used, but also on other resources
+       like memory, I/O and IPC calls (where available).  The output is formatted using a format string that can be specified using the -f option or the TIME environment variable.
+
+       The default format string is:
+
+           %Uuser %Ssystem %Eelapsed %PCPU (%Xtext+%Ddata %Mmax)k
+           %Iinputs+%Ooutputs (%Fmajor+%Rminor)pagefaults %Wswaps
+
+       When the -p option is given, the (portable) output format is used:
+
+           real %e
+           user %U
+           sys %S
+
+   The format string
+       The format is interpreted in the usual printf-like way.  Ordinary characters are directly copied, tab, newline, and backslash are escaped using \t, \n, and \\, a percent sign  is  represented  by
+       %%, and otherwise % indicates a conversion.  The program time will always add a trailing newline itself.  The conversions follow.  All of those used by tcsh(1) are supported.
+
+       Time
+
+       %E     Elapsed real time (in [hours:]minutes:seconds).
+
+       %e     (Not in tcsh(1).)  Elapsed real time (in seconds).
+
+       %S     Total number of CPU-seconds that the process spent in kernel mode.
+
+       %U     Total number of CPU-seconds that the process spent in user mode.
+
+       %P     Percentage of the CPU that this job got, computed as (%U + %S) / %E.
+
+       Memory
+
+       %M     Maximum resident set size of the process during its lifetime, in Kbytes.
+
+       %t     (Not in tcsh(1).)  Average resident set size of the process, in Kbytes.
+
+       %K     Average total (data+stack+text) memory use of the process, in Kbytes.
+
+       %D     Average size of the process's unshared data area, in Kbytes.
+
+       %p     (Not in tcsh(1).)  Average size of the process's unshared stack space, in Kbytes.
+
+       %X     Average size of the process's shared text space, in Kbytes.
+
+       %Z     (Not in tcsh(1).)  System's page size, in bytes.  This is a per-system constant, but varies between systems.
+
+       %F     Number of major page faults that occurred while the process was running.  These are faults where the page has to be read in from disk.
+
+       %R     Number of minor, or recoverable, page faults.  These are faults for pages that are not valid but which have not yet been claimed by other virtual pages.  Thus the data in the page is still
+              valid but the system tables must be updated.
+
+       %W     Number of times the process was swapped out of main memory.
+
+       %c     Number of times the process was context-switched involuntarily (because the time slice expired).
+
+       %w     Number of waits: times that the program was context-switched voluntarily, for instance while waiting for an I/O operation to complete.
+
+       I/O
+
+       %I     Number of filesystem inputs by the process.
+
+       %O     Number of filesystem outputs by the process.
+
+       %r     Number of socket messages received by the process.
+
+       %s     Number of socket messages sent by the process.
+
+       %k     Number of signals delivered to the process.
+
+       %C     (Not in tcsh(1).)  Name and command-line arguments of the command being timed.
+
+       %x     (Not in tcsh(1).)  Exit status of the command.
+
+   GNU options
+       -f format, --format=format
+              Specify output format, possibly overriding the format specified in the environment variable TIME.
+
+       -p, --portability
+              Use the portable output format.
+
+       -o file, --output=file
+              Do not send the results to stderr, but overwrite the specified file.
+
+       -a, --append
+              (Used together with -o.) Do not overwrite but append.
+
+       -v, --verbose
+              Give very verbose output about all the program knows about.
+
+       -q, --quiet
+              Don't report abnormal program termination (where command is terminated by a signal) or nonzero exit status.
+
+   GNU standard options
+       --help Print a usage message on standard output and exit successfully.
+
+       -V, --version
+              Print version information on standard output, then exit successfully.
+
+       --     Terminate option list.
+
+BUGS
+       Not all resources are measured by all versions of UNIX, so some of the values might be reported as zero.  The present selection was mostly inspired by the data provided by 4.2 or 4.3BSD.
+
+       GNU time version 1.7 is not yet localized.  Thus, it does not implement the POSIX requirements.
+
+       The environment variable TIME was badly chosen.  It is not unusual for systems like autoconf(1) or make(1) to use environment variables with the name of a utility to override the  utility  to  be
+       used.  Uses like MORE or TIME for options to programs (instead of program pathnames) tend to lead to difficulties.
+
+       It seems unfortunate that -o overwrites instead of appends.  (That is, the -a option should be the default.)
+
+       Mail suggestions and bug reports for GNU time to bug-time@gnu.org.  Please include the version of time, which you can get by running
+
+           time --version
+
+       and the operating system and C compiler you used.
+
+SEE ALSO
+       bash(1), tcsh(1), times(2), wait3(2)
+
+Linux man-pages 6.04                                                                            2023-02-05                                                                                         time(1)
+TIME(1P)                                                                                 POSIX Programmer's Manual                                                                                TIME(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       time — time a simple command
+
+SYNOPSIS
+       time [-p] utility [argument...]
+
+DESCRIPTION
+       The time utility shall invoke the utility named by the utility operand with arguments supplied as the argument operands and write a message to standard error that lists timing statistics for  the
+       utility. The message shall include the following information:
+
+        *  The elapsed (real) time between invocation of utility and its termination.
+
+        *  The  User  CPU  time,  equivalent to the sum of the tms_utime and tms_cutime fields returned by the times() function defined in the System Interfaces volume of POSIX.1‐2017 for the process in
+           which utility is executed.
+
+        *  The System CPU time, equivalent to the sum of the tms_stime and tms_cstime fields returned by the times() function for the process in which utility is executed.
+
+       The precision of the timing shall be no less than the granularity defined for the size of the clock tick unit on the system, but the results shall be reported in terms of standard time units (for
+       example, 0.02 seconds, 00:00:00.02, 1m33.75s, 365.21 seconds), not numbers of clock ticks.
+
+       When  time  is  used as part of a pipeline, the times reported are unspecified, except when it is the sole command within a grouping command (see Section 2.9.4.1, Grouping Commands) in that pipe‐
+       line. For example, the commands on the left are unspecified; those on the right report on utilities a and c, respectively:
+
+           time a | b | c    { time a; } | b | c
+           a | b | time c    a | b | (time c)
+
+OPTIONS
+       The time utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following option shall be supported:
+
+       -p        Write the timing output to standard error in the format shown in the STDERR section.
+
+OPERANDS
+       The following operands shall be supported:
+
+       utility   The name of a utility that is to be invoked. If the utility operand names any of the special built-in utilities in Section 2.14, Special Built-In Utilities, the results are undefined.
+
+       argument  Any string to be supplied as an argument when invoking the utility named by the utility operand.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of time:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic and informative messages written to standard error.
+
+       LC_NUMERIC
+                 Determine the locale for numeric formatting.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+       PATH      Determine the search path that shall be used to locate the utility to be invoked; see the Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       If  the  utility utility is invoked, the standard error shall be used to write the timing statistics and may be used to write a diagnostic message if the utility terminates abnormally; otherwise,
+       the standard error shall be used to write diagnostic messages and may also be used to write the timing statistics.
+
+       If -p is specified, the following format shall be used for the timing statistics in the POSIX locale:
+
+           "real %f\nuser %f\nsys %f\n", <real seconds>, <user seconds>,
+               <system seconds>
+
+       where each floating-point number shall be expressed in seconds. The precision used may be less than the default six digits of %f, but shall be sufficiently precise to accommodate the size of  the
+       clock  tick on the system (for example, if there were 60 clock ticks per second, at least two digits shall follow the radix character). The number of digits following the radix character shall be
+       no less than one, even if this always results in a trailing zero. The implementation may append white space and additional information following the format shown here. The implementation may also
+       prepend a single empty line before the format shown here.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       If the utility utility is invoked, the exit status of time shall be the exit status of utility; otherwise, the time utility shall exit with one of the following values:
+
+       1‐125   An error occurred in the time utility.
+
+         126   The utility specified by utility was found but could not be invoked.
+
+         127   The utility specified by utility could not be found.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The  command, env, nice, nohup, time, and xargs utilities have been specified to use exit code 127 if an error occurs so that applications can distinguish ``failure to find a utility'' from ``in‐
+       voked utility exited with an error indication''. The value 127 was chosen because it is not commonly used for other meanings; most utilities use small values for ``normal error  conditions''  and
+       the  values  above 128 can be confused with termination due to receipt of a signal. The value 126 was chosen in a similar manner to indicate that the utility could be found, but not invoked. Some
+       scripts produce meaningful error messages differentiating the 126 and 127 cases. The distinction between exit codes 126 and 127 is based on KornShell practice that uses 127 when all  attempts  to
+       exec the utility fail with [ENOENT], and uses 126 when any attempt to exec the utility fails for any other reason.
+
+EXAMPLES
+       It  is  frequently desirable to apply time to pipelines or lists of commands. This can be done by placing pipelines and command lists in a single file; this file can then be invoked as a utility,
+       and the time applies to everything in the file.
+
+       Alternatively, the following command can be used to apply time to a complex command:
+
+           time sh -c 'complex-command-line'
+
+RATIONALE
+       When the time utility was originally proposed to be included in the ISO POSIX‐2:1993 standard, questions were raised about its suitability for inclusion on the grounds that it was not useful  for
+       conforming applications, specifically:
+
+        *  The underlying CPU definitions from the System Interfaces volume of POSIX.1‐2017 are vague, so the numeric output could not be compared accurately between systems or even between invocations.
+
+        *  The creation of portable benchmark programs was outside the scope this volume of POSIX.1‐2017.
+
+       However, time does fit in the scope of user portability. Human judgement can be applied to the analysis of the output, and it could be very useful in hands-on debugging of applications or in pro‐
+       viding subjective measures of system performance. Hence it has been included in this volume of POSIX.1‐2017.
+
+       The default output format has been left unspecified because historical implementations differ greatly in their style of depicting this numeric output.  The  -p  option  was  invented  to  provide
+       scripts with a common means of obtaining this information.
+
+       In  the KornShell, time is a shell reserved word that can be used to time an entire pipeline, rather than just a simple command. The POSIX definition has been worded to allow this implementation.
+       Consideration was given to invalidating this approach because of the historical model from the C shell and System V shell. However, since the System V time utility historically has  not  produced
+       accurate results in pipeline timing (because the constituent processes are not all owned by the same parent process, as allowed by POSIX), it did not seem worthwhile to break historical KornShell
+       usage.
+
+       The term utility is used, rather than command, to highlight the fact that shell compound commands, pipelines, special built-ins, and so on, cannot be used  directly.   However,  utility  includes
+       user application programs and shell scripts, not just the standard utilities.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Chapter 2, Shell Command Language, sh
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+       The System Interfaces volume of POSIX.1‐2017, times()
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           TIME(1P)
+time(n)                                                                                    Tcl Built-In Commands                                                                                   time(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       time - Time the execution of a script
+
+SYNOPSIS
+       time script ?count?
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       This command will call the Tcl interpreter count times to evaluate script (or once if count is not specified).  It will then return a string of the form
+
+              503.2 microseconds per iteration
+
+       which indicates the average amount of time required per iteration, in microseconds.  Time is measured in elapsed time, not CPU time.
+
+EXAMPLE
+       Estimate how long it takes for a simple Tcl for loop to count to a thousand:
+
+              time {
+                  for {set i 0} {$i<1000} {incr i} {
+                      # empty body
+                  }
+              }
+
+SEE ALSO
+       clock(n)
+
+KEYWORDS
+       script, time
+
+Tcl                                                                                                                                                                                                time(n)
+TIME(3am)                                                                                GNU Awk Extension Modules                                                                               TIME(3am)
+
+NAME
+       time - time functions for gawk
+
+SYNOPSIS
+       @load "time"
+
+       time = gettimeofday()
+       ret = sleep(amount)
+
+CAUTION
+       This extension is deprecated in favor of the timex extension in the gawkextlib project.  Loading it issues a warning.  It will be removed from the gawk distribution in the next major release.
+
+DESCRIPTION
+       The time extension adds two functions named gettimeofday() and sleep(), as follows.
+
+       gettimeofday()
+              This function returns the number of seconds since the Epoch as a floating-point value. It should have subsecond precision.  It returns -1 upon error and sets ERRNO to indicate the problem.
+
+       sleep(seconds)
+              This function attempts to sleep for the given amount of seconds, which may include a fractional portion.  If seconds is negative, or the attempt to sleep fails, then it returns -1 and sets
+              ERRNO.  Otherwise, the function should return 0 after sleeping for the indicated amount of time.
+
+EXAMPLE
+       @load "time"
+       ...
+       printf "It is now %g seconds since the Epoch\n", gettimeofday()
+       printf "Pausing for a while... " ; sleep(2.5) ; print "done"
+
+SEE ALSO
+       GAWK: Effective AWK Programming, filefuncs(3am), fnmatch(3am), fork(3am), inplace(3am), ordchr(3am), readdir(3am), readfile(3am), revoutput(3am), rwarray(3am).
+
+       gettimeofday(2), nanosleep(2), select(2).
+
+AUTHOR
+       Arnold Robbins, arnold@skeeve.com.
+
+COPYING PERMISSIONS
+       Copyright © 2012, 2013, 2018, 2022, Free Software Foundation, Inc.
+
+       Permission is granted to make and distribute verbatim copies of this manual page provided the copyright notice and this permission notice are preserved on all copies.
+
+       Permission is granted to copy and distribute modified versions of this manual page under the conditions for verbatim copying, provided that the entire resulting derived work is distributed  under
+       the terms of a permission notice identical to this one.
+
+       Permission  is  granted  to copy and distribute translations of this manual page into another language, under the above conditions for modified versions, except that this permission notice may be
+       stated in a translation approved by the Foundation.
+
+Free Software Foundation                                                                        Jul 11 2022                                                                                      TIME(3am)
+TIME(3P)                                                                                 POSIX Programmer's Manual                                                                                TIME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       time — get time
+
+SYNOPSIS
+       #include <time.h>
+
+       time_t time(time_t *tloc);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The time() function shall return the value of time in seconds since the Epoch.
+
+       The tloc argument points to an area where the return value is also stored. If tloc is a null pointer, no value is stored.
+
+RETURN VALUE
+       Upon successful completion, time() shall return the value of time. Otherwise, (time_t)-1 shall be returned.
+
+ERRORS
+       The time() function may fail if:
+
+       EOVERFLOW
+              The number of seconds since the Epoch will not fit in an object of type time_t.
+
+       The following sections are informative.
+
+EXAMPLES
+   Getting the Current Time
+       The  following  example  uses the time() function to calculate the time elapsed, in seconds, since the Epoch, localtime() to convert that value to a broken-down time, and asctime() to convert the
+       broken-down time values into a printable string.
+
+           #include <stdio.h>
+           #include <time.h>
+
+           int main(void)
+           {
+           time_t result;
+
+               result = time(NULL);
+               printf("%s%ju secs since the Epoch\n",
+                   asctime(localtime(&result)),
+                       (uintmax_t)result);
+               return(0);
+           }
+
+       This example writes the current time to stdout in a form like this:
+
+           Wed Jun 26 10:32:15 1996
+           835810335 secs since the Epoch
+
+   Timing an Event
+       The following example gets the current time, prints it out in the user's format, and prints the number of minutes to an event being timed.
+
+           #include <time.h>
+           #include <stdio.h>
+           ...
+           time_t now;
+           int minutes_to_event;
+           ...
+           time(&now);
+           minutes_to_event = ...;
+           printf("The time is ");
+           puts(asctime(localtime(&now)));
+           printf("There are %d minutes to the event.\n",
+               minutes_to_event);
+           ...
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       The time() function returns a value in seconds while clock_gettime() and gettimeofday() return a struct timespec (seconds and nanoseconds) and struct timeval (seconds and  microseconds),  respec‐
+       tively, and are therefore capable of returning more precise times. The times() function is also capable of more precision than time() as it returns a value in clock ticks, although it returns the
+       elapsed time since an arbitrary point such as system boot time, not since the epoch.
+
+       Implementations in which time_t is a 32-bit signed integer (many historical implementations) fail in the year 2038. POSIX.1‐2008 does not address this problem. However, the use of the time_t type
+       is mandated in order to ease the eventual fix.
+
+       On  some systems the time() function is implemented using a system call that does not return an error condition in addition to the return value. On these systems it is impossible to differentiate
+       between valid and invalid return values and hence overflow conditions cannot be reliably detected.
+
+       The use of the <time.h> header instead of <sys/types.h> allows compatibility with the ISO C standard.
+
+       Many historical implementations (including Version 7) and the 1984 /usr/group standard use long instead of time_t.  This volume of POSIX.1‐2017 uses the latter type in order  to  agree  with  the
+       ISO C standard.
+
+FUTURE DIRECTIONS
+       In  a future version of this volume of POSIX.1‐2017, time_t is likely to be required to be capable of representing times far in the future. Whether this will be mandated as a 64-bit type or a re‐
+       quirement that a specific date in the future be representable (for example, 10000 AD) is not yet determined. Systems purchased after the approval of this volume of POSIX.1‐2017 should  be  evalu‐
+       ated to determine whether their lifetime will extend past 2038.
+
+SEE ALSO
+       asctime(), clock(), clock_getres(), ctime(), difftime(), futimens(), gettimeofday(), gmtime(), localtime(), mktime(), strftime(), strptime(), times(), utime()
+
+       The Base Definitions volume of POSIX.1‐2017, <time.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           TIME(3P)
+time(2)                                                                                     System Calls Manual                                                                                    time(2)
+
+NAME
+       time - get time in seconds
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <time.h>
+
+       time_t time(time_t *_Nullable tloc);
+
+DESCRIPTION
+       time() returns the time as the number of seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+
+       If tloc is non-NULL, the return value is also stored in the memory pointed to by tloc.
+
+RETURN VALUE
+       On success, the value of time in seconds since the Epoch is returned.  On error, ((time_t) -1) is returned, and errno is set to indicate the error.
+
+ERRORS
+       EFAULT tloc points outside your accessible address space (but see BUGS).
+
+              On  systems where the C library time() wrapper function invokes an implementation provided by the vdso(7) (so that there is no trap into the kernel), an invalid address may instead trigger
+              a SIGSEGV signal.
+
+VERSIONS
+       POSIX.1 defines seconds since the Epoch using a formula that approximates the number of seconds between a specified time and the Epoch.  This formula takes account of the  facts  that  all  years
+       that are evenly divisible by 4 are leap years, but years that are evenly divisible by 100 are not leap years unless they are also evenly divisible by 400, in which case they are leap years.  This
+       value is not the same as the actual number of seconds between the time and the Epoch, because of leap seconds and because system clocks are not required to be synchronized to  a  standard  refer‐
+       ence.  The intention is that the interpretation of seconds since the Epoch values be consistent; see POSIX.1-2008 Rationale A.4.15 for further rationale.
+
+       On  Linux,  a  call to time() with tloc specified as NULL cannot fail with the error EOVERFLOW, even on ABIs where time_t is a signed 32-bit integer and the clock reaches or exceeds 2**31 seconds
+       (2038-01-19 03:14:08 UTC, ignoring leap seconds).  (POSIX.1 permits, but does not require, the EOVERFLOW error in the case where the seconds since the Epoch will not fit in time_t.)  Instead, the
+       behavior on Linux is undefined when the system time is out of the time_t range.  Applications intended to run after 2038 should use ABIs with time_t wider than 32 bits.
+
+   C library/kernel differences
+       On some architectures, an implementation of time() is provided in the vdso(7).
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       SVr4, 4.3BSD, C89, POSIX.1-2001.
+
+BUGS
+       Error  returns  from this system call are indistinguishable from successful reports that the time is a few seconds before the Epoch, so the C library wrapper function never sets errno as a result
+       of this call.
+
+       The tloc argument is obsolescent and should always be NULL in new code.  When tloc is NULL, the call cannot fail.
+
+SEE ALSO
+       date(1), gettimeofday(2), ctime(3), ftime(3), time(7), vdso(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         time(2)
+time(7)                                                                              Miscellaneous Information Manual                                                                              time(7)
+
+NAME
+       time - overview of time and timers
+
+DESCRIPTION
+   Real time and process time
+       Real  time  is  defined  as time measured from some fixed point, either from a standard point in the past (see the description of the Epoch and calendar time below), or from some point (e.g., the
+       start) in the life of a process (elapsed time).
+
+       Process time is defined as the amount of CPU time used by a process.  This is sometimes divided into user and system components.  User CPU time is the time spent  executing  code  in  user  mode.
+       System  CPU  time is the time spent by the kernel executing in system mode on behalf of the process (e.g., executing system calls).  The time(1) command can be used to determine the amount of CPU
+       time consumed during the execution of a program.  A program can determine the amount of CPU time it has consumed using times(2), getrusage(2), or clock(3).
+
+   The hardware clock
+       Most computers have a (battery-powered) hardware clock which the kernel reads at boot time in order to initialize the software clock.  For further details, see rtc(4) and hwclock(8).
+
+   The software clock, HZ, and jiffies
+       The accuracy of various system calls that set timeouts, (e.g., select(2), sigtimedwait(2)) and measure CPU time (e.g., getrusage(2)) is limited by the resolution of the software  clock,  a  clock
+       maintained by the kernel which measures time in jiffies.  The size of a jiffy is determined by the value of the kernel constant HZ.
+
+       The  value  of  HZ varies across kernel versions and hardware platforms.  On i386 the situation is as follows: on kernels up to and including Linux 2.4.x, HZ was 100, giving a jiffy value of 0.01
+       seconds; starting with Linux 2.6.0, HZ was raised to 1000, giving a jiffy of 0.001 seconds.  Since Linux 2.6.13, the HZ value is a kernel configuration parameter and can be 100, 250 (the default)
+       or  1000,  yielding  a jiffies value of, respectively, 0.01, 0.004, or 0.001 seconds.  Since Linux 2.6.20, a further frequency is available: 300, a number that divides evenly for the common video
+       frame rates (PAL, 25 Hz; NTSC, 30 Hz).
+
+       The times(2) system call is a special case.  It reports times with a granularity defined by the kernel constant USER_HZ.  User-space applications can determine the value of  this  constant  using
+       sysconf(_SC_CLK_TCK).
+
+   System and process clocks; time namespaces
+       The  kernel  supports a range of clocks that measure various kinds of elapsed and virtual (i.e., consumed CPU) time.  These clocks are described in clock_gettime(2).  A few of the clocks are set‐
+       table using clock_settime(2).  The values of certain clocks are virtualized by time namespaces; see time_namespaces(7).
+
+   High-resolution timers
+       Before Linux 2.6.21, the accuracy of timer and sleep system calls (see below) was also limited by the size of the jiffy.
+
+       Since Linux 2.6.21, Linux supports high-resolution timers (HRTs), optionally configurable via CONFIG_HIGH_RES_TIMERS.  On a system that supports HRTs, the accuracy of sleep and timer system calls
+       is  no  longer  constrained  by  the  jiffy, but instead can be as accurate as the hardware allows (microsecond accuracy is typical of modern hardware).  You can determine whether high-resolution
+       timers are supported by checking the resolution returned by a call to clock_getres(2) or looking at the "resolution" entries in /proc/timer_list.
+
+       HRTs are not supported on all hardware architectures.  (Support is provided on x86, ARM, and PowerPC, among others.)
+
+   The Epoch
+       UNIX systems represent time in seconds since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+
+       A program can determine the calendar time via the clock_gettime(2) CLOCK_REALTIME clock, which returns time (in seconds and nanoseconds) that have elapsed since the Epoch; time(2) provides  simi‐
+       lar information, but only with accuracy to the nearest second.  The system time can be changed using clock_settime(2).
+
+   Broken-down time
+       Certain  library functions use a structure of type tm to represent broken-down time, which stores time value separated out into distinct components (year, month, day, hour, minute, second, etc.).
+       This structure is described in tm(3type), which also describes functions that convert between calendar time and broken-down time.  Functions for converting between broken-down time and  printable
+       string representations of the time are described in ctime(3), strftime(3), and strptime(3).
+
+   Sleeping and setting timers
+       Various system calls and functions allow a program to sleep (suspend execution) for a specified period of time; see nanosleep(2), clock_nanosleep(2), and sleep(3).
+
+       Various  system  calls allow a process to set a timer that expires at some point in the future, and optionally at repeated intervals; see alarm(2), getitimer(2), timerfd_create(2), and timer_cre‐
+       ate(2).
+
+   Timer slack
+       Since Linux 2.6.28, it is possible to control the "timer slack" value for a thread.  The timer slack is the length of time by which the kernel may delay the wake-up of certain system  calls  that
+       block  with  a  timeout.  Permitting this delay allows the kernel to coalesce wake-up events, thus possibly reducing the number of system wake-ups and saving power.  For more details, see the de‐
+       scription of PR_SET_TIMERSLACK in prctl(2).
+
+SEE ALSO
+       date(1), time(1), timeout(1), adjtimex(2), alarm(2), clock_gettime(2), clock_nanosleep(2), getitimer(2), getrlimit(2), getrusage(2), gettimeofday(2), nanosleep(2), stat(2), time(2),
+       timer_create(2), timerfd_create(2), times(2), utime(2), adjtime(3), clock(3), clock_getcpuclockid(3), ctime(3), ntp_adjtime(3), ntp_gettime(3), pthread_getcpuclockid(3), sleep(3), strftime(3),
+       strptime(3), timeradd(3), usleep(3), rtc(4), time_namespaces(7), hwclock(8)
+
+Linux man-pages 6.04                                                                            2023-01-22                                                                                         time(7)

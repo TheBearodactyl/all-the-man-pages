@@ -1,0 +1,174 @@
+ilogb(3)                                                                                 Library Functions Manual                                                                                 ilogb(3)
+
+NAME
+       ilogb, ilogbf, ilogbl - get integer exponent of a floating-point value
+
+LIBRARY
+       Math library (libm, -lm)
+
+SYNOPSIS
+       #include <math.h>
+
+       int ilogb(double x);
+       int ilogbf(float x);
+       int ilogbl(long double x);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       ilogb():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+               || _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       ilogbf(), ilogbl():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       These functions return the exponent part of their argument as a signed integer.  When no error occurs, these functions are equivalent to the corresponding logb(3) functions, cast to int.
+
+RETURN VALUE
+       On success, these functions return the exponent of x, as a signed integer.
+
+       If x is zero, then a domain error occurs, and the functions return FP_ILOGB0.
+
+       If x is a NaN, then a domain error occurs, and the functions return FP_ILOGBNAN.
+
+       If x is negative infinity or positive infinity, then a domain error occurs, and the functions return INT_MAX.
+
+ERRORS
+       See math_error(7) for information on how to determine whether an error has occurred when calling these functions.
+
+       The following errors can occur:
+
+       Domain error: x is 0 or a NaN
+              An invalid floating-point exception (FE_INVALID) is raised, and errno is set to EDOM (but see BUGS).
+
+       Domain error: x is an infinity
+              An invalid floating-point exception (FE_INVALID) is raised, and errno is set to EDOM (but see BUGS).
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │ilogb(), ilogbf(), ilogbl()                                                                                                                                             │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       C99, POSIX.1-2001.
+
+BUGS
+       Before glibc 2.16, the following bugs existed in the glibc implementation of these functions:
+
+       •  The domain error case where x is 0 or a NaN did not cause errno to be set or (on some architectures) raise a floating-point exception.
+
+       •  The domain error case where x is an infinity did not cause errno to be set or raise a floating-point exception.
+
+SEE ALSO
+       log(3), logb(3), significand(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        ilogb(3)
+ILOGB(3P)                                                                                POSIX Programmer's Manual                                                                               ILOGB(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       ilogb, ilogbf, ilogbl — return an unbiased exponent
+
+SYNOPSIS
+       #include <math.h>
+
+       int ilogb(double x);
+       int ilogbf(float x);
+       int ilogbl(long double x);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       These functions shall return the exponent part of their argument x.  Formally, the return value is the integral part of logr|x| as a signed integral value, for non-zero x, where r is the radix of
+       the machine's floating-point arithmetic, which is the value of FLT_RADIX defined in <float.h>.
+
+       An application wishing to check for error situations should set errno to zero and call feclearexcept(FE_ALL_EXCEPT) before calling these functions. On return, if errno is  non-zero  or  fetestex‐
+       cept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW) is non-zero, an error has occurred.
+
+RETURN VALUE
+       Upon  successful  completion,  these  functions shall return the exponent part of x as a signed integer value. They are equivalent to calling the corresponding logb() function and casting the re‐
+       turned value to type int.
+
+       If x is 0, the value FP_ILOGB0 shall be returned.  On XSI-conformant systems, a domain error shall occur;
+       otherwise, a domain error may occur.
+
+       If x is ±Inf, the value {INT_MAX} shall be returned.  On XSI-conformant systems, a domain error shall occur;
+       otherwise, a domain error may occur.
+
+       If x is a NaN, the value FP_ILOGBNAN shall be returned.  On XSI-conformant systems, a domain error shall occur;
+       otherwise, a domain error may occur.
+
+       If the correct value is greater than {INT_MAX}, a domain error shall occur and an unspecified value shall be returned.  On XSI-conformant systems, a domain error shall occur and  {INT_MAX}  shall
+       be returned.
+
+       If  the  correct value is less than {INT_MIN}, a domain error shall occur and an unspecified value shall be returned.  On XSI-conformant systems, a domain error shall occur and {INT_MIN} shall be
+       returned.
+
+ERRORS
+       These functions shall fail if:
+
+       Domain Error
+                   The correct value is not representable as an integer.
+
+                   The x argument is zero, NaN, or ±Inf.
+
+                   If the integer expression (math_errhandling & MATH_ERRNO) is non-zero, then errno shall be set to [EDOM].  If the integer expression (math_errhandling & MATH_ERREXCEPT)  is  non-zero,
+                   then the invalid floating-point exception shall be raised.
+
+       These functions may fail if:
+
+       Domain Error
+                   The x argument is zero, NaN, or ±Inf.
+
+                   If  the  integer expression (math_errhandling & MATH_ERRNO) is non-zero, then errno shall be set to [EDOM].  If the integer expression (math_errhandling & MATH_ERREXCEPT) is non-zero,
+                   then the invalid floating-point exception shall be raised.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       On error, the expressions (math_errhandling & MATH_ERRNO) and (math_errhandling & MATH_ERREXCEPT) are independent of each other, but at least one of them must be non-zero.
+
+RATIONALE
+       The errors come from taking the expected floating-point value and converting it to int, which is an invalid operation in IEEE Std 754‐1985 (since overflow, infinity, and NaN are not representable
+       in a type int), so should be a domain error.
+
+       There  are  no known implementations that overflow. For overflow to happen, {INT_MAX} must be less than LDBL_MAX_EXP*log2(FLT_RADIX) or {INT_MIN} must be greater than LDBL_MIN_EXP*log2(FLT_RADIX)
+       if subnormals are not supported, or {INT_MIN} must be greater than (LDBL_MIN_EXP-LDBL_MANT_DIG)*log2(FLT_RADIX) if subnormals are supported.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       feclearexcept(), fetestexcept(), logb(), scalbln()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 4.20, Treatment of Error Conditions for Mathematical Functions, <float.h>, <math.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          ILOGB(3P)

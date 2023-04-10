@@ -1,0 +1,321 @@
+newlocale(3)                                                                             Library Functions Manual                                                                             newlocale(3)
+
+NAME
+       newlocale, freelocale - create, modify, and free a locale object
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <locale.h>
+
+       locale_t newlocale(int category_mask, const char *locale,
+                          locale_t base);
+       void freelocale(locale_t locobj);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       newlocale(), freelocale():
+           Since glibc 2.10:
+               _XOPEN_SOURCE >= 700
+           Before glibc 2.10:
+               _GNU_SOURCE
+
+DESCRIPTION
+       The  newlocale()  function creates a new locale object, or modifies an existing object, returning a reference to the new or modified object as the function result.  Whether the call creates a new
+       object or modifies an existing object is determined by the value of base:
+
+       •  If base is (locale_t) 0, a new object is created.
+
+       •  If base refers to valid existing locale object (i.e., an object returned by a previous call to newlocale() or duplocale(3)), then that object is modified by the call.  If the call is  success‐
+          ful,  the contents of base are unspecified (in particular, the object referred to by base may be freed, and a new object created).  Therefore, the caller should ensure that it stops using base
+          before the call to newlocale(), and should subsequently refer to the modified object via the reference returned as the function result.  If the call fails, the contents of  base  remain  valid
+          and unchanged.
+
+       If base is the special locale object LC_GLOBAL_LOCALE (see duplocale(3)), or is not (locale_t) 0 and is not a valid locale object handle, the behavior is undefined.
+
+       The  category_mask argument is a bit mask that specifies the locale categories that are to be set in a newly created locale object or modified in an existing object.  The mask is constructed by a
+       bitwise OR of the constants LC_ADDRESS_MASK, LC_CTYPE_MASK, LC_COLLATE_MASK, LC_IDENTIFICATION_MASK, LC_MEASUREMENT_MASK, LC_MESSAGES_MASK, LC_MONETARY_MASK, LC_NUMERIC_MASK, LC_NAME_MASK, LC_PA‐
+       PER_MASK, LC_TELEPHONE_MASK, and LC_TIME_MASK.  Alternatively, the mask can be specified as LC_ALL_MASK, which is equivalent to ORing all of the preceding constants.
+
+       For each category specified in category_mask, the locale data from locale will be used in the object returned by newlocale().  If a new locale object is being created, data for all categories not
+       specified in category_mask is taken from the default ("POSIX") locale.
+
+       The following preset values of locale are defined for all categories that can be specified in category_mask:
+
+       "POSIX"
+              A minimal locale environment for C language programs.
+
+       "C"    Equivalent to "POSIX".
+
+       ""     An implementation-defined native environment corresponding to the values of the LC_* and LANG environment variables (see locale(7)).
+
+   freelocale()
+       The freelocale() function deallocates the resources associated with locobj, a locale object previously returned by a call to newlocale() or duplocale(3).  If locobj is LC_GLOBAL_LOCALE or is  not
+       valid locale object handle, the results are undefined.
+
+       Once a locale object has been freed, the program should make no further use of it.
+
+RETURN VALUE
+       On  success,  newlocale() returns a handle that can be used in calls to duplocale(3), freelocale(), and other functions that take a locale_t argument.  On error, newlocale() returns (locale_t) 0,
+       and sets errno to indicate the error.
+
+ERRORS
+       EINVAL One or more bits in category_mask do not correspond to a valid locale category.
+
+       EINVAL locale is NULL.
+
+       ENOENT locale is not a string pointer referring to a valid locale.
+
+       ENOMEM Insufficient memory to create a locale object.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.3.
+
+NOTES
+       Each locale object created by newlocale() should be deallocated using freelocale().
+
+EXAMPLES
+       The program below takes up to two command-line arguments, which each identify locales.  The first argument is required, and is used to set the LC_NUMERIC category in a locale object created using
+       newlocale().  The second command-line argument is optional; if it is present, it is used to set the LC_TIME category of the locale object.
+
+       Having created and initialized the locale object, the program then applies it using uselocale(3), and then tests the effect of the locale changes by:
+
+       (1)  Displaying  a  floating-point number with a fractional part.  This output will be affected by the LC_NUMERIC setting.  In many European-language locales, the fractional part of the number is
+            separated from the integer part using a comma, rather than a period.
+
+       (2)  Displaying the date.  The format and language of the output will be affected by the LC_TIME setting.
+
+       The following shell sessions show some example runs of this program.
+
+       Set the LC_NUMERIC category to fr_FR (French):
+
+           $ ./a.out fr_FR
+           123456,789
+           Fri Mar  7 00:25:08 2014
+
+       Set the LC_NUMERIC category to fr_FR (French), and the LC_TIME category to it_IT (Italian):
+
+           $ ./a.out fr_FR it_IT
+           123456,789
+           ven 07 mar 2014 00:26:01 CET
+
+       Specify the LC_TIME setting as an empty string, which causes the value to be taken from environment variable settings (which, here, specify mi_NZ, New Zealand Māori):
+
+           $ LC_ALL=mi_NZ ./a.out fr_FR ""
+           123456,789
+           Te Paraire, te 07 o Poutū-te-rangi, 2014 00:38:44 CET
+
+   Program source
+       #define _XOPEN_SOURCE 700
+       #include <locale.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <time.h>
+
+       #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                               } while (0)
+
+       int
+       main(int argc, char *argv[])
+       {
+           char buf[100];
+           time_t t;
+           size_t s;
+           struct tm *tm;
+           locale_t loc, nloc;
+
+           if (argc < 2) {
+               fprintf(stderr, "Usage: %s locale1 [locale2]\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           /* Create a new locale object, taking the LC_NUMERIC settings
+              from the locale specified in argv[1]. */
+
+           loc = newlocale(LC_NUMERIC_MASK, argv[1], (locale_t) 0);
+           if (loc == (locale_t) 0)
+               errExit("newlocale");
+
+           /* If a second command-line argument was specified, modify the
+              locale object to take the LC_TIME settings from the locale
+              specified in argv[2]. We assign the result of this newlocale()
+              call to 'nloc' rather than 'loc', since in some cases, we might
+              want to preserve 'loc' if this call fails. */
+
+           if (argc > 2) {
+               nloc = newlocale(LC_TIME_MASK, argv[2], loc);
+               if (nloc == (locale_t) 0)
+                   errExit("newlocale");
+               loc = nloc;
+           }
+
+           /* Apply the newly created locale to this thread. */
+
+           uselocale(loc);
+
+           /* Test effect of LC_NUMERIC. */
+
+           printf("%8.3f\n", 123456.789);
+
+           /* Test effect of LC_TIME. */
+
+           t = time(NULL);
+           tm = localtime(&t);
+           if (tm == NULL)
+               errExit("time");
+
+           s = strftime(buf, sizeof(buf), "%c", tm);
+           if (s == 0)
+               errExit("strftime");
+
+           printf("%s\n", buf);
+
+           /* Free the locale object. */
+
+           uselocale(LC_GLOBAL_LOCALE);    /* So 'loc' is no longer in use */
+           freelocale(loc);
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       locale(1), duplocale(3), setlocale(3), uselocale(3), locale(5), locale(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                    newlocale(3)
+NEWLOCALE(3P)                                                                            POSIX Programmer's Manual                                                                           NEWLOCALE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       newlocale — create or modify a locale object
+
+SYNOPSIS
+       #include <locale.h>
+
+       locale_t newlocale(int category_mask, const char *locale,
+           locale_t base);
+
+DESCRIPTION
+       The newlocale() function shall create a new locale object or modify an existing one.  If the base argument is (locale_t)0, a new locale object shall be created. It is unspecified whether the  lo‐
+       cale object pointed to by base shall be modified, or freed and a new locale object created.
+
+       The category_mask argument specifies the locale categories to be set or modified.  Values for category_mask shall be constructed by a bitwise-inclusive OR of the symbolic constants LC_CTYPE_MASK,
+       LC_NUMERIC_MASK, LC_TIME_MASK, LC_COLLATE_MASK, LC_MONETARY_MASK, and LC_MESSAGES_MASK, or any of the implementation-defined mask values defined in <locale.h>.
+
+       For each category with the corresponding bit set in category_mask the data from the locale named by locale shall be used. In the case of modifying an existing locale object, the data from the lo‐
+       cale  named  by  locale  shall  replace the existing data within the locale object. If a completely new locale object is created, the data for all sections not requested by category_mask shall be
+       taken from the default locale.
+
+       The following preset values of locale are defined for all settings of category_mask:
+
+       "POSIX"     Specifies the minimal environment for C-language translation called the POSIX locale.
+
+       "C"         Equivalent to "POSIX".
+
+       ""          Specifies an implementation-defined native environment. This corresponds to the value of the associated environment variables, LC_* and  LANG;  see  the  Base  Definitions  volume  of
+                   POSIX.1‐2017, Chapter 7, Locale and Chapter 8, Environment Variables.
+
+       If  the  base  argument is not (locale_t)0 and the newlocale() function call succeeds, the contents of base are unspecified. Applications shall ensure that they stop using base as a locale object
+       before calling newlocale().  If the function call fails and the base argument is not (locale_t)0, the contents of base shall remain valid and unchanged.
+
+       The behavior is undefined if the base argument is the special locale object LC_GLOBAL_LOCALE, or is not a valid locale object handle and is not (locale_t)0.
+
+RETURN VALUE
+       Upon successful completion, the newlocale() function shall return a handle which the caller may use on subsequent calls to duplocale(), freelocale(), and other functions taking a  locale_t  argu‐
+       ment.
+
+       Upon failure, the newlocale() function shall return (locale_t)0 and set errno to indicate the error.
+
+ERRORS
+       The newlocale() function shall fail if:
+
+       ENOMEM There is not enough memory available to create the locale object or load the locale data.
+
+       EINVAL The category_mask contains a bit that does not correspond to a valid category.
+
+       ENOENT For any of the categories in category_mask, the locale data is not available.
+
+       The newlocale() function may fail if:
+
+       EINVAL The locale argument is not a valid string pointer.
+
+       The following sections are informative.
+
+EXAMPLES
+   Constructing a Locale Object from Different Locales
+       The following example shows the construction of a locale where the LC_CTYPE category data comes from a locale loc1 and the LC_TIME category data from a locale loc2:
+
+           #include <locale.h>
+           ...
+           locale_t loc, new_loc;
+
+           /* Get the "loc1" data. */
+
+           loc = newlocale (LC_CTYPE_MASK, "loc1", (locale_t)0);
+           if (loc == (locale_t) 0)
+               abort ();
+
+           /* Get the "loc2" data. */
+
+           new_loc = newlocale (LC_TIME_MASK, "loc2", loc);
+           if (new_loc != (locale_t) 0)
+               /* We don t abort if this fails. In this case this
+                  simply used to unchanged locale object. */
+               loc = new_loc;
+
+           ...
+
+   Freeing up a Locale Object
+       The following example shows a code fragment to free a locale object created by newlocale():
+
+           #include <locale.h>
+           ...
+
+           /* Every locale object allocated with newlocale() should be
+            * freed using freelocale():
+            */
+
+           locale_t loc;
+
+           /* Get the locale. */
+
+           loc = newlocale (LC_CTYPE_MASK | LC_TIME_MASK, "locname", (locale_t)0);
+
+           /* ... Use the locale object ... */
+           ...
+
+           /* Free the locale object resources. */
+           freelocale (loc);
+
+APPLICATION USAGE
+       Handles for locale objects created by the newlocale() function should either be released by a corresponding call to freelocale(), or be used as a base locale to another newlocale() call.
+
+       The special locale object LC_GLOBAL_LOCALE must not be passed for the base argument, even when returned by the uselocale() function.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       duplocale(), freelocale(), uselocale()
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 7, Locale, Chapter 8, Environment Variables, <locale.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                      NEWLOCALE(3P)

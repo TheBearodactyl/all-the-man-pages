@@ -1,0 +1,69 @@
+TIFFWARNING(3tiff)                                                                                LibTIFF                                                                               TIFFWARNING(3tiff)
+
+NAME
+       TIFFWarning - library warning interface
+
+SYNOPSIS
+          #include <tiffio.h>
+          #include <stdarg.h>
+
+       void TIFFWarning(const char *module, const char *fmt, ...)
+
+       void TIFFWarningExt(thandle_t fd, const char *module, const char *fmt, ...)
+
+       void TIFFWarningExtR(TIFF *tif, const char *module, const char *fmt, ...)
+
+       typedef void (*TIFFWarningHandler)(const char *module, const char *fmt, va_list ap)
+
+       typedef void (*TIFFWarningHandlerExt)(thandle_t fd, const char *module, const char *fmt, va_list ap)
+
+       typedef int (*TIFFWarningHandlerExtR)(TIFF *tif, void *user_data, const char *module, const char *fmt, va_list ap)
+
+       TIFFWarningHandler TIFFSetWarningHandler(TIFFWarningHandler handler)
+
+       TIFFWarningHandlerExt TIFFSetWarningHandlerExt(TIFFWarningHandlerExt handler)
+
+DESCRIPTION
+       TIFFWarning()  invokes  the library-wide warning handler function to (normally) write a warning message to the stderr.  The fmt parameter is a printf() format string, and any number arguments can
+       be supplied. The module parameter is interpreted as a string that, if non-zero, should be printed before the message; it typically is used to identify the software module in which  a  warning  is
+       detected.
+
+       Applications  that  desire  to capture control in the event of a warning should use TIFFSetWarningHandler() to override the default warning handler. A NULL (0) warning handler function may be in‐
+       stalled to suppress warning messages.
+
+       Two more application-specific warning handler callbacks are available, each with different call parameters and passing parameters to the handler.  Each handler is also linked with a warning  mes‐
+       sage function, i.e.  TIFFWarningExt() and TIFFWarningExtR() if the application intends to call the handler with those extended parameters.
+
+       TIFFWarningExt()  provides  a file handle as parameter.  Within libtiff TIFFWarningExt() is called passing tif->tif_clientdata as fd, which represents the TIFF file handle (file descriptor).  The
+       application-specific and library-wide handler for TIFFWarningExt() is setup with TIFFSetWarningHandlerExt().
+
+       TIFFWarningExtR() (introduced with libtiff 4.5) is called with its TIFF handle and thus provides access to a per-TIFF handle (re-entrant) warning handler. That means for different  TIFF  handles,
+       different  warning  handlers  can  be  setup.  This  application-specific  handler  can  be  setup  when  a TIFF file is opened with one of the following functions: TIFFOpenExt(), TIFFOpenWExt(),
+       TIFFFdOpenExt() or TIFFClientOpenExt().  Furthermore, a custom defined data structure user_data for the warning handler can be given along.
+
+NOTE
+       Both functions TIFFWarning() and TIFFWarningExt() each attempt to call both handler functions if they are defined.  First TIFFWarningHandler() is called and  then  TIFFWarningHandlerExt().   How‐
+       ever, TIFFWarning() passes a “0” as a file handle to TIFFWarningHandlerExt().
+
+       TIFFWarningExtR()  tries  first to call the per-TIFF handle defined warning handler. If TIFFWarningHandlerExtR() is not defined or returns 0, TIFFWarningHandler() and then TIFFWarningHandlerExt()
+       are called. From libtiff 4.5 onwards TIFFWarningExtR() is used within the libtiff library.
+
+RETURN VALUES
+       TIFFSetWarningHandler() and TIFFSetWarningHandlerExt() returns a reference to the previous warning handler function.
+
+       TIFFWarningHandlerExtR() returns an integer as “stop” to control the call of furhter warning handler functions within TIFFWarningExtR():
+
+          • 0: both functions TIFFWarningHandler() and TIFFWarningHandlerExt() are called.
+
+          • non-zero: no further warning message function is called.
+
+SEE ALSO
+       TIFFError (3tiff), TIFFOpen (3tiff), libtiff (3tiff), printf (3)
+
+AUTHOR
+       LibTIFF contributors
+
+COPYRIGHT
+       1988-2022, LibTIFF contributors
+
+4.5                                                                                            Dec 13, 2022                                                                             TIFFWARNING(3tiff)

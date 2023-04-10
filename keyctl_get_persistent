@@ -1,0 +1,52 @@
+KEYCTL_GET_PERSISTENT(3)                                                                Linux Key Management Calls                                                                KEYCTL_GET_PERSISTENT(3)
+
+NAME
+       keyctl_get_persistent - get the persistent keyring for a user
+
+SYNOPSIS
+       #include <keyutils.h>
+
+       long keyctl_get_persistent(uid_t uid, key_serial_t keyring);
+
+DESCRIPTION
+       keyctl_get_persistent()  gets  the persistent keyring for the specified user ID.  Unlike the session and user keyrings, this keyring will persist once all login sessions have been deleted and can
+       thus be used to carry authentication tokens for processes that run without user interaction, such as programs started by cron.
+
+       The persistent keyring will be created by the kernel if it does not yet exist.  Each time this function is called, the persistent keyring will have its expiration timeout reset to the value in:
+
+              /proc/sys/kernel/keys/persistent_keyring_expiry
+
+       (by default three days).  Should the timeout be reached, the persistent keyring will be removed and everything it pins can then be garbage collected.
+
+       If uid is -1 then the calling process's real user ID will be used.  If uid is not -1 then error EPERM will be given if the user ID requested does not match either the caller's real  or  effective
+       user IDs or if the calling process does not have SetUid capability.
+
+       If successful, a link to the persistent keyring will be added into keyring.
+
+RETURN VALUE
+       On success keyctl_get_persistent() returns the serial number of the persistent keyring.  On error, the value -1 will be returned and errno will have been set to an appropriate error.
+
+ERRORS
+       EPERM  Not permitted to access the persistent keyring for the requested uid.
+
+       ENOMEM Insufficient memory to create the persistent keyring or to extend keyring.
+
+       ENOKEY keyring does not exist.
+
+       EKEYEXPIRED
+              keyring has expired.
+
+       EKEYREVOKED
+              keyring has been revoked.
+
+       EDQUOT The user does not have sufficient quota to extend keyring.
+
+       EACCES keyring exists, but does not grant write permission to the calling process.
+
+LINKING
+       This is a library function that can be found in libkeyutils.  When linking, -lkeyutils should be specified to the linker.
+
+SEE ALSO
+       keyctl(1), add_key(2), keyctl(2), request_key(2), keyctl(3), keyrings(7), keyutils(7), persistent-keyring(7),
+
+Linux                                                                                           20 Feb 2014                                                                       KEYCTL_GET_PERSISTENT(3)

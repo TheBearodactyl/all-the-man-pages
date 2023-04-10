@@ -1,0 +1,161 @@
+hwlocality_tinker(3)                                                                     Hardware Locality (hwloc)                                                                    hwlocality_tinker(3)
+
+NAME
+       hwlocality_tinker - Modifying a loaded Topology
+
+SYNOPSIS
+   Enumerations
+       enum hwloc_restrict_flags_e { HWLOC_RESTRICT_FLAG_REMOVE_CPULESS, HWLOC_RESTRICT_FLAG_BYNODESET = (1UL<<3), HWLOC_RESTRICT_FLAG_REMOVE_MEMLESS, HWLOC_RESTRICT_FLAG_ADAPT_MISC,
+           HWLOC_RESTRICT_FLAG_ADAPT_IO }
+       enum hwloc_allow_flags_e { HWLOC_ALLOW_FLAG_ALL, HWLOC_ALLOW_FLAG_LOCAL_RESTRICTIONS, HWLOC_ALLOW_FLAG_CUSTOM }
+
+   Functions
+       int hwloc_topology_restrict (hwloc_topology_t restrict topology, hwloc_const_bitmap_t set, unsigned long flags)
+       int hwloc_topology_allow (hwloc_topology_t restrict topology, hwloc_const_cpuset_t cpuset, hwloc_const_nodeset_t nodeset, unsigned long flags)
+       hwloc_obj_t hwloc_topology_insert_misc_object (hwloc_topology_t topology, hwloc_obj_t parent, const char *name)
+       hwloc_obj_t hwloc_topology_alloc_group_object (hwloc_topology_t topology)
+       hwloc_obj_t hwloc_topology_insert_group_object (hwloc_topology_t topology, hwloc_obj_t group)
+       int hwloc_obj_add_other_obj_sets (hwloc_obj_t dst, hwloc_obj_t src)
+       int hwloc_topology_refresh (hwloc_topology_t topology)
+
+Detailed Description
+Enumeration Type Documentation
+   enum hwloc_allow_flags_e
+       Flags to be given to hwloc_topology_allow().
+
+       Enumerator
+
+       HWLOC_ALLOW_FLAG_ALL
+              Mark all objects as allowed in the topology. cpuset and nođeset given to hwloc_topology_allow() must be NULL.
+
+       HWLOC_ALLOW_FLAG_LOCAL_RESTRICTIONS
+              Only allow objects that are available to the current process. The topology must have HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM so that the set of available resources can actually be retrieved from
+              the operating system.
+
+       cpuset and nođeset given to hwloc_topology_allow() must be NULL.
+
+       HWLOC_ALLOW_FLAG_CUSTOM
+              Allow a custom set of objects, given to hwloc_topology_allow() as cpuset and/or nodeset parameters.
+
+   enum hwloc_restrict_flags_e
+       Flags to be given to hwloc_topology_restrict().
+
+       Enumerator
+
+       HWLOC_RESTRICT_FLAG_REMOVE_CPULESS
+              Remove all objects that became CPU-less. By default, only objects that contain no PU and no memory are removed. This flag may not be used with HWLOC_RESTRICT_FLAG_BYNODESET.
+
+       HWLOC_RESTRICT_FLAG_BYNODESET
+              Restrict by nodeset instead of CPU set. Only keep objects whose nodeset is included or partially included in the given set. This flag may not be used with
+              HWLOC_RESTRICT_FLAG_REMOVE_CPULESS.
+
+       HWLOC_RESTRICT_FLAG_REMOVE_MEMLESS
+              Remove all objects that became Memory-less. By default, only objects that contain no PU and no memory are removed. This flag may only be used with HWLOC_RESTRICT_FLAG_BYNODESET.
+
+       HWLOC_RESTRICT_FLAG_ADAPT_MISC
+              Move Misc objects to ancestors if their parents are removed during restriction. If this flag is not set, Misc objects are removed when their parents are removed.
+
+       HWLOC_RESTRICT_FLAG_ADAPT_IO
+              Move I/O objects to ancestors if their parents are removed during restriction. If this flag is not set, I/O devices and bridges are removed when their parents are removed.
+
+Function Documentation
+   int hwloc_obj_add_other_obj_sets (hwloc_obj_t dst, hwloc_obj_t src)
+       Setup object cpusets/nodesets by OR'ing another object's sets. For each defined cpuset or nodeset in src, allocate the corresponding set in dst and add src to it by OR'ing sets.
+
+       This function is convenient between hwloc_topology_alloc_group_object() and hwloc_topology_insert_group_object(). It builds the sets of the new Group that will be inserted as a new intermediate
+       parent of several objects.
+
+   hwloc_obj_t hwloc_topology_alloc_group_object (hwloc_topology_t topology)
+       Allocate a Group object to insert later with hwloc_topology_insert_group_object(). This function returns a new Group object.
+
+       The caller should (at least) initialize its sets before inserting the object in the topology. See hwloc_topology_insert_group_object().
+
+   int hwloc_topology_allow (hwloc_topology_t restrict topology, hwloc_const_cpuset_t cpuset, hwloc_const_nodeset_t nodeset, unsigned long flags)
+       Change the sets of allowed PUs and NUMA nodes in the topology. This function only works if the HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED was set on the topology. It does not modify any object, it
+       only changes the sets returned by hwloc_topology_get_allowed_cpuset() and hwloc_topology_get_allowed_nodeset().
+
+       It is notably useful when importing a topology from another process running in a different Linux Cgroup.
+
+       flags must be set to one flag among hwloc_allow_flags_e.
+
+       Note
+           Removing objects from a topology should rather be performed with hwloc_topology_restrict().
+
+   hwloc_obj_t hwloc_topology_insert_group_object (hwloc_topology_t topology, hwloc_obj_t group)
+       Add more structure to the topology by adding an intermediate Group. The caller should first allocate a new Group object with hwloc_topology_alloc_group_object(). Then it must setup at least one
+       of its CPU or node sets to specify the final location of the Group in the topology. Then the object can be passed to this function for actual insertion in the topology.
+
+       Either the cpuset or nodeset field (or both, if compatible) must be set to a non-empty bitmap. The complete_cpuset or complete_nodeset may be set instead if inserting with respect to the complete
+       topology (including disallowed, offline or unknown objects). If grouping several objects, hwloc_obj_add_other_obj_sets() is an easy way to build the Group sets iteratively. These sets cannot be
+       larger than the current topology, or they would get restricted silently. The core will setup the other sets after actual insertion.
+
+       The subtype object attribute may be defined (to a dynamically allocated string) to display something else than 'Group' as the type name for this object in lstopo. Custom name/value info pairs may
+       be added with hwloc_obj_add_info() after insertion.
+
+       The group dont_merge attribute may be set to 1 to prevent the hwloc core from ever merging this object with another hierarchically-identical object. This is useful when the Group itself describes
+       an important feature that cannot be exposed anywhere else in the hierarchy.
+
+       The group kind attribute may be set to a high value such as 0xffffffff to tell hwloc that this new Group should always be discarded in favor of any existing Group with the same locality.
+
+       Returns
+           The inserted object if it was properly inserted.
+
+           An existing object if the Group was merged or discarded because the topology already contained an object at the same location (the Group did not add any hierarchy information).
+
+           NULL if the insertion failed because of conflicting sets in topology tree.
+
+           NULL if Group objects are filtered-out of the topology (HWLOC_TYPE_FILTER_KEEP_NONE).
+
+           NULL if the object was discarded because no set was initialized in the Group before insert, or all of them were empty.
+
+   hwloc_obj_t hwloc_topology_insert_misc_object (hwloc_topology_t topology, hwloc_obj_t parent, const char * name)
+       Add a MISC object as a leaf of the topology. A new MISC object will be created and inserted into the topology at the position given by parent. It is appended to the list of existing Misc
+       children, without ever adding any intermediate hierarchy level. This is useful for annotating the topology without actually changing the hierarchy.
+
+       name is supposed to be unique across all Misc objects in the topology. It will be duplicated to setup the new object attributes.
+
+       The new leaf object will not have any cpuset.
+
+       Returns
+           the newly-created object
+
+           NULL on error.
+
+           NULL if Misc objects are filtered-out of the topology (HWLOC_TYPE_FILTER_KEEP_NONE).
+
+       Note
+           If name contains some non-printable characters, they will be dropped when exporting to XML, see hwloc_topology_export_xml() in hwloc/export.h.
+
+   int hwloc_topology_refresh (hwloc_topology_t topology)
+       Refresh internal structures after topology modification. Modifying the topology (by restricting, adding objects, modifying structures such as distances or memory attributes, etc.) may cause some
+       internal caches to become invalid. These caches are automatically refreshed when accessed but this refreshing is not thread-safe.
+
+       This function is not thread-safe either, but it is a good way to end a non-thread-safe phase of topology modification. Once this refresh is done, multiple threads may concurrently consult the
+       topology, objects, distances, attributes, etc.
+
+       See also Thread Safety
+
+   int hwloc_topology_restrict (hwloc_topology_t restrict topology, hwloc_const_bitmap_t set, unsigned long flags)
+       Restrict the topology to the given CPU set or nodeset. Topology topology is modified so as to remove all objects that are not included (or partially included) in the CPU set set. All objects CPU
+       and node sets are restricted accordingly.
+
+       If HWLOC_RESTRICT_FLAG_BYNODESET is passed in flags, set is considered a nodeset instead of a CPU set.
+
+       flags is a OR'ed set of hwloc_restrict_flags_e.
+
+       Note
+           This call may not be reverted by restricting back to a larger set. Once dropped during restriction, objects may not be brought back, except by loading another topology with
+           hwloc_topology_load().
+
+       Returns
+           0 on success.
+
+           -1 with errno set to EINVAL if the input set is invalid. The topology is not modified in this case.
+
+           -1 with errno set to ENOMEM on failure to allocate internal data. The topology is reinitialized in this case. It should be either destroyed with hwloc_topology_destroy() or configured and
+           loaded again.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                         hwlocality_tinker(3)

@@ -1,0 +1,83 @@
+Tss2_Tcti_Device_Init(3)                                                                 Library Functions Manual                                                                 Tss2_Tcti_Device_Init(3)
+
+NAME
+       Tss2_Tcti_Device_init - Initialization function for the device TCTI library.
+
+SYNOPSIS
+       #include <tcti/tcti_device.h>
+
+       TSS2_RC Tss2_Tcti_Device_Init (TSS2_TCTI_CONTEXT *tctiContext, size_t *size, const char *conf);
+
+       The Tss2_Tcti_Device_Init() function initializes a TCTI context used to communicate with the TPM device driver.
+
+DESCRIPTION
+       Tss2_Tcti_Device_Init() attempts to initialize a caller allocated tctiContext of size size . Since the tctiContext must be a caller allocated buffer, the caller needs to know the size required by
+       the TCTI library. The minimum size of this context can be discovered by providing NULL for the tctiContext and a non- NULL size parameter. The initialization function will then populate the  size
+       parameter  with  the  minimum size of the tctiContext buffer. The caller must then allocate a buffer of this size (or larger) and call Tss2_Tcti_Device_Init () again providing the newly allocated
+       tctiContext and the size of this context in the size parameter. This pattern is common to all TCTI initialization functions. We  provide  an  example  of  this  pattern  using  the  Tss2_Tcti_De‐
+       vice_Init() function in the section titled EXAMPLE.
+
+       The  conf  parameter  is  a C string. If this string is NULL then the library will use a default configuration string for the caller.  Alternatively, the caller may provide a configuration string
+       that must contain the path to the device node exposed by the TPM device driver.
+
+       Once initialized, the TCTI context returned exposes the Trusted Computing Group (TCG) defined API for the lowest level communication with the TPM.  Using this API the caller can exchange (send  /
+       receive) TPM2 command and response buffers with the TPM device driver. In nearly all cases however, the caller will initialize a context using this function before passing the context to a higher
+       level API like the System API (SAPI), and then never touch it again.
+
+       TCG TSS 2.0 TPM Command Transmission Interface (TCTI) API Specification
+
+       For  a  more  thorough  discussion  of  the  TCTI  API   see   the   “TCG   TSS   2.0   TPM   Command   Transmission   Interface   (TCTI)   API   Specification”   as   published   by   the   TCG:
+       https://trustedcomputinggroup.org/wp-content/uploads/TSS_TCTI_Version-1.0_Revision-05_Review_END030918.pdf
+
+RETURN VALUE
+       A successful call to Tss2_Tcti_Device_Init() will return TSS2_RC_SUCCESS.  An unsuccessful call will produce a response code described in section ERRORS.
+
+ERRORS
+       TSS2_TCTI_RC_BAD_VALUE  is returned if any parameters contain unexpected values.  TSS2_TCTI_RC_BAD_REFERENCE is returned if any parameters are NULL when they should not be.  TSS2_TCTI_RC_BAD_CON‐
+       TEXT is returned if the size of the provided tctiContext is insufficient.
+
+EXAMPLE
+       TCTI initialization fragment:
+
+       #include <inttypes.h>
+       #include <stdlib.h>
+       #include <stdio.h>
+       #include <tcti/tcti_device.h>
+
+       TSS2_RC rc;
+       TSS2_TCTI_CONTEXT *tcti_context;
+       size_t size;
+       char *conf = "/dev/tpm0",
+
+       rc = Tss2_Tcti_Device_Init (NULL, &size, NULL);
+       if (rc != TSS2_RC_SUCCESS) {
+           fprintf (stderr, "Failed to get allocation size for device TCTI "
+                    " context: 0x%" PRIx32 "0, rc);
+           exit (EXIT_FAILURE);
+       }
+       tcti_context = calloc (1, size);
+       if (tcti_context == NULL) {
+           fprintf (stderr, "Allocation for TCTI context failed: %s0,
+                    strerror (errno));
+           exit (EXIT_FAILURE);
+       }
+       rc = Tss2_Tcti_Device_Init (&tcti_context, &size, &conf);
+       if (rc != TSS2_RC_SUCCESS) {
+           fprintf (stderr, "Failed to initialize device TCTI context: "
+                    "0x%" PRIx32 "0, rc);
+           free (tcti_context);
+           exit (EXIT_FAILURE);
+       }
+       exit (EXIT_SUCCESS);
+
+AUTHOR
+       Philip Tricca <philip.b.tricca@intel.com>
+
+SEE ALSO
+       Tss2_Tcti_Device_Init(3), Tss2_Tcti_Socket_Init(3), Tss2_TctiLdr_Initialize(3), Tss2_TctiLdr_Finalize(3), tcti-device(7), tcti-socket(7), tcti-tabrmd(7), tpm2-abrmd(8)
+
+COLOPHON
+       This page is part of release 3.2.0 of Open Source implementation of the TCG TPM2 Software Stack (TSS2). A description of the project, information about reporting bugs, and the latest  version  of
+       this page can be found at https://github.com/tpm2-software/tpm2-tss/.
+
+TPM2 Software Stack                                                                             MARCH 2018                                                                        Tss2_Tcti_Device_Init(3)

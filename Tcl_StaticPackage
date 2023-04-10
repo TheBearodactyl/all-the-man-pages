@@ -1,0 +1,47 @@
+Tcl_StaticPackage(3)                                                                      Tcl Library Procedures                                                                      Tcl_StaticPackage(3)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       Tcl_StaticPackage - make a statically linked package available via the 'load' command
+
+SYNOPSIS
+       #include <tcl.h>
+
+       Tcl_StaticPackage(interp, prefix, initProc, safeInitProc)
+
+ARGUMENTS
+       Tcl_Interp *interp (in)                         If not NULL, points to an interpreter into which the package has already been loaded (i.e., the caller has already invoked the appropriate initial‐
+                                                       ization procedure).  NULL means the package has not yet been incorporated into any interpreter.
+
+       const char *prefix (in)                         Prefix for library initialization function;  should be properly capitalized (first letter upper-case, all others lower-case).
+
+       Tcl_PackageInitProc *initProc (in)              Procedure to invoke to incorporate this package into a trusted interpreter.
+
+       Tcl_PackageInitProc *safeInitProc (in)          Procedure to call to incorporate this package into a safe interpreter (one that will execute untrusted scripts).  NULL means the package cannot  be
+                                                       used in safe interpreters.
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       This  procedure may be invoked to announce that a package has been linked statically with a Tcl application and, optionally, that it has already been loaded into an interpreter.  Once Tcl_Static‐
+       Package has been invoked for a package, it may be loaded into interpreters using the load command.  Tcl_StaticPackage is normally invoked only by the Tcl_AppInit procedure  for  the  application,
+       not  by packages for themselves (Tcl_StaticPackage should only be invoked for statically loaded packages, and code in the package itself should not need to know whether the package is dynamically
+       or statically loaded).
+
+       When the load command is used later to load the package into an interpreter, one of initProc and safeInitProc will be invoked, depending on whether the target interpreter is safe or  not.   init‐
+       Proc and safeInitProc must both match the following prototype:
+
+              typedef int Tcl_PackageInitProc(
+                      Tcl_Interp *interp);
+
+       The interp argument identifies the interpreter in which the package is to be loaded.  The initialization procedure must return TCL_OK or TCL_ERROR to indicate whether or not it completed success‐
+       fully; in the event of an error it should set the interpreter's result to point to an error message.  The result or error from the initialization procedure will be returned as the result  of  the
+       load command that caused the initialization procedure to be invoked.
+
+KEYWORDS
+       initialization procedure, package, static linking
+
+SEE ALSO
+       load(n), package(n), Tcl_PkgRequire(3)
+
+Tcl                                                                                                 7.5                                                                               Tcl_StaticPackage(3)

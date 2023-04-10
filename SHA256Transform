@@ -1,0 +1,205 @@
+SHA2(3)                  BSD Library Functions Manual                  SHA2(3)
+
+NAME
+     SHA256Init, SHA256Update, SHA256Pad, SHA256Final, SHA256Transform,
+     SHA256End, SHA256File, SHA256FileChunk, SHA256Data — calculate the NIST
+     Secure Hash Standard (version 2)
+
+LIBRARY
+     Message Digest (MD4, MD5, etc.) Support Library (libmd, -lmd)
+
+SYNOPSIS
+     #include <sys/types.h>
+     #include <sha2.h>
+
+     void
+     SHA256Init(SHA2_CTX *context);
+
+     void
+     SHA256Update(SHA2_CTX *context, const uint8_t *data, size_t len);
+
+     void
+     SHA256Pad(SHA2_CTX *context);
+
+     void
+     SHA256Final(uint8_t digest[SHA256_DIGEST_LENGTH], SHA2_CTX *context);
+
+     void
+     SHA256Transform(uint32_t state[8],
+         const uint8_t buffer[SHA256_BLOCK_LENGTH]);
+
+     char *
+     SHA256End(SHA2_CTX *context, char *buf);
+
+     char *
+     SHA256File(const char *filename, char *buf);
+
+     char *
+     SHA256FileChunk(const char *filename, char *buf, off_t offset,
+         off_t length);
+
+     char *
+     SHA256Data(uint8_t *data, size_t len, char *buf);
+
+     void
+     SHA384Init(SHA2_CTX *context);
+
+     void
+     SHA384Update(SHA2_CTX *context, const uint8_t *data, size_t len);
+
+     void
+     SHA384Pad(SHA2_CTX *context);
+
+     void
+     SHA384Final(uint8_t digest[SHA384_DIGEST_LENGTH], SHA2_CTX *context);
+
+     void
+     SHA384Transform(uint64_t state[8],
+         const uint8_t buffer[SHA384_BLOCK_LENGTH]);
+
+     char *
+     SHA384End(SHA2_CTX *context, char *buf);
+
+     char *
+     SHA384File(char *filename, char *buf);
+
+     char *
+     SHA384FileChunk(char *filename, char *buf, off_t offset, off_t length);
+
+     char *
+     SHA384Data(uint8_t *data, size_t len, char *buf);
+
+     void
+     SHA512Init(SHA2_CTX *context);
+
+     void
+     SHA512Update(SHA2_CTX *context, const uint8_t *data, size_t len);
+
+     void
+     SHA512Pad(SHA2_CTX *context);
+
+     void
+     SHA512Final(uint8_t digest[SHA512_DIGEST_LENGTH], SHA2_CTX *context);
+
+     void
+     SHA512Transform(uint64_t state[8],
+         const uint8_t buffer[SHA512_BLOCK_LENGTH]);
+
+     char *
+     SHA512End(SHA2_CTX *context, char *buf);
+
+     char *
+     SHA512File(char *filename, char *buf);
+
+     char *
+     SHA512FileChunk(char *filename, char *buf, off_t offset, off_t length);
+
+     char *
+     SHA512Data(uint8_t *data, size_t len, char *buf);
+
+DESCRIPTION
+     The SHA2 functions implement the NIST Secure Hash Standard, FIPS PUB
+     180-2.  The SHA2 functions are used to generate a condensed representa‐
+     tion of a message called a message digest, suitable for use as a digital
+     signature.  There are three families of functions, with names correspond‐
+     ing to the number of bits in the resulting message digest.  The SHA-256
+     functions are limited to processing a message of less than 2^64 bits as
+     input.  The SHA-384 and SHA-512 functions can process a message of at
+     most 2^128 - 1 bits as input.
+
+     The SHA2 functions are considered to be more secure than the sha1(3)
+     functions with which they share a similar interface.  The 256, 384, and
+     512-bit versions of SHA2 share the same interface.  For brevity, only the
+     256-bit variants are described below.
+
+     The SHA256Init() function initializes a SHA2_CTX context for use with
+     SHA256Update() and SHA256Final().  The SHA256Update() function adds data
+     of length len to the SHA2_CTX specified by context.  SHA256Final() is
+     called when all data has been added via SHA256Update() and stores a mes‐
+     sage digest in the digest parameter.
+
+     The SHA256Pad() function can be used to apply padding to the message di‐
+     gest as in SHA256Final(), but the current context can still be used with
+     SHA256Update().
+
+     The SHA256Transform() function is used by SHA256Update() to hash 512-bit
+     blocks and forms the core of the algorithm.  Most programs should use the
+     interface provided by SHA256Init(), SHA256Update(), and SHA256Final() in‐
+     stead of calling SHA256Transform() directly.
+
+     The SHA256End() function is a front end for SHA256Final() which converts
+     the digest into an ASCII representation of the digest in hexadecimal.
+
+     The SHA256File() function calculates the digest for a file and returns
+     the result via SHA256End().  If SHA256File() is unable to open the file,
+     a NULL pointer is returned.
+
+     SHA256FileChunk() behaves like SHA256File() but calculates the digest
+     only for that portion of the file starting at offset and continuing for
+     length bytes or until end of file is reached, whichever comes first.  A
+     zero length can be specified to read until end of file.  A negative
+     length or offset will be ignored.
+
+     The SHA256Data() function calculates the digest of an arbitrary string
+     and returns the result via SHA256End().
+
+     For each of the SHA256End(), SHA256File(), SHA256FileChunk(), and
+     SHA256Data() functions the buf parameter should either be a string large
+     enough to hold the resulting digest (e.g. SHA256_DIGEST_STRING_LENGTH,
+     SHA384_DIGEST_STRING_LENGTH, or SHA512_DIGEST_STRING_LENGTH, depending on
+     the function being used) or a NULL pointer.  In the latter case, space
+     will be dynamically allocated via malloc(3) and should be freed using
+     free(3) when it is no longer needed.
+
+EXAMPLES
+     The following code fragment will calculate the SHA-256 digest for the
+     string "abc", which is
+     “0xba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad”.
+
+           SHA2_CTX ctx;
+           uint8_t results[SHA256_DIGEST_LENGTH];
+           char *buf;
+           int n;
+
+           buf = "abc";
+           n = strlen(buf);
+           SHA256Init(&ctx);
+           SHA256Update(&ctx, (uint8_t *)buf, n);
+           SHA256Final(results, &ctx);
+
+           /* Print the digest as one long hex value */
+           printf("0x");
+           for (n = 0; n < SHA256_DIGEST_LENGTH; n++)
+                   printf("%02x", results[n]);
+           putchar('\n');
+
+     Alternately, the helper functions could be used in the following way:
+
+           uint8_t output[SHA256_DIGEST_STRING_LENGTH];
+           char *buf = "abc";
+
+           printf("0x%s\n", SHA256Data(buf, strlen(buf), output));
+
+SEE ALSO
+     cksum(1), md4(3), md5(3), rmd160(3), sha1(3)
+
+     Secure Hash Standard, FIPS PUB 180-2.
+
+HISTORY
+     The SHA2 functions appeared in OpenBSD 3.4.
+
+AUTHORS
+     This implementation of the SHA functions was written by Aaron D. Gifford.
+
+     The SHA256End(), SHA256File(), SHA256FileChunk(), and SHA256Data() helper
+     functions are derived from code written by Poul-Henning Kamp.
+
+CAVEATS
+     This implementation of the Secure Hash Standard has not been validated by
+     NIST and as such is not in official compliance with the standard.
+
+     If a message digest is to be copied to a multi-byte type (i.e. an array
+     of 32-bit integers) it will be necessary to perform byte swapping on lit‐
+     tle endian machines such as the i386, alpha, and vax.
+
+BSD                           September 12, 2008                           BSD

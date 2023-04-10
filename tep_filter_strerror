@@ -1,0 +1,175 @@
+LIBTRACEEVENT(3)                                                                           libtraceevent Manual                                                                           LIBTRACEEVENT(3)
+
+NAME
+       tep_filter_alloc, tep_filter_free, tep_filter_reset, tep_filter_make_string, tep_filter_copy, tep_filter_compare, tep_filter_match, tep_event_filtered, tep_filter_remove_event,
+       tep_filter_strerror, tep_filter_add_filter_str - Event filter related APIs.
+
+SYNOPSIS
+       #include <event-parse.h>
+
+       struct tep_event_filter *tep_filter_alloc(struct tep_handle *tep);
+       void tep_filter_free(struct tep_event_filter *filter);
+       void tep_filter_reset(struct tep_event_filter *filter);
+       enum tep_errno tep_filter_add_filter_str(struct tep_event_filter *filter, const char *filter_str);
+       int tep_event_filtered(struct tep_event_filter *filter, int event_id);
+       int tep_filter_remove_event(struct tep_event_filter *filter, int event_id);
+       enum tep_errno tep_filter_match(struct tep_event_filter *filter, struct tep_record *record);
+       int tep_filter_copy(struct tep_event_filter *dest, struct tep_event_filter *source);
+       int tep_filter_compare(struct tep_event_filter *filter1, struct tep_event_filter *filter2);
+       char *tep_filter_make_string(struct tep_event_filter *filter, int event_id);
+       int tep_filter_strerror(struct tep_event_filter *filter, enum tep_errno err, char *buf, size_t buflen);
+
+DESCRIPTION
+       Filters can be attached to traced events. They can be used to filter out various events when outputting them. Each event can be filtered based on its parameters, described in the event’s format
+       file. This set of functions can be used to create, delete, modify and attach event filters.
+
+       The tep_filter_alloc() function creates a new event filter. The tep argument is the trace event parser context.
+
+       The tep_filter_free() function frees an event filter and all resources that it had used.
+
+       The tep_filter_reset() function removes all rules from an event filter and resets it.
+
+       The tep_filter_add_filter_str() function adds a new rule to the filter. The filter_str argument is the filter string, that contains the rule.
+
+       The tep_event_filtered() function checks if the event with event_id has filter.
+
+       The tep_filter_remove_event() function removes a filter for an event with event_id.
+
+       The tep_filter_match() function tests if a record matches given filter.
+
+       The tep_filter_copy() function copies a source filter into a dest filter.
+
+       The tep_filter_compare() function compares two filers - filter1 and filter2.
+
+       The tep_filter_make_string() function constructs a string, displaying the filter contents for given event_id.
+
+       The tep_filter_strerror() function copies the filter error buffer into the given buf with the size buflen. If the error buffer is empty, in the buf is copied a string, describing the error err.
+
+RETURN VALUE
+       The tep_filter_alloc() function returns a pointer to the newly created event filter, or NULL in case of an error.
+
+       The tep_filter_add_filter_str() function returns 0 if the rule was successfully added or a negative error code. Use tep_filter_strerror() to see actual error message in case of an error.
+
+       The tep_event_filtered() function returns 1 if the filter is found for given event, or 0 otherwise.
+
+       The tep_filter_remove_event() function returns 1 if the vent was removed, or 0 if the event was not found.
+
+       The tep_filter_match() function returns tep_errno, according to the result:
+
+           TEP_ERRNO__FILTER_MATCH        - filter found for event, the record matches.
+           TEP_ERRNO__FILTER_MISS         - filter found for event, the record does not match.
+           TEP_ERRNO__FILTER_NOT_FOUND    - no filter found for record’s event.
+           TEP_ERRNO__NO_FILTER           - no rules in the filter.
+
+       or any other tep_errno, if an error occurred during the test.
+
+       The tep_filter_copy() function returns 0 on success or -1 if not all rules were copied.
+
+       The tep_filter_compare() function returns 1 if the two filters hold the same content, or 0 if they do not.
+
+       The tep_filter_make_string() function returns a string, which must be freed with free(), or NULL in case of an error.
+
+       The tep_filter_strerror() function returns 0 if message was filled successfully, or -1 in case of an error.
+
+EXAMPLE
+           #include <event-parse.h>
+           ...
+           struct tep_handle *tep = tep_alloc();
+           ...
+           char errstr[200];
+           int ret;
+
+           struct tep_event_filter *filter = tep_filter_alloc(tep);
+           struct tep_event_filter *filter1 = tep_filter_alloc(tep);
+           ret = tep_filter_add_filter_str(filter, "sched/sched_wakeup:target_cpu==1");
+           if(ret < 0) {
+                   tep_filter_strerror(filter, ret, errstr, sizeof(errstr));
+                   /* Failed to add a new rule to the filter, the error string is in errstr */
+           }
+           if (tep_filter_copy(filter1, filter) != 0) {
+                   /* Failed to copy filter in filter1 */
+           }
+           ...
+           if (tep_filter_compare(filter, filter1) != 1) {
+                   /* Both filters are different */
+           }
+           ...
+           void process_record(struct tep_handle *tep, struct tep_record *record)
+           {
+                   struct tep_event *event;
+                   char *fstring;
+
+                   event = tep_find_event_by_record(tep, record);
+
+                   if (tep_event_filtered(filter, event->id) == 1) {
+                           /* The event has filter */
+                           fstring = tep_filter_make_string(filter, event->id);
+                           if (fstring != NULL) {
+                                   /* The filter for the event is in fstring */
+                                   free(fstring);
+                           }
+                   }
+
+                   switch (tep_filter_match(filter, record)) {
+                   case TEP_ERRNO__FILTER_MATCH:
+                           /* The filter matches the record */
+                           break;
+                   case TEP_ERRNO__FILTER_MISS:
+                           /* The filter does not match the record */
+                           break;
+                   case TEP_ERRNO__FILTER_NOT_FOUND:
+                           /* No filter found for record's event */
+                           break;
+                   case TEP_ERRNO__NO_FILTER:
+                           /* There are no rules in the filter */
+                           break
+                   default:
+                           /* An error occurred during the test */
+                           break;
+                   }
+
+                   if (tep_filter_remove_event(filter, event->id) == 1) {
+                           /* The event was removed from the filter */
+                   }
+           }
+
+           ...
+           tep_filter_reset(filter);
+           ...
+           tep_filter_free(filter);
+           tep_filter_free(filter1);
+           ...
+
+FILES
+           event-parse.h
+                   Header file to include in order to have access to the library APIs.
+           -ltraceevent
+                   Linker switch to add when building a program that uses the library.
+
+SEE ALSO
+       libtraceevent(3), trace-cmd(1)
+
+AUTHOR
+           Steven Rostedt <rostedt@goodmis.org[1]>, author of libtraceevent.
+           Tzvetomir Stoyanov <tz.stoyanov@gmail.com[2]>, author of this man page.
+
+REPORTING BUGS
+       Report bugs to <linux-trace-devel@vger.kernel.org[3]>
+
+LICENSE
+       libtraceevent is Free Software licensed under the GNU LGPL 2.1
+
+RESOURCES
+       https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/
+
+NOTES
+        1. rostedt@goodmis.org
+           mailto:rostedt@goodmis.org
+
+        2. tz.stoyanov@gmail.com
+           mailto:tz.stoyanov@gmail.com
+
+        3. linux-trace-devel@vger.kernel.org
+           mailto:linux-trace-devel@vger.kernel.org
+
+libtraceevent                                                                                   03/28/2023                                                                                LIBTRACEEVENT(3)

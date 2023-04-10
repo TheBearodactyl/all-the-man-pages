@@ -1,0 +1,198 @@
+LSEEK(3P)                                                                                POSIX Programmer's Manual                                                                               LSEEK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       lseek — move the read/write file offset
+
+SYNOPSIS
+       #include <unistd.h>
+
+       off_t lseek(int fildes, off_t offset, int whence);
+
+DESCRIPTION
+       The lseek() function shall set the file offset for the open file description associated with the file descriptor fildes, as follows:
+
+        *  If whence is SEEK_SET, the file offset shall be set to offset bytes.
+
+        *  If whence is SEEK_CUR, the file offset shall be set to its current location plus offset.
+
+        *  If whence is SEEK_END, the file offset shall be set to the size of the file plus offset.
+
+       The symbolic constants SEEK_SET, SEEK_CUR, and SEEK_END are defined in <unistd.h>.
+
+       The behavior of lseek() on devices which are incapable of seeking is implementation-defined.  The value of the file offset associated with such a device is undefined.
+
+       The lseek() function shall allow the file offset to be set beyond the end of the existing data in the file. If data is later written at this point, subsequent reads of data in the gap  shall  re‐
+       turn bytes with the value 0 until data is actually written into the gap.
+
+       The lseek() function shall not, by itself, extend the size of a file.
+
+       If fildes refers to a shared memory object, the result of the lseek() function is unspecified.
+
+       If fildes refers to a typed memory object, the result of the lseek() function is unspecified.
+
+RETURN VALUE
+       Upon  successful  completion, the resulting offset, as measured in bytes from the beginning of the file, shall be returned. Otherwise, -1 shall be returned, errno shall be set to indicate the er‐
+       ror, and the file offset shall remain unchanged.
+
+ERRORS
+       The lseek() function shall fail if:
+
+       EBADF  The fildes argument is not an open file descriptor.
+
+       EINVAL The whence argument is not a proper value, or the resulting file offset would be negative for a regular file, block special file, or directory.
+
+       EOVERFLOW
+              The resulting file offset would be a value which cannot be represented correctly in an object of type off_t.
+
+       ESPIPE The fildes argument is associated with a pipe, FIFO, or socket.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       The ISO C standard includes the functions fgetpos() and fsetpos(), which work on very large files by use of a special positioning type.
+
+       Although lseek() may position the file offset beyond the end of the file, this function does not itself extend the size of the file. While the only function in POSIX.1‐2008 that may directly  ex‐
+       tend  the  size  of  the  file is write(), truncate(), and ftruncate(), several functions originally derived from the ISO C standard, such as fwrite(), fprintf(), and so on, may do so (by causing
+       calls on write()).
+
+       An invalid file offset that would cause [EINVAL] to be returned may be both implementation-defined and device-dependent (for example, memory may have few invalid values). A negative  file  offset
+       may be valid for some devices in some implementations.
+
+       The  POSIX.1‐1990 standard did not specifically prohibit lseek() from returning a negative offset. Therefore, an application was required to clear errno prior to the call and check errno upon re‐
+       turn to determine whether a return value of (off_t)-1 is a negative offset or an indication of an error condition. The standard developers did not wish to require this action on  the  part  of  a
+       conforming application, and chose to require that errno be set to [EINVAL] when the resulting file offset would be negative for a regular file, block special file, or directory.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       open()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_types.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          LSEEK(3P)
+lseek(2)                                                                                    System Calls Manual                                                                                   lseek(2)
+
+NAME
+       lseek - reposition read/write file offset
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       off_t lseek(int fd, off_t offset, int whence);
+
+DESCRIPTION
+       lseek() repositions the file offset of the open file description associated with the file descriptor fd to the argument offset according to the directive whence as follows:
+
+       SEEK_SET
+              The file offset is set to offset bytes.
+
+       SEEK_CUR
+              The file offset is set to its current location plus offset bytes.
+
+       SEEK_END
+              The file offset is set to the size of the file plus offset bytes.
+
+       lseek()  allows  the file offset to be set beyond the end of the file (but this does not change the size of the file).  If data is later written at this point, subsequent reads of the data in the
+       gap (a "hole") return null bytes ('\0') until data is actually written into the gap.
+
+   Seeking file data and holes
+       Since Linux 3.1, Linux supports the following additional values for whence:
+
+       SEEK_DATA
+              Adjust the file offset to the next location in the file greater than or equal to offset containing data.  If offset points to data, then the file offset is set to offset.
+
+       SEEK_HOLE
+              Adjust the file offset to the next hole in the file greater than or equal to offset.  If offset points into the middle of a hole, then the file offset is set to offset.   If  there  is  no
+              hole past offset, then the file offset is adjusted to the end of the file (i.e., there is an implicit hole at the end of any file).
+
+       In both of the above cases, lseek() fails if offset points past the end of the file.
+
+       These  operations allow applications to map holes in a sparsely allocated file.  This can be useful for applications such as file backup tools, which can save space when creating backups and pre‐
+       serve holes, if they have a mechanism for discovering holes.
+
+       For the purposes of these operations, a hole is a sequence of zeros that (normally) has not been allocated in the underlying file storage.  However, a filesystem is not obliged to  report  holes,
+       so  these operations are not a guaranteed mechanism for mapping the storage space actually allocated to a file.  (Furthermore, a sequence of zeros that actually has been written to the underlying
+       storage may not be reported as a hole.)  In the simplest implementation, a filesystem can support the operations by making SEEK_HOLE always return the offset of the end of the  file,  and  making
+       SEEK_DATA always return offset (i.e., even if the location referred to by offset is a hole, it can be considered to consist of data that is a sequence of zeros).
+
+       The _GNU_SOURCE feature test macro must be defined in order to obtain the definitions of SEEK_DATA and SEEK_HOLE from <unistd.h>.
+
+       The SEEK_HOLE and SEEK_DATA operations are supported for the following filesystems:
+
+       •  Btrfs (since Linux 3.1)
+
+       •  OCFS (since Linux 3.2)
+
+       •  XFS (since Linux 3.5)
+
+       •  ext4 (since Linux 3.8)
+
+       •  tmpfs(5) (since Linux 3.8)
+
+       •  NFS (since Linux 3.18)
+
+       •  FUSE (since Linux 4.5)
+
+       •  GFS2 (since Linux 4.15)
+
+RETURN VALUE
+       Upon  successful completion, lseek() returns the resulting offset location as measured in bytes from the beginning of the file.  On error, the value (off_t) -1 is returned and errno is set to in‐
+       dicate the error.
+
+ERRORS
+       EBADF  fd is not an open file descriptor.
+
+       EINVAL whence is not valid.  Or: the resulting file offset would be negative, or beyond the end of a seekable device.
+
+       ENXIO  whence is SEEK_DATA or SEEK_HOLE, and offset is beyond the end of the file, or whence is SEEK_DATA and offset is within a hole at the end of the file.
+
+       EOVERFLOW
+              The resulting file offset cannot be represented in an off_t.
+
+       ESPIPE fd is associated with a pipe, socket, or FIFO.
+
+VERSIONS
+       On Linux, using lseek() on a terminal device fails with the error ESPIPE.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+       SEEK_DATA and SEEK_HOLE are nonstandard extensions also present in Solaris, FreeBSD, and DragonFly BSD; they are proposed for inclusion in the next POSIX revision (Issue 8).
+
+NOTES
+       See open(2) for a discussion of the relationship between file descriptors, open file descriptions, and files.
+
+       If the O_APPEND file status flag is set on the open file description, then a write(2) always moves the file offset to the end of the file, regardless of the use of lseek().
+
+       Some devices are incapable of seeking and POSIX does not specify which devices must support lseek().
+
+SEE ALSO
+       dup(2), fallocate(2), fork(2), open(2), fseek(3), lseek64(3), posix_fallocate(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        lseek(2)

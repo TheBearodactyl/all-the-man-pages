@@ -1,0 +1,316 @@
+fmemopen(3)                                                                              Library Functions Manual                                                                              fmemopen(3)
+
+NAME
+       fmemopen -  open memory as stream
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       FILE *fmemopen(void buf[.size], size_t size, const char *mode);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       fmemopen():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _GNU_SOURCE
+
+DESCRIPTION
+       The fmemopen() function opens a stream that permits the access specified by mode.  The stream allows I/O to be performed on the string or memory buffer pointed to by buf.
+
+       The mode argument specifies the semantics of I/O on the stream, and is one of the following:
+
+       r      The stream is opened for reading.
+
+       w      The stream is opened for writing.
+
+       a      Append; open the stream for writing, with the initial buffer position set to the first null byte.
+
+       r+     Open the stream for reading and writing.
+
+       w+     Open the stream for reading and writing.  The buffer contents are truncated (i.e., '\0' is placed in the first byte of the buffer).
+
+       a+     Append; open the stream for reading and writing, with the initial buffer position set to the first null byte.
+
+       The  stream  maintains the notion of a current position, the location where the next I/O operation will be performed.  The current position is implicitly updated by I/O operations.  It can be ex‐
+       plicitly updated using fseek(3), and determined using ftell(3).  In all modes other than append, the initial position is set to the start of the buffer.  In append mode, if no null byte is  found
+       within the buffer, then the initial position is size+1.
+
+       If  buf is specified as NULL, then fmemopen() allocates a buffer of size bytes.  This is useful for an application that wants to write data to a temporary buffer and then read it back again.  The
+       initial position is set to the start of the buffer.  The buffer is automatically freed when the stream is closed.  Note that the caller has no way to obtain a pointer to the temporary buffer  al‐
+       located by this call (but see open_memstream(3)).
+
+       If buf is not NULL, then it should point to a buffer of at least size bytes allocated by the caller.
+
+       When  a  stream that has been opened for writing is flushed (fflush(3)) or closed (fclose(3)), a null byte is written at the end of the buffer if there is space.  The caller should ensure that an
+       extra byte is available in the buffer (and that size counts that byte) to allow for this.
+
+       In a stream opened for reading, null bytes ('\0') in the buffer do not cause read operations to return an end-of-file indication.  A read from the buffer will indicate end-of-file only  when  the
+       current buffer position advances size bytes past the start of the buffer.
+
+       Write operations take place either at the current position (for modes other than append), or at the current size of the stream (for append modes).
+
+       Attempts  to  write  more  than  size  bytes  to the buffer result in an error.  By default, such errors will be visible (by the absence of data) only when the stdio buffer is flushed.  Disabling
+       buffering with the following call may be useful to detect errors at the time of an output operation:
+
+           setbuf(stream, NULL);
+
+RETURN VALUE
+       Upon successful completion, fmemopen() returns a FILE pointer.  Otherwise, NULL is returned and errno is set to indicate the error.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │fmemopen(),                                                                                                                                                             │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 1.0.x.  POSIX.1-2008.
+
+       POSIX.1-2008 specifies that 'b' in mode shall be ignored.  However, Technical Corrigendum 1 adjusts the standard to allow implementation-specific treatment for  this  case,  thus  permitting  the
+       glibc treatment of 'b'.
+
+       With glibc 2.22, binary mode (see below) was removed, many longstanding bugs in the implementation of fmemopen() were fixed, and a new versioned symbol was created for this interface.
+
+   Binary mode
+       From  glibc  2.9 to glibc 2.21, the glibc implementation of fmemopen() supported a "binary" mode, enabled by specifying the letter 'b' as the second character in mode.  In this mode, writes don't
+       implicitly add a terminating null byte, and fseek(3) SEEK_END is relative to the end of the buffer (i.e., the value specified by the size argument), rather than the current string length.
+
+       An API bug afflicted the implementation of binary mode: to specify binary mode, the 'b' must be the second character in mode.  Thus, for example, "wb+" has the desired effect, but "w+b" does not.
+       This is inconsistent with the treatment of mode by fopen(3).
+
+       Binary mode was removed in glibc 2.22; a 'b' specified in mode has no effect.
+
+NOTES
+       There is no file descriptor associated with the file stream returned by this function (i.e., fileno(3) will return an error if called on the returned stream).
+
+BUGS
+       Before  glibc 2.22, if size is specified as zero, fmemopen() fails with the error EINVAL.  It would be more consistent if this case successfully created a stream that then returned end-of-file on
+       the first attempt at reading; since glibc 2.22, the glibc implementation provides that behavior.
+
+       Before glibc 2.22, specifying append mode ("a" or "a+") for fmemopen() sets the initial buffer position to the first null byte, but (if the current position is reset to a location other than  the
+       end of the stream) does not force subsequent writes to append at the end of the stream.  This bug is fixed in glibc 2.22.
+
+       Before  glibc 2.22, if the mode argument to fmemopen() specifies append ("a" or "a+"), and the size argument does not cover a null byte in buf, then, according to POSIX.1-2008, the initial buffer
+       position should be set to the next byte after the end of the buffer.  However, in this case the glibc fmemopen() sets the buffer position to -1.  This bug is fixed in glibc 2.22.
+
+       Before glibc 2.22, when a call to fseek(3) with a whence value of SEEK_END was performed on a stream created by fmemopen(), the offset was subtracted from the end-of-stream position,  instead  of
+       being added.  This bug is fixed in glibc 2.22.
+
+       The glibc 2.9 addition of "binary" mode for fmemopen() silently changed the ABI: previously, fmemopen() ignored 'b' in mode.
+
+EXAMPLES
+       The  program  below  uses  fmemopen() to open an input buffer, and open_memstream(3) to open a dynamically sized output buffer.  The program scans its input string (taken from the program's first
+       command-line argument) reading integers, and writes the squares of these integers to the output buffer.  An example of the output produced by this program is the following:
+
+           $ ./a.out '1 23 43'
+           size=11; ptr=1 529 1849
+
+   Program source
+
+       #define _GNU_SOURCE
+       #include <err.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+
+       int
+       main(int argc, char *argv[])
+       {
+           FILE *out, *in;
+           int v, s;
+           size_t size;
+           char *ptr;
+
+           if (argc != 2) {
+               fprintf(stderr, "Usage: %s '<num>...'\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           in = fmemopen(argv[1], strlen(argv[1]), "r");
+           if (in == NULL)
+               err(EXIT_FAILURE, "fmemopen");
+
+           out = open_memstream(&ptr, &size);
+           if (out == NULL)
+               err(EXIT_FAILURE, "open_memstream");
+
+           for (;;) {
+               s = fscanf(in, "%d", &v);
+               if (s <= 0)
+                   break;
+
+               s = fprintf(out, "%d ", v * v);
+               if (s == -1)
+                   err(EXIT_FAILURE, "fprintf");
+           }
+
+           fclose(in);
+           fclose(out);
+
+           printf("size=%zu; ptr=%s\n", size, ptr);
+
+           free(ptr);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       fopen(3), fopencookie(3), open_memstream(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                     fmemopen(3)
+FMEMOPEN(3P)                                                                             POSIX Programmer's Manual                                                                            FMEMOPEN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       fmemopen — open a memory buffer stream
+
+SYNOPSIS
+       #include <stdio.h>
+
+       FILE *fmemopen(void *restrict buf, size_t size,
+           const char *restrict mode);
+
+DESCRIPTION
+       The fmemopen() function shall associate the buffer given by the buf and size arguments with a stream. The buf argument shall be either a null pointer or point to a buffer that is  at  least  size
+       bytes long.
+
+       The mode argument points to a string. If the string is one of the following, the stream shall be opened in the indicated mode. Otherwise, the behavior is undefined.
+
+       r       Open the stream for reading.
+
+       w       Open the stream for writing.
+
+       a       Append; open the stream for writing at the first null byte.
+
+       r+      Open the stream for update (reading and writing).
+
+       w+      Open the stream for update (reading and writing). Truncate the buffer contents.
+
+       a+      Append; open the stream for update (reading and writing); the initial position is at the first null byte.
+
+       Implementations  shall  accept  all  mode strings allowed by fopen(), but the use of the character 'b' shall produce implementation-defined results, where the resulting FILE * need not behave the
+       same as if 'b' were omitted.
+
+       If a null pointer is specified as the buf argument, fmemopen() shall allocate size bytes of memory as if by a call to malloc().  This buffer shall  be  automatically  freed  when  the  stream  is
+       closed.  Because this feature is only useful when the stream is opened for updating (because there is no way to get a pointer to the buffer) the fmemopen() call may fail if the mode argument does
+       not include a '+'.
+
+       The stream shall maintain a current position in the buffer. This position shall be initially set to either the beginning of the buffer (for r and w modes) or to the first null byte in the  buffer
+       (for a modes). If no null byte is found in append mode, the initial position shall be set to one byte after the end of the buffer.
+
+       If buf is a null pointer, the initial position shall always be set to the beginning of the buffer.
+
+       The  stream shall also maintain the size of the current buffer contents; use of fseek() or fseeko() on the stream with SEEK_END shall seek relative to this size. For modes r and r+ the size shall
+       be set to the value given by the size argument. For modes w and w+ the initial size shall be zero and for modes a and a+ the initial size shall be:
+
+        *  Zero, if buf is a null pointer
+
+        *  The position of the first null byte in the buffer, if one is found
+
+        *  The value of the size argument, if buf is not a null pointer and no null byte is found
+
+       A read operation on the stream shall not advance the current buffer position beyond the current buffer size. Reaching the buffer size in a read operation  shall  count  as  ``end-of-file''.  Null
+       bytes in the buffer shall have no special meaning for reads. The read operation shall start at the current buffer position of the stream.
+
+       A  write  operation  shall  start  either at the current position of the stream (if mode has not specified 'a' as the first character) or at the current size of the stream (if mode had 'a' as the
+       first character). If the current position at the end of the write is larger than the current buffer size, the current buffer size shall be set to the current position. A write  operation  on  the
+       stream shall not advance the current buffer size beyond the size given in the size argument.
+
+       When  a stream open for writing is flushed or closed, a null byte shall be written at the current position or at the end of the buffer, depending on the size of the contents. If a stream open for
+       update is flushed or closed and the last write has advanced the current buffer size, a null byte shall be written at the end of the buffer if it fits.
+
+       An attempt to seek a memory buffer stream to a negative position or to a position larger than the buffer size given in the size argument shall fail.
+
+RETURN VALUE
+       Upon successful completion, fmemopen() shall return a pointer to the object controlling the stream. Otherwise, a null pointer shall be returned, and errno shall be set to indicate the error.
+
+ERRORS
+       The fmemopen() function shall fail if:
+
+       EMFILE {STREAM_MAX} streams are currently open in the calling process.
+
+       The fmemopen() function may fail if:
+
+       EINVAL The value of the mode argument is not valid.
+
+       EINVAL The buf argument is a null pointer and the mode argument does not include a '+' character.
+
+       EINVAL The size argument specifies a buffer size of zero and the implementation does not support this.
+
+       ENOMEM The buf argument is a null pointer and the allocation of a buffer of length size has failed.
+
+       EMFILE {FOPEN_MAX} streams are currently open in the calling process.
+
+       The following sections are informative.
+
+EXAMPLES
+           #include <stdio.h>
+           #include <string.h>
+
+           static char buffer[] = "foobar";
+
+           int
+           main (void)
+           {
+               int ch;
+               FILE *stream;
+
+               stream = fmemopen(buffer, strlen (buffer), "r");
+               if (stream == NULL)
+                   /* handle error */;
+
+               while ((ch = fgetc(stream)) != EOF)
+                   printf("Got %c\n", ch);
+
+               fclose(stream);
+               return (0);
+           }
+
+       This program produces the following output:
+
+           Got f
+           Got o
+           Got o
+           Got b
+           Got a
+           Got r
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       This interface has been introduced to eliminate many of the errors encountered in the construction of strings, notably overflowing of strings. This interface prevents overflow.
+
+FUTURE DIRECTIONS
+       A future version of this standard may mandate specific behavior when the mode argument includes 'b'.
+
+       A future version of this standard may require support of zero-length buffer streams explicitly.
+
+SEE ALSO
+       fdopen(), fopen(), freopen(), fseek(), malloc(), open_memstream()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       FMEMOPEN(3P)

@@ -1,0 +1,87 @@
+IPC::SharedMem(3perl)                                                                Perl Programmers Reference Guide                                                                IPC::SharedMem(3perl)
+
+NAME
+       IPC::SharedMem - SysV Shared Memory IPC object class
+
+SYNOPSIS
+           use IPC::SysV qw(IPC_PRIVATE S_IRUSR S_IWUSR);
+           use IPC::SharedMem;
+
+           $shm = IPC::SharedMem->new(IPC_PRIVATE, 8, S_IRWXU);
+
+           $shm->write(pack("S", 4711), 2, 2);
+
+           $data = $shm->read(0, 2);
+
+           $ds = $shm->stat;
+
+           $shm->remove;
+
+DESCRIPTION
+       A class providing an object based interface to SysV IPC shared memory.
+
+METHODS
+       new ( KEY , SIZE , FLAGS )
+           Creates a new shared memory segment of "SIZE" bytes size associated with "KEY". A new segment is created if
+
+           •   "KEY" is equal to "IPC_PRIVATE"
+
+           •   "KEY" does not already have a shared memory segment associated with it, and "FLAGS & IPC_CREAT" is true.
+
+           On creation of a new shared memory segment "FLAGS" is used to set the permissions.  Be careful not to set any flags that the Sys V IPC implementation does not allow: in some systems setting
+           execute bits makes the operations fail.
+
+       id  Returns the shared memory identifier.
+
+       read ( POS, SIZE )
+           Read "SIZE" bytes from the shared memory segment at "POS". Returns the string read, or "undef" if there was an error. The return value becomes tainted. See shmread.
+
+       write ( STRING, POS, SIZE )
+           Write "SIZE" bytes to the shared memory segment at "POS". Returns true if successful, or false if there is an error. See shmwrite.
+
+       remove
+           Remove the shared memory segment from the system or mark it as removed as long as any processes are still attached to it.
+
+       is_removed
+           Returns true if the shared memory segment has been removed or marked for removal.
+
+       stat
+           Returns an object of type "IPC::SharedMem::stat" which is a sub-class of "Class::Struct". It provides the following fields. For a description of these fields see you system documentation.
+
+               uid
+               gid
+               cuid
+               cgid
+               mode
+               segsz
+               lpid
+               cpid
+               nattch
+               atime
+               dtime
+               ctime
+
+       attach ( [FLAG] )
+           Permanently attach to the shared memory segment. When a "IPC::SharedMem" object is attached, it will use memread and memwrite instead of shmread and shmwrite for accessing the shared memory
+           segment.  Returns true if successful, or false on error. See shmat(2).
+
+       detach
+           Detach from the shared memory segment that previously has been attached to. Returns true if successful, or false on error. See shmdt(2).
+
+       addr
+           Returns the address of the shared memory that has been attached to in a format suitable for use with "pack('P')". Returns "undef" if the shared memory has not been attached.
+
+SEE ALSO
+       IPC::SysV, Class::Struct
+
+AUTHORS
+       Marcus Holland-Moritz <mhx@cpan.org>
+
+COPYRIGHT
+       Version 2.x, Copyright (C) 2007-2013, Marcus Holland-Moritz.
+
+       Version 1.x, Copyright (c) 1997, Graham Barr.
+
+       This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+perl v5.36.0                                                                                    2022-12-12                                                                           IPC::SharedMem(3perl)

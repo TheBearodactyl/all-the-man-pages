@@ -1,0 +1,97 @@
+Esys_HMAC(3)                                                                                     tpm2-tss                                                                                     Esys_HMAC(3)
+
+NAME
+       Esys_HMAC - The ESAPI function for the TPM2_HMAC command.
+
+SYNOPSIS
+   Functions
+       TSS2_RC Esys_HMAC_Async (ESYS_CONTEXT *esysContext, ESYS_TR handle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_MAX_BUFFER *buffer, TPMI_ALG_HASH hashAlg)
+       TSS2_RC Esys_HMAC (ESYS_CONTEXT *esysContext, ESYS_TR handle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_MAX_BUFFER *buffer, TPMI_ALG_HASH hashAlg, TPM2B_DIGEST **outHMAC)
+       TSS2_RC Esys_HMAC_Finish (ESYS_CONTEXT *esysContext, TPM2B_DIGEST **outHMAC)
+
+Detailed Description
+       ESAPI function to invoke the TPM2_HMAC command either as a one-call or in an asynchronous manner.
+
+Function Documentation
+   TSS2_RC Esys_HMAC (ESYS_CONTEXT * esysContext, ESYS_TR handle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_MAX_BUFFER * buffer, TPMI_ALG_HASH hashAlg, TPM2B_DIGEST ** outHMAC)
+       One-Call function for TPM2_HMAC
+
+       This function invokes the TPM2_HMAC command in a one-call variant. This means the function will block until the TPM response is available. All input parameters are const. The memory for non-
+       simple output parameters is allocated by the function implementation.
+
+       Parameters
+           esysContext The ESYS_CONTEXT.
+           handle Handle for the symmetric signing key providing the HMAC key.
+           shandle1 Session handle for authorization of handle
+           shandle2 Second session handle.
+           shandle3 Third session handle.
+           buffer HMAC data.
+           hashAlg Algorithm to use for HMAC.
+           outHMAC The returned HMAC in a sized buffer. (callee-allocated)
+
+       Return values
+           TSS2_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if the esysContext or required input pointers or required output handle references are NULL.
+           TSS2_ESYS_RC_BAD_CONTEXT if esysContext corruption is detected.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory for internal operations or return parameters.
+           TSS2_ESYS_RC_BAD_SEQUENCE if the context has an asynchronous operation already pending.
+           TSS2_ESYS_RC_INSUFFICIENT_RESPONSE if the TPM's response does not at least contain the tag, response length, and response code.
+           TSS2_ESYS_RC_MALFORMED_RESPONSE if the TPM's response is corrupted.
+           TSS2_ESYS_RC_RSP_AUTH_FAILED if the response HMAC from the TPM did not verify.
+           TSS2_ESYS_RC_MULTIPLE_DECRYPT_SESSIONS if more than one session has the 'decrypt' attribute bit set.
+           TSS2_ESYS_RC_MULTIPLE_ENCRYPT_SESSIONS if more than one session has the 'encrypt' attribute bit set.
+           TSS2_ESYS_RC_BAD_TR if any of the ESYS_TR objects are unknown to the ESYS_CONTEXT or are of the wrong type or if required ESYS_TR objects are ESYS_TR_NONE.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+
+   TSS2_RC Esys_HMAC_Async (ESYS_CONTEXT * esysContext, ESYS_TR handle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_MAX_BUFFER * buffer, TPMI_ALG_HASH hashAlg)
+       Asynchronous function for TPM2_HMAC
+
+       This function invokes the TPM2_HMAC command in a asynchronous variant. This means the function will return as soon as the command has been sent downwards the stack to the TPM. All input
+       parameters are const. In order to retrieve the TPM's response call Esys_HMAC_Finish.
+
+       Parameters
+           esysContext The ESYS_CONTEXT.
+           handle Handle for the symmetric signing key providing the HMAC key.
+           shandle1 Session handle for authorization of handle
+           shandle2 Second session handle.
+           shandle3 Third session handle.
+           buffer HMAC data.
+           hashAlg Algorithm to use for HMAC.
+
+       Return values
+           ESYS_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if the esysContext or required input pointers or required output handle references are NULL.
+           TSS2_ESYS_RC_BAD_CONTEXT if esysContext corruption is detected.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory for internal operations or return parameters.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+           TSS2_ESYS_RC_MULTIPLE_DECRYPT_SESSIONS if more than one session has the 'decrypt' attribute bit set.
+           TSS2_ESYS_RC_MULTIPLE_ENCRYPT_SESSIONS if more than one session has the 'encrypt' attribute bit set.
+           TSS2_ESYS_RC_BAD_TR if any of the ESYS_TR objects are unknown to the ESYS_CONTEXT or are of the wrong type or if required ESYS_TR objects are ESYS_TR_NONE.
+
+   TSS2_RC Esys_HMAC_Finish (ESYS_CONTEXT * esysContext, TPM2B_DIGEST ** outHMAC)
+       Asynchronous finish function for TPM2_HMAC
+
+       This function returns the results of a TPM2_HMAC command invoked via Esys_HMAC_Finish. All non-simple output parameters are allocated by the function's implementation. NULL can be passed for
+       every output parameter if the value is not required.
+
+       Parameters
+           esysContext The ESYS_CONTEXT.
+           outHMAC The returned HMAC in a sized buffer. (callee-allocated)
+
+       Return values
+           TSS2_RC_SUCCESS on success
+           ESYS_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if the esysContext or required input pointers or required output handle references are NULL.
+           TSS2_ESYS_RC_BAD_CONTEXT if esysContext corruption is detected.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory for internal operations or return parameters.
+           TSS2_ESYS_RC_BAD_SEQUENCE if the context has an asynchronous operation already pending.
+           TSS2_ESYS_RC_TRY_AGAIN if the timeout counter expires before the TPM response is received.
+           TSS2_ESYS_RC_INSUFFICIENT_RESPONSE if the TPM's response does not at least contain the tag, response length, and response code.
+           TSS2_ESYS_RC_RSP_AUTH_FAILED if the response HMAC from the TPM did not verify.
+           TSS2_ESYS_RC_MALFORMED_RESPONSE if the TPM's response is corrupted.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+
+Author
+       Generated automatically by Doxygen for tpm2-tss from the source code.
+
+Version 3.2.0                                                                                 Tue Nov 1 2022                                                                                  Esys_HMAC(3)

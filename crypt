@@ -1,0 +1,590 @@
+CRYPT(3)                                                                               BSD Library Functions Manual                                                                               CRYPT(3)
+
+NAME
+     crypt, crypt_r, crypt_rn, crypt_ra — passphrase hashing
+
+LIBRARY
+     Crypt Library (libcrypt, -lcrypt)
+
+SYNOPSIS
+     #include <crypt.h>
+
+     char *
+     crypt(const char *phrase, const char *setting);
+
+     char *
+     crypt_r(const char *phrase, const char *setting, struct crypt_data *data);
+
+     char *
+     crypt_rn(const char *phrase, const char *setting, struct crypt_data *data, int size);
+
+     char *
+     crypt_ra(const char *phrase, const char *setting, void **data, int *size);
+
+DESCRIPTION
+     The crypt, crypt_r, crypt_rn, and crypt_ra functions irreversibly “hash” phrase for storage in the system password database (shadow(5)) using a cryptographic “hashing method.” The result of this
+     operation is called a “hashed passphrase” or just a “hash.” Hashing methods are described in crypt(5).
+
+     setting controls which hashing method to use, and also supplies various parameters to the chosen method, most importantly a random “salt” which ensures that no two stored hashes are the same, even
+     if the phrase strings are the same.
+
+     The data argument to crypt_r is a structure of type struct crypt_data.  It has at least these fields:
+
+           struct crypt_data {
+               char output[CRYPT_OUTPUT_SIZE];
+               char setting[CRYPT_OUTPUT_SIZE];
+               char input[CRYPT_MAX_PASSPHRASE_SIZE];
+               char initialized;
+           };
+
+     Upon a successful return from crypt_r, the hashed passphrase will be stored in output.  Applications are encouraged, but not required, to use the input and setting fields to store the strings that
+     they will pass as input phrase and setting to crypt_r.  This will make it easier to erase all sensitive data after it is no longer needed.
+
+     The initialized field must be set to zero before the first time a struct crypt_data object is first used in a call to crypt_r().  We recommend zeroing the entire object, not just initialized and
+     not just the documented fields, before the first use.  (Of course, do this before storing anything in setting and input.)
+
+     The data argument to crypt_rn should also point to a struct crypt_data object, and size should be the size of that object, cast to int.  When used with crypt_rn, the entire data object (except for
+     the input and setting fields) must be zeroed before its first use; this is not just a recommendation, as it is for crypt_r.  Otherwise, the fields of the object have the same uses that they do for
+     crypt_r.
+
+     On the first call to crypt_ra, data should be the address of a void * variable set to NULL, and size should be the address of an int variable set to zero.  crypt_ra will allocate and initialize a
+     struct crypt_data object, using malloc(3), and write its address and size into the variables pointed to by data and size.  These can be reused in subsequent calls.  After the application is done
+     hashing passphrases, it should deallocate the struct crypt_data object using free(3).
+
+RETURN VALUES
+     Upon successful completion, crypt, crypt_r, crypt_rn, and crypt_ra return a pointer to a string which encodes both the hashed passphrase, and the settings that were used to encode it.  This string
+     is directly usable as setting in other calls to crypt, crypt_r, crypt_rn, and crypt_ra, and as prefix in calls to crypt_gensalt, crypt_gensalt_rn, and crypt_gensalt_ra.  It will be entirely print‐
+     able ASCII, and will not contain whitespace or the characters ‘:’, ‘;’, ‘*’, ‘!’, or ‘\’.  See crypt(5) for more detail on the format of hashed passphrases.
+
+     crypt places its result in a static storage area, which will be overwritten by subsequent calls to crypt.  It is not safe to call crypt from multiple threads simultaneously.
+
+     crypt_r, crypt_rn, and crypt_ra place their result in the output field of their data argument.  It is safe to call them from multiple threads simultaneously, as long as a separate data object is
+     used for each thread.
+
+     Upon error, crypt_r, crypt_rn, and crypt_ra write an invalid hashed passphrase to the output field of their data argument, and crypt writes an invalid hash to its static storage area.  This string
+     will be shorter than 13 characters, will begin with a ‘*’, and will not compare equal to setting.
+
+     Upon error, crypt_rn and crypt_ra return a null pointer.  crypt_r and crypt may also return a null pointer, or they may return a pointer to the invalid hash, depending on how libcrypt was config‐
+     ured.  (The option to return the invalid hash is for compatibility with old applications that assume that crypt cannot return a null pointer.  See PORTABILITY NOTES below.)
+
+     All four functions set errno when they fail.
+
+ERRORS
+     EINVAL             setting is invalid, or requests a hashing method that is not supported.
+
+     ERANGE             phrase is too long (more than CRYPT_MAX_PASSPHRASE_SIZE characters; some hashing methods may have lower limits).
+                        crypt_rn only: size is too small for the hashing method requested by setting.
+
+     ENOMEM             Failed to allocate internal scratch memory.
+                        crypt_ra only: failed to allocate memory for data.
+
+     ENOSYS or EOPNOTSUPP
+                        Hashing passphrases is not supported at all on this installation, or the hashing method requested by setting is not supported.  These error codes are not used by this version of
+                        libcrypt, but may be encountered on other systems.
+
+PORTABILITY NOTES
+     crypt is included in POSIX, but crypt_r, crypt_rn, and crypt_ra are not part of any standard.
+
+     POSIX does not specify any hashing methods, and does not require hashed passphrases to be portable between systems.  In practice, hashed passphrases are portable as long as both systems support the
+     hashing method that was used.  However, the set of supported hashing methods varies considerably from system to system.
+
+     The behavior of crypt on errors isn't well standardized.  Some implementations simply can't fail (except by crashing the program), others return a null pointer or a fixed string.  Most implementa‐
+     tions don't set errno, but some do.  POSIX specifies returning a null pointer and setting errno, but it defines only one possible error, ENOSYS, in the case where crypt is not supported at all.
+     Some older applications are not prepared to handle null pointers returned by crypt.  The behavior described above for this implementation, setting errno and returning an invalid hashed passphrase
+     different from setting, is chosen to make these applications fail closed when an error occurs.
+
+     Due to historical restrictions on the export of cryptographic software from the USA, crypt is an optional POSIX component.  Applications should therefore be prepared for crypt not to be available,
+     or to always fail (setting errno to ENOSYS) at runtime.
+
+     POSIX specifies that crypt is declared in <unistd.h>, but only if the macro _XOPEN_CRYPT is defined and has a value greater than or equal to zero.  Since libcrypt does not provide <unistd.h>, it
+     declares crypt, crypt_r, crypt_rn, and crypt_ra in <crypt.h> instead.
+
+     On a minority of systems (notably recent versions of Solaris), crypt uses a thread-specific static storage buffer, which makes it safe to call from multiple threads simultaneously, but does not
+     prevent each call within a thread from overwriting the results of the previous one.
+
+BUGS
+     Some implementations of crypt, upon error, return an invalid hash that is stored in a read-only location or only initialized once, which means that it is only safe to erase the buffer pointed to by
+     the crypt return value if an error did not occur.
+
+     struct crypt_data may be quite large (32kB in this implementation of libcrypt; over 128kB in some other implementations).  This is large enough that it may be unwise to allocate it on the stack.
+
+     Some recently designed hashing methods need even more scratch memory, but the crypt_r interface makes it impossible to change the size of struct crypt_data without breaking binary compatibility.
+     The crypt_rn interface could accommodate larger allocations for specific hashing methods, but the caller of crypt_rn has no way of knowing how much memory to allocate.  crypt_ra does the allocation
+     itself, but can only make a single call to malloc(3).
+
+ATTRIBUTES
+     For an explanation of the terms used in this section, see attributes(7).
+     ┌────────────────────────────┬───────────────┬──────────────────────┐
+     │Interface                   │ Attribute     │ Value                │
+     ├────────────────────────────┼───────────────┼──────────────────────┤
+     │crypt                       │ Thread safety │ MT-Unsafe race:crypt │
+     ├────────────────────────────┼───────────────┼──────────────────────┤
+     │crypt_r, crypt_rn, crypt_ra │ Thread safety │ MT-Safe              │
+     └────────────────────────────┴───────────────┴──────────────────────┘
+
+HISTORY
+     A rotor-based crypt function appeared in Version 6 AT&T UNIX.  The “traditional” DES-based crypt first appeared in Version 7 AT&T UNIX.
+
+     crypt_r originates with the GNU C Library.  There's also a crypt_r function on HP-UX and MKS Toolkit, but the prototypes and semantics differ.
+
+     crypt_rn and crypt_ra originate with the Openwall project.
+
+SEE ALSO
+     crypt_gensalt(3), getpass(3), getpwent(3), shadow(3), login(1), passwd(1), crypt(5), passwd(5), shadow(5), pam(8)
+
+Openwall Project                                                                             October 11, 2017                                                                             Openwall Project
+CRYPT(3P)                                                                                POSIX Programmer's Manual                                                                               CRYPT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       crypt — string encoding function (CRYPT)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       char *crypt(const char *key, const char *salt);
+
+DESCRIPTION
+       The crypt() function is a string encoding function. The algorithm is implementation-defined.
+
+       The key argument points to a string to be encoded. The salt argument shall be a string of at least two bytes in length not including the null character chosen from the set:
+
+           a b c d e f g h i j k l m n o p q r s t u v w x y z
+           A B C D E F G H I J K L M N O P Q R S T U V W X Y Z
+           0 1 2 3 4 5 6 7 8 9 . /
+
+       The first two bytes of this string may be used to perturb the encoding algorithm.
+
+       The return value of crypt() points to static data that is overwritten by each call.
+
+       The crypt() function need not be thread-safe.
+
+RETURN VALUE
+       Upon successful completion, crypt() shall return a pointer to the encoded string. The first two bytes of the returned value shall be those of the salt argument. Otherwise, it shall return a  null
+       pointer and set errno to indicate the error.
+
+ERRORS
+       The crypt() function shall fail if:
+
+       ENOSYS The functionality is not supported on this implementation.
+
+       The following sections are informative.
+
+EXAMPLES
+   Encoding Passwords
+       The  following  example  finds  a user database entry matching a particular user name and changes the current password to a new password. The crypt() function generates an encoded version of each
+       password. The first call to crypt() produces an encoded version of the old password; that encoded password is then compared to the password stored in the user database. The second call to crypt()
+       encodes the new password before it is stored.
+
+       The putpwent() function, used in the following example, is not part of POSIX.1‐2008.
+
+           #include <unistd.h>
+           #include <pwd.h>
+           #include <string.h>
+           #include <stdio.h>
+           ...
+           int valid_change;
+           int pfd;  /* Integer for file descriptor returned by open(). */
+           FILE *fpfd;  /* File pointer for use in putpwent(). */
+           struct passwd *p;
+           char user[100];
+           char oldpasswd[100];
+           char newpasswd[100];
+           char savepasswd[100];
+           ...
+           valid_change = 0;
+           while ((p = getpwent()) != NULL) {
+               /* Change entry if found. */
+               if (strcmp(p->pw_name, user) == 0) {
+                   if (strcmp(p->pw_passwd, crypt(oldpasswd, p->pw_passwd)) == 0) {
+                       strcpy(savepasswd, crypt(newpasswd, user));
+                       p->pw_passwd = savepasswd;
+                       valid_change = 1;
+                   }
+                   else {
+                       fprintf(stderr, "Old password is not valid\n");
+                   }
+               }
+               /* Put passwd entry into ptmp. */
+               putpwent(p, fpfd);
+           }
+
+APPLICATION USAGE
+       The values returned by this function need not be portable among XSI-conformant systems.
+
+       Several  implementations  offer  extensions via characters outside of the set specified for the salt argument for specifying alternative algorithms; while not portable, these extensions may offer
+       better security. The use of crypt() for anything other than password hashing is not recommended.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       encrypt(), setkey()
+
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          CRYPT(3P)
+CRYPT(5)                                                                                  BSD File Formats Manual                                                                                 CRYPT(5)
+
+NAME
+     crypt — storage format for hashed passphrases and available hashing methods
+
+DESCRIPTION
+     The hashing methods implemented by crypt(3) are designed only to process user passphrases for storage and authentication; they are not suitable for use as general-purpose cryptographic hashes.
+
+     Passphrase hashing is not a replacement for strong passphrases.  It is always possible for an attacker with access to the hashed passphrases to guess and check possible cleartext passphrases.  How‐
+     ever, with a strong hashing method, guessing will be too slow for the attacker to discover a strong passphrase.
+
+     All of the hashing methods use a “salt” to perturb the hash function, so that the same passphrase may produce many possible hashes.  Newer methods accept longer salt strings.  The salt should be
+     chosen at random for each user.  Salt defeats a number of attacks:
+
+     1.   It is not possible to hash a passphrase once and then test it against each account's stored hash; the hash calculation must be repeated for each account.
+
+     2.   It is not possible to tell whether two accounts use the same passphrase without successfully guessing one of the phrases.
+
+     3.   Tables of precalculated hashes of commonly used passphrases must have an entry for each possible salt, which makes them impractically large.
+
+     All of the hashing methods are also deliberately engineered to be slow; they use many iterations of an underlying cryptographic primitive to increase the cost of each guess.  The newer hashing
+     methods allow the number of iterations to be adjusted, using the “CPU time cost” parameter to crypt_gensalt(3).  This makes it possible to keep the hash slow as hardware improves.
+
+FORMAT OF HASHED PASSPHRASES
+     All of the hashing methods supported by crypt(3) produce a hashed passphrase which consists of four components: prefix, options, salt, and hash.  The prefix controls which hashing method is to be
+     used, and is the appropriate string to pass to crypt_gensalt(3) to select that method.  The contents of options, salt, and hash are up to the method.  Depending on the method, the prefix and
+     options components may be empty.
+
+     The setting argument to crypt(3) must begin with the first three components of a valid hashed passphrase, but anything after that is ignored.  This makes authentication simple: hash the input
+     passphrase using the stored passphrase as the setting, and then compare the result to the stored passphrase.
+
+     Hashed passphrases are always entirely printable ASCII, and do not contain any whitespace or the characters ‘:’, ‘;’, ‘*’, ‘!’, or ‘\’.  (These characters are used as delimiters and special markers
+     in the passwd(5) and shadow(5) files.)
+
+     The syntax of each component of a hashed passphrase is up to the hashing method.  ‘$’ characters usually delimit components, and the salt and hash are usually encoded as numerals in base 64.  The
+     details of this base-64 encoding vary among hashing methods.  The common “base64” encoding specified by RFC 4648 is usually not used.
+
+AVAILABLE HASHING METHODS
+     This is a list of all the hashing methods supported by crypt(3), in decreasing order of strength.  Many of the older methods are now considered too weak to use for new passphrases.  The hashed
+     passphrase format is expressed with extended regular expressions (see regex(7)) and does not show the division into prefix, options, salt, and hash.
+
+   yescrypt
+     yescrypt is a scalable passphrase hashing scheme designed by Solar Designer, which is based on Colin Percival's scrypt.  Recommended for new hashes.
+
+     Prefix
+         "$y$"
+
+     Hashed passphrase format
+         \$y\$[./A-Za-z0-9]+\$[./A-Za-z0-9]{,86}\$[./A-Za-z0-9]{43}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         256 bits
+
+     Salt size
+         up to 512 (128+ recommended) bits
+
+     CPU time cost parameter
+         1 to 11 (logarithmic)
+
+   gost-yescrypt
+     gost-yescrypt uses the output from the yescrypt hashing method in place of a hmac message.  Thus, the yescrypt crypto properties are superseded by the GOST R 34.11-2012 (Streebog) hash function
+     with a 256 bit digest.  This hashing method is useful in applications that need modern passphrase hashing methods, but require to rely on the cryptographic properties of GOST algorithms.  The GOST
+     R 34.11-2012 (Streebog) hash function has been published by the IETF as RFC 6986.  Recommended for new hashes.
+
+     Prefix
+         "$gy$"
+
+     Hashed passphrase format
+         \$gy\$[./A-Za-z0-9]+\$[./A-Za-z0-9]{,86}\$[./A-Za-z0-9]{43}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         256 bits
+
+     Salt size
+         up to 512 (128+ recommended) bits
+
+     CPU time cost parameter
+         1 to 11 (logarithmic)
+
+   scrypt
+     scrypt is a password-based key derivation function created by Colin Percival, originally for the Tarsnap online backup service.  The algorithm was specifically designed to make it costly to perform
+     large-scale custom hardware attacks by requiring large amounts of memory.  In 2016, the scrypt algorithm was published by IETF as RFC 7914.
+
+     Prefix
+         "$7$"
+
+     Hashed passphrase format
+         \$7\$[./A-Za-z0-9]{11,97}\$[./A-Za-z0-9]{43}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         256 bits
+
+     Salt size
+         up to 512 (128+ recommended) bits
+
+     CPU time cost parameter
+         6 to 11 (logarithmic)
+
+   bcrypt
+     A hash based on the Blowfish block cipher, modified to have an extra-expensive key schedule.  Originally developed by Niels Provos and David Mazieres for OpenBSD and also supported on recent ver‐
+     sions of FreeBSD and NetBSD, on Solaris 10 and newer, and on several GNU/*/Linux distributions.
+
+     Prefix
+         "$2b$"
+
+     Hashed passphrase format
+         \$2[abxy]\$[0-9]{2}\$[./A-Za-z0-9]{53}
+
+     Maximum passphrase length
+         72 characters
+
+     Hash size
+         184 bits
+
+     Salt size
+         128 bits
+
+     CPU time cost parameter
+         4 to 31 (logarithmic)
+
+     The alternative prefix "$2y$" is equivalent to "$2b$".  It exists for historical reasons only.  The alternative prefixes "$2a$" and "$2x$" provide bug-compatibility with crypt_blowfish 1.0.4 and
+     earlier, which incorrectly processed characters with the 8th bit set.
+
+   sha512crypt
+     A hash based on SHA-2 with 512-bit output, originally developed by Ulrich Drepper for GNU libc.  Supported on Linux but not common elsewhere.  Acceptable for new hashes.  The default CPU time cost
+     parameter is 5000, which is too low for modern hardware.
+
+     Prefix
+         "$6$"
+
+     Hashed passphrase format
+         \$6\$(rounds=[1-9][0-9]+\$)?[^$:\n]{1,16}\$[./0-9A-Za-z]{86}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         512 bits
+
+     Salt size
+         6 to 96 bits
+
+     CPU time cost parameter
+         1000 to 999,999,999
+
+   sha256crypt
+     A hash based on SHA-2 with 256-bit output, originally developed by Ulrich Drepper for GNU libc.  Supported on Linux but not common elsewhere.  Acceptable for new hashes.  The default CPU time cost
+     parameter is 5000, which is too low for modern hardware.
+
+     Prefix
+         "$5$"
+
+     Hashed passphrase format
+         \$5\$(rounds=[1-9][0-9]+\$)?[^$:\n]{1,16}\$[./0-9A-Za-z]{43}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         256 bits
+
+     Salt size
+         6 to 96 bits
+
+     CPU time cost parameter
+         1000 to 999,999,999
+
+   sha1crypt
+     A hash based on HMAC-SHA1.  Originally developed by Simon Gerraty for NetBSD.  Not as weak as the DES-based hashes below, but SHA1 is so cheap on modern hardware that it should not be used for new
+     hashes.
+
+     Prefix
+         "$sha1"
+
+     Hashed passphrase format
+         \$sha1\$[1-9][0-9]+\$[./0-9A-Za-z]{1,64}\$[./0-9A-Za-z]{8,64}[./0-9A-Za-z]{32}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         160 bits
+
+     Salt size
+         6 to 384 bits
+
+     CPU time cost parameter
+         4 to 4,294,967,295
+
+   SunMD5
+     A hash based on the MD5 algorithm, with additional cleverness to make precomputation difficult, originally developed by Alec David Muffet for Solaris.  Not adopted elsewhere, to our knowledge.  Not
+     as weak as the DES-based hashes below, but MD5 is so cheap on modern hardware that it should not be used for new hashes.
+
+     Prefix
+         "$md5"
+
+     Hashed passphrase format
+         \$md5(,rounds=[1-9][0-9]+)?\$[./0-9A-Za-z]{8}\${1,2}[./0-9A-Za-z]{22}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         128 bits
+
+     Salt size
+         48 bits
+
+     CPU time cost parameter
+         4096 to 4,294,963,199
+
+   md5crypt
+     A hash based on the MD5 algorithm, originally developed by Poul-Henning Kamp for FreeBSD.  Supported on most free Unixes and newer versions of Solaris.  Not as weak as the DES-based hashes below,
+     but MD5 is so cheap on modern hardware that it should not be used for new hashes.  CPU time cost is not adjustable.
+
+     Prefix
+         "$1$"
+
+     Hashed passphrase format
+         \$1\$[^$:\n]{1,8}\$[./0-9A-Za-z]{22}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         128 bits
+
+     Salt size
+         6 to 48 bits
+
+     CPU time cost parameter
+         1000
+
+   bsdicrypt (BSDI extended DES)
+     A weak extension of traditional DES, which eliminates the length limit, increases the salt size, and makes the time cost tunable.  It originates with BSDI and is also available on at least NetBSD,
+     OpenBSD, and FreeBSD due to the use of David Burren's FreeSec library.  It is better than bigcrypt and traditional DES, but still should not be used for new hashes.
+
+     Prefix
+         "_"
+
+     Hashed passphrase format
+         _[./0-9A-Za-z]{19}
+
+     Maximum passphrase length
+         unlimited (ignores 8th bit)
+
+     Hash size
+         64 bits
+
+     Effective key size
+         56 bits
+
+     Salt size
+         24 bits
+
+     CPU time cost parameter
+         1 to 16,777,215 (must be odd)
+
+   bigcrypt
+     A weak extension of traditional DES, available on some System V-derived Unixes.  All it does is raise the length limit from 8 to 128 characters, and it does this in a crude way that allows attack‐
+     ers to guess chunks of a long passphrase in parallel.  It should not be used for new hashes.
+
+     Prefix
+         "" (empty string)
+
+     Hashed passphrase format
+         [./0-9A-Za-z]{13,178}
+
+     Maximum passphrase length
+         128 characters (ignores 8th bit)
+
+     Hash size
+         up to 1024 bits
+
+     Effective key size
+         up to 896 bits
+
+     Salt size
+         12 bits
+
+     CPU time cost parameter
+         25
+
+   descrypt (Traditional DES)
+     The original hashing method from Unix V7, based on the DES block cipher.  Because DES is cheap on modern hardware, because there are only 4096 possible salts and 2**56 possible hashes, and because
+     it truncates passphrases to 8 characters, it is feasible to discover any passphrase hashed with this method.  It should only be used if you absolutely have to generate hashes that will work on an
+     old operating system that supports nothing else.
+
+     Prefix
+         "" (empty string)
+
+     Hashed passphrase format
+         [./0-9A-Za-z]{13}
+
+     Maximum passphrase length
+         8 characters (ignores 8th bit)
+
+     Hash size
+         64 bits
+
+     Effective key size
+         56 bits
+
+     Salt size
+         12 bits
+
+     CPU time cost parameter
+         25
+
+   NT
+     The hashing method used for network authentication in some versions of the SMB/CIFS protocol.  Available, for cross-compatibility's sake, on FreeBSD.  Based on MD4.  Has no salt or tunable cost pa‐
+     rameter.  Like traditional DES, it is so weak that any passphrase hashed with this method is guessable.  It should only be used if you absolutely have to generate hashes that will work on an old
+     operating system that supports nothing else.
+
+     Prefix
+         "$3$"
+
+     Hashed passphrase format
+         \$3\$\$[0-9a-f]{32}
+
+     Maximum passphrase length
+         unlimited
+
+     Hash size
+         256 bits
+
+     Salt size
+         0 bits
+
+     CPU time cost parameter
+         1
+
+SEE ALSO
+     crypt(3), crypt_gensalt(3), getpwent(3), passwd(5), shadow(5), pam(8)
+
+     Niels Provos and David Mazieres, “A Future-Adaptable Password Scheme”, Proceedings of the 1999 USENIX Annual Technical Conference, https://www.usenix.org/events/usenix99/provos.html, June 1999.
+
+     Robert Morris and Ken Thompson, “Password Security: A Case History”, Communications of the ACM, 11, 22, http://wolfram.schneider.org/bsd/7thEdManVol2/password/password.pdf, 1979.
+
+Openwall Project                                                                             October 11, 2017                                                                             Openwall Project

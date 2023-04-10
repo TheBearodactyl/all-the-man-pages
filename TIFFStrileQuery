@@ -1,0 +1,50 @@
+TIFFSTRILEQUERY(3tiff)                                                                            LibTIFF                                                                           TIFFSTRILEQUERY(3tiff)
+
+NAME
+       TIFFStrileQuery - get strile byte count and offset
+
+SYNOPSIS
+          #include <tiffio.h>
+
+       uint64_t TIFFGetStrileByteCount(TIFF *tif, uint32_t strile);
+
+       uint64_t TIFFGetStrileOffset(TIFF *tif, uint32_t strile);
+
+       uint64_t TIFFGetStrileByteCountWithErr(TIFF *tif, uint32_t strile, int *pbErr);
+
+       uint64_t TIFFGetStrileOffsetWithErr(TIFF *tif, uint32_t strile, int *pbErr);
+
+DESCRIPTION
+       Make  defer  strile  offset/bytecount  loading  available at runtime and add per-strile offset/bytecount loading capabilities. Part of this commit makes the behaviour that was previously met when
+       libtiff was compiled with -DDEFER_STRILE_LOAD available for default builds.
+
+       When specifying the new D (Deferred) TIFFOpen() flag, the loading of strile offset/bytecount is defered.  In that mode, the StripOffsets / StripByteCounts or TileOffsets /  TileByteCounts  arrays
+       are only loaded when first accessed. This can speed-up the opening of files stored on the network when just metadata retrieval is needed.
+
+       Another  addition  is  the  capability  of  loading only the values of the offset/bytecount of the strile of interest instead of the whole array. This is enabled with the new O (Ondemand) flag of
+       TIFFOpen() (which implies D).
+
+       The public TIFFGetStrileOffset(), TIFFGetStrileOffsetWithErr(), TIFFGetStrileByteCount() and TIFFGetStrileByteCountWithErr() functions have been added to API.  They  are  of  particular  interest
+       when using sparse files (with offset == bytecount == 0) and you want to detect if a strile is present or not without decompressing the data, or updating an existing sparse file.
+
+       TIFFGetStrileByteCount() returns the value of the TileByteCounts / StripByteCounts array for the specified tile/strile.
+
+       TIFFGetStrileByteCountWithErr() additionally provides pbErr as an int pointer to an error return variable, which is set to “0” for successful return or to “1” for an error return.
+
+       TIFFGetStrileOffset() returns the value of the TileOffsets / StripOffsets array for the specified tile/strile.
+
+       TIFFGetStrileOffsetWithErr() additionally provides pbErr as an int pointer to an error return variable, which is set to “0” for successful return or to “1” for an error return.
+
+DIAGNOSTICS
+       All error messages are directed to the TIFFErrorExtR() routine.  Likewise, warning messages are directed to the TIFFWarningExtR() routine.
+
+SEE ALSO
+       libtiff (3tiff), TIFFOpen  (3tiff), TIFFDeferStrileArrayWriting (3tiff)
+
+AUTHOR
+       LibTIFF contributors
+
+COPYRIGHT
+       1988-2022, LibTIFF contributors
+
+4.5                                                                                            Dec 13, 2022                                                                         TIFFSTRILEQUERY(3tiff)

@@ -1,0 +1,34 @@
+TERMKEY_INTERPRET_CSI(3)                                                                 Library Functions Manual                                                                 TERMKEY_INTERPRET_CSI(3)
+
+NAME
+       termkey_interpret_csi - interpret unrecognised CSI sequence
+
+SYNOPSIS
+       #include <termkey.h>
+
+       TermKeyResult termkey_interpret_csi(TermKey *tk, const TermKeyKey *key,
+           long *args[], size_t *nargs, unsigned long *cmd);
+
+       Link with -ltermkey.
+
+DESCRIPTION
+       termkey_interpret_csi()  fills in variables in the passed pointers according to the unrecognised CSI sequence event found in key. It should be called if termkey_getkey(3) or similar have returned
+       a key event with the type of TERMKEY_TYPE_UNKNOWN_CSI. Note that it is important to call this function as soon as possible after obtaining a TERMKEY_TYPE_CSI key event; specifically, before call‐
+       ing termkey_getkey() or termkey_waitkey() again, as a subsequent call will overwrite the buffer space currently containing this sequence.
+
+       The  args  array  will  be  filled with the numerical arguments of the CSI sequence. The number of elements available in this array should be given as the initial value of the value pointed to by
+       nargs, which will be adjusted to give the number of arguments actually found when the function returns. The cmd variable will contain the CSI command value. If a leading byte was found  (such  as
+       '?')  then it will be bitwise-ored with the command value, shifted up by 8 bits. If an intermediate byte was found (such as '$') then it will be bitwise-ored with the command value, shifted up by
+       16 bits.
+
+           *cmd = command | (initial << 8) | (intermediate << 16);
+
+RETURN VALUE
+       If passed a key event of the type TERMKEY_TYPE_UNKNOWN_CSI, this function will return TERMKEY_RES_KEY and will affect the variables whose pointers were passed in, as described above.
+
+       For other event types it will return TERMKEY_RES_NONE, and its effects on any variables whose pointers were passed in, are undefined.
+
+SEE ALSO
+       termkey_waitkey(3), termkey_getkey(3), termkey(7)
+
+                                                                                                                                                                                  TERMKEY_INTERPRET_CSI(3)

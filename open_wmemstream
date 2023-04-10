@@ -1,0 +1,189 @@
+open_memstream(3)                                                                        Library Functions Manual                                                                        open_memstream(3)
+
+NAME
+       open_memstream, open_wmemstream -  open a dynamic memory buffer stream
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       FILE *open_memstream(char **ptr, size_t *sizeloc);
+
+       #include <wchar.h>
+
+       FILE *open_wmemstream(wchar_t **ptr, size_t *sizeloc);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       open_memstream(), open_wmemstream():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _GNU_SOURCE
+
+DESCRIPTION
+       The  open_memstream()  function opens a stream for writing to a memory buffer.  The function dynamically allocates the buffer, and the buffer automatically grows as needed.  Initially, the buffer
+       has a size of zero.  After closing the stream, the caller should free(3) this buffer.
+
+       The locations pointed to by ptr and sizeloc are used to report, respectively, the current location and the size of the buffer.  The locations referred to by these pointers are updated  each  time
+       the  stream is flushed (fflush(3)) and when the stream is closed (fclose(3)).  These values remain valid only as long as the caller performs no further output on the stream.  If further output is
+       performed, then the stream must again be flushed before trying to access these values.
+
+       A null byte is maintained at the end of the buffer.  This byte is not included in the size value stored at sizeloc.
+
+       The stream maintains the notion of a current position, which is initially zero (the start of the buffer).  Each write operation implicitly adjusts the buffer position.  The stream's buffer  posi‐
+       tion can be explicitly changed with fseek(3) or fseeko(3).  Moving the buffer position past the end of the data already written fills the intervening space with null characters.
+
+       The open_wmemstream() is similar to open_memstream(), but operates on wide characters instead of bytes.
+
+RETURN VALUE
+       Upon successful completion, open_memstream() and open_wmemstream() return a FILE pointer.  Otherwise, NULL is returned and errno is set to indicate the error.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │open_memstream(), open_wmemstream()                                                                                                                                     │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       open_memstream()
+              glibc 1.0.x.
+
+       open_wmemstream()
+              glibc 2.4.
+
+NOTES
+       There is no file descriptor associated with the file stream returned by these functions (i.e., fileno(3) will return an error if called on the returned stream).
+
+BUGS
+       Before glibc 2.7, seeking past the end of a stream created by open_memstream() does not enlarge the buffer; instead the fseek(3) call fails, returning -1.
+
+EXAMPLES
+       See fmemopen(3).
+
+SEE ALSO
+       fmemopen(3), fopen(3), setbuf(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                               open_memstream(3)
+OPEN_MEMSTREAM(3P)                                                                       POSIX Programmer's Manual                                                                      OPEN_MEMSTREAM(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       open_memstream, open_wmemstream — open a dynamic memory buffer stream
+
+SYNOPSIS
+       #include <stdio.h>
+
+       FILE *open_memstream(char **bufp, size_t *sizep);
+
+       #include <wchar.h>
+
+       FILE *open_wmemstream(wchar_t **bufp, size_t *sizep);
+
+DESCRIPTION
+       The open_memstream() and open_wmemstream() functions shall create an I/O stream associated with a dynamically allocated memory buffer. The stream shall be opened for writing and  shall  be  seek‐
+       able.
+
+       The stream associated with a call to open_memstream() shall be byte-oriented.
+
+       The stream associated with a call to open_wmemstream() shall be wide-oriented.
+
+       The  stream  shall maintain a current position in the allocated buffer and a current buffer length. The position shall be initially set to zero (the start of the buffer). Each write to the stream
+       shall start at the current position and move this position by the number of successfully written bytes for open_memstream() or the number of successfully written wide  characters  for  open_wmem‐
+       stream().   The  length  shall  be initially set to zero. If a write moves the position to a value larger than the current length, the current length shall be set to this position. In this case a
+       null character for open_memstream() or a null wide character for open_wmemstream() shall be appended to the current buffer. For both functions the terminating null is not included in the calcula‐
+       tion of the buffer length.
+
+       After a successful fflush() or fclose(), the pointer referenced by bufp shall contain the address of the buffer, and the variable pointed to by sizep shall contain the smaller of the current buf‐
+       fer length and the number of bytes for open_memstream(), or the number of wide characters for open_wmemstream(), between the beginning of the buffer and the current file position indicator.
+
+       After a successful fflush() the pointer referenced by bufp and the variable referenced by sizep remain valid only until the next write operation on the stream or a call to fclose().
+
+       After a successful fclose(), the pointer referenced by bufp can be passed to free().
+
+RETURN VALUE
+       Upon successful completion, these functions shall return a pointer to the object controlling the stream. Otherwise, a null pointer shall be returned, and errno shall be set to indicate the error.
+
+ERRORS
+       These functions shall fail if:
+
+       EMFILE {STREAM_MAX} streams are currently open in the calling process.
+
+       These functions may fail if:
+
+       EINVAL bufp or sizep are NULL.
+
+       EMFILE {FOPEN_MAX} streams are currently open in the calling process.
+
+       ENOMEM Memory for the stream or the buffer could not be allocated.
+
+       The following sections are informative.
+
+EXAMPLES
+           #include <stdio.h>
+           #include <stdlib.h>
+
+           int
+           main (void)
+           {
+               FILE *stream;
+               char *buf;
+               size_t len;
+               off_t eob;
+
+               stream = open_memstream (&buf, &len);
+               if (stream == NULL)
+                   /* handle error */ ;
+               fprintf (stream, "hello my world");
+               fflush (stream);
+               printf ("buf=%s, len=%zu\n", buf, len);
+               eob = ftello(stream);
+               fseeko (stream, 0, SEEK_SET);
+               fprintf (stream, "good-bye");
+               fseeko (stream, eob, SEEK_SET);
+               fclose (stream);
+               printf ("buf=%s, len=%zu\n", buf, len);
+               free (buf);
+               return 0;
+           }
+
+       This program produces the following output:
+
+           buf=hello my world, len=14
+           buf=good-bye world, len=14
+
+APPLICATION USAGE
+       The buffer created by these functions should be freed by the application after closing the stream, by means of a call to free().
+
+RATIONALE
+       These functions are similar to fmemopen() except that the memory is always allocated dynamically by the function, and the stream is opened only for output.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fclose(), fdopen(), fflush(), fmemopen(), fopen(), free(), freopen()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>, <wchar.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                 OPEN_MEMSTREAM(3P)

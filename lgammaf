@@ -1,0 +1,196 @@
+lgamma(3)                                                                                Library Functions Manual                                                                                lgamma(3)
+
+NAME
+       lgamma, lgammaf, lgammal, lgamma_r, lgammaf_r, lgammal_r, signgam - log gamma function
+
+LIBRARY
+       Math library (libm, -lm)
+
+SYNOPSIS
+       #include <math.h>
+
+       double lgamma(double x);
+       float lgammaf(float x);
+       long double lgammal(long double x);
+
+       double lgamma_r(double x, int *signp);
+       float lgammaf_r(float x, int *signp);
+       long double lgammal_r(long double x, int *signp);
+
+       extern int signgam;
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       lgamma():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L || _XOPEN_SOURCE
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       lgammaf(), lgammal():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       lgamma_r(), lgammaf_r(), lgammal_r():
+           /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       signgam:
+           _XOPEN_SOURCE
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       For the definition of the Gamma function, see tgamma(3).
+
+       The  lgamma(),  lgammaf(),  and  lgammal()  functions return the natural logarithm of the absolute value of the Gamma function.  The sign of the Gamma function is returned in the external integer
+       signgam declared in <math.h>.  It is 1 when the Gamma function is positive or zero, -1 when it is negative.
+
+       Since using a constant location signgam is not thread-safe, the functions lgamma_r(), lgammaf_r(), and lgammal_r() have been introduced; they return the sign via the argument signp.
+
+RETURN VALUE
+       On success, these functions return the natural logarithm of Gamma(x).
+
+       If x is a NaN, a NaN is returned.
+
+       If x is 1 or 2, +0 is returned.
+
+       If x is positive infinity or negative infinity, positive infinity is returned.
+
+       If x is a nonpositive integer, a pole error occurs, and the functions return +HUGE_VAL, +HUGE_VALF, or +HUGE_VALL, respectively.
+
+       If the result overflows, a range error occurs, and the functions return HUGE_VAL, HUGE_VALF, or HUGE_VALL, respectively, with the correct mathematical sign.
+
+ERRORS
+       See math_error(7) for information on how to determine whether an error has occurred when calling these functions.
+
+       The following errors can occur:
+
+       Pole error: x is a nonpositive integer
+              errno is set to ERANGE (but see BUGS).  A divide-by-zero floating-point exception (FE_DIVBYZERO) is raised.
+
+       Range error: result overflow
+              errno is set to ERANGE.  An overflow floating-point exception (FE_OVERFLOW) is raised.
+
+STANDARDS
+       lgamma()
+       lgammaf()
+       lgammal()
+              C11, POSIX.1-2008.
+
+       signgam
+              POSIX.1-2008.
+
+       lgamma_r()
+       lgammaf_r()
+       lgammal_r()
+              None.
+
+HISTORY
+       lgamma()
+       lgammaf()
+       lgammal()
+              C99, POSIX.1-2001.
+
+       signgam
+              POSIX.1-2001.
+
+       lgamma_r()
+       lgammaf_r()
+       lgammal_r()
+              None.
+
+BUGS
+       In glibc 2.9 and earlier, when a pole error occurs, errno is set to EDOM; instead of the POSIX-mandated ERANGE.  Since glibc 2.10, glibc does the right thing.
+
+SEE ALSO
+       tgamma(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       lgamma(3)
+LGAMMA(3P)                                                                               POSIX Programmer's Manual                                                                              LGAMMA(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       lgamma, lgammaf, lgammal, signgam — log gamma function
+
+SYNOPSIS
+       #include <math.h>
+
+       double lgamma(double x);
+       float lgammaf(float x);
+       long double lgammal(long double x);
+       extern int signgam;
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       These functions shall compute log_e │Γ(x)│ where Γ(x) is defined as ∫e^ −tt^ x−1dt.  The argument x need not be a non-positive integer (Γ(x) is defined over the reals, except the non-positive in‐
+       tegers).
+
+       If x is NaN, -Inf, or a negative integer, the value of signgam is unspecified.
+
+       These functions need not be thread-safe.
+
+       An application wishing to check for error situations should set errno to zero and call feclearexcept(FE_ALL_EXCEPT) before calling these functions. On return, if errno is  non-zero  or  fetestex‐
+       cept(FE_INVALID | FE_DIVBYZERO | FE_OVERFLOW | FE_UNDERFLOW) is non-zero, an error has occurred.
+
+RETURN VALUE
+       Upon successful completion, these functions shall return the logarithmic gamma of x.
+
+       If x is a non-positive integer, a pole error shall occur and lgamma(), lgammaf(), and lgammal() shall return +HUGE_VAL, +HUGE_VALF, and +HUGE_VALL, respectively.
+
+       If the correct value would cause overflow, a range error shall occur and lgamma(), lgammaf(), and lgammal() shall return ±HUGE_VAL, ±HUGE_VALF, and ±HUGE_VALL (having the same sign as the correct
+       value), respectively.
+
+       If x is NaN, a NaN shall be returned.
+
+       If x is 1 or 2, +0 shall be returned.
+
+       If x is ±Inf, +Inf shall be returned.
+
+ERRORS
+       These functions shall fail if:
+
+       Pole Error  The x argument is a negative integer or zero.
+
+                   If the integer expression (math_errhandling & MATH_ERRNO) is non-zero, then errno shall be set to [ERANGE].  If the integer expression (math_errhandling & MATH_ERREXCEPT) is non-zero,
+                   then the divide-by-zero floating-point exception shall be raised.
+
+       Range Error The result overflows.
+
+                   If the integer expression (math_errhandling & MATH_ERRNO) is non-zero, then errno shall be set to [ERANGE].  If the integer expression (math_errhandling & MATH_ERREXCEPT) is non-zero,
+                   then the overflow floating-point exception shall be raised.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       On error, the expressions (math_errhandling & MATH_ERRNO) and (math_errhandling & MATH_ERREXCEPT) are independent of each other, but at least one of them must be non-zero.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exp(), feclearexcept(), fetestexcept(), isnan()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 4.20, Treatment of Error Conditions for Mathematical Functions, <math.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         LGAMMA(3P)

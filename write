@@ -1,0 +1,626 @@
+WRITE(1)                                                                                       User Commands                                                                                      WRITE(1)
+
+NAME
+       write - send a message to another user
+
+       write user [ttyname]
+
+DESCRIPTION
+       write allows you to communicate with other users, by copying lines from your terminal to theirs.
+
+       When you run the write command, the user you are writing to gets a message of the form:
+
+           Message from yourname@yourhost on yourtty at hh:mm ...
+
+       Any further lines you enter will be copied to the specified user’s terminal. If the other user wants to reply, they must run write as well.
+
+       When you are done, type an end-of-file or interrupt character. The other user will see the message EOF indicating that the conversation is over.
+
+       You can prevent people (other than the superuser) from writing to you with the mesg(1) command. Some commands, for example nroff(1) and pr(1), may automatically disallow writing, so that the
+       output they produce isn’t overwritten.
+
+       If the user you want to write to is logged in on more than one terminal, you can specify which terminal to write to by giving the terminal name as the second operand to the write command.
+       Alternatively, you can let write select one of the terminals - it will pick the one with the shortest idle time. This is so that if the user is logged in at work and also dialed up from home, the
+       message will go to the right place.
+
+       The traditional protocol for writing to someone is that the string -o, either at the end of a line or on a line by itself, means that it’s the other person’s turn to talk. The string oo means
+       that the person believes the conversation to be over.
+
+OPTIONS
+       -h, --help
+           Display help text and exit.
+
+       -V, --version
+           Print version and exit.
+
+HISTORY
+       A write command appeared in Version 6 AT&T UNIX.
+
+SEE ALSO
+       mesg(1), talk(1), who(1)
+
+REPORTING BUGS
+       For bug reports, use the issue tracker at https://github.com/util-linux/util-linux/issues.
+
+AVAILABILITY
+       The write command is part of the util-linux package which can be downloaded from Linux Kernel Archive <https://www.kernel.org/pub/linux/utils/util-linux/>.
+
+util-linux 2.38.1                                                                               2022-05-11                                                                                        WRITE(1)
+WRITE(1P)                                                                                POSIX Programmer's Manual                                                                               WRITE(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       write — write to another user
+
+SYNOPSIS
+       write user_name [terminal]
+
+DESCRIPTION
+       The write utility shall read lines from the standard input and write them to the terminal of the specified user. When first invoked, it shall write the message:
+
+           Message from sender-login-id (sending-terminal) [date]...
+
+       to user_name.  When it has successfully completed the connection, the sender's terminal shall be alerted twice to indicate that what the sender is typing is being written to the recipient's  ter‐
+       minal.
+
+       If the recipient wants to reply, this can be accomplished by typing:
+
+           write sender-login-id [sending-terminal]
+
+       upon  receipt  of the initial message. Whenever a line of input as delimited by an NL, EOF, or EOL special character (see the Base Definitions volume of POSIX.1‐2017, Chapter 11, General Terminal
+       Interface) is accumulated while in canonical input mode, the accumulated data shall be written on the other user's terminal. Characters shall be processed as follows:
+
+        *  Typing <alert> shall write the <alert> character to the recipient's terminal.
+
+        *  Typing the erase and kill characters shall affect the sender's terminal in the manner described by the termios interface in the Base Definitions volume of POSIX.1‐2017,  Chapter  11,  General
+           Terminal Interface.
+
+        *  Typing the interrupt or end-of-file characters shall cause write to write an appropriate message ("EOT\n" in the POSIX locale) to the recipient's terminal and exit.
+
+        *  Typing characters from LC_CTYPE classifications print or space shall cause those characters to be sent to the recipient's terminal.
+
+        *  When  and  only when the stty iexten local mode is enabled, the existence and processing of additional special control characters and multi-byte or single-byte functions is implementation-de‐
+           fined.
+
+        *  Typing other non-printable characters shall cause implementation-defined sequences of printable characters to be written to the recipient's terminal.
+
+       To write to a user who is logged in more than once, the terminal argument can be used to indicate which terminal to write to; otherwise, the recipient's terminal is selected in an implementation-
+       defined manner and an informational message is written to the sender's standard output, indicating which terminal was chosen.
+
+       Permission  to be a recipient of a write message can be denied or granted by use of the mesg utility. However, a user's privilege may further constrain the domain of accessibility of other users'
+       terminals. The write utility shall fail when the user lacks appropriate privileges to perform the requested action.
+
+OPTIONS
+       None.
+
+OPERANDS
+       The following operands shall be supported:
+
+       user_name Login name of the person to whom the message shall be written. The application shall ensure that this operand is of the form returned by the who utility.
+
+       terminal  Terminal identification in the same format provided by the who utility.
+
+STDIN
+       Lines to be copied to the recipient's terminal are read from standard input.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of write:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments and input files).
+                 If the recipient's locale does not use an LC_CTYPE equivalent to the sender's, the results are undefined.
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error and informative messages written to standard output.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       If an interrupt signal is received, write shall write an appropriate message on the recipient's terminal and exit with a status of zero. It shall take the standard action for all other signals.
+
+STDOUT
+       An informational message shall be written to standard output if a recipient is logged in more than once.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       The recipient's terminal is used for output.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    The addressed user is not logged on or the addressed user denies permission.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The talk utility is considered by some users to be a more usable utility on full-screen terminals.
+
+EXAMPLES
+       None.
+
+RATIONALE
+       The write utility was included in this volume of POSIX.1‐2017 since it can be implemented on all terminal types. The standard developers considered the talk utility, which cannot  be  implemented
+       on certain terminals, to be a ``better'' communications interface. Both of these programs are in widespread use on historical implementations. Therefore, the standard developers decided that both
+       utilities should be specified.
+
+       The format of the terminal name is unspecified, but the descriptions of ps, talk, who, and write require that they all use or accept the same format.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       mesg, talk, who
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables, Chapter 11, General Terminal Interface
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          WRITE(1P)
+WRITE(3P)                                                                                POSIX Programmer's Manual                                                                               WRITE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       pwrite, write — write on a file
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t pwrite(int fildes, const void *buf, size_t nbyte,
+           off_t offset);
+       ssize_t write(int fildes, const void *buf, size_t nbyte);
+
+DESCRIPTION
+       The write() function shall attempt to write nbyte bytes from the buffer pointed to by buf to the file associated with the open file descriptor, fildes.
+
+       Before any action described below is taken, and if nbyte is zero and the file is a regular file, the write() function may detect and return errors as described below. In the absence of errors, or
+       if error detection is not performed, the write() function shall return zero and have no other results. If nbyte is zero and the file is not a regular file, the results are unspecified.
+
+       On  a regular file or other file capable of seeking, the actual writing of data shall proceed from the position in the file indicated by the file offset associated with fildes.  Before successful
+       return from write(), the file offset shall be incremented by the number of bytes actually written. On a regular file, if the position of the last byte written is greater  than  or  equal  to  the
+       length of the file, the length of the file shall be set to this position plus one.
+
+       On a file not capable of seeking, writing shall always take place starting at the current position. The value of a file offset associated with such a device is undefined.
+
+       If  the  O_APPEND  flag of the file status flags is set, the file offset shall be set to the end of the file prior to each write and no intervening file modification operation shall occur between
+       changing the file offset and the write operation.
+
+       If a write() requests that more bytes be written than there is room for (for example, the file size limit of the process or the physical end of a medium), only as many bytes as there is room  for
+       shall  be written. For example, suppose there is space for 20 bytes more in a file before reaching a limit. A write of 512 bytes will return 20. The next write of a non-zero number of bytes would
+       give a failure return (except as noted below).
+
+       If the request would cause the file size to exceed the soft file size limit for the process and there is no room for any bytes to be written, the request shall fail and the  implementation  shall
+       generate the SIGXFSZ signal for the thread.
+
+       If write() is interrupted by a signal before it writes any data, it shall return -1 with errno set to [EINTR].
+
+       If write() is interrupted by a signal after it successfully writes some data, it shall return the number of bytes written.
+
+       If the value of nbyte is greater than {SSIZE_MAX}, the result is implementation-defined.
+
+       After a write() to a regular file has successfully returned:
+
+        *  Any  successful read() from each byte position in the file that was modified by that write shall return the data specified by the write() for that position until such byte positions are again
+           modified.
+
+        *  Any subsequent successful write() to the same byte position in the file shall overwrite that file data.
+
+       Write requests to a pipe or FIFO shall be handled in the same way as a regular file with the following exceptions:
+
+        *  There is no file offset associated with a pipe, hence each write request shall append to the end of the pipe.
+
+        *  Write requests of {PIPE_BUF} bytes or less shall not be interleaved with data from other processes doing writes on the same pipe. Writes of greater than {PIPE_BUF} bytes may have data  inter‐
+           leaved, on arbitrary boundaries, with writes by other processes, whether or not the O_NONBLOCK flag of the file status flags is set.
+
+        *  If the O_NONBLOCK flag is clear, a write request may cause the thread to block, but on normal completion it shall return nbyte.
+
+        *  If the O_NONBLOCK flag is set, write() requests shall be handled differently, in the following ways:
+
+           --  The write() function shall not block the thread.
+
+           --  A  write request for {PIPE_BUF} or fewer bytes shall have the following effect: if there is sufficient space available in the pipe, write() shall transfer all the data and return the num‐
+               ber of bytes requested.  Otherwise, write() shall transfer no data and return -1 with errno set to [EAGAIN].
+
+           --  A write request for more than {PIPE_BUF} bytes shall cause one of the following:
+
+               --  When at least one byte can be written, transfer what it can and return the number of bytes written. When all data previously written to the pipe is read, it shall  transfer  at  least
+                   {PIPE_BUF} bytes.
+
+               --  When no data can be written, transfer no data, and return -1 with errno set to [EAGAIN].
+
+       When attempting to write to a file descriptor (other than a pipe or FIFO) that supports non-blocking writes and cannot accept the data immediately:
+
+        *  If the O_NONBLOCK flag is clear, write() shall block the calling thread until the data can be accepted.
+
+        *  If  the  O_NONBLOCK  flag  is  set, write() shall not block the thread. If some data can be written without blocking the thread, write() shall write what it can and return the number of bytes
+           written.  Otherwise, it shall return -1 and set errno to [EAGAIN].
+
+       Upon successful completion, where nbyte is greater than 0, write() shall mark for update the last data modification and last file status change timestamps of the file, and if the file is a  regu‐
+       lar file, the S_ISUID and S_ISGID bits of the file mode may be cleared.
+
+       For regular files, no data transfer shall occur past the offset maximum established in the open file description associated with fildes.
+
+       If fildes refers to a socket, write() shall be equivalent to send() with no flags set.
+
+       If the O_DSYNC bit has been set, write I/O operations on the file descriptor shall complete as defined by synchronized I/O data integrity completion.
+
+       If the O_SYNC bit has been set, write I/O operations on the file descriptor shall complete as defined by synchronized I/O file integrity completion.
+
+       If fildes refers to a shared memory object, the result of the write() function is unspecified.
+
+       If fildes refers to a typed memory object, the result of the write() function is unspecified.
+
+       If  fildes  refers to a STREAM, the operation of write() shall be determined by the values of the minimum and maximum nbyte range (packet size) accepted by the STREAM. These values are determined
+       by the topmost STREAM module. If nbyte falls within the packet size range, nbyte bytes shall be written. If nbyte does not fall within the range and the minimum packet size value  is  0,  write()
+       shall  break  the buffer into maximum packet size segments prior to sending the data downstream (the last segment may contain less than the maximum packet size). If nbyte does not fall within the
+       range and the minimum value is non-zero, write() shall fail with errno set to [ERANGE].  Writing a zero-length buffer (nbyte is 0) to a STREAMS device sends 0  bytes  with  0  returned.  However,
+       writing  a  zero-length buffer to a STREAMS-based pipe or FIFO sends no message and 0 is returned. The process may issue I_SWROPT ioctl() to enable zero-length messages to be sent across the pipe
+       or FIFO.
+
+       When writing to a STREAM, data messages are created with a priority band of 0. When writing to a STREAM that is not a pipe or FIFO:
+
+        *  If O_NONBLOCK is clear, and the STREAM cannot accept data (the STREAM write queue is full due to internal flow control conditions), write() shall block until data can be accepted.
+
+        *  If O_NONBLOCK is set and the STREAM cannot accept data, write() shall return -1 and set errno to [EAGAIN].
+
+        *  If O_NONBLOCK is set and part of the buffer has been written while a condition in which the STREAM cannot accept additional data occurs, write() shall terminate and return the number of bytes
+           written.
+
+       In  addition,  write() shall fail if the STREAM head has processed an asynchronous error before the call. In this case, the value of errno does not reflect the result of write(), but reflects the
+       prior error.
+
+       The pwrite() function shall be equivalent to write(), except that it writes into a given position and does not change the file offset (regardless of whether O_APPEND is set). The first three  ar‐
+       guments to pwrite() are the same as write() with the addition of a fourth argument offset for the desired position inside the file. An attempt to perform a pwrite() on a file that is incapable of
+       seeking shall result in an error.
+
+RETURN VALUE
+       Upon successful completion, these functions shall return the number of bytes actually written to the file associated with fildes.  This number shall never be greater than  nbyte.   Otherwise,  -1
+       shall be returned and errno set to indicate the error.
+
+ERRORS
+       These functions shall fail if:
+
+       EAGAIN The file is neither a pipe, nor a FIFO, nor a socket, the O_NONBLOCK flag is set for the file descriptor, and the thread would be delayed in the write() operation.
+
+       EBADF  The fildes argument is not a valid file descriptor open for writing.
+
+       EFBIG  An attempt was made to write a file that exceeds the implementation-defined maximum file size or the file size limit of the process, and there was no room for any bytes to be written.
+
+       EFBIG  The  file  is  a  regular  file,  nbyte is greater than 0, and the starting position is greater than or equal to the offset maximum established in the open file description associated with
+              fildes.
+
+       EINTR  The write operation was terminated due to the receipt of a signal, and no data was transferred.
+
+       EIO    The process is a member of a background process group attempting to write to its controlling terminal, TOSTOP is set, the calling thread is not blocking SIGTTOU, the process is not  ignor‐
+              ing SIGTTOU, and the process group of the process is orphaned. This error may also be returned under implementation-defined conditions.
+
+       ENOSPC There was no free space remaining on the device containing the file.
+
+       ERANGE The transfer request size was outside the range supported by the STREAMS file associated with fildes.
+
+       The pwrite() function shall fail if:
+
+       EINVAL The file is a regular file or block special file, and the offset argument is negative. The file offset shall remain unchanged.
+
+       ESPIPE The file is incapable of seeking.
+
+       The write() function shall fail if:
+
+       EAGAIN The file is a pipe or FIFO, the O_NONBLOCK flag is set for the file descriptor, and the thread would be delayed in the write operation.
+
+       EAGAIN or EWOULDBLOCK
+              The file is a socket, the O_NONBLOCK flag is set for the file descriptor, and the thread would be delayed in the write operation.
+
+       ECONNRESET
+              A write was attempted on a socket that is not connected.
+
+       EPIPE  An attempt is made to write to a pipe or FIFO that is not open for reading by any process, or that only has one end open. A SIGPIPE signal shall also be sent to the thread.
+
+       EPIPE  A write was attempted on a socket that is shut down for writing, or is no longer connected. In the latter case, if the socket is of type SOCK_STREAM, a SIGPIPE signal shall also be sent to
+              the thread.
+
+       These functions may fail if:
+
+       EINVAL The STREAM or multiplexer referenced by fildes is linked (directly or indirectly) downstream from a multiplexer.
+
+       EIO    A physical I/O error has occurred.
+
+       ENOBUFS
+              Insufficient resources were available in the system to perform the operation.
+
+       ENXIO  A request was made of a nonexistent device, or the request was outside the capabilities of the device.
+
+       ENXIO  A hangup occurred on the STREAM being written to.
+
+       A write to a STREAMS file may fail if an error message has been received at the STREAM head. In this case, errno is set to the value included in the error message.
+
+       The write() function may fail if:
+
+       EACCES A write was attempted on a socket and the calling process does not have appropriate privileges.
+
+       ENETDOWN
+              A write was attempted on a socket and the local network interface used to reach the destination is down.
+
+       ENETUNREACH
+              A write was attempted on a socket and no route to the network is present.
+
+       The following sections are informative.
+
+EXAMPLES
+   Writing from a Buffer
+       The following example writes data from the buffer pointed to by buf to the file associated with the file descriptor fd.
+
+           #include <sys/types.h>
+           #include <string.h>
+           ...
+           char buf[20];
+           size_t nbytes;
+           ssize_t bytes_written;
+           int fd;
+           ...
+           strcpy(buf, "This is a test\n");
+           nbytes = strlen(buf);
+
+           bytes_written = write(fd, buf, nbytes);
+           ...
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       See also the RATIONALE section in read().
+
+       An attempt to write to a pipe or FIFO has several major characteristics:
+
+        *  Atomic/non-atomic: A write is atomic if the whole amount written in one operation is not interleaved with data from any other process.  This is useful when there are multiple writers  sending
+           data  to  a single reader. Applications need to know how large a write request can be expected to be performed atomically. This maximum is called {PIPE_BUF}.  This volume of POSIX.1‐2017 does
+           not say whether write requests for more than {PIPE_BUF} bytes are atomic, but requires that writes of {PIPE_BUF} or fewer bytes shall be atomic.
+
+        *  Blocking/immediate: Blocking is only possible with O_NONBLOCK clear. If there is enough space for all the data requested to be written immediately, the implementation should do so. Otherwise,
+           the calling thread may block; that is, pause until enough space is available for writing. The effective size of a pipe or FIFO (the maximum amount that can be written in one operation without
+           blocking) may vary dynamically, depending on the implementation, so it is not possible to specify a fixed value for it.
+
+        *  Complete/partial/deferred: A write request:
+
+               int fildes;
+               size_t nbyte;
+               ssize_t ret;
+               char *buf;
+
+               ret = write(fildes, buf, nbyte);
+
+           may return:
+
+           Complete  ret=nbyte
+
+           Partial   ret<nbyte
+
+                     This shall never happen if nbyte≤{PIPE_BUF}.  If it does happen (with nbyte>{PIPE_BUF}), this volume of POSIX.1‐2017 does not guarantee atomicity, even  if  ret≤{PIPE_BUF},  because
+                     atomicity is guaranteed according to the amount requested, not the amount written.
+
+           Deferred: ret=-1, errno=[EAGAIN]
+
+                     This  error  indicates that a later request may succeed. It does not indicate that it shall succeed, even if nbyte≤{PIPE_BUF}, because if no process reads from the pipe or FIFO, the
+                     write never succeeds. An application could usefully count the number of times [EAGAIN] is caused by a particular value of nbyte>{PIPE_BUF} and perhaps do later writes with a smaller
+                     value, on the assumption that the effective size of the pipe may have decreased.
+
+           Partial and deferred writes are only possible with O_NONBLOCK set.
+
+       The relations of these properties are shown in the following tables:
+
+                                                                    ┌───────────────────────────────────────────────────────────────────────┐
+                                                                    │            Write to a Pipe or FIFO with O_NONBLOCK clear              │
+                                                                    ├─────────────────────┬─────────────────────────────────────────────────┤
+                                                                    │Immediately Writable:│     None            Some            nbyte       │
+                                                                    ├─────────────────────┼─────────────────────────────────────────────────┤
+                                                                    │nbyte≤{PIPE_BUF}     │Atomic blocking Atomic blocking Atomic immediate │
+                                                                    │                     │nbyte           nbyte           nbyte            │
+                                                                    ├─────────────────────┼─────────────────────────────────────────────────┤
+                                                                    │nbyte>{PIPE_BUF}     │Blocking nbyte  Blocking nbyte  Blocking nbyte   │
+                                                                    └─────────────────────┴─────────────────────────────────────────────────┘
+       If the O_NONBLOCK flag is clear, a write request shall block if the amount writable immediately is less than that requested. If the flag is set (by fcntl()), a write request shall never block.
+
+                                                                        ┌───────────────────────────────────────────────────────────────┐
+                                                                        │         Write to a Pipe or FIFO with O_NONBLOCK set           │
+                                                                        ├─────────────────────┬─────────────────────────────────────────┤
+                                                                        │Immediately Writable:│    None         Some          nbyte     │
+                                                                        ├─────────────────────┼─────────────────────────────────────────┤
+                                                                        │nbyte≤{PIPE_BUF}     │-1, [EAGAIN] -1, [EAGAIN]  Atomic nbyte  │
+                                                                        ├─────────────────────┼─────────────────────────────────────────┤
+                                                                        │nbyte>{PIPE_BUF}     │-1, [EAGAIN] <nbyte or -1, ≤nbyte or -1, │
+                                                                        │                     │             [EAGAIN]      [EAGAIN]      │
+                                                                        └─────────────────────┴─────────────────────────────────────────┘
+       There  is  no exception regarding partial writes when O_NONBLOCK is set.  With the exception of writing to an empty pipe, this volume of POSIX.1‐2017 does not specify exactly when a partial write
+       is performed since that would require specifying internal details of the implementation. Every application should be prepared to handle partial writes when O_NONBLOCK is  set  and  the  requested
+       amount is greater than {PIPE_BUF}, just as every application should be prepared to handle partial writes on other kinds of file descriptors.
+
+       The  intent of forcing writing at least one byte if any can be written is to assure that each write makes progress if there is any room in the pipe. If the pipe is empty, {PIPE_BUF} bytes must be
+       written; if not, at least some progress must have been made.
+
+       Where this volume of POSIX.1‐2017 requires -1 to be returned and errno set to [EAGAIN], most historical implementations return zero (with the O_NDELAY flag set, which is the historical  predeces‐
+       sor of O_NONBLOCK, but is not itself in this volume of POSIX.1‐2017). The error indications in this volume of POSIX.1‐2017 were chosen so that an application can distinguish these cases from end-
+       of-file. While write() cannot receive an indication of end-of-file, read() can, and the two functions have similar return values. Also, some existing systems (for example, Eighth Edition)  permit
+       a  write  of zero bytes to mean that the reader should get an end-of-file indication; for those systems, a return value of zero from write() indicates a successful write of an end-of-file indica‐
+       tion.
+
+       Implementations are allowed, but not required, to perform error checking for write() requests of zero bytes.
+
+       The concept of a {PIPE_MAX} limit (indicating the maximum number of bytes that can be written to a pipe in a single operation) was considered, but rejected, because this concept would unnecessar‐
+       ily limit application writing.
+
+       See also the discussion of O_NONBLOCK in read().
+
+       Writes  can be serialized with respect to other reads and writes. If a read() of file data can be proven (by any means) to occur after a write() of the data, it must reflect that write(), even if
+       the calls are made by different processes. A similar requirement applies to multiple write operations to the same file position. This is needed to guarantee the propagation of data  from  write()
+       calls to subsequent read() calls. This requirement is particularly significant for networked file systems, where some caching schemes violate these semantics.
+
+       Note  that  this is specified in terms of read() and write().  The XSI extensions readv() and writev() also obey these semantics. A new ``high-performance'' write analog that did not follow these
+       serialization requirements would also be permitted by this wording. This volume of POSIX.1‐2017 is also silent about any effects of application-level caching (such as that done by stdio).
+
+       This volume of POSIX.1‐2017 does not specify the value of the file offset after an error is returned; there are too many cases. For programming errors, such as [EBADF], the concept is meaningless
+       since no file is involved. For errors that are detected immediately, such as [EAGAIN], clearly the pointer should not change. After an interrupt or hardware error, however, an updated value would
+       be very useful and is the behavior of many implementations.
+
+       This volume of POSIX.1‐2017 does not specify the behavior of concurrent writes to a regular file from multiple threads, except that each write is atomic (see Section  2.9.7,  Thread  Interactions
+       with Regular File Operations).  Applications should use some form of concurrency control.
+
+       This volume of POSIX.1‐2017 intentionally does not specify any pwrite() errors related to pipes, FIFOs, and sockets other than [ESPIPE].
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       chmod(), creat(), dup(), fcntl(), getrlimit(), lseek(), open(), pipe(), read(), ulimit(), writev()
+
+       The Base Definitions volume of POSIX.1‐2017, <limits.h>, <stropts.h>, <sys_uio.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          WRITE(3P)
+write(2)                                                                                    System Calls Manual                                                                                   write(2)
+
+NAME
+       write - write to a file descriptor
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t write(int fd, const void buf[.count], size_t count);
+
+DESCRIPTION
+       write() writes up to count bytes from the buffer starting at buf to the file referred to by the file descriptor fd.
+
+       The  number  of  bytes  written may be less than count if, for example, there is insufficient space on the underlying physical medium, or the RLIMIT_FSIZE resource limit is encountered (see setr‐
+       limit(2)), or the call was interrupted by a signal handler after having written less than count bytes.  (See also pipe(7).)
+
+       For a seekable file (i.e., one to which lseek(2) may be applied, for example, a regular file) writing takes place at the file offset, and the file offset is incremented by the number of bytes ac‐
+       tually  written.   If the file was open(2)ed with O_APPEND, the file offset is first set to the end of the file before writing.  The adjustment of the file offset and the write operation are per‐
+       formed as an atomic step.
+
+       POSIX requires that a read(2) that can be proved to occur after a write() has returned will return the new data.  Note that not all filesystems are POSIX conforming.
+
+       According to POSIX.1, if count is greater than SSIZE_MAX, the result is implementation-defined; see NOTES for the upper limit on Linux.
+
+RETURN VALUE
+       On success, the number of bytes written is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+       Note that a successful write() may transfer fewer than count bytes.  Such partial writes can occur for various reasons; for example, because there was insufficient space on  the  disk  device  to
+       write  all  of the requested bytes, or because a blocked write() to a socket, pipe, or similar was interrupted by a signal handler after it had transferred some, but before it had transferred all
+       of the requested bytes.  In the event of a partial write, the caller can make another write() call to transfer the remaining bytes.  The subsequent call will either transfer further bytes or  may
+       result in an error (e.g., if the disk is now full).
+
+       If count is zero and fd refers to a regular file, then write() may return a failure status if one of the errors below is detected.  If no errors are detected, or error detection is not performed,
+       0 is returned without causing any other effect.  If count is zero and fd refers to a file other than a regular file, the results are not specified.
+
+ERRORS
+       EAGAIN The file descriptor fd refers to a file other than a socket and has been marked nonblocking (O_NONBLOCK), and the write would block.  See open(2) for  further  details  on  the  O_NONBLOCK
+              flag.
+
+       EAGAIN or EWOULDBLOCK
+              The  file descriptor fd refers to a socket and has been marked nonblocking (O_NONBLOCK), and the write would block.  POSIX.1-2001 allows either error to be returned for this case, and does
+              not require these constants to have the same value, so a portable application should check for both possibilities.
+
+       EBADF  fd is not a valid file descriptor or is not open for writing.
+
+       EDESTADDRREQ
+              fd refers to a datagram socket for which a peer address has not been set using connect(2).
+
+       EDQUOT The user's quota of disk blocks on the filesystem containing the file referred to by fd has been exhausted.
+
+       EFAULT buf is outside your accessible address space.
+
+       EFBIG  An attempt was made to write a file that exceeds the implementation-defined maximum file size or the process's file size limit, or to write at a position past the maximum allowed offset.
+
+       EINTR  The call was interrupted by a signal before any data was written; see signal(7).
+
+       EINVAL fd is attached to an object which is unsuitable for writing; or the file was opened with the O_DIRECT flag, and either the address specified in buf, the value specified in  count,  or  the
+              file offset is not suitably aligned.
+
+       EIO    A low-level I/O error occurred while modifying the inode.  This error may relate to the write-back of data written by an earlier write(), which may have been issued to a different file de‐
+              scriptor on the same file.  Since Linux 4.13, errors from write-back come with a promise that they may be reported by subsequent.  write() requests, and will be reported  by  a  subsequent
+              fsync(2)  (whether  or  not  they were also reported by write()).  An alternate cause of EIO on networked filesystems is when an advisory lock had been taken out on the file descriptor and
+              this lock has been lost.  See the Lost locks section of fcntl(2) for further details.
+
+       ENOSPC The device containing the file referred to by fd has no room for the data.
+
+       EPERM  The operation was prevented by a file seal; see fcntl(2).
+
+       EPIPE  fd is connected to a pipe or socket whose reading end is closed.  When this happens the writing process will also receive a SIGPIPE signal.  (Thus, the write return value is seen  only  if
+              the program catches, blocks or ignores this signal.)
+
+       Other errors may occur, depending on the object connected to fd.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       SVr4, 4.3BSD, POSIX.1-2001.
+
+       Under SVr4 a write may be interrupted and return EINTR at any point, not just before any data is written.
+
+NOTES
+       A successful return from write() does not make any guarantee that data has been committed to disk.  On some filesystems, including NFS, it does not even guarantee that space has successfully been
+       reserved for the data.  In this case, some errors might be delayed until a future write(), fsync(2), or even close(2).  The only way to be sure is to call fsync(2) after you are done writing  all
+       your data.
+
+       If  a  write()  is  interrupted by a signal handler before any bytes are written, then the call fails with the error EINTR; if it is interrupted after at least one byte has been written, the call
+       succeeds, and returns the number of bytes written.
+
+       On Linux, write() (and similar system calls) will transfer at most 0x7ffff000 (2,147,479,552) bytes, returning the number of bytes actually transferred.  (This is true on both 32-bit  and  64-bit
+       systems.)
+
+       An  error  return  value while performing write() using direct I/O does not mean the entire write has failed.  Partial data may be written and the data at the file offset on which the write() was
+       attempted should be considered inconsistent.
+
+BUGS
+       According to POSIX.1-2008/SUSv4 Section XSI 2.9.7 ("Thread Interactions with Regular File Operations"):
+
+           All of the following functions shall be atomic with respect to each other in the effects specified in POSIX.1-2008 when they operate on regular files or symbolic links: ...
+
+       Among the APIs subsequently listed are write() and writev(2).  And among the effects that should be atomic across threads (and processes) are updates of the file offset.   However,  before  Linux
+       3.14, this was not the case: if two processes that share an open file description (see open(2)) perform a write() (or writev(2)) at the same time, then the I/O operations were not atomic with re‐
+       spect to updating the file offset, with the result that the blocks of data output by the two processes might (incorrectly) overlap.  This problem was fixed in Linux 3.14.
+
+SEE ALSO
+       close(2), fcntl(2), fsync(2), ioctl(2), lseek(2), open(2), pwrite(2), read(2), select(2), writev(2), fwrite(3)
+
+Linux man-pages 6.04                                                                            2023-04-03                                                                                        write(2)

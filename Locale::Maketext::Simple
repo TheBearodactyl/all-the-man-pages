@@ -1,0 +1,100 @@
+Locale::Maketext::Simple(3perl)                                                      Perl Programmers Reference Guide                                                      Locale::Maketext::Simple(3perl)
+
+NAME
+       Locale::Maketext::Simple - Simple interface to Locale::Maketext::Lexicon
+
+VERSION
+       This document describes version 0.18 of Locale::Maketext::Simple, released Septermber 8, 2006.
+
+SYNOPSIS
+       Minimal setup (looks for auto/Foo/*.po and auto/Foo/*.mo):
+
+           package Foo;
+           use Locale::Maketext::Simple;       # exports 'loc'
+           loc_lang('fr');                     # set language to French
+           sub hello {
+               print loc("Hello, [_1]!", "World");
+           }
+
+       More sophisticated example:
+
+           package Foo::Bar;
+           use Locale::Maketext::Simple (
+               Class       => 'Foo',       # search in auto/Foo/
+               Style       => 'gettext',   # %1 instead of [_1]
+               Export      => 'maketext',  # maketext() instead of loc()
+               Subclass    => 'L10N',      # Foo::L10N instead of Foo::I18N
+               Decode      => 1,           # decode entries to unicode-strings
+               Encoding    => 'locale',    # but encode lexicons in current locale
+                                           # (needs Locale::Maketext::Lexicon 0.36)
+           );
+           sub japh {
+               print maketext("Just another %1 hacker", "Perl");
+           }
+
+DESCRIPTION
+       This module is a simple wrapper around Locale::Maketext::Lexicon, designed to alleviate the need of creating Language Classes for module authors.
+
+       The language used is chosen from the loc_lang call. If a lookup is not possible, the i-default language will be used. If the lookup is not in the i-default language, then the key will be
+       returned.
+
+       If Locale::Maketext::Lexicon is not present, it implements a minimal localization function by simply interpolating "[_1]" with the first argument, "[_2]" with the second, etc.  Interpolated
+       function like "[quant,_1]" are treated as "[_1]", with the sole exception of "[tense,_1,X]", which will append "ing" to "_1" when X is "present", or appending "ed" to <_1> otherwise.
+
+OPTIONS
+       All options are passed either via the "use" statement, or via an explicit "import".
+
+   Class
+       By default, Locale::Maketext::Simple draws its source from the calling package's auto/ directory; you can override this behaviour by explicitly specifying another package as "Class".
+
+   Path
+       If your PO and MO files are under a path elsewhere than "auto/", you may specify it using the "Path" option.
+
+   Style
+       By default, this module uses the "maketext" style of "[_1]" and "[quant,_1]" for interpolation.  Alternatively, you can specify the "gettext" style, which uses %1 and "%quant(%1)" for
+       interpolation.
+
+       This option is case-insensitive.
+
+   Export
+       By default, this module exports a single function, "loc", into its caller's namespace.  You can set it to another name, or set it to an empty string to disable exporting.
+
+   Subclass
+       By default, this module creates an "::I18N" subclass under the caller's package (or the package specified by "Class"), and stores lexicon data in its subclasses.  You can assign a name other than
+       "I18N" via this option.
+
+   Decode
+       If set to a true value, source entries will be converted into utf8-strings (available in Perl 5.6.1 or later).  This feature needs the Encode or Encode::compat module.
+
+   Encoding
+       Specifies an encoding to store lexicon entries, instead of utf8-strings.  If set to "locale", the encoding from the current locale setting is used.  Implies a true value for "Decode".
+
+ACKNOWLEDGMENTS
+       Thanks to Jos I. Boumans for suggesting this module to be written.
+
+       Thanks to Chia-Liang Kao for suggesting "Path" and "loc_lang".
+
+SEE ALSO
+       Locale::Maketext, Locale::Maketext::Lexicon
+
+AUTHORS
+       Audrey Tang <cpan@audreyt.org>
+
+COPYRIGHT
+       Copyright 2003, 2004, 2005, 2006 by Audrey Tang <cpan@audreyt.org>.
+
+       This software is released under the MIT license cited below.  Additionally, when this software is distributed with Perl Kit, Version 5, you may also redistribute it and/or modify it under the
+       same terms as Perl itself.
+
+   The "MIT" License
+       Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction,
+       including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished
+       to do so, subject to the following conditions:
+
+       The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+       THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+       NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+       OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+perl v5.36.0                                                                                    2022-12-12                                                                 Locale::Maketext::Simple(3perl)

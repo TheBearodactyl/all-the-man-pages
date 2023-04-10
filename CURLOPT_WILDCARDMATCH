@@ -1,0 +1,73 @@
+CURLOPT_WILDCARDMATCH(3)                                                                 curl_easy_setopt options                                                                 CURLOPT_WILDCARDMATCH(3)
+
+NAME
+       CURLOPT_WILDCARDMATCH - directory wildcard transfers
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       CURLcode curl_easy_setopt(CURL *handle, CURLOPT_WILDCARDMATCH, long onoff);
+
+DESCRIPTION
+       Set  onoff  to  1  if you want to transfer multiple files according to a file name pattern. The pattern can be specified as part of the CURLOPT_URL(3) option, using an fnmatch-like pattern (Shell
+       Pattern Matching) in the last part of URL (file name).
+
+       By default, libcurl uses its internal wildcard matching implementation. You can provide your own matching function by the CURLOPT_FNMATCH_FUNCTION(3) option.
+
+       A brief introduction of its syntax follows:
+
+              * - ASTERISK
+                       ftp://example.com/some/path/*.txt
+                     for all txt's from the root directory. Only two asterisks are allowed within the same pattern string.
+
+              ? - QUESTION MARK
+                     Question mark matches any (exactly one) character.
+                       ftp://example.com/some/path/photo?.jpg
+
+              [ - BRACKET EXPRESSION
+                     The left bracket opens a bracket expression. The question mark and asterisk have no special meaning in a bracket expression. Each bracket expression ends by the  right  bracket  and
+                     matches exactly one character. Some examples follow:
+
+                     [a-zA-Z0-9] or [f-gF-G] - character interval
+
+                     [abc] - character enumeration
+
+                     [^abc] or [!abc] - negation
+
+                     [[:name:]] class expression. Supported classes are alnum,lower, space, alpha, digit, print, upper, blank, graph, xdigit.
+
+                     [][-!^] - special case - matches only '-', ']', '[', '!' or '^'. These characters have no special purpose.
+
+                     [\[\]\\] - escape syntax. Matches '[', ']' or '\'.
+
+                     Using the rules above, a file name pattern can be constructed:
+                       ftp://example.com/some/path/[a-z[:upper:]\\].jpg
+
+PROTOCOLS
+       This feature is only supported for FTP download.
+
+EXAMPLE
+       /* initialization of easy handle */
+       handle = curl_easy_init();
+
+       /* turn on wildcard matching */
+       curl_easy_setopt(handle, CURLOPT_WILDCARDMATCH, 1L);
+
+       /* callback is called before download of concrete file started */
+       curl_easy_setopt(handle, CURLOPT_CHUNK_BGN_FUNCTION, file_is_coming);
+
+       /* callback is called after data from the file have been transferred */
+       curl_easy_setopt(handle, CURLOPT_CHUNK_END_FUNCTION, file_is_downloaded);
+
+       /* See more on https://curl.se/libcurl/c/ftp-wildcard.html */
+
+AVAILABILITY
+       Added in 7.21.0
+
+RETURN VALUE
+       Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
+
+SEE ALSO
+       CURLOPT_FNMATCH_FUNCTION(3), CURLOPT_URL(3),
+
+libcurl 7.37.0                                                                                  16 Jun 2014                                                                       CURLOPT_WILDCARDMATCH(3)

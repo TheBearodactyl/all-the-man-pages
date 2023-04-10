@@ -1,0 +1,495 @@
+opus_multistream(3)                  Opus                  opus_multistream(3)
+
+NAME
+       opus_multistream - Opus Multistream API
+
+        - The multistream API allows individual Opus streams to be combined
+       into a single packet, enabling support for up to 255 channels.
+
+SYNOPSIS
+   Typedefs
+       typedef struct OpusMSEncoder OpusMSEncoder
+           Opus multistream encoder state.
+       typedef struct OpusMSDecoder OpusMSDecoder
+           Opus multistream decoder state.
+
+   Multistream encoder functions
+       opus_int32 opus_multistream_encoder_get_size (int streams, int
+           coupled_streams)
+           Gets the size of an OpusMSEncoder structure.
+       opus_int32 opus_multistream_surround_encoder_get_size (int channels,
+           int mapping_family)
+       OpusMSEncoder * opus_multistream_encoder_create (opus_int32 Fs, int
+           channels, int streams, int coupled_streams, const unsigned char
+           *mapping, int application, int *error)
+           Allocates and initializes a multistream encoder state.
+       OpusMSEncoder * opus_multistream_surround_encoder_create (opus_int32
+           Fs, int channels, int mapping_family, int *streams, int
+           *coupled_streams, unsigned char *mapping, int application, int
+           *error)
+       int opus_multistream_encoder_init (OpusMSEncoder *st, opus_int32 Fs,
+           int channels, int streams, int coupled_streams, const unsigned char
+           *mapping, int application)
+           Initialize a previously allocated multistream encoder state.
+       int opus_multistream_surround_encoder_init (OpusMSEncoder *st,
+           opus_int32 Fs, int channels, int mapping_family, int *streams, int
+           *coupled_streams, unsigned char *mapping, int application)
+       int opus_multistream_encode (OpusMSEncoder *st, const opus_int16 *pcm,
+           int frame_size, unsigned char *data, opus_int32 max_data_bytes)
+           Encodes a multistream Opus frame.
+       int opus_multistream_encode_float (OpusMSEncoder *st, const float *pcm,
+           int frame_size, unsigned char *data, opus_int32 max_data_bytes)
+           Encodes a multistream Opus frame from floating point input.
+       void opus_multistream_encoder_destroy (OpusMSEncoder *st)
+           Frees an OpusMSEncoder allocated by
+           opus_multistream_encoder_create().
+       int opus_multistream_encoder_ctl (OpusMSEncoder *st, int request,...)
+           Perform a CTL function on a multistream Opus encoder.
+
+   Multistream decoder functions
+       opus_int32 opus_multistream_decoder_get_size (int streams, int
+           coupled_streams)
+           Gets the size of an OpusMSDecoder structure.
+       OpusMSDecoder * opus_multistream_decoder_create (opus_int32 Fs, int
+           channels, int streams, int coupled_streams, const unsigned char
+           *mapping, int *error)
+           Allocates and initializes a multistream decoder state.
+       int opus_multistream_decoder_init (OpusMSDecoder *st, opus_int32 Fs,
+           int channels, int streams, int coupled_streams, const unsigned char
+           *mapping)
+           Intialize a previously allocated decoder state object.
+       int opus_multistream_decode (OpusMSDecoder *st, const unsigned char
+           *data, opus_int32 len, opus_int16 *pcm, int frame_size, int
+           decode_fec)
+           Decode a multistream Opus packet.
+       int opus_multistream_decode_float (OpusMSDecoder *st, const unsigned
+           char *data, opus_int32 len, float *pcm, int frame_size, int
+           decode_fec)
+           Decode a multistream Opus packet with floating point output.
+       int opus_multistream_decoder_ctl (OpusMSDecoder *st, int request,...)
+           Perform a CTL function on a multistream Opus decoder.
+       void opus_multistream_decoder_destroy (OpusMSDecoder *st)
+           Frees an OpusMSDecoder allocated by
+           opus_multistream_decoder_create().
+
+Detailed Description
+       The multistream API allows individual Opus streams to be combined into
+       a single packet, enabling support for up to 255 channels.
+
+       Unlike an elementary Opus stream, the encoder and decoder must
+       negotiate the channel configuration before the decoder can successfully
+       interpret the data in the packets produced by the encoder. Some basic
+       information, such as packet duration, can be computed without any
+       special negotiation.
+
+       The format for multistream Opus packets is defined in RFC 7845 and is
+       based on the self-delimited Opus framing described in Appendix B of RFC
+       6716. Normal Opus packets are just a degenerate case of multistream
+       Opus packets, and can be encoded or decoded with the multistream API by
+       setting streams to 1 when initializing the encoder or decoder.
+
+       Multistream Opus streams can contain up to 255 elementary Opus streams.
+       These may be either 'uncoupled' or 'coupled', indicating that the
+       decoder is configured to decode them to either 1 or 2 channels,
+       respectively. The streams are ordered so that all coupled streams
+       appear at the beginning.
+
+       A mapping table defines which decoded channel i should be used for each
+       input/output (I/O) channel j. This table is typically provided as an
+       unsigned char array. Let i = mapping[j] be the index for I/O channel j.
+       If i < 2*coupled_streams, then I/O channel j is encoded as the left
+       channel of stream (i/2) if i is even, or as the right channel of stream
+       (i/2) if i is odd. Otherwise, I/O channel j is encoded as mono in
+       stream (i - coupled_streams), unless it has the special value 255, in
+       which case it is omitted from the encoding entirely (the decoder will
+       reproduce it as silence). Each value i must either be the special value
+       255 or be less than streams + coupled_streams.
+
+       The output channels specified by the encoder should use the Vorbis
+       channel ordering. A decoder may wish to apply an additional permutation
+       to the mapping the encoder used to achieve a different output channel
+       order (e.g. for outputing in WAV order).
+
+       Each multistream packet contains an Opus packet for each stream, and
+       all of the Opus packets in a single multistream packet must have the
+       same duration. Therefore the duration of a multistream packet can be
+       extracted from the TOC sequence of the first stream, which is located
+       at the beginning of the packet, just like an elementary Opus stream:
+
+       int nb_samples;
+       int nb_frames;
+       nb_frames = opus_packet_get_nb_frames(data, len);
+       if (nb_frames < 1)
+         return nb_frames;
+       nb_samples = opus_packet_get_samples_per_frame(data, 48000) * nb_frames;
+
+       The general encoding and decoding process proceeds exactly the same as
+       in the normal Opus Encoder and Opus Decoder APIs. See their
+       documentation for an overview of how to use the corresponding
+       multistream functions.
+
+Typedef Documentation
+   typedef struct OpusMSDecoder OpusMSDecoder
+       Opus multistream decoder state. This contains the complete state of a
+       multistream Opus decoder. It is position independent and can be freely
+       copied.
+
+       See also
+           opus_multistream_decoder_create
+
+           opus_multistream_decoder_init
+
+   typedef struct OpusMSEncoder OpusMSEncoder
+       Opus multistream encoder state. This contains the complete state of a
+       multistream Opus encoder. It is position independent and can be freely
+       copied.
+
+       See also
+           opus_multistream_encoder_create
+
+           opus_multistream_encoder_init
+
+Function Documentation
+   int opus_multistream_decode (OpusMSDecoder * st, const unsigned char *
+       data, opus_int32 len, opus_int16 * pcm, int frame_size, int decode_fec)
+       Decode a multistream Opus packet.
+
+       Parameters
+           st OpusMSDecoder*: Multistream decoder state.
+           data const unsigned char*: Input payload. Use a NULL pointer to
+           indicate packet loss.
+           len opus_int32: Number of bytes in payload.
+           pcm opus_int16*: Output signal, with interleaved samples. This must
+           contain room for frame_size*channels samples.
+           frame_size int: The number of samples per channel of available
+           space in pcm. If this is less than the maximum packet duration (120
+           ms; 5760 for 48kHz), this function will not be capable of decoding
+           some packets. In the case of PLC (data==NULL) or FEC
+           (decode_fec=1), then frame_size needs to be exactly the duration of
+           audio that is missing, otherwise the decoder will not be in the
+           optimal state to decode the next incoming packet. For the PLC and
+           FEC cases, frame_size must be a multiple of 2.5 ms.
+           decode_fec int: Flag (0 or 1) to request that any in-band forward
+           error correction data be decoded. If no such data is available, the
+           frame is decoded as if it were lost.
+
+       Returns
+           Number of samples decoded on success or a negative error code (see
+           Error codes) on failure.
+
+   int opus_multistream_decode_float (OpusMSDecoder * st, const unsigned char
+       * data, opus_int32 len, float * pcm, int frame_size, int decode_fec)
+       Decode a multistream Opus packet with floating point output.
+
+       Parameters
+           st OpusMSDecoder*: Multistream decoder state.
+           data const unsigned char*: Input payload. Use a NULL pointer to
+           indicate packet loss.
+           len opus_int32: Number of bytes in payload.
+           pcm opus_int16*: Output signal, with interleaved samples. This must
+           contain room for frame_size*channels samples.
+           frame_size int: The number of samples per channel of available
+           space in pcm. If this is less than the maximum packet duration (120
+           ms; 5760 for 48kHz), this function will not be capable of decoding
+           some packets. In the case of PLC (data==NULL) or FEC
+           (decode_fec=1), then frame_size needs to be exactly the duration of
+           audio that is missing, otherwise the decoder will not be in the
+           optimal state to decode the next incoming packet. For the PLC and
+           FEC cases, frame_size must be a multiple of 2.5 ms.
+           decode_fec int: Flag (0 or 1) to request that any in-band forward
+           error correction data be decoded. If no such data is available, the
+           frame is decoded as if it were lost.
+
+       Returns
+           Number of samples decoded on success or a negative error code (see
+           Error codes) on failure.
+
+   OpusMSDecoder * opus_multistream_decoder_create (opus_int32 Fs, int
+       channels, int streams, int coupled_streams, const unsigned char *
+       mapping, int * error)
+       Allocates and initializes a multistream decoder state. Call
+       opus_multistream_decoder_destroy() to release this object when
+       finished.
+
+       Parameters
+           Fs opus_int32: Sampling rate to decode at (in Hz). This must be one
+           of 8000, 12000, 16000, 24000, or 48000.
+           channels int: Number of channels to output. This must be at most
+           255. It may be different from the number of coded channels (streams
+           + coupled_streams).
+           streams int: The total number of streams coded in the input. This
+           must be no more than 255.
+           coupled_streams int: Number of streams to decode as coupled (2
+           channel) streams. This must be no larger than the total number of
+           streams. Additionally, The total number of coded channels (streams
+           + coupled_streams) must be no more than 255.
+           mapping const unsigned char[channels]: Mapping from coded channels
+           to output channels, as described in Opus Multistream API.
+           error int *: Returns OPUS_OK on success, or an error code (see
+           Error codes) on failure.
+
+   int opus_multistream_decoder_ctl (OpusMSDecoder * st, int request,  ...)
+       Perform a CTL function on a multistream Opus decoder. Generally the
+       request and subsequent arguments are generated by a convenience macro.
+
+       Parameters
+           st OpusMSDecoder*: Multistream decoder state.
+           request This and all remaining parameters should be replaced by one
+           of the convenience macros in Generic CTLs, Decoder related CTLs, or
+           Multistream specific encoder and decoder CTLs.
+
+       See also
+           Generic CTLs
+
+           Decoder related CTLs
+
+           Multistream specific encoder and decoder CTLs
+
+   void opus_multistream_decoder_destroy (OpusMSDecoder * st)
+       Frees an OpusMSDecoder allocated by opus_multistream_decoder_create().
+
+       Parameters
+           st OpusMSDecoder: Multistream decoder state to be freed.
+
+   opus_int32 opus_multistream_decoder_get_size (int streams, int
+       coupled_streams)
+       Gets the size of an OpusMSDecoder structure.
+
+       Parameters
+           streams int: The total number of streams coded in the input. This
+           must be no more than 255.
+           coupled_streams int: Number streams to decode as coupled (2
+           channel) streams. This must be no larger than the total number of
+           streams. Additionally, The total number of coded channels (streams
+           + coupled_streams) must be no more than 255.
+
+       Returns
+           The size in bytes on success, or a negative error code (see Error
+           codes) on error.
+
+   int opus_multistream_decoder_init (OpusMSDecoder * st, opus_int32 Fs, int
+       channels, int streams, int coupled_streams, const unsigned char *
+       mapping)
+       Intialize a previously allocated decoder state object. The memory
+       pointed to by st must be at least the size returned by
+       opus_multistream_encoder_get_size(). This is intended for applications
+       which use their own allocator instead of malloc. To reset a previously
+       initialized state, use the OPUS_RESET_STATE CTL.
+
+       See also
+           opus_multistream_decoder_create
+
+           opus_multistream_deocder_get_size
+
+       Parameters
+           st OpusMSEncoder*: Multistream encoder state to initialize.
+           Fs opus_int32: Sampling rate to decode at (in Hz). This must be one
+           of 8000, 12000, 16000, 24000, or 48000.
+           channels int: Number of channels to output. This must be at most
+           255. It may be different from the number of coded channels (streams
+           + coupled_streams).
+           streams int: The total number of streams coded in the input. This
+           must be no more than 255.
+           coupled_streams int: Number of streams to decode as coupled (2
+           channel) streams. This must be no larger than the total number of
+           streams. Additionally, The total number of coded channels (streams
+           + coupled_streams) must be no more than 255.
+           mapping const unsigned char[channels]: Mapping from coded channels
+           to output channels, as described in Opus Multistream API.
+
+       Returns
+           OPUS_OK on success, or an error code (see Error codes) on failure.
+
+   int opus_multistream_encode (OpusMSEncoder * st, const opus_int16 * pcm,
+       int frame_size, unsigned char * data, opus_int32 max_data_bytes)
+       Encodes a multistream Opus frame.
+
+       Parameters
+           st OpusMSEncoder*: Multistream encoder state.
+           pcm const opus_int16*: The input signal as interleaved samples.
+           This must contain frame_size*channels samples.
+           frame_size int: Number of samples per channel in the input signal.
+           This must be an Opus frame size for the encoder's sampling rate.
+           For example, at 48 kHz the permitted values are 120, 240, 480, 960,
+           1920, and 2880. Passing in a duration of less than 10 ms (480
+           samples at 48 kHz) will prevent the encoder from using the LPC or
+           hybrid modes.
+           data unsigned char*: Output payload. This must contain storage for
+           at least max_data_bytes.
+           max_data_bytes opus_int32: Size of the allocated memory for the
+           output payload. This may be used to impose an upper limit on the
+           instant bitrate, but should not be used as the only bitrate
+           control. Use OPUS_SET_BITRATE to control the bitrate.
+
+       Returns
+           The length of the encoded packet (in bytes) on success or a
+           negative error code (see Error codes) on failure.
+
+   int opus_multistream_encode_float (OpusMSEncoder * st, const float * pcm,
+       int frame_size, unsigned char * data, opus_int32 max_data_bytes)
+       Encodes a multistream Opus frame from floating point input.
+
+       Parameters
+           st OpusMSEncoder*: Multistream encoder state.
+           pcm const float*: The input signal as interleaved samples with a
+           normal range of +/-1.0. Samples with a range beyond +/-1.0 are
+           supported but will be clipped by decoders using the integer API and
+           should only be used if it is known that the far end supports
+           extended dynamic range. This must contain frame_size*channels
+           samples.
+           frame_size int: Number of samples per channel in the input signal.
+           This must be an Opus frame size for the encoder's sampling rate.
+           For example, at 48 kHz the permitted values are 120, 240, 480, 960,
+           1920, and 2880. Passing in a duration of less than 10 ms (480
+           samples at 48 kHz) will prevent the encoder from using the LPC or
+           hybrid modes.
+           data unsigned char*: Output payload. This must contain storage for
+           at least max_data_bytes.
+           max_data_bytes opus_int32: Size of the allocated memory for the
+           output payload. This may be used to impose an upper limit on the
+           instant bitrate, but should not be used as the only bitrate
+           control. Use OPUS_SET_BITRATE to control the bitrate.
+
+       Returns
+           The length of the encoded packet (in bytes) on success or a
+           negative error code (see Error codes) on failure.
+
+   OpusMSEncoder * opus_multistream_encoder_create (opus_int32 Fs, int
+       channels, int streams, int coupled_streams, const unsigned char *
+       mapping, int application, int * error)
+       Allocates and initializes a multistream encoder state. Call
+       opus_multistream_encoder_destroy() to release this object when
+       finished.
+
+       Parameters
+           Fs opus_int32: Sampling rate of the input signal (in Hz). This must
+           be one of 8000, 12000, 16000, 24000, or 48000.
+           channels int: Number of channels in the input signal. This must be
+           at most 255. It may be greater than the number of coded channels
+           (streams + coupled_streams).
+           streams int: The total number of streams to encode from the input.
+           This must be no more than the number of channels.
+           coupled_streams int: Number of coupled (2 channel) streams to
+           encode. This must be no larger than the total number of streams.
+           Additionally, The total number of encoded channels (streams +
+           coupled_streams) must be no more than the number of input channels.
+           mapping const unsigned char[channels]: Mapping from encoded
+           channels to input channels, as described in Opus Multistream API.
+           As an extra constraint, the multistream encoder does not allow
+           encoding coupled streams for which one channel is unused since this
+           is never a good idea.
+           application int: The target encoder application. This must be one
+           of the following:
+
+           OPUS_APPLICATION_VOIP
+               Process signal for improved speech intelligibility.
+
+           OPUS_APPLICATION_AUDIO
+               Favor faithfulness to the original input.
+
+           OPUS_APPLICATION_RESTRICTED_LOWDELAY
+               Configure the minimum possible coding delay by disabling
+               certain modes of operation.
+
+           error int *: Returns OPUS_OK on success, or an error code (see
+           Error codes) on failure.
+
+   int opus_multistream_encoder_ctl (OpusMSEncoder * st, int request,  ...)
+       Perform a CTL function on a multistream Opus encoder. Generally the
+       request and subsequent arguments are generated by a convenience macro.
+
+       Parameters
+           st OpusMSEncoder*: Multistream encoder state.
+           request This and all remaining parameters should be replaced by one
+           of the convenience macros in Generic CTLs, Encoder related CTLs, or
+           Multistream specific encoder and decoder CTLs.
+
+       See also
+           Generic CTLs
+
+           Encoder related CTLs
+
+           Multistream specific encoder and decoder CTLs
+
+   void opus_multistream_encoder_destroy (OpusMSEncoder * st)
+       Frees an OpusMSEncoder allocated by opus_multistream_encoder_create().
+
+       Parameters
+           st OpusMSEncoder*: Multistream encoder state to be freed.
+
+   opus_int32 opus_multistream_encoder_get_size (int streams, int
+       coupled_streams)
+       Gets the size of an OpusMSEncoder structure.
+
+       Parameters
+           streams int: The total number of streams to encode from the input.
+           This must be no more than 255.
+           coupled_streams int: Number of coupled (2 channel) streams to
+           encode. This must be no larger than the total number of streams.
+           Additionally, The total number of encoded channels (streams +
+           coupled_streams) must be no more than 255.
+
+       Returns
+           The size in bytes on success, or a negative error code (see Error
+           codes) on error.
+
+   int opus_multistream_encoder_init (OpusMSEncoder * st, opus_int32 Fs, int
+       channels, int streams, int coupled_streams, const unsigned char *
+       mapping, int application)
+       Initialize a previously allocated multistream encoder state. The memory
+       pointed to by st must be at least the size returned by
+       opus_multistream_encoder_get_size(). This is intended for applications
+       which use their own allocator instead of malloc. To reset a previously
+       initialized state, use the OPUS_RESET_STATE CTL.
+
+       See also
+           opus_multistream_encoder_create
+
+           opus_multistream_encoder_get_size
+
+       Parameters
+           st OpusMSEncoder*: Multistream encoder state to initialize.
+           Fs opus_int32: Sampling rate of the input signal (in Hz). This must
+           be one of 8000, 12000, 16000, 24000, or 48000.
+           channels int: Number of channels in the input signal. This must be
+           at most 255. It may be greater than the number of coded channels
+           (streams + coupled_streams).
+           streams int: The total number of streams to encode from the input.
+           This must be no more than the number of channels.
+           coupled_streams int: Number of coupled (2 channel) streams to
+           encode. This must be no larger than the total number of streams.
+           Additionally, The total number of encoded channels (streams +
+           coupled_streams) must be no more than the number of input channels.
+           mapping const unsigned char[channels]: Mapping from encoded
+           channels to input channels, as described in Opus Multistream API.
+           As an extra constraint, the multistream encoder does not allow
+           encoding coupled streams for which one channel is unused since this
+           is never a good idea.
+           application int: The target encoder application. This must be one
+           of the following:
+
+           OPUS_APPLICATION_VOIP
+               Process signal for improved speech intelligibility.
+
+           OPUS_APPLICATION_AUDIO
+               Favor faithfulness to the original input.
+
+           OPUS_APPLICATION_RESTRICTED_LOWDELAY
+               Configure the minimum possible coding delay by disabling
+               certain modes of operation.
+
+       Returns
+           OPUS_OK on success, or an error code (see Error codes) on failure.
+
+   OpusMSEncoder * opus_multistream_surround_encoder_create (opus_int32 Fs,
+       int channels, int mapping_family, int * streams, int * coupled_streams,
+       unsigned char * mapping, int application, int * error)
+   opus_int32 opus_multistream_surround_encoder_get_size (int channels, int
+       mapping_family)
+   int opus_multistream_surround_encoder_init (OpusMSEncoder * st, opus_int32
+       Fs, int channels, int mapping_family, int * streams, int *
+       coupled_streams, unsigned char * mapping, int application)
+Author
+       Generated automatically by Doxygen for Opus from the source code.
+
+Version 1.3.1                   Fri Feb 11 2022            opus_multistream(3)

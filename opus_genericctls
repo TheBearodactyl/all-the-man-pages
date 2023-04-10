@@ -1,0 +1,155 @@
+opus_genericctls(3)                  Opus                  opus_genericctls(3)
+
+NAME
+       opus_genericctls - Generic CTLs
+
+        - These macros are used with the opus_decoder_ctl and opus_encoder_ctl
+       calls to generate a particular request.
+
+SYNOPSIS
+   Macros
+       #define OPUS_RESET_STATE
+           Resets the codec state to be equivalent to a freshly initialized
+           state.
+       #define OPUS_GET_FINAL_RANGE(x)
+           Gets the final state of the codec's entropy coder.
+       #define OPUS_GET_BANDWIDTH(x)
+           Gets the encoder's configured bandpass or the decoder's last
+           bandpass.
+       #define OPUS_GET_SAMPLE_RATE(x)
+           Gets the sampling rate the encoder or decoder was initialized with.
+       #define OPUS_SET_PHASE_INVERSION_DISABLED(x)
+           If set to 1, disables the use of phase inversion for intensity
+           stereo, improving the quality of mono downmixes, but slightly
+           reducing normal stereo quality.
+       #define OPUS_GET_PHASE_INVERSION_DISABLED(x)
+           Gets the encoder's configured phase inversion status.
+       #define OPUS_GET_IN_DTX(x)
+           Gets the DTX state of the encoder.
+
+Detailed Description
+       These macros are used with the opus_decoder_ctl and opus_encoder_ctl
+       calls to generate a particular request.
+
+       When called on an OpusDecoder they apply to that particular decoder
+       instance. When called on an OpusEncoder they apply to the corresponding
+       setting on that encoder instance, if present.
+
+       Some usage examples:
+
+       int ret;
+       opus_int32 pitch;
+       ret = opus_decoder_ctl(dec_ctx, OPUS_GET_PITCH(&pitch));
+       if (ret == OPUS_OK) return ret;
+
+       opus_encoder_ctl(enc_ctx, OPUS_RESET_STATE);
+       opus_decoder_ctl(dec_ctx, OPUS_RESET_STATE);
+
+       opus_int32 enc_bw, dec_bw;
+       opus_encoder_ctl(enc_ctx, OPUS_GET_BANDWIDTH(&enc_bw));
+       opus_decoder_ctl(dec_ctx, OPUS_GET_BANDWIDTH(&dec_bw));
+       if (enc_bw != dec_bw) {
+         printf("packet bandwidth mismatch!0);
+       }
+
+       See also
+           Opus Encoder, opus_decoder_ctl, opus_encoder_ctl, Decoder related
+           CTLs, Encoder related CTLs
+
+Macro Definition Documentation
+   #define OPUS_GET_BANDWIDTH(x)
+       Gets the encoder's configured bandpass or the decoder's last bandpass.
+
+       See also
+           OPUS_SET_BANDWIDTH
+
+       Parameters
+           x opus_int32 *: Returns one of the following values:
+
+           OPUS_AUTO
+               (default)
+
+           OPUS_BANDWIDTH_NARROWBAND
+               4 kHz passband
+
+           OPUS_BANDWIDTH_MEDIUMBAND
+               6 kHz passband
+
+           OPUS_BANDWIDTH_WIDEBAND
+               8 kHz passband
+
+           OPUS_BANDWIDTH_SUPERWIDEBAND
+               12 kHz passband
+
+           OPUS_BANDWIDTH_FULLBAND
+               20 kHz passband
+
+   #define OPUS_GET_FINAL_RANGE(x)
+       Gets the final state of the codec's entropy coder. This is used for
+       testing purposes, The encoder and decoder state should be identical
+       after coding a payload (assuming no data corruption or software bugs)
+
+       Parameters
+           x opus_uint32 *: Entropy coder state
+
+   #define OPUS_GET_IN_DTX(x)
+       Gets the DTX state of the encoder. Returns whether the last encoded
+       frame was either a comfort noise update during DTX or not encoded
+       because of DTX.
+
+       Parameters
+           x opus_int32 *: Returns one of the following values:
+
+           0   The encoder is not in DTX.
+
+           1   The encoder is in DTX.
+
+   #define OPUS_GET_PHASE_INVERSION_DISABLED(x)
+       Gets the encoder's configured phase inversion status.
+
+       See also
+           OPUS_SET_PHASE_INVERSION_DISABLED
+
+       Parameters
+           x opus_int32 *: Returns one of the following values:
+
+           0   Stereo phase inversion enabled (default).
+
+           1   Stereo phase inversion disabled.
+
+   #define OPUS_GET_SAMPLE_RATE(x)
+       Gets the sampling rate the encoder or decoder was initialized with.
+       This simply returns the Fs value passed to opus_encoder_init() or
+       opus_decoder_init().
+
+       Parameters
+           x opus_int32 *: Sampling rate of encoder or decoder.
+
+   #define OPUS_RESET_STATE
+       Resets the codec state to be equivalent to a freshly initialized state.
+       This should be called when switching streams in order to prevent the
+       back to back decoding from giving different results from one at a time
+       decoding.
+
+   #define OPUS_SET_PHASE_INVERSION_DISABLED(x)
+       If set to 1, disables the use of phase inversion for intensity stereo,
+       improving the quality of mono downmixes, but slightly reducing normal
+       stereo quality. Disabling phase inversion in the decoder does not
+       comply with RFC 6716, although it does not cause any interoperability
+       issue and is expected to become part of the Opus standard once RFC 6716
+       is updated by draft-ietf-codec-opus-update.
+
+       See also
+           OPUS_GET_PHASE_INVERSION_DISABLED
+
+       Parameters
+           x opus_int32: Allowed values:
+
+           0   Enable phase inversion (default).
+
+           1   Disable phase inversion.
+
+Author
+       Generated automatically by Doxygen for Opus from the source code.
+
+Version 1.3.1                   Fri Feb 11 2022            opus_genericctls(3)

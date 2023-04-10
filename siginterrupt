@@ -1,0 +1,143 @@
+siginterrupt(3)            Library Functions Manual            siginterrupt(3)
+
+NAME
+       siginterrupt - allow signals to interrupt system calls
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <signal.h>
+
+       [[deprecated]] int siginterrupt(int sig, int flag);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       siginterrupt():
+           _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809L
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+DESCRIPTION
+       The  siginterrupt() function changes the restart behavior when a system
+       call is interrupted by the signal sig.  If the flag argument  is  false
+       (0),  then  system calls will be restarted if interrupted by the speci‐
+       fied signal sig.  This is the default behavior in Linux.
+
+       If the flag argument is true (1) and no data has been transferred, then
+       a  system  call  interrupted by the signal sig will return -1 and errno
+       will be set to EINTR.
+
+       If the flag argument is true (1) and data transfer  has  started,  then
+       the  system  call will be interrupted and will return the actual amount
+       of data transferred.
+
+RETURN VALUE
+       The siginterrupt() function returns 0 on success.  It returns -1 if the
+       signal number sig is invalid, with errno set to indicate the error.
+
+ERRORS
+       EINVAL The specified signal number is invalid.
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌───────────────┬───────────────┬──────────────────────────────────────┐
+       │Interface      │ Attribute     │ Value                                │
+       ├───────────────┼───────────────┼──────────────────────────────────────┤
+       │siginterrupt() │ Thread safety │ MT-Unsafe const:sigintr              │
+       └───────────────┴───────────────┴──────────────────────────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       4.3BSD, POSIX.1-2001.  Obsolete in POSIX.1-2008, recommending  the  use
+       of sigaction(2) with the SA_RESTART flag instead.
+
+SEE ALSO
+       signal(2)
+
+Linux man-pages 6.04              2023-03-30                   siginterrupt(3)
+SIGINTERRUPT(3P)           POSIX Programmer's Manual          SIGINTERRUPT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       siginterrupt — allow signals to interrupt functions
+
+SYNOPSIS
+       #include <signal.h>
+
+       int siginterrupt(int sig, int flag);
+
+DESCRIPTION
+       The siginterrupt() function shall change the restart  behavior  when  a
+       function is interrupted by the specified signal. The function siginter‐
+       rupt(sig, flag) has an effect as if implemented as:
+
+           int siginterrupt(int sig, int flag) {
+               int ret;
+               struct sigaction act;
+
+               (void) sigaction(sig, NULL, &act);
+               if (flag)
+                   act.sa_flags &= ~SA_RESTART;
+               else
+                   act.sa_flags |= SA_RESTART;
+               ret = sigaction(sig, &act, NULL);
+               return ret;
+           }
+
+RETURN VALUE
+       Upon successful completion, siginterrupt() shall return  0;  otherwise,
+       -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The siginterrupt() function shall fail if:
+
+       EINVAL The sig argument is not a valid signal number.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The  siginterrupt()  function  supports  programs written to historical
+       system interfaces.  Applications should use the  sigaction()  with  the
+       SA_RESTART flag instead of the obsolescent siginterrupt() function.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.4, Signal Concepts, sigaction()
+
+       The Base Definitions volume of POSIX.1‐2017, <signal.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                     SIGINTERRUPT(3P)

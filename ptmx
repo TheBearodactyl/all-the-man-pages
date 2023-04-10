@@ -1,0 +1,50 @@
+pts(4)                     Kernel Interfaces Manual                     pts(4)
+
+NAME
+       ptmx, pts - pseudoterminal master and slave
+
+DESCRIPTION
+       The file /dev/ptmx (the pseudoterminal multiplexor device) is a charac‐
+       ter file with major number 5 and minor number 2, usually with mode 0666
+       and  ownership root:root.  It is used to create a pseudoterminal master
+       and slave pair.
+
+       When a process opens /dev/ptmx, it gets a file descriptor for  a  pseu‐
+       doterminal  master  and a pseudoterminal slave device is created in the
+       /dev/pts directory.  Each file descriptor obtained by opening /dev/ptmx
+       is  an independent pseudoterminal master with its own associated slave,
+       whose path can be found by passing the file descriptor to ptsname(3).
+
+       Before opening the pseudoterminal slave, you  must  pass  the  master's
+       file descriptor to grantpt(3) and unlockpt(3).
+
+       Once  both the pseudoterminal master and slave are open, the slave pro‐
+       vides processes with an interface that is identical to that of  a  real
+       terminal.
+
+       Data written to the slave is presented on the master file descriptor as
+       input.  Data written to the master is presented to the slave as input.
+
+       In practice, pseudoterminals are used for implementing terminal  emula‐
+       tors  such as xterm(1), in which data read from the pseudoterminal mas‐
+       ter is interpreted by the application in the same way a  real  terminal
+       would  interpret  the  data, and for implementing remote-login programs
+       such as sshd(8), in which data read from the pseudoterminal  master  is
+       sent across the network to a client program that is connected to a ter‐
+       minal or terminal emulator.
+
+       Pseudoterminals can also be used to send input to  programs  that  nor‐
+       mally refuse to read input from pipes (such as su(1), and passwd(1)).
+
+FILES
+       /dev/ptmx, /dev/pts/*
+
+NOTES
+       The  Linux  support for the above (known as UNIX 98 pseudoterminal nam‐
+       ing) is done using the devpts filesystem, which should  be  mounted  on
+       /dev/pts.
+
+SEE ALSO
+       getpt(3), grantpt(3), ptsname(3), unlockpt(3), pty(7)
+
+Linux man-pages 6.04              2022-10-30                            pts(4)

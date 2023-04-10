@@ -1,0 +1,192 @@
+mq_getattr(3)                                                                            Library Functions Manual                                                                            mq_getattr(3)
+
+NAME
+       mq_getattr, mq_setattr - get/set message queue attributes
+
+LIBRARY
+       Real-time library (librt, -lrt)
+
+SYNOPSIS
+       #include <mqueue.h>
+
+       int mq_getattr(mqd_t mqdes, struct mq_attr *attr);
+       int mq_setattr(mqd_t mqdes, const struct mq_attr *restrict newattr,
+                      struct mq_attr *restrict oldattr);
+
+DESCRIPTION
+       mq_getattr() and mq_setattr() respectively retrieve and modify attributes of the message queue referred to by the message queue descriptor mqdes.
+
+       mq_getattr() returns an mq_attr structure in the buffer pointed by attr.  This structure is defined as:
+
+           struct mq_attr {
+               long mq_flags;       /* Flags: 0 or O_NONBLOCK */
+               long mq_maxmsg;      /* Max. # of messages on queue */
+               long mq_msgsize;     /* Max. message size (bytes) */
+               long mq_curmsgs;     /* # of messages currently in queue */
+           };
+
+       The  mq_flags  field  contains flags associated with the open message queue description.  This field is initialized when the queue is created by mq_open(3).  The only flag that can appear in this
+       field is O_NONBLOCK.
+
+       The mq_maxmsg and mq_msgsize fields are set when the message queue is created by mq_open(3).  The mq_maxmsg field is an upper limit on the number of messages that may be placed on the queue using
+       mq_send(3).  The mq_msgsize field is an upper limit on the size of messages that may be placed on the queue.  Both of these fields must have a value greater than zero.  Two /proc files that place
+       ceilings on the values for these fields are described in mq_overview(7).
+
+       The mq_curmsgs field returns the number of messages currently held in the queue.
+
+       mq_setattr() sets message queue attributes using information supplied in the mq_attr structure pointed to by newattr.  The only attribute that can be modified is the  setting  of  the  O_NONBLOCK
+       flag  in mq_flags.  The other fields in newattr are ignored.  If the oldattr field is not NULL, then the buffer that it points to is used to return an mq_attr structure that contains the same in‐
+       formation that is returned by mq_getattr().
+
+RETURN VALUE
+       On success mq_getattr() and mq_setattr() return 0; on error, -1 is returned, with errno set to indicate the error.
+
+ERRORS
+       EBADF  The message queue descriptor specified in mqdes is invalid.
+
+       EINVAL newattr->mq_flags contained set bits other than O_NONBLOCK.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │mq_getattr(), mq_setattr()                                                                                                                                              │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+       On Linux, mq_getattr() and mq_setattr() are library functions layered on top of the mq_getsetattr(2) system call.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+EXAMPLES
+       The program below can be used to show the default mq_maxmsg and mq_msgsize values that are assigned to a message queue that is created with a call to mq_open(3) in  which  the  attr  argument  is
+       NULL.  Here is an example run of the program:
+
+           $ ./a.out /testq
+           Maximum # of messages on queue:   10
+           Maximum message size:             8192
+
+       Since Linux 3.5, the following /proc files (described in mq_overview(7)) can be used to control the defaults:
+
+           $ uname -sr
+           Linux 3.8.0
+           $ cat /proc/sys/fs/mqueue/msg_default
+           10
+           $ cat /proc/sys/fs/mqueue/msgsize_default
+           8192
+
+   Program source
+
+       #include <fcntl.h>
+       #include <mqueue.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <sys/stat.h>
+       #include <unistd.h>
+
+       #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                               } while (0)
+
+       int
+       main(int argc, char *argv[])
+       {
+           mqd_t mqd;
+           struct mq_attr attr;
+
+           if (argc != 2) {
+               fprintf(stderr, "Usage: %s mq-name\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           mqd = mq_open(argv[1], O_CREAT | O_EXCL, 0600, NULL);
+           if (mqd == (mqd_t) -1)
+               errExit("mq_open");
+
+           if (mq_getattr(mqd, &attr) == -1)
+               errExit("mq_getattr");
+
+           printf("Maximum # of messages on queue:   %ld\n", attr.mq_maxmsg);
+           printf("Maximum message size:             %ld\n", attr.mq_msgsize);
+
+           if (mq_unlink(argv[1]) == -1)
+               errExit("mq_unlink");
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       mq_close(3), mq_notify(3), mq_open(3), mq_receive(3), mq_send(3), mq_unlink(3), mq_overview(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                   mq_getattr(3)
+MQ_SETATTR(3P)                                                                           POSIX Programmer's Manual                                                                          MQ_SETATTR(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       mq_setattr — set message queue attributes (REALTIME)
+
+SYNOPSIS
+       #include <mqueue.h>
+
+       int mq_setattr(mqd_t mqdes, const struct mq_attr *restrict mqstat,
+           struct mq_attr *restrict omqstat);
+
+DESCRIPTION
+       The mq_setattr() function shall set attributes associated with the open message queue description referenced by the message queue descriptor specified by mqdes.
+
+       The message queue attributes corresponding to the following members defined in the mq_attr structure shall be set to the specified values upon successful completion of mq_setattr():
+
+       mq_flags    The value of this member is the bitwise-logical OR of zero or more of O_NONBLOCK and any implementation-defined flags.
+
+       The values of the mq_maxmsg, mq_msgsize, and mq_curmsgs members of the mq_attr structure shall be ignored by mq_setattr().
+
+       If omqstat is non-NULL, the mq_setattr() function shall store, in the location referenced by omqstat, the previous message queue attributes and the current queue status.  These  values  shall  be
+       the same as would be returned by a call to mq_getattr() at that point.
+
+RETURN VALUE
+       Upon successful completion, the function shall return a value of zero and the attributes of the message queue shall have been changed as specified.
+
+       Otherwise, the message queue attributes shall be unchanged, and the function shall return a value of -1 and set errno to indicate the error.
+
+ERRORS
+       The mq_setattr() function shall fail if:
+
+       EBADF  The mqdes argument is not a valid message queue descriptor.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       mq_open(), mq_send(), msgctl(), msgget(), msgrcv(), msgsnd()
+
+       The Base Definitions volume of POSIX.1‐2017, <mqueue.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                     MQ_SETATTR(3P)

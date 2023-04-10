@@ -1,0 +1,649 @@
+libalpm_cb(3)                                                                            Library Functions Manual                                                                            libalpm_cb(3)
+
+NAME
+       libalpm_cb - Callbacks
+
+        - Functions and structures for libalpm's callbacks.
+
+SYNOPSIS
+   Data Structures
+       struct alpm_event_any_t
+           An event that may represent any event.
+       struct alpm_event_package_operation_t
+           A package operation event occurred.
+       struct alpm_event_optdep_removal_t
+           An optional dependency was removed.
+       struct alpm_event_scriptlet_info_t
+           A scriptlet was ran.
+       struct alpm_event_database_missing_t
+           A database is missing.
+       struct alpm_event_pkgdownload_t
+           A package was downloaded.
+       struct alpm_event_pacnew_created_t
+           A pacnew file was created.
+       struct alpm_event_pacsave_created_t
+           A pacsave file was created.
+       struct alpm_event_hook_t
+           pre/post transaction hooks are to be ran.
+       struct alpm_event_hook_run_t
+           A pre/post transaction hook was ran.
+       struct alpm_event_pkg_retrieve_t
+           Packages downloading about to start.
+       union alpm_event_t
+           Events.
+       struct alpm_question_any_t
+           A question that can represent any other question.
+       struct alpm_question_install_ignorepkg_t
+           Should target in ignorepkg be installed anyway?
+       struct alpm_question_replace_t
+           Should a package be replaced?
+       struct alpm_question_conflict_t
+           Should a conflicting package be removed?
+       struct alpm_question_corrupted_t
+           Should a corrupted package be deleted?
+       struct alpm_question_remove_pkgs_t
+           Should unresolvable targets be removed from the transaction?
+       struct alpm_question_select_provider_t
+           Provider selection.
+       struct alpm_question_import_key_t
+           Should a key be imported?
+       union alpm_question_t
+           Questions.
+       struct alpm_download_event_init_t
+           Context struct for when a download starts.
+       struct alpm_download_event_progress_t
+           Context struct for when a download progresses.
+       struct alpm_download_event_retry_t
+           Context struct for when a download retries.
+       struct alpm_download_event_completed_t
+           Context struct for when a download completes.
+
+   Typedefs
+       typedef void(* alpm_cb_event) (void *ctx, alpm_event_t *)
+           Event callback.
+       typedef void(* alpm_cb_question) (void *ctx, alpm_question_t *)
+           Question callback.
+       typedef void(* alpm_cb_progress) (void *ctx, alpm_progress_t progress, const char *pkg, int percent, size_t howmany, size_t current)
+           Progress callback.
+       typedef void(* alpm_cb_download) (void *ctx, const char *filename, alpm_download_event_type_t event, void *data)
+           Type of download progress callbacks.
+       typedef int(* alpm_cb_fetch) (void *ctx, const char *url, const char *localpath, int force)
+           A callback for downloading files.
+
+   Enumerations
+       enum alpm_event_type_t { ALPM_EVENT_CHECKDEPS_START = 1, ALPM_EVENT_CHECKDEPS_DONE, ALPM_EVENT_FILECONFLICTS_START, ALPM_EVENT_FILECONFLICTS_DONE, ALPM_EVENT_RESOLVEDEPS_START,
+           ALPM_EVENT_RESOLVEDEPS_DONE, ALPM_EVENT_INTERCONFLICTS_START, ALPM_EVENT_INTERCONFLICTS_DONE, ALPM_EVENT_TRANSACTION_START, ALPM_EVENT_TRANSACTION_DONE, ALPM_EVENT_PACKAGE_OPERATION_START,
+           ALPM_EVENT_PACKAGE_OPERATION_DONE, ALPM_EVENT_INTEGRITY_START, ALPM_EVENT_INTEGRITY_DONE, ALPM_EVENT_LOAD_START, ALPM_EVENT_LOAD_DONE, ALPM_EVENT_SCRIPTLET_INFO, ALPM_EVENT_DB_RETRIEVE_START,
+           ALPM_EVENT_DB_RETRIEVE_DONE, ALPM_EVENT_DB_RETRIEVE_FAILED, ALPM_EVENT_PKG_RETRIEVE_START, ALPM_EVENT_PKG_RETRIEVE_DONE, ALPM_EVENT_PKG_RETRIEVE_FAILED, ALPM_EVENT_DISKSPACE_START,
+           ALPM_EVENT_DISKSPACE_DONE, ALPM_EVENT_OPTDEP_REMOVAL, ALPM_EVENT_DATABASE_MISSING, ALPM_EVENT_KEYRING_START, ALPM_EVENT_KEYRING_DONE, ALPM_EVENT_KEY_DOWNLOAD_START,
+           ALPM_EVENT_KEY_DOWNLOAD_DONE, ALPM_EVENT_PACNEW_CREATED, ALPM_EVENT_PACSAVE_CREATED, ALPM_EVENT_HOOK_START, ALPM_EVENT_HOOK_DONE, ALPM_EVENT_HOOK_RUN_START, ALPM_EVENT_HOOK_RUN_DONE }
+           Type of events.
+       enum alpm_package_operation_t { ALPM_PACKAGE_INSTALL = 1, ALPM_PACKAGE_UPGRADE, ALPM_PACKAGE_REINSTALL, ALPM_PACKAGE_DOWNGRADE, ALPM_PACKAGE_REMOVE }
+           An enum over the kind of package operations.
+       enum alpm_hook_when_t { ALPM_HOOK_PRE_TRANSACTION = 1, ALPM_HOOK_POST_TRANSACTION }
+           Kind of hook.
+       enum alpm_question_type_t { ALPM_QUESTION_INSTALL_IGNOREPKG = (1 << 0), ALPM_QUESTION_REPLACE_PKG = (1 << 1), ALPM_QUESTION_CONFLICT_PKG = (1 << 2), ALPM_QUESTION_CORRUPTED_PKG = (1 << 3),
+           ALPM_QUESTION_REMOVE_PKGS = (1 << 4), ALPM_QUESTION_SELECT_PROVIDER = (1 << 5), ALPM_QUESTION_IMPORT_KEY = (1 << 6) }
+           Type of question.
+       enum alpm_progress_t { ALPM_PROGRESS_ADD_START, ALPM_PROGRESS_UPGRADE_START, ALPM_PROGRESS_DOWNGRADE_START, ALPM_PROGRESS_REINSTALL_START, ALPM_PROGRESS_REMOVE_START,
+           ALPM_PROGRESS_CONFLICTS_START, ALPM_PROGRESS_DISKSPACE_START, ALPM_PROGRESS_INTEGRITY_START, ALPM_PROGRESS_LOAD_START, ALPM_PROGRESS_KEYRING_START }
+           An enum over different kinds of progress alerts.
+       enum alpm_download_event_type_t { ALPM_DOWNLOAD_INIT, ALPM_DOWNLOAD_PROGRESS, ALPM_DOWNLOAD_RETRY, ALPM_DOWNLOAD_COMPLETED }
+           File download events.
+
+Detailed Description
+       Functions and structures for libalpm's callbacks.
+
+Data Structure Documentation
+struct alpm_event_any_t
+       An event that may represent any event.
+
+       Data Fields:
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_package_operation_t
+       A package operation event occurred.
+
+       Data Fields:
+           alpm_pkg_t * newpkg New package.
+
+           alpm_pkg_t * oldpkg Old package.
+
+           alpm_package_operation_t operation Type of operation.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_optdep_removal_t
+       An optional dependency was removed.
+
+       Data Fields:
+           alpm_depend_t * optdep Optdep being removed.
+
+           alpm_pkg_t * pkg Package with the optdep.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_scriptlet_info_t
+       A scriptlet was ran.
+
+       Data Fields:
+           const char * line Line of scriptlet output.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_database_missing_t
+       A database is missing.
+
+       The database is registered but has not been downloaded
+
+       Data Fields:
+           const char * dbname Name of the database.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_pkgdownload_t
+       A package was downloaded.
+
+       Data Fields:
+           const char * file Name of the file.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_pacnew_created_t
+       A pacnew file was created.
+
+       Data Fields:
+           const char * file Filename of the file without the .pacnew suffix.
+
+           int from_noupgrade Whether the creation was result of a NoUpgrade or not.
+
+           alpm_pkg_t * newpkg New Package.
+
+           alpm_pkg_t * oldpkg Old package.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_pacsave_created_t
+       A pacsave file was created.
+
+       Data Fields:
+           const char * file Filename of the file without the .pacsave suffix.
+
+           alpm_pkg_t * oldpkg Old package.
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_hook_t
+       pre/post transaction hooks are to be ran.
+
+       Data Fields:
+           alpm_event_type_t type Type of event.
+
+           alpm_hook_when_t when Type of hook.
+
+struct alpm_event_hook_run_t
+       A pre/post transaction hook was ran.
+
+       Data Fields:
+           const char * desc Description of hook to be outputted.
+
+           const char * name Name of hook.
+
+           size_t position position of hook being run
+
+           size_t total total hooks being run
+
+           alpm_event_type_t type Type of event.
+
+struct alpm_event_pkg_retrieve_t
+       Packages downloading about to start.
+
+       Data Fields:
+           size_t num Number of packages to download.
+
+           off_t total_size Total size of packages to download.
+
+           alpm_event_type_t type Type of event.
+
+union alpm_event_t
+       Events.
+
+       This is a union passed to the callback that allows the frontend to know which type of event was triggered (via type). It is then possible to typecast the pointer to the right structure, or use
+       the union field, in order to access event-specific data.
+
+       Data Fields:
+           alpm_event_any_t any The any event type.
+           It's always safe to access this.
+
+           alpm_event_database_missing_t database_missing A database is missing.
+
+           alpm_event_hook_t hook Pre/post transaction hooks are being ran.
+
+           alpm_event_hook_run_t hook_run A hook was ran.
+
+           alpm_event_optdep_removal_t optdep_removal An optdept was remove.
+
+           alpm_event_package_operation_t package_operation Package operation.
+
+           alpm_event_pacnew_created_t pacnew_created A pacnew file was created.
+
+           alpm_event_pacsave_created_t pacsave_created A pacsave file was created.
+
+           alpm_event_pkg_retrieve_t pkg_retrieve Download packages.
+
+           alpm_event_pkgdownload_t pkgdownload A package was downloaded.
+
+           alpm_event_scriptlet_info_t scriptlet_info A scriptlet was ran.
+
+           alpm_event_type_t type Type of event it's always safe to access this.
+
+struct alpm_question_any_t
+       A question that can represent any other question.
+
+       Data Fields:
+           int answer Answer.
+
+           alpm_question_type_t type Type of question.
+
+struct alpm_question_install_ignorepkg_t
+       Should target in ignorepkg be installed anyway?
+
+       Data Fields:
+           int install Answer: whether or not to install pkg anyway.
+
+           alpm_pkg_t * pkg The ignored package that we are deciding whether to install.
+
+           alpm_question_type_t type Type of question.
+
+struct alpm_question_replace_t
+       Should a package be replaced?
+
+       Data Fields:
+           alpm_db_t * newdb DB of newpkg.
+
+           alpm_pkg_t * newpkg Package to replace with.
+
+           alpm_pkg_t * oldpkg Package to be replaced.
+
+           int replace Answer: whether or not to replace oldpkg with newpkg.
+
+           alpm_question_type_t type Type of question.
+
+struct alpm_question_conflict_t
+       Should a conflicting package be removed?
+
+       Data Fields:
+           alpm_conflict_t * conflict Conflict info.
+
+           int remove Answer: whether or not to remove conflict->package2.
+
+           alpm_question_type_t type Type of question.
+
+struct alpm_question_corrupted_t
+       Should a corrupted package be deleted?
+
+       Data Fields:
+           const char * filepath File to remove.
+
+           alpm_errno_t reason Error code indicating the reason for package invalidity.
+
+           int remove Answer: whether or not to remove filepath.
+
+           alpm_question_type_t type Type of question.
+
+struct alpm_question_remove_pkgs_t
+       Should unresolvable targets be removed from the transaction?
+
+       Data Fields:
+           alpm_list_t * packages List of alpm_pkg_t* with unresolved dependencies.
+
+           int skip Answer: whether or not to skip packages.
+
+           alpm_question_type_t type Type of question.
+
+struct alpm_question_select_provider_t
+       Provider selection.
+
+       Data Fields:
+           alpm_depend_t * depend What providers provide for.
+
+           alpm_list_t * providers List of alpm_pkg_t* as possible providers.
+
+           alpm_question_type_t type Type of question.
+
+           int use_index Answer: which provider to use (index from providers)
+
+struct alpm_question_import_key_t
+       Should a key be imported?
+
+       Data Fields:
+           int import Answer: whether or not to import key.
+
+           alpm_pgpkey_t * key The key to import.
+
+           alpm_question_type_t type Type of question.
+
+union alpm_question_t
+       Questions.
+
+       This is an union passed to the callback that allows the frontend to know which type of question was triggered (via type). It is then possible to typecast the pointer to the right structure, or
+       use the union field, in order to access question-specific data.
+
+       Data Fields:
+           alpm_question_any_t any A question that can represent any question.
+           It's always safe to access this.
+
+           alpm_question_conflict_t conflict Should a conflicting package be removed?
+
+           alpm_question_corrupted_t corrupted Should a corrupted package be deleted?
+
+           alpm_question_import_key_t import_key Should a key be imported?
+
+           alpm_question_install_ignorepkg_t install_ignorepkg Should target in ignorepkg be installed anyway?
+
+           alpm_question_remove_pkgs_t remove_pkgs Should unresolvable targets be removed from the transaction?
+
+           alpm_question_replace_t replace Should a package be replaced?
+
+           alpm_question_select_provider_t select_provider Provider selection.
+
+           alpm_question_type_t type The type of question.
+           It's always safe to access this.
+
+struct alpm_download_event_init_t
+       Context struct for when a download starts.
+
+       Data Fields:
+           int optional whether this file is optional and thus the errors could be ignored
+
+struct alpm_download_event_progress_t
+       Context struct for when a download progresses.
+
+       Data Fields:
+           off_t downloaded Amount of data downloaded.
+
+           off_t total Total amount need to be downloaded.
+
+struct alpm_download_event_retry_t
+       Context struct for when a download retries.
+
+       Data Fields:
+           int resume If the download will resume or start over.
+
+struct alpm_download_event_completed_t
+       Context struct for when a download completes.
+
+       Data Fields:
+           int result download result code: 0 - download completed successfully 1 - the file is up-to-date -1 - error
+
+           off_t total Total bytes in file.
+
+Typedef Documentation
+   typedef void(* alpm_cb_download) (void *ctx, const char *filename, alpm_download_event_type_t event, void *data)
+       Type of download progress callbacks.
+
+       Parameters
+           ctx user-provided context
+           filename the name of the file being downloaded
+           event the event type
+           data the event data of type alpm_download_event_*_t
+
+   typedef void(* alpm_cb_event) (void *ctx, alpm_event_t *)
+       Event callback. Called when an event occurs
+
+       Parameters
+           ctx user-provided context
+           event the event that occurred
+
+   typedef int(* alpm_cb_fetch) (void *ctx, const char *url, const char *localpath, int force)
+       A callback for downloading files.
+
+       Parameters
+           ctx user-provided context
+           url the URL of the file to be downloaded
+           localpath the directory to which the file should be downloaded
+           force whether to force an update, even if the file is the same
+
+       Returns
+           0 on success, 1 if the file exists and is identical, -1 on error.
+
+   typedef void(* alpm_cb_progress) (void *ctx, alpm_progress_t progress, const char *pkg, int percent, size_t howmany, size_t current)
+       Progress callback. Alert the front end about the progress of certain events. Allows the implementation of loading bars for events that make take a while to complete.
+
+       Parameters
+           ctx user-provided context
+           progress the kind of event that is progressing
+           pkg for package operations, the name of the package being operated on
+           percent the percent completion of the action
+           howmany the total amount of items in the action
+           current the current amount of items completed Progress callback
+
+   typedef void(* alpm_cb_question) (void *ctx, alpm_question_t *)
+       Question callback. This callback allows user to give input and decide what to do during certain events
+
+       Parameters
+           ctx user-provided context
+           question the question being asked.
+
+Enumeration Type Documentation
+   enum alpm_download_event_type_t
+       File download events. These events are reported by ALPM via download callback.
+
+       Enumerator
+
+       ALPM_DOWNLOAD_INIT
+              A download was started.
+
+       ALPM_DOWNLOAD_PROGRESS
+              A download made progress.
+
+       ALPM_DOWNLOAD_RETRY
+              Download will be retried.
+
+       ALPM_DOWNLOAD_COMPLETED
+              A download completed.
+
+   enum alpm_event_type_t
+       Type of events.
+
+       Enumerator
+
+       ALPM_EVENT_CHECKDEPS_START
+              Dependencies will be computed for a package.
+
+       ALPM_EVENT_CHECKDEPS_DONE
+              Dependencies were computed for a package.
+
+       ALPM_EVENT_FILECONFLICTS_START
+              File conflicts will be computed for a package.
+
+       ALPM_EVENT_FILECONFLICTS_DONE
+              File conflicts were computed for a package.
+
+       ALPM_EVENT_RESOLVEDEPS_START
+              Dependencies will be resolved for target package.
+
+       ALPM_EVENT_RESOLVEDEPS_DONE
+              Dependencies were resolved for target package.
+
+       ALPM_EVENT_INTERCONFLICTS_START
+              Inter-conflicts will be checked for target package.
+
+       ALPM_EVENT_INTERCONFLICTS_DONE
+              Inter-conflicts were checked for target package.
+
+       ALPM_EVENT_TRANSACTION_START
+              Processing the package transaction is starting.
+
+       ALPM_EVENT_TRANSACTION_DONE
+              Processing the package transaction is finished.
+
+       ALPM_EVENT_PACKAGE_OPERATION_START
+              Package will be installed/upgraded/downgraded/re-installed/removed; See alpm_event_package_operation_t for arguments.
+
+       ALPM_EVENT_PACKAGE_OPERATION_DONE
+              Package was installed/upgraded/downgraded/re-installed/removed; See alpm_event_package_operation_t for arguments.
+
+       ALPM_EVENT_INTEGRITY_START
+              Target package's integrity will be checked.
+
+       ALPM_EVENT_INTEGRITY_DONE
+              Target package's integrity was checked.
+
+       ALPM_EVENT_LOAD_START
+              Target package will be loaded.
+
+       ALPM_EVENT_LOAD_DONE
+              Target package is finished loading.
+
+       ALPM_EVENT_SCRIPTLET_INFO
+              Scriptlet has printed information; See alpm_event_scriptlet_info_t for arguments.
+
+       ALPM_EVENT_DB_RETRIEVE_START
+              Database files will be downloaded from a repository.
+
+       ALPM_EVENT_DB_RETRIEVE_DONE
+              Database files were downloaded from a repository.
+
+       ALPM_EVENT_DB_RETRIEVE_FAILED
+              Not all database files were successfully downloaded from a repository.
+
+       ALPM_EVENT_PKG_RETRIEVE_START
+              Package files will be downloaded from a repository.
+
+       ALPM_EVENT_PKG_RETRIEVE_DONE
+              Package files were downloaded from a repository.
+
+       ALPM_EVENT_PKG_RETRIEVE_FAILED
+              Not all package files were successfully downloaded from a repository.
+
+       ALPM_EVENT_DISKSPACE_START
+              Disk space usage will be computed for a package.
+
+       ALPM_EVENT_DISKSPACE_DONE
+              Disk space usage was computed for a package.
+
+       ALPM_EVENT_OPTDEP_REMOVAL
+              An optdepend for another package is being removed; See alpm_event_optdep_removal_t for arguments.
+
+       ALPM_EVENT_DATABASE_MISSING
+              A configured repository database is missing; See alpm_event_database_missing_t for arguments.
+
+       ALPM_EVENT_KEYRING_START
+              Checking keys used to create signatures are in keyring.
+
+       ALPM_EVENT_KEYRING_DONE
+              Keyring checking is finished.
+
+       ALPM_EVENT_KEY_DOWNLOAD_START
+              Downloading missing keys into keyring.
+
+       ALPM_EVENT_KEY_DOWNLOAD_DONE
+              Key downloading is finished.
+
+       ALPM_EVENT_PACNEW_CREATED
+              A .pacnew file was created; See alpm_event_pacnew_created_t for arguments.
+
+       ALPM_EVENT_PACSAVE_CREATED
+              A .pacsave file was created; See alpm_event_pacsave_created_t for arguments.
+
+       ALPM_EVENT_HOOK_START
+              Processing hooks will be started.
+
+       ALPM_EVENT_HOOK_DONE
+              Processing hooks is finished.
+
+       ALPM_EVENT_HOOK_RUN_START
+              A hook is starting.
+
+       ALPM_EVENT_HOOK_RUN_DONE
+              A hook has finished running.
+
+   enum alpm_hook_when_t
+       Kind of hook.
+
+   enum alpm_package_operation_t
+       An enum over the kind of package operations.
+
+       Enumerator
+
+       ALPM_PACKAGE_INSTALL
+              Package (to be) installed. (No oldpkg)
+
+       ALPM_PACKAGE_UPGRADE
+              Package (to be) upgraded.
+
+       ALPM_PACKAGE_REINSTALL
+              Package (to be) re-installed.
+
+       ALPM_PACKAGE_DOWNGRADE
+              Package (to be) downgraded.
+
+       ALPM_PACKAGE_REMOVE
+              Package (to be) removed (No newpkg)
+
+   enum alpm_progress_t
+       An enum over different kinds of progress alerts.
+
+       Enumerator
+
+       ALPM_PROGRESS_ADD_START
+              Package install.
+
+       ALPM_PROGRESS_UPGRADE_START
+              Package upgrade.
+
+       ALPM_PROGRESS_DOWNGRADE_START
+              Package downgrade.
+
+       ALPM_PROGRESS_REINSTALL_START
+              Package reinstall.
+
+       ALPM_PROGRESS_REMOVE_START
+              Package removal.
+
+       ALPM_PROGRESS_CONFLICTS_START
+              Conflict checking.
+
+       ALPM_PROGRESS_DISKSPACE_START
+              Diskspace checking.
+
+       ALPM_PROGRESS_INTEGRITY_START
+              Package Integrity checking.
+
+       ALPM_PROGRESS_LOAD_START
+              Loading packages from disk.
+
+       ALPM_PROGRESS_KEYRING_START
+              Checking signatures of packages.
+
+   enum alpm_question_type_t
+       Type of question. Unlike the events or progress enumerations, this enum has bitmask values so a frontend can use a bitmask map to supply preselected answers to the different types of questions.
+
+       Enumerator
+
+       ALPM_QUESTION_INSTALL_IGNOREPKG
+              Should target in ignorepkg be installed anyway?
+
+       ALPM_QUESTION_REPLACE_PKG
+              Should a package be replaced?
+
+       ALPM_QUESTION_CONFLICT_PKG
+              Should a conflicting package be removed?
+
+       ALPM_QUESTION_CORRUPTED_PKG
+              Should a corrupted package be deleted?
+
+       ALPM_QUESTION_REMOVE_PKGS
+              Should unresolvable targets be removed from the transaction?
+
+       ALPM_QUESTION_SELECT_PROVIDER
+              Provider selection.
+
+       ALPM_QUESTION_IMPORT_KEY
+              Should a key be imported?
+
+Author
+       Generated automatically by Doxygen for libalpm from the source code.
+
+libalpm                                                                                       Sat Mar 18 2023                                                                                libalpm_cb(3)

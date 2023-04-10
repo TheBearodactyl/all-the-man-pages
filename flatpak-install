@@ -1,0 +1,130 @@
+FLATPAK INSTALL(1)                                                                            flatpak install                                                                           FLATPAK INSTALL(1)
+
+NAME
+       flatpak-install - Install an application or runtime
+
+SYNOPSIS
+       flatpak install [OPTION...] [REMOTE] REF...
+
+       flatpak install [OPTION...] [--from|--bundle] LOCATION
+
+DESCRIPTION
+       Installs an application or runtime. The primary way to install is to specify a REMOTE name as the source and one ore more REFs to specify the application or runtime to install. If REMOTE is
+       omitted, the configured remotes are searched for the first REF and the user is asked to confirm the resulting choice.
+
+       Each REF argument is a full or partial identifier in the flatpak ref format, which looks like "(app|runtime)/ID/ARCH/BRANCH". All elements except ID are optional and can be left out, including
+       the slashes, so most of the time you need only specify ID. Any part left out will be matched against what is in the remote, and if there are multiple matches you will be prompted to choose one of
+       them. You will also be prompted with choices if REF doesn't match anything in the remote exactly but is similar to one or more refs in the remote (e.g. "devhelp" is similar to
+       "org.gnome.Devhelp"), but this fuzzy matching behavior is disabled if REF contains any slashes or periods.
+
+       By default this looks for both apps and runtimes with the given REF in the specified REMOTE, but you can limit this by using the --app or --runtime option, or by supplying the initial element in
+       the REF.
+
+       If REMOTE is a uri or a path (absolute or relative starting with ./) to a local repository, then that repository will be used as the source, and a temporary remote will be created for the
+       lifetime of the REF.
+
+       If the specified REMOTE has a collection ID configured on it, Flatpak will search the sideload-repos directories configured either with the --sideload-repo option, or on a per-installation or
+       system-wide basis (see flatpak(1)).
+
+       The alternative form of the command (with --from or --bundle) allows to install directly from a source such as a .flatpak single-file bundle or a .flatpakref application description. The options
+       are optional if the first argument has the expected filename extension.
+
+       Note that flatpak allows to have multiple branches of an application and runtimes installed and used at the same time. However, only one version of an application can be current, meaning its
+       exported files (for instance desktop files and icons) are visible to the host. The last installed version is made current by default, but this can manually changed with flatpak make-current.
+
+       Unless overridden with the --user or the --installation option, this command installs the application or runtime in the default system-wide installation.
+
+OPTIONS
+       The following options are understood:
+
+       -h, --help
+           Show help options and exit.
+
+       --bundle
+           Treat LOCATION as a single-bundle file. This is assumed if the argument ends with .flatpak.
+
+       --from
+           Treat LOCATION as an application description file. This is assumed if the argument ends with .flatpakref.
+
+       --reinstall
+           Uninstall first if already installed.
+
+       -u, --user
+           Install the application or runtime in a per-user installation.
+
+       --system
+           Install the application or runtime in the default system-wide installation.
+
+       --installation=NAME
+           Install the application or runtime in a system-wide installation specified by NAME among those defined in /etc/flatpak/installations.d/. Using --installation=default is equivalent to using
+           --system.
+
+       --arch=ARCH
+           The default architecture to install for, if not given explicitly in the REF. See flatpak --supported-arches for architectures supported by the host.
+
+       --subpath=PATH
+           Install only a subpath of REF. This is mainly used to install a subset of locales. This can be added multiple times to install multiple subpaths.
+
+       --gpg-file=FILE
+           Check bundle signatures with GPG key from FILE (- for stdin).
+
+       --no-deploy
+           Download the latest version, but don't deploy it.
+
+       --no-pull
+           Don't download the latest version, deploy whatever is locally available.
+
+       --no-related
+           Don't download related extensions, such as the locale data.
+
+       --no-deps
+           Don't verify runtime dependencies when installing.
+
+       --or-update
+           Normally install just ignores things that are already installed (printing a warning), but if --or-update is specified it silently turns it into an update operation instead.
+
+       --app
+           Assume that all REFs are apps if not explicitly specified.
+
+       --runtime
+           Assume that all REFs are runtimes if not explicitly specified.
+
+       --sideload-repo=PATH
+           Adds an extra local ostree repo as a source for installation. This is equivalent to using the sideload-repos directories (see flatpak(1)), but can be done on a per-command basis. Any path
+           added here is used in addition to ones in those directories.
+
+       --include-sdk
+           For each app being installed, also installs the SDK that was used to build it. Implies --or-update; incompatible with --no-deps.
+
+       --include-debug
+           For each ref being installed, as well as all dependencies, also installs its debug info. Implies --or-update; incompatible with --no-deps.
+
+       -y, --assumeyes
+           Automatically answer yes to all questions (or pick the most prioritized answer). This is useful for automation.
+
+       --noninteractive
+           Produce minimal output and avoid most questions. This is suitable for use in non-interactive situations, e.g. in a build script.
+
+       -v, --verbose
+           Print debug information during command processing.
+
+       --ostree-verbose
+           Print OSTree debug information during command processing.
+
+EXAMPLES
+       $ flatpak install gedit
+
+       $ flatpak install flathub org.gnome.gedit
+
+       $ flatpak --installation=default install flathub org.gnome.gedit
+
+       $ flatpak --user install flathub org.gnome.gedit//3.30
+
+       $ flatpak --user install https://flathub.org/repo/appstream/org.gnome.gedit.flatpakref
+
+       $ flatpak --system install org.gnome.gedit.flatpakref
+
+SEE ALSO
+       flatpak(1), flatpak-update(1), flatpak-list(1), flatpak-build-bundle(1), flatpak-flatpakref(1), flatpak-make-current(1), ostree-find-remotes(1)
+
+flatpak                                                                                                                                                                                 FLATPAK INSTALL(1)

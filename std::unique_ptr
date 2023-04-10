@@ -1,0 +1,352 @@
+std::unique_ptr< _Tp, _Dp >Library Functions Manstd::unique_ptr< _Tp, _Dp >(3)
+
+NAME
+       std::unique_ptr< _Tp, _Dp > - A move-only smart pointer that manages
+       unique ownership of a resource.
+
+SYNOPSIS
+       #include <memory>
+
+   Public Types
+       using deleter_type = _Dp
+       using element_type = _Tp
+       using pointer = typename __uniq_ptr_impl< _Tp, _Dp >::pointer
+
+   Public Member Functions
+       template<typename _Del  = _Dp, typename  = _DeleterConstraint<_Del>>
+           constexpr unique_ptr () noexcept
+           Default constructor, creates a unique_ptr that owns nothing.
+       template<typename _Up , typename  = _Require<
+           is_convertible<_Up*, _Tp*>, is_same<_Dp, default_delete<_Tp>>>>
+           unique_ptr (auto_ptr< _Up > &&__u) noexcept
+           Converting constructor from auto_ptr.
+       unique_ptr (const unique_ptr &)=delete
+       template<typename _Del  = _Dp, typename  = _DeleterConstraint<_Del>>
+           constexpr unique_ptr (nullptr_t) noexcept
+           Creates a unique_ptr that owns nothing.
+       template<typename _Del  = _Dp, typename  = _DeleterConstraint<_Del>>
+           _GLIBCXX23_CONSTEXPR unique_ptr (pointer __p) noexcept
+       template<typename _Del  = deleter_type, typename  =
+           _Require<is_move_constructible<_Del>>> _GLIBCXX23_CONSTEXPR
+           unique_ptr (pointer __p, __enable_if_t<!is_lvalue_reference< _Del
+           >::value, _Del && > __d) noexcept
+       template<typename _Del  = deleter_type, typename  =
+           _Require<is_copy_constructible<_Del>>> _GLIBCXX23_CONSTEXPR
+           unique_ptr (pointer __p, const deleter_type &__d) noexcept
+       template<typename _Del  = deleter_type, typename _DelUnref  = typename
+           remove_reference<_Del>::type> _GLIBCXX23_CONSTEXPR unique_ptr
+           (pointer, __enable_if_t< is_lvalue_reference< _Del >::value,
+           _DelUnref && >)=delete
+       unique_ptr (unique_ptr &&)=default
+           Move constructor.
+       template<typename _Up , typename _Ep , typename  = _Require<
+           __safe_conversion_up<_Up, _Ep>,
+           __conditional_t<is_reference<_Dp>::value,
+           is_same<_Ep, _Dp>,                     is_convertible<_Ep, _Dp>>>>
+           _GLIBCXX23_CONSTEXPR unique_ptr (unique_ptr< _Up, _Ep > &&__u)
+           noexcept
+           Converting constructor from another type.
+       ~unique_ptr () noexcept
+           Destructor, invokes the deleter if the stored pointer is not null.
+       _GLIBCXX23_CONSTEXPR pointer get () const noexcept
+           Return the stored pointer.
+       _GLIBCXX23_CONSTEXPR const deleter_type & get_deleter () const noexcept
+           Return a reference to the stored deleter.
+       _GLIBCXX23_CONSTEXPR deleter_type & get_deleter () noexcept
+           Return a reference to the stored deleter.
+       _GLIBCXX23_CONSTEXPR operator bool () const noexcept
+           Return true if the stored pointer is not null.
+       _GLIBCXX23_CONSTEXPR add_lvalue_reference< element_type >::type
+           operator* () const noexcept(noexcept(*std::declval< pointer >()))
+           Dereference the stored pointer.
+       _GLIBCXX23_CONSTEXPR pointer operator-> () const noexcept
+           Return the stored pointer.
+       unique_ptr & operator= (const unique_ptr &)=delete
+       _GLIBCXX23_CONSTEXPR unique_ptr & operator= (nullptr_t) noexcept
+           Reset the unique_ptr to empty, invoking the deleter if necessary.
+       unique_ptr & operator= (unique_ptr &&)=default
+           Move assignment operator.
+       template<typename _Up , typename _Ep > _GLIBCXX23_CONSTEXPR enable_if<
+           __and_< __safe_conversion_up< _Up, _Ep >, is_assignable<
+           deleter_type &, _Ep && > >::value, unique_ptr & >::type operator=
+           (unique_ptr< _Up, _Ep > &&__u) noexcept
+           Assignment from another type.
+       _GLIBCXX23_CONSTEXPR pointer release () noexcept
+           Release ownership of any stored pointer.
+       _GLIBCXX23_CONSTEXPR void reset (pointer __p=pointer()) noexcept
+           Replace the stored pointer.
+       _GLIBCXX23_CONSTEXPR void swap (unique_ptr &__u) noexcept
+           Exchange the pointer and deleter with another object.
+
+   Related Functions
+       (Note that these are not member functions.)
+       template<typename _Tp , typename... _Args> _GLIBCXX23_CONSTEXPR
+           __detail::__unique_ptr_t< _Tp > make_unique (_Args &&... __args)
+       template<typename _Tp , typename... _Args>
+           __detail::__invalid_make_unique_t< _Tp > make_unique (_Args
+           &&...)=delete
+       template<typename _Tp > _GLIBCXX23_CONSTEXPR
+           __detail::__unique_ptr_array_t< _Tp > make_unique (size_t __num)
+       template<typename _Tp > _GLIBCXX23_CONSTEXPR __detail::__unique_ptr_t<
+           _Tp > make_unique_for_overwrite ()
+       template<typename _Tp , typename... _Args>
+           __detail::__invalid_make_unique_t< _Tp > make_unique_for_overwrite
+           (_Args &&...)=delete
+       template<typename _Tp > _GLIBCXX23_CONSTEXPR
+           __detail::__unique_ptr_array_t< _Tp > make_unique_for_overwrite
+           (size_t __num)
+       template<typename _CharT , typename _Traits , typename _Tp , typename
+           _Dp > basic_ostream< _CharT, _Traits > & operator<< (basic_ostream<
+           _CharT, _Traits > &__os, const unique_ptr< _Tp, _Dp > &__p)
+           Stream output operator for unique_ptr.
+       template<typename _Tp , typename _Dp > _GLIBCXX23_CONSTEXPR enable_if<
+           __is_swappable< _Dp >::value >::type swap (unique_ptr< _Tp, _Dp >
+           &__x, unique_ptr< _Tp, _Dp > &__y) noexcept
+
+Detailed Description
+   template<typename _Tp, typename _Dp = default_delete<_Tp>>
+       class std::unique_ptr< _Tp, _Dp >"A move-only smart pointer that
+       manages unique ownership of a resource.
+
+       Since
+           C++11
+
+       Definition at line 269 of file unique_ptr.h.
+
+Member Typedef Documentation
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>> using
+       std::unique_ptr< _Tp, _Dp >::deleter_type =  _Dp
+       Definition at line 280 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>> using
+       std::unique_ptr< _Tp, _Dp >::element_type =  _Tp
+       Definition at line 279 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>> using
+       std::unique_ptr< _Tp, _Dp >::pointer =  typename __uniq_ptr_impl<_Tp,
+       _Dp>::pointer
+       Definition at line 278 of file unique_ptr.h.
+
+Constructor & Destructor Documentation
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Del  = _Dp, typename  = _DeleterConstraint<_Del>>
+       constexpr std::unique_ptr< _Tp, _Dp >::unique_ptr () [inline],
+       [constexpr],  [noexcept]
+       Default constructor, creates a unique_ptr that owns nothing.
+
+       Definition at line 296 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Del  = _Dp, typename  = _DeleterConstraint<_Del>>
+       _GLIBCXX23_CONSTEXPR std::unique_ptr< _Tp, _Dp >::unique_ptr (pointer
+       __p) [inline],  [explicit],  [noexcept]
+       Takes ownership of a pointer.
+
+       Parameters
+           __p A pointer to an object of element_type
+
+       The deleter will be value-initialized.
+
+       Definition at line 309 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Del  = deleter_type, typename  =
+       _Require<is_copy_constructible<_Del>>> _GLIBCXX23_CONSTEXPR
+       std::unique_ptr< _Tp, _Dp >::unique_ptr (pointer __p, const
+       deleter_type & __d) [inline],  [noexcept]
+       Takes ownership of a pointer.
+
+       Parameters
+           __p A pointer to an object of element_type
+           __d A reference to a deleter.
+
+       The deleter will be initialized with __d
+
+       Definition at line 323 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Del  = deleter_type, typename  =
+       _Require<is_move_constructible<_Del>>> _GLIBCXX23_CONSTEXPR
+       std::unique_ptr< _Tp, _Dp >::unique_ptr (pointer __p,
+       __enable_if_t<!is_lvalue_reference< _Del >::value, _Del && > __d)
+       [inline],  [noexcept]
+       Takes ownership of a pointer.
+
+       Parameters
+           __p A pointer to an object of element_type
+           __d An rvalue reference to a (non-reference) deleter.
+
+       The deleter will be initialized with std::move(__d)
+
+       Definition at line 336 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Del  = _Dp, typename  = _DeleterConstraint<_Del>>
+       constexpr std::unique_ptr< _Tp, _Dp >::unique_ptr (nullptr_t) [inline],
+       [constexpr],  [noexcept]
+       Creates a unique_ptr that owns nothing.
+
+       Definition at line 351 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       std::unique_ptr< _Tp, _Dp >::unique_ptr (unique_ptr< _Tp, _Dp > &&)
+       [default]
+       Move constructor.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Up , typename _Ep , typename  = _Require<
+       __safe_conversion_up<_Up, _Ep>,
+       __conditional_t<is_reference<_Dp>::value,
+       is_same<_Ep, _Dp>,                     is_convertible<_Ep, _Dp>>>>
+       _GLIBCXX23_CONSTEXPR std::unique_ptr< _Tp, _Dp >::unique_ptr
+       (unique_ptr< _Up, _Ep > && __u) [inline],  [noexcept]
+       Converting constructor from another type. Requires that the pointer
+       owned by __u is convertible to the type of pointer owned by this
+       object, __u does not own an array, and __u has a compatible deleter
+       type.
+
+       Definition at line 372 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp > template<typename _Up , typename >
+       std::unique_ptr< _Tp, _Dp >::unique_ptr (auto_ptr< _Up > && __u)
+       [inline],  [noexcept]
+       Converting constructor from auto_ptr.
+
+       Definition at line 328 of file auto_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       std::unique_ptr< _Tp, _Dp >::~unique_ptr () [inline],  [noexcept]
+       Destructor, invokes the deleter if the stored pointer is not null.
+
+       Definition at line 390 of file unique_ptr.h.
+
+       References std::unique_ptr< _Tp, _Dp >::get_deleter(), and std::move().
+
+Member Function Documentation
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR pointer std::unique_ptr< _Tp, _Dp >::get () const
+       [inline],  [noexcept]
+       Return the stored pointer.
+
+       Definition at line 461 of file unique_ptr.h.
+
+       Referenced by std::unique_ptr< _Tp, _Dp >::make_unique_for_overwrite(),
+       std::unique_ptr< _Tp, _Dp >::operator bool(), std::unique_ptr< _Tp[],
+       _Dp >::operator bool(), std::operator!=(), std::unique_ptr< _Tp, _Dp
+       >::operator*(), std::unique_ptr< _Tp, _Dp >::operator->(),
+       std::operator<(), std::operator==(), std::operator>(), and
+       std::unique_ptr< _Tp[], _Dp >::operator[]().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR const deleter_type & std::unique_ptr< _Tp, _Dp
+       >::get_deleter () const [inline],  [noexcept]
+       Return a reference to the stored deleter.
+
+       Definition at line 473 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR deleter_type & std::unique_ptr< _Tp, _Dp
+       >::get_deleter () [inline],  [noexcept]
+       Return a reference to the stored deleter.
+
+       Definition at line 467 of file unique_ptr.h.
+
+       Referenced by std::unique_ptr< _Tp[], _Dp >::~unique_ptr(),
+       std::unique_ptr< _Tp, _Dp >::~unique_ptr(), std::unique_ptr< _Tp, _Dp
+       >::operator=(), and std::unique_ptr< _Tp[], _Dp >::operator=().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR std::unique_ptr< _Tp, _Dp >::operator bool ()
+       const [inline],  [explicit],  [noexcept]
+       Return true if the stored pointer is not null.
+
+       Definition at line 478 of file unique_ptr.h.
+
+       References std::unique_ptr< _Tp, _Dp >::get().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR add_lvalue_reference< element_type >::type
+       std::unique_ptr< _Tp, _Dp >::operator* () const [inline],  [noexcept]
+       Dereference the stored pointer.
+
+       Definition at line 443 of file unique_ptr.h.
+
+       References std::unique_ptr< _Tp, _Dp >::get().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR pointer std::unique_ptr< _Tp, _Dp >::operator-> ()
+       const [inline],  [noexcept]
+       Return the stored pointer.
+
+       Definition at line 452 of file unique_ptr.h.
+
+       References std::unique_ptr< _Tp, _Dp >::get().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR unique_ptr & std::unique_ptr< _Tp, _Dp
+       >::operator= (nullptr_t) [inline],  [noexcept]
+       Reset the unique_ptr to empty, invoking the deleter if necessary.
+
+       Definition at line 432 of file unique_ptr.h.
+
+       References std::unique_ptr< _Tp, _Dp >::reset().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>> unique_ptr &
+       std::unique_ptr< _Tp, _Dp >::operator= (unique_ptr< _Tp, _Dp > &&)
+       [default]
+       Move assignment operator. Invokes the deleter if this object owns a
+       pointer.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       template<typename _Up , typename _Ep > _GLIBCXX23_CONSTEXPR enable_if<
+       __and_< __safe_conversion_up< _Up, _Ep >, is_assignable< deleter_type
+       &, _Ep && > >::value, unique_ptr & >::type std::unique_ptr< _Tp, _Dp
+       >::operator= (unique_ptr< _Up, _Ep > && __u) [inline],  [noexcept]
+       Assignment from another type.
+
+       Parameters
+           __u The object to transfer ownership from, which owns a convertible
+           pointer to a non-array object.
+
+       Invokes the deleter if this object owns a pointer.
+
+       Definition at line 422 of file unique_ptr.h.
+
+       References std::unique_ptr< _Tp, _Dp >::get_deleter(), and
+       std::unique_ptr< _Tp, _Dp >::reset().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR pointer std::unique_ptr< _Tp, _Dp >::release ()
+       [inline],  [noexcept]
+       Release ownership of any stored pointer.
+
+       Definition at line 486 of file unique_ptr.h.
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR void std::unique_ptr< _Tp, _Dp >::reset (pointer
+       __p = pointer()) [inline],  [noexcept]
+       Replace the stored pointer.
+
+       Parameters
+           __p The new pointer to store.
+
+       The deleter will be invoked if a pointer is already owned.
+
+       Definition at line 497 of file unique_ptr.h.
+
+       References std::move().
+
+       Referenced by std::unique_ptr< _Tp, _Dp >::operator=(), and
+       std::unique_ptr< _Tp[], _Dp >::operator=().
+
+   template<typename _Tp , typename _Dp  = default_delete<_Tp>>
+       _GLIBCXX23_CONSTEXPR void std::unique_ptr< _Tp, _Dp >::swap
+       (unique_ptr< _Tp, _Dp > & __u) [inline],  [noexcept]
+       Exchange the pointer and deleter with another object.
+
+       Definition at line 507 of file unique_ptr.h.
+
+Author
+       Generated automatically by Doxygen for libstdc++ from the source code.
+
+libstdc++                       Wed Feb 1 2023  std::unique_ptr< _Tp, _Dp >(3)

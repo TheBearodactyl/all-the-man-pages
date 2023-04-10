@@ -1,0 +1,68 @@
+IPQ_SET_MODE(3)                                                                          Linux Programmer's Manual                                                                         IPQ_SET_MODE(3)
+
+NAME
+       ipq_set_mode — set the ip_queue queuing mode
+
+SYNOPSIS
+       #include <linux/netfilter.h>
+       #include <libipq.h>
+
+       int ipq_set_mode(const struct ipq_handle *h, uint8_t mode, size_t range);
+
+DESCRIPTION
+       The ipq_set_mode function sends a message to the kernel ip_queue module, specifying whether packet metadata only, or packet payloads as well as metadata should be copied to userspace.
+
+       The h parameter is a context handle which must previously have been returned successfully from a call to ipq_create_handle.
+
+       The mode parameter must be one of:
+
+       IPQ_COPY_META
+              Copy only packet metadata to userspace.
+
+       IPQ_COPY_PACKET
+              Copy packet metadata and packet payloads to userspace.
+
+       The range parameter is used to specify how many bytes of the payload to copy to userspace.  It is only valid for IPQ_COPY_PACKET mode and is otherwise ignored.  The maximum useful value for range
+       is 65535 (greater values will be clamped to this by ip_queue).
+
+       ipq_set_mode is usually used immediately following ipq_create_handle to enable the flow of packets to userspace.
+
+       Note that as the underlying Netlink messaging transport is connectionless, the ip_queue module does not know that a userspace application is ready to communicate until it receives a message  such
+       as this.
+
+RETURN VALUE
+       On failure, -1 is returned.
+       On success, a non-zero positive value is returned.
+
+ERRORS
+       On failure, a descriptive error message will be available via the ipq_errstr function.
+
+DIAGNOSTICS
+       A relatively common failure may occur if the ip_queue module is not loaded.  In this case, the following code excerpt:
+
+              status = ipq_set_mode(h, IPQ_COPY_META, 0);
+              if (status < 0) {
+                   ipq_perror("myapp");
+                   ipq_destroy_handle(h);
+                   exit(1);
+              }
+
+       would generate the following output:
+
+       myapp: Failed to send netlink message: Connection refused
+
+BUGS
+       None known.
+
+AUTHOR
+       James Morris <jmorris@intercode.com.au>
+
+COPYRIGHT
+       Copyright (c) 2000-2001 Netfilter Core Team.
+
+       Distributed under the GNU General Public License.
+
+SEE ALSO
+       libipq(3), iptables(8).
+
+Linux iptables 1.2                                                                            16 October 2001                                                                              IPQ_SET_MODE(3)

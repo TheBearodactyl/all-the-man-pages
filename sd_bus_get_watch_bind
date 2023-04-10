@@ -1,0 +1,65 @@
+SD_BUS_SET_WATCH_BIND(3)     sd_bus_set_watch_bind    SD_BUS_SET_WATCH_BIND(3)
+
+NAME
+       sd_bus_set_watch_bind, sd_bus_get_watch_bind - Control socket binding
+       watching on bus connections
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_set_watch_bind(sd_bus *bus, int b);
+
+       int sd_bus_get_watch_bind(sd_bus *bus);
+
+DESCRIPTION
+       sd_bus_set_watch_bind() may be used to enable or disable client-side
+       watching of server socket binding for a bus connection object. If the b
+       is true, the feature is enabled, otherwise disabled (which is the
+       default). When enabled, and the selected bus address refers to an
+       AF_UNIX socket in the file system which does not exist while the
+       connection attempt is made an inotify(7) watch is installed on it,
+       waiting for the socket to appear. As soon as the socket appears the
+       connection is made. This functionality is useful in particular in
+       early-boot programs that need to run before the system bus is
+       available, but want to connect to it the instant it may be connected
+       to.
+
+       sd_bus_get_watch_bind() may be used to query the current setting of
+       this feature. It returns zero when the feature is disabled, and
+       positive if enabled.
+
+       Note that no timeout is applied while we wait for the socket to appear.
+       This means that any synchronous remote operation (such as
+       sd_bus_call(3), sd_bus_add_match(3) or sd_bus_request_name(3)), that is
+       used on a connection with this feature enabled that hasn't been
+       established yet, might block forever if the socket is never created.
+       However, asynchronous remote operations (such as sd_bus_send(3),
+       sd_bus_call_async(3), sd_bus_add_match_async(3)) do not block in this
+       case, and safely enqueue the requested operations to be dispatched the
+       instant the connection is set up.
+
+       Use sd_bus_is_ready(3) to determine whether the connection is fully
+       established, i.e. whether the peer socket has been bound, connected to
+       and authenticated. Use sd_bus_set_connected_signal(3) to be notified
+       when the connection is fully established.
+
+RETURN VALUE
+       On success, these functions return 0 or a positive integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -ECHILD
+           The bus connection has been created in a different process.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), inotify(7), sd_bus_call(3), sd_bus_add_match(3),
+       sd_bus_request_name(3), sd_bus_is_ready(3),
+       sd_bus_set_connected_signal(3)
+
+systemd 253                                           SD_BUS_SET_WATCH_BIND(3)

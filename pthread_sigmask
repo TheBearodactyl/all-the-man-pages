@@ -1,0 +1,319 @@
+pthread_sigmask(3)         Library Functions Manual         pthread_sigmask(3)
+
+NAME
+       pthread_sigmask - examine and change mask of blocked signals
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <signal.h>
+
+       int pthread_sigmask(int how, const sigset_t *set, sigset_t *oldset);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       pthread_sigmask():
+           _POSIX_C_SOURCE >= 199506L || _XOPEN_SOURCE >= 500
+
+DESCRIPTION
+       The  pthread_sigmask()  function  is just like sigprocmask(2), with the
+       difference that its use in multithreaded programs is explicitly  speci‐
+       fied by POSIX.1.  Other differences are noted in this page.
+
+       For  a description of the arguments and operation of this function, see
+       sigprocmask(2).
+
+RETURN VALUE
+       On success, pthread_sigmask() returns 0; on error, it returns an  error
+       number.
+
+ERRORS
+       See sigprocmask(2).
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_sigmask()                           │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+NOTES
+       A new thread inherits a copy of its creator's signal mask.
+
+       The glibc pthread_sigmask() function silently ignores attempts to block
+       the  two real-time signals that are used internally by the NPTL thread‐
+       ing implementation.  See nptl(7) for details.
+
+EXAMPLES
+       The program below blocks some signals in the main thread, and then cre‐
+       ates  a  dedicated  thread  to fetch those signals via sigwait(3).  The
+       following shell session demonstrates its use:
+
+           $ ./a.out &
+           [1] 5423
+           $ kill -QUIT %1
+           Signal handling thread got signal 3
+           $ kill -USR1 %1
+           Signal handling thread got signal 10
+           $ kill -TERM %1
+           [1]+  Terminated              ./a.out
+
+   Program source
+
+       #include <errno.h>
+       #include <pthread.h>
+       #include <signal.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       /* Simple error handling functions */
+
+       #define handle_error_en(en, msg) \
+               do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+       static void *
+       sig_thread(void *arg)
+       {
+           sigset_t *set = arg;
+           int s, sig;
+
+           for (;;) {
+               s = sigwait(set, &sig);
+               if (s != 0)
+                   handle_error_en(s, "sigwait");
+               printf("Signal handling thread got signal %d\n", sig);
+           }
+       }
+
+       int
+       main(void)
+       {
+           pthread_t thread;
+           sigset_t set;
+           int s;
+
+           /* Block SIGQUIT and SIGUSR1; other threads created by main()
+              will inherit a copy of the signal mask. */
+
+           sigemptyset(&set);
+           sigaddset(&set, SIGQUIT);
+           sigaddset(&set, SIGUSR1);
+           s = pthread_sigmask(SIG_BLOCK, &set, NULL);
+           if (s != 0)
+               handle_error_en(s, "pthread_sigmask");
+
+           s = pthread_create(&thread, NULL, &sig_thread, &set);
+           if (s != 0)
+               handle_error_en(s, "pthread_create");
+
+           /* Main thread carries on to create other threads and/or do
+              other work. */
+
+           pause();            /* Dummy pause so we can test program */
+       }
+
+SEE ALSO
+       sigaction(2),   sigpending(2),   sigprocmask(2),   pthread_attr_setsig‐
+       mask_np(3),     pthread_create(3),    pthread_kill(3),    sigsetops(3),
+       pthreads(7), signal(7)
+
+Linux man-pages 6.04              2023-03-30                pthread_sigmask(3)
+PTHREAD_SIGMASK(3P)        POSIX Programmer's Manual       PTHREAD_SIGMASK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_sigmask, sigprocmask — examine and change blocked signals
+
+SYNOPSIS
+       #include <signal.h>
+
+       int pthread_sigmask(int how, const sigset_t *restrict set,
+           sigset_t *restrict oset);
+       int sigprocmask(int how, const sigset_t *restrict set,
+           sigset_t *restrict oset);
+
+DESCRIPTION
+       The pthread_sigmask() function shall examine or change  (or  both)  the
+       calling  thread's  signal  mask, regardless of the number of threads in
+       the process. The function shall be equivalent to sigprocmask(), without
+       the restriction that the call be made in a single-threaded process.
+
+       In  a single-threaded process, the sigprocmask() function shall examine
+       or change (or both) the signal mask of the calling thread.
+
+       If the argument set is not a null pointer, it points to a set  of  sig‐
+       nals to be used to change the currently blocked set.
+
+       The argument how indicates the way in which the set is changed, and the
+       application shall ensure it consists of one of the following values:
+
+       SIG_BLOCK   The resulting set shall be the union of the current set and
+                   the signal set pointed to by set.
+
+       SIG_SETMASK The  resulting  set  shall  be the signal set pointed to by
+                   set.
+
+       SIG_UNBLOCK The resulting set shall be the intersection of the  current
+                   set and the complement of the signal set pointed to by set.
+
+       If  the argument oset is not a null pointer, the previous mask shall be
+       stored in the location pointed to by oset.  If set is a  null  pointer,
+       the  value of the argument how is not significant and the thread's sig‐
+       nal mask shall be unchanged; thus the call can be used to enquire about
+       currently blocked signals.
+
+       If  there  are any pending unblocked signals after the call to sigproc‐
+       mask(), at least one of those signals shall  be  delivered  before  the
+       call to sigprocmask() returns.
+
+       It  is  not  possible  to  block those signals which cannot be ignored.
+       This shall be enforced by the system without causing an error to be in‐
+       dicated.
+
+       If  any of the SIGFPE, SIGILL, SIGSEGV, or SIGBUS signals are generated
+       while they are blocked, the result is undefined, unless the signal  was
+       generated  by the action of another process, or by one of the functions
+       kill(), pthread_kill(), raise(), or sigqueue().
+
+       If sigprocmask() fails, the thread's signal mask shall not be changed.
+
+       The use of the  sigprocmask()  function  is  unspecified  in  a  multi-
+       threaded process.
+
+RETURN VALUE
+       Upon successful completion pthread_sigmask() shall return 0; otherwise,
+       it shall return the corresponding error number.
+
+       Upon successful completion, sigprocmask() shall return 0; otherwise, -1
+       shall  be  returned,  errno shall be set to indicate the error, and the
+       signal mask of the process shall be unchanged.
+
+ERRORS
+       The pthread_sigmask() and sigprocmask() functions shall fail if:
+
+       EINVAL The value of the how argument is not equal to one of the defined
+              values.
+
+       The  pthread_sigmask()  function  shall  not  return  an  error code of
+       [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+   Signaling in a Multi-Threaded Process
+       This example shows the use of pthread_sigmask() in order to  deal  with
+       signals  in  a  multi-threaded  process.  It  provides a fairly general
+       framework that could be easily adapted/extended.
+
+           #include <stdio.h>
+           #include <stdlib.h>
+           #include <pthread.h>
+           #include <signal.h>
+           #include <string.h>
+           #include <errno.h>
+           ...
+
+           static sigset_t   signal_mask;  /* signals to block         */
+
+           int main (int argc, char *argv[])
+           {
+               pthread_t  sig_thr_id;      /* signal handler thread ID */
+               int        rc;              /* return code              */
+
+               sigemptyset (&signal_mask);
+               sigaddset (&signal_mask, SIGINT);
+               sigaddset (&signal_mask, SIGTERM);
+               rc = pthread_sigmask (SIG_BLOCK, &signal_mask, NULL);
+               if (rc != 0) {
+                   /* handle error */
+                   ...
+               }
+               /* any newly created threads inherit the signal mask */
+
+               rc = pthread_create (&sig_thr_id, NULL, signal_thread, NULL);
+               if (rc != 0) {
+                   /* handle error */
+                   ...
+               }
+
+               /* APPLICATION CODE */
+               ...
+           }
+
+           void *signal_thread (void *arg)
+           {
+               int       sig_caught;    /* signal caught       */
+               int       rc;            /* returned code       */
+
+               rc = sigwait (&signal_mask, &sig_caught);
+               if (rc != 0) {
+                   /* handle error */
+               }
+               switch (sig_caught)
+               {
+               case SIGINT:     /* process SIGINT  */
+                   ...
+                   break;
+               case SIGTERM:    /* process SIGTERM */
+                   ...
+                   break;
+               default:         /* should normally not happen */
+                   fprintf (stderr, "\nUnexpected signal %d\n", sig_caught);
+                   break;
+               }
+           }
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       When a thread's signal mask is changed in  a  signal-catching  function
+       that is installed by sigaction(), the restoration of the signal mask on
+       return from the signal-catching function  overrides  that  change  (see
+       sigaction()).   If the signal-catching function was installed with sig‐
+       nal(), it is unspecified whether this occurs.
+
+       See kill() for a discussion of the requirement on delivery of signals.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exec, kill(),  sigaction(),  sigaddset(),  sigdelset(),  sigemptyset(),
+       sigfillset(), sigismember(), sigpending(), sigqueue(), sigsuspend()
+
+       The Base Definitions volume of POSIX.1‐2017, <signal.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                  PTHREAD_SIGMASK(3P)

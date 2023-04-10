@@ -1,0 +1,334 @@
+LIBTRACEFS(3)                                                                                libtracefs Manual                                                                               LIBTRACEFS(3)
+
+NAME
+       libtracefs - Linux kernel trace file system library
+
+SYNOPSIS
+       #include <tracefs.h>
+
+       Locations of tracing files and directories:
+               char *tracefs_get_tracing_file(const char *name);
+               void tracefs_put_tracing_file(char *name);
+               const char *tracefs_tracing_dir(void);
+               const char *tracefs_debug_dir(void);
+               int tracefs_set_tracing_dir(char *tracing_dir)
+               int tracefs_tracing_dir_is_mounted(bool mount, const char **path);
+
+       Trace instances:
+               struct tracefs_instance *tracefs_instance_create(const char *name);
+               int tracefs_instance_destroy(struct tracefs_instance *instance);
+               struct tracefs_instance *tracefs_instance_alloc(const char *tracing_dir, const char *name);
+               void tracefs_instance_free(struct tracefs_instance *instance);
+               char **tracefs_instances(const char *regex);
+               bool tracefs_instance_is_new(struct tracefs_instance *instance);
+               bool tracefs_file_exists(struct tracefs_instance *instance, char *name);
+               bool tracefs_dir_exists(struct tracefs_instance *instance, char *name);
+               char *tracefs_instance_get_file(struct tracefs_instance *instance, const char *file);
+               char *tracefs_instance_get_dir(struct tracefs_instance *instance);
+               int tracefs_instance_file_open(struct tracefs_instance *instance, const char *file, int mode);
+               int tracefs_instance_file_write(struct tracefs_instance *instance, const char *file, const char *str);
+               int tracefs_instance_file_append(struct tracefs_instance *instance, const char *file, const char *str);
+               int tracefs_instance_file_clear(struct tracefs_instance *instance, const char *file);
+               char *tracefs_instance_file_read(struct tracefs_instance *instance, const char *file, int *psize);
+               int tracefs_instance_file_read_number(struct tracefs_instance *instance, const char *file, long long int *res);
+               const char *tracefs_instance_get_name(struct tracefs_instance *instance);
+               const char *tracefs_instance_get_trace_dir(struct tracefs_instance *instance);
+               int tracefs_instances_walk(int (*callback)(const char *, void *), void *context);
+               bool tracefs_instance_exists(const char *name);
+               int tracefs_instance_set_affinity(struct tracefs_instance *instance, const char *cpu_str);
+               int tracefs_instance_set_affinity_set(struct tracefs_instance *instance, cpu_set_t *set, size_t set_size);
+               int tracefs_instance_set_affinity_raw(struct tracefs_instance *instance, const char *mask);
+               char *tracefs_instance_get_affinity(struct tracefs_instance *instance);
+               int tracefs_instance_get_affinity_set(struct tracefs_instance *instance, cpu_set_t *set, size_t set_size);
+               char *tracefs_instance_get_affinity_raw(struct tracefs_instance *instance);
+               size_t tracefs_instance_get_buffer_size(struct tracefs_instance *instance, int cpu);
+               int tracefs_instance_set_buffer_size(struct tracefs_instance *instance, size_t size, int cpu);
+
+       Trace events:
+               char **tracefs_event_systems(const char *tracing_dir);
+               char **tracefs_system_events(const char *tracing_dir, const char *system);
+               int tracefs_event_enable(struct tracefs_instance *instance, const char *system,
+                                  const char *event);
+               int tracefs_event_disable(struct tracefs_instance *instance, const char *system,
+                                   const char *event);
+               enum tracefs_enable_state tracefs_event_is_enabled(struct tracefs_instance *instance,
+                                        const char *system, const char *event);
+               int tracefs_iterate_raw_events(struct tep_handle *tep, struct tracefs_instance *instance, cpu_set_t *cpus, int cpu_size, int (*callback)(struct tep_event *, struct tep_record *, int, void *), void *callback_context);
+               void tracefs_iterate_stop(struct tracefs_instance *instance);
+               int tracefs_follow_event(struct tep_handle *tep, struct tracefs_instance *instance,
+                                         const char *system, const char *event_name,
+                                         int (*callback)(struct tep_event *,
+                                                         struct tep_record *,
+                                                         int, void *),
+                                         void *callback_data);
+               int tracefs_follow_missed_events(struct tracefs_instance *instance,
+                                         int (*callback)(struct tep_event *,
+                                                         struct tep_record *,
+                                                         int, void *),
+                                         void *callback_data);
+               struct tep_handle *tracefs_local_events(const char *tracing_dir);
+               struct tep_handle *tracefs_local_events_system(const char *tracing_dir, const char * const *sys_names);
+               int tracefs_fill_local_events(const char *tracing_dir, struct tep_handle *tep, int *parsing_failures);
+               int tracefs_load_cmdlines(const char *tracing_dir, struct tep_handle *tep);
+               char *tracefs_event_get_file(struct tracefs_instance *instance, const char *system, const char *event,
+                                    const char *file);
+               char *tracefs_event_file_read(struct tracefs_instance *instance, const char *system, const char *event,
+                                     const char *file, int *psize);
+               int tracefs_event_file_write(struct tracefs_instance *instance, const char *system, const char *event,
+                                    const char *file, const char *str);
+               int tracefs_event_file_append(struct tracefs_instance *instance, const char *system, const char *event,
+                                     const char *file, const char *str);
+               int tracefs_event_file_clear(struct tracefs_instance *instance, const char *system, const char *event,
+                                    const char *file);
+               bool tracefs_event_file_exists(struct tracefs_instance *instance, const char *system, const char *event,
+
+       Event filters:
+               int tracefs_filter_string_append(struct tep_event *event, char **filter,
+                                                struct tracefs_filter type, const char *field,
+                                                enum tracefs_synth_compare compare, const char *val);
+               int tracefs_filter_string_verify(struct tep_event *event, const char *filter, char **err);
+               int tracefs_event_filter_apply(struct tracefs_instance *instance, struct tep_event *event, const char *filter);
+               int tracefs_event_filter_clear(struct tracefs_instance *instance, struct tep_event *event);
+
+       Function filters:
+               int tracefs_function_filter(struct tracefs_instance *instance, const char *filter, const char *module, int flags);
+               int tracefs_function_notrace(struct tracefs_instance *instance, const char *filter, const char *module, int flags);
+               int tracefs_filter_functions(const char *filter, const char *module, char ***list);
+
+       Trace helper functions:
+               void tracefs_list_free(char **list);
+               char **tracefs_list_add(char *list, const char *string);
+               int *tracefs_list_size(char **list);
+               char *tracefs_get_clock(struct tracefs_instance *instance);
+               int tracefs_trace_is_on(struct tracefs_instance *instance);
+               int tracefs_trace_on(struct tracefs_instance *instance);
+               int tracefs_trace_off(struct tracefs_instance *instance);
+               int tracefs_trace_on_get_fd(struct tracefs_instance *instance);
+               int tracefs_trace_on_fd(int fd);
+               int tracefs_trace_off_fd(int fd);
+
+       Trace stream:
+               ssize_t tracefs_trace_pipe_stream(int fd, struct tracefs_instance *instance, int flags);
+               ssize_t tracefs_trace_pipe_print(struct tracefs_instance *instance, int flags);
+               void tracefs_trace_pipe_stop(struct tracefs_instance *instance);
+
+       Trace options:
+               const struct tracefs_options_mask *tracefs_options_get_supported(struct tracefs_instance *instance);
+               bool tracefs_option_is_supported(struct tracefs_instance *instance, enum tracefs_option_id id);
+               const struct tracefs_options_mask *tracefs_options_get_enabled(struct tracefs_instance *instance);
+               bool tracefs_option_is_enabled(struct tracefs_instance *instance, enum tracefs_option_id id);
+               bool tracefs_option_mask_is_set(const struct tracefs_options_mask options, enum tracefs_option_id id);
+               int *tracefs_option_enable(struct tracefs_instance *instance, enum tracefs_option_id id);
+               int tracefs_option_disable(struct tracefs_instance *instance, enum tracefs_option_id id);
+               const char *tracefs_option_name(enum tracefs_option_id id);
+               enum tracefs_option_id tracefs_option_id(const char *name);
+
+       Ftrace tracers:
+               char **tracefs_tracers(const char *tracing_dir);
+               bool tracefs_tracer_available(const char *tracing_dir, const char *tracer);
+               int tracefs_tracer_set(struct tracefs_instance *instance, enum tracefs_tracers tracer);
+               int tracefs_tracer_set(struct tracefs_instance *instance, enum tracefs_tracers tracer, const char *name);
+               int tracefs_tracer_clear(struct tracefs_instance *instance);
+
+       Writing data in the trace buffer:
+               int tracefs_print_init(struct tracefs_instance *instance);
+               int tracefs_printf(struct tracefs_instance *instance, const char *fmt, ...);
+               int tracefs_vprintf(struct tracefs_instance *instance, const char *fmt, va_list ap);
+               void tracefs_print_close(struct tracefs_instance *instance);
+               int tracefs_binary_init(struct tracefs_instance *instance);
+               int tracefs_binary_write(struct tracefs_instance *instance, void *data, int len);
+               void tracefs_binary_close(struct tracefs_instance *instance);
+
+       Control library logs:
+               int tracefs_set_loglevel(enum tep_loglevel level);
+
+       Dynamic event generic APIs:
+               struct tracefs_dynevent;
+               enum tracefs_dynevent_type;
+               int tracefs_dynevent_create(struct tracefs_dynevent *devent);
+               int tracefs_dynevent_destroy(struct tracefs_dynevent *devent, bool force);
+               int tracefs_dynevent_destroy_all(unsigned int types, bool force);
+               void tracefs_dynevent_free(struct tracefs_dynevent *devent);
+               void tracefs_dynevent_list_free(struct tracefs_dynevent **events);
+               struct tracefs_dynevent *tracefs_dynevent_get(enum tracefs_dynevent_type type, const char *system, const char *event);
+               struct tracefs_dynevent **tracefs_dynevent_get_all(unsigned int types, const char *system);
+               enum tracefs_dynevent_type tracefs_dynevent_info(struct tracefs_dynevent *dynevent, char **system, char **event, char **prefix, char **addr, char **format);
+               struct tep_event *tracefs_dynevent_get_event(struct tep_handle *tep, struct tracefs_dynevent *dynevent);
+
+       Even probes (eprobes):
+               struct tracefs_dynevent * tracefs_eprobe_alloc(const char *system, const char *event, const char *target_system, const char *target_event, const char *fetchargs);
+
+       Uprobes, Kprobes and Kretprobes:
+               struct tracefs_dynevent * tracefs_kprobe_alloc(const char *system, const char *event, const char *addr, const char *format);
+               struct tracefs_dynevent * tracefs_kretprobe_alloc(const char *system, const char *event, const char *addr, const char *format, unsigned int max);
+               int tracefs_kprobe_raw(const char *system, const char *event, const char *addr, const char *format);
+               int tracefs_kretprobe_raw(const char *system, const char *event, const char *addr, const char *format);
+               tracefs_uprobe_alloc(const char *system, const char *event,
+                            const char *file, unsigned long long offset, const char *fetchargs)
+               tracefs_uretprobe_alloc(const char *system, const char *event,
+                            const char *file, unsigned long long offset, const char *fetchargs);
+
+       Synthetic events:
+               struct tracefs_synth *tracefs_sql(struct tep_handle *tep, const char *name,
+                                               const char *sql_buffer, char **err);
+               struct tracefs_synth *tracefs_synth_alloc(struct tep_handle *tep,
+                                                        const char *name,
+                                                        const char *start_system,
+                                                        const char *start_event,
+                                                        const char *end_system,
+                                                        const char *end_event,
+                                                        const char *start_match_field,
+                                                        const char *end_match_field,
+                                                        const char *match_name);
+               int tracefs_synth_add_match_field(struct tracefs_synth *synth,
+                                                 const char *start_match_field,
+                                                 const char *end_match_field,
+                                                 const char *name);
+               int tracefs_synth_add_compare_field(struct tracefs_synth *synth,
+                                                   const char *start_compare_field,
+                                                   const char *end_compare_field,
+                                                   enum tracefs_synth_calc calc,
+                                                   const char *name);
+               int tracefs_synth_add_start_field(struct tracefs_synth *synth,
+                                                 const char *start_field,
+                                                 const char *name);
+               int tracefs_synth_add_end_field(struct tracefs_synth *synth,
+                                               const char *end_field,
+                                               const char *name);
+               int tracefs_synth_append_start_filter(struct tracefs_synth *synth,
+                                                     struct tracefs_filter type,
+                                                     const char *field,
+                                                     enum tracefs_synth_compare compare,
+                                                     const char *val);
+               int tracefs_synth_append_end_filter(struct tracefs_synth *synth,
+                                                   struct tracefs_filter type,
+                                                   const char *field,
+                                                   enum tracefs_synth_compare compare,
+                                                   const char *val);
+               void tracefs_synth_free(struct tracefs_synth *synth);
+               int tracefs_synth_create(struct tracefs_synth *synth);
+               int tracefs_synth_destroy(struct tracefs_synth *synth);
+               int tracefs_synth_echo_cmd(struct trace_seq *seq, struct tracefs_synth *synth);
+               bool tracefs_synth_complete(struct tracefs_synth *synth);
+               struct tracefs_hist *tracefs_synth_get_start_hist(struct tracefs_synth *synth);
+               int tracefs_synth_trace(struct tracefs_synth *synth,
+                                       enum tracefs_synth_handler type, const char *var);
+               int tracefs_synth_snapshot(struct tracefs_synth *synth,
+                                          enum tracefs_synth_handler type, const char *var);
+               int tracefs_synth_save(struct tracefs_synth *synth,
+                                      enum tracefs_synth_handler type, const char *var,
+                                      char **save_fields);
+               const char *tracefs_synth_get_name(struct tracefs_synth *synth);
+               int tracefs_synth_raw_fmt(struct trace_seq *seq, struct tracefs_synth *synth);
+               const char *tracefs_synth_show_event(struct tracefs_synth *synth);
+               const char *tracefs_synth_show_start_hist(struct tracefs_synth *synth);
+               const char *tracefs_synth_show_end_hist(struct tracefs_synth *synth);
+               struct tep_event *tracefs_synth_get_event(struct tep_handle *tep, struct tracefs_synth *synth);
+
+       Ftrace errors reporting:
+               char *tracefs_error_last(struct tracefs_instance *instance);
+               char *tracefs_error_all(struct tracefs_instance *instance);
+               int tracefs_error_clear(struct tracefs_instance *instance);
+
+       Histograms:
+               struct tracefs_hist *tracefs_hist_alloc(struct tracefs_tep * tep,
+                                       const char *system, const char *event,
+                                       const char *key, enum tracefs_hist_key_type type);
+               struct tracefs_hist *tracefs_hist_alloc_2d(struct tracefs_tep * tep,
+                                       const char *system, const char *event,
+                                       const char *key1, enum tracefs_hist_key_type type1,
+                                       const char *key2, enum tracefs_hist_key_type type2));
+               struct tracefs_hist *tracefs_hist_alloc_nd(struct tracefs_tep * tep,
+                                       const char *system, const char *event,
+                                       struct tracefs_hist_axis *axes);
+               struct tracefs_hist *tracefs_hist_alloc_nd_cnt(struct tep_handle *tep,
+                                         const char *system, const char *event_name,
+                                         struct tracefs_hist_axis_cnt *axes);
+               void tracefs_hist_free(struct tracefs_hist *hist);
+               int tracefs_hist_add_key(struct tracefs_hist *hist, const char *key,
+                                        enum tracefs_hist_key_type type);
+               int tracefs_hist_add_key_cnt(struct tracefs_hist *hist, const char *key,
+                                        enum tracefs_hist_key_type type, int cnt);
+               int tracefs_hist_add_value(struct tracefs_hist *hist, const char *value);
+               int tracefs_hist_add_sort_key(struct tracefs_hist *hist,
+                                             const char *sort_key);
+               int tracefs_hist_set_sort_key(struct tracefs_hist *hist,
+                                             const char *sort_key, ...);
+               int tracefs_hist_sort_key_direction(struct tracefs_hist *hist,
+                                                   const char *sort_key,
+                                                   enum tracefs_hist_sort_direction dir);
+               int tracefs_hist_add_name(struct tracefs_hist *hist, const char *name);
+               int tracefs_hist_append_filter(struct tracefs_hist *hist,
+                                              enum tracefs_filter type,
+                                              const char *field,
+                                              enum tracefs_compare compare,
+                                              const char *val);
+               int tracefs_hist_echo_cmd(struct trace_seq *s, struct tracefs_instance *instance,
+                                         struct tracefs_hist *hist,
+                                         enum tracefs_hist_command command);
+               int tracefs_hist_command(struct tracefs_instance *instance,
+                                        struct tracefs_hist *hist,
+                                        enum tracefs_hist_command command);
+               const char *tracefs_hist_get_name(struct tracefs_hist *hist);
+               const char *tracefs_hist_get_event(struct tracefs_hist *hist);
+               const char *tracefs_hist_get_system(struct tracefs_hist *hist);
+               int tracefs_hist_start(struct tracefs_instance *instance, struct tracefs_hist *hist);
+               int tracefs_hist_destroy(struct tracefs_instance *instance, struct tracefs_hist *hist);
+               int tracefs_hist_pause(struct tracefs_instance *instance, struct tracefs_hist *hist);
+               int tracefs_hist_continue(struct tracefs_instance *instance, struct tracefs_hist *hist);
+               int tracefs_hist_reset(struct tracefs_instance *instance, struct tracefs_hist *hist);
+
+       Recording of trace_pipe_raw files:
+               struct tracefs_cpu *tracefs_cpu_open(struct tracefs_instance *instance,
+                                                    int cpu, bool nonblock);
+               struct tracefs_cpu *tracefs_cpu_alloc_fd(int fd, int subbuf_size, bool nonblock);
+               void tracefs_cpu_close(struct tracefs_cpu *tcpu);
+               void tracefs_cpu_free_fd(struct tracefs_cpu *tcpu);
+               int tracefs_cpu_read_size(struct tracefs_cpu *tcpu);
+               int tracefs_cpu_read(struct tracefs_cpu *tcpu, void *buffer, bool nonblock);
+               int tracefs_cpu_buffered_read(struct tracefs_cpu *tcpu, void *buffer, bool nonblock);
+               int tracefs_cpu_write(struct tracefs_cpu *tcpu, int wfd, bool nonblock);
+               int tracefs_cpu_stop(struct tracefs_cpu *tcpu);
+               int tracefs_cpu_flush(struct tracefs_cpu *tcpu, void *buffer);
+               int tracefs_cpu_flush_write(struct tracefs_cpu *tcpu, int wfd);
+               int tracefs_cpu_pipe(struct tracefs_cpu *tcpu, int wfd, bool nonblock);
+
+DESCRIPTION
+       The libtracefs(3) library provides APIs to access kernel trace file system.
+
+FILES
+           tracefs.h
+                   Header file to include in order to have access to the library APIs.
+           -ltracefs
+                   Linker switch to add when building a program that uses the library.
+
+SEE ALSO
+       libtraceevent(3), trace-cmd(1)
+
+AUTHOR
+           Steven Rostedt <rostedt@goodmis.org[1]>
+           Tzvetomir Stoyanov <tz.stoyanov@gmail.com[2]>
+
+REPORTING BUGS
+       Report bugs to <linux-trace-devel@vger.kernel.org[3]>
+
+LICENSE
+       libtracefs is Free Software licensed under the GNU LGPL 2.1
+
+RESOURCES
+       https://git.kernel.org/pub/scm/libs/libtrace/libtracefs.git/
+
+COPYING
+       Copyright (C) 2020 VMware, Inc. Free use of this software is granted under the terms of the GNU Public License (GPL).
+
+NOTES
+        1. rostedt@goodmis.org
+           mailto:rostedt@goodmis.org
+
+        2. tz.stoyanov@gmail.com
+           mailto:tz.stoyanov@gmail.com
+
+        3. linux-trace-devel@vger.kernel.org
+           mailto:linux-trace-devel@vger.kernel.org
+
+libtracefs 1.6.4                                                                                03/17/2023                                                                                   LIBTRACEFS(3)

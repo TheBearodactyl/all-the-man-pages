@@ -1,0 +1,258 @@
+OPENSSL-CMDS(1ssl)                                                                                OpenSSL                                                                               OPENSSL-CMDS(1ssl)
+
+NAME
+       asn1parse, ca, ciphers, cmp, cms, crl, crl2pkcs7, dgst, dhparam, dsa, dsaparam, ec, ecparam, enc, engine, errstr, gendsa, genpkey, genrsa, info, kdf, mac, nseq, ocsp, passwd, pkcs12, pkcs7,
+       pkcs8, pkey, pkeyparam, pkeyutl, prime, rand, rehash, req, rsa, rsautl, s_client, s_server, s_time, sess_id, smime, speed, spkac, srp, storeutl, ts, verify, version, x509 - OpenSSL application
+       commands
+
+SYNOPSIS
+       openssl cmd -help | [-option | -option arg] ... [arg] ...
+
+DESCRIPTION
+       Every cmd listed above is a (sub-)command of the openssl(1) application.  It has its own detailed manual page at openssl-cmd(1). For example, to view the manual page for the openssl dgst command,
+       type "man openssl-dgst".
+
+OPTIONS
+       Among others, every subcommand has a help option.
+
+       -help
+           Print out a usage message for the subcommand.
+
+SEE ALSO
+       openssl(1), openssl-asn1parse(1), openssl-ca(1), openssl-ciphers(1), openssl-cmp(1), openssl-cms(1), openssl-crl(1), openssl-crl2pkcs7(1), openssl-dgst(1), openssl-dhparam(1), openssl-dsa(1),
+       openssl-dsaparam(1), openssl-ec(1), openssl-ecparam(1), openssl-enc(1), openssl-engine(1), openssl-errstr(1), openssl-gendsa(1), openssl-genpkey(1), openssl-genrsa(1), openssl-info(1),
+       openssl-kdf(1), openssl-mac(1), openssl-nseq(1), openssl-ocsp(1), openssl-passwd(1), openssl-pkcs12(1), openssl-pkcs7(1), openssl-pkcs8(1), openssl-pkey(1), openssl-pkeyparam(1),
+       openssl-pkeyutl(1), openssl-prime(1), openssl-rand(1), openssl-rehash(1), openssl-req(1), openssl-rsa(1), openssl-rsautl(1), openssl-s_client(1), openssl-s_server(1), openssl-s_time(1),
+       openssl-sess_id(1), openssl-smime(1), openssl-speed(1), openssl-spkac(1), openssl-srp(1), openssl-storeutl(1), openssl-ts(1), openssl-verify(1), openssl-version(1), openssl-x509(1),
+
+HISTORY
+       Initially, the manual page entry for the "openssl cmd" command used to be available at cmd(1). Later, the alias openssl-cmd(1) was introduced, which made it easier to group the openssl commands
+       using the apropos(1) command or the shell's tab completion.
+
+       In order to reduce cluttering of the global manual page namespace, the manual page entries without the 'openssl-' prefix have been deprecated in OpenSSL 3.0 and will be removed in OpenSSL 4.0.
+
+COPYRIGHT
+       Copyright 2019-2022 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use this file except in compliance with the License.  You can obtain a copy in the file LICENSE in the source distribution or
+       at <https://www.openssl.org/source/license.html>.
+
+3.0.8                                                                                           2023-02-07                                                                              OPENSSL-CMDS(1ssl)
+version(3perl)                                                                       Perl Programmers Reference Guide                                                                       version(3perl)
+
+NAME
+       version - Perl extension for Version Objects
+
+SYNOPSIS
+         # Parsing version strings (decimal or dotted-decimal)
+
+         use version 0.77; # get latest bug-fixes and API
+         $ver = version->parse($string)
+
+         # Declaring a dotted-decimal $VERSION (keep on one line!)
+
+         use version; our $VERSION = version->declare("v1.2.3"); # formal
+         use version; our $VERSION = qv("v1.2.3");               # deprecated
+         use version; our $VERSION = qv("v1.2_3");               # deprecated
+
+         # Declaring an old-style decimal $VERSION (use quotes!)
+
+         our $VERSION = "1.0203";                                # recommended
+         use version; our $VERSION = version->parse("1.0203");   # formal
+         use version; our $VERSION = version->parse("1.02_03");  # alpha
+
+         # Comparing mixed version styles (decimals, dotted-decimals, objects)
+
+         if ( version->parse($v1) == version->parse($v2) ) {
+           # do stuff
+         }
+
+         # Sorting mixed version styles
+
+         @ordered = sort { version->parse($a) <=> version->parse($b) } @list;
+
+DESCRIPTION
+       Version objects were added to Perl in 5.10.  This module implements version objects for older version of Perl and provides the version object API for all versions of Perl.  All previous releases
+       before 0.74 are deprecated and should not be used due to incompatible API changes.  Version 0.77 introduces the new 'parse' and 'declare' methods to standardize usage.  You are strongly urged to
+       set 0.77 as a minimum in your code, e.g.
+
+         use version 0.77; # even for Perl v.5.10.0
+
+TYPES OF VERSION OBJECTS
+       There are two different types of version objects, corresponding to the two different styles of versions in use:
+
+       Decimal Versions
+         The classic floating-point number $VERSION.  The advantage to this style is that you don't need to do anything special, just type a number into your source file.  Quoting is recommended, as it
+         ensures that trailing zeroes ("1.50") are preserved in any warnings or other output.
+
+       Dotted Decimal Versions
+         The more modern form of version assignment, with 3 (or potentially more) integers separated by decimal points (e.g. v1.2.3).  This is the form that Perl itself has used since 5.6.0 was
+         released.  The leading 'v' is now strongly recommended for clarity, and will throw a warning in a future release if omitted.  A leading 'v' character is required to pass the "is_strict()" test.
+
+DECLARING VERSIONS
+       If you have a module that uses a decimal $VERSION (floating point), and you do not intend to ever change that, this module is not for you.  There is nothing that version.pm gains you over a
+       simple $VERSION assignment:
+
+         our $VERSION = "1.02";
+
+       Since Perl v5.10.0 includes the version.pm comparison logic anyways, you don't need to do anything at all.
+
+   How to convert a module from decimal to dotted-decimal
+       If you have used a decimal $VERSION in the past and wish to switch to a dotted-decimal $VERSION, then you need to make a one-time conversion to the new format.
+
+       Important Note: you must ensure that your new $VERSION is numerically greater than your current decimal $VERSION; this is not always obvious. First, convert your old decimal version (e.g. 1.02)
+       to a normalized dotted-decimal form:
+
+         $ perl -Mversion -e 'print version->parse("1.02")->normal'
+         v1.20.0
+
+       Then increment any of the dotted-decimal components (v1.20.1 or v1.21.0).
+
+   How to "declare()" a dotted-decimal version
+         use version; our $VERSION = version->declare("v1.2.3");
+
+       The "declare()" method always creates dotted-decimal version objects.  When used in a module, you must put it on the same line as "use version" to ensure that $VERSION is read correctly by PAUSE
+       and installer tools.  You should also add 'version' to the 'configure_requires' section of your module metadata file.  See instructions in ExtUtils::MakeMaker or Module::Build for details.
+
+       Important Note: Even if you pass in what looks like a decimal number ("1.2"), a dotted-decimal will be created ("v1.200.0"). To avoid confusion or unintentional errors on older Perls, follow
+       these guidelines:
+
+       • Always use a dotted-decimal with (at least) three components
+
+       • Always use a leading-v
+
+       • Always quote the version
+
+       If you really insist on using version.pm with an ordinary decimal version, use "parse()" instead of declare.  See the "PARSING AND COMPARING VERSIONS" for details.
+
+       See also version::Internals for more on version number conversion, quoting, calculated version numbers and declaring developer or "alpha" version numbers.
+
+PARSING AND COMPARING VERSIONS
+       If you need to compare version numbers, but can't be sure whether they are expressed as numbers, strings, v-strings or version objects,  then you should use version.pm to parse them all into
+       objects for comparison.
+
+   How to "parse()" a version
+       The "parse()" method takes in anything that might be a version and returns a corresponding version object, doing any necessary conversion along the way.
+
+       • Dotted-decimal: bare v-strings (v1.2.3) and strings with more than one decimal point and a leading 'v' ("v1.2.3"); NOTE you can technically use a v-string or strings with a leading-v and only
+         one decimal point (v1.2 or "v1.2"), but you will confuse both yourself and others.
+
+       • Decimal: regular decimal numbers (literal or in a string)
+
+       Some examples:
+
+         $variable   version->parse($variable)
+         ---------   -------------------------
+         1.23        v1.230.0
+         "1.23"      v1.230.0
+         v1.23       v1.23.0
+         "v1.23"     v1.23.0
+         "1.2.3"     v1.2.3
+         "v1.2.3"    v1.2.3
+
+       See version::Internals for more on version number conversion.
+
+   How to check for a legal version string
+       If you do not want to actually create a full blown version object, but would still like to verify that a given string meets the criteria to be parsed as a version, there are two helper functions
+       that can be employed directly:
+
+       "is_lax()"
+           The lax criteria corresponds to what is currently allowed by the version parser.  All of the following formats are acceptable for dotted-decimal formats strings:
+
+               v1.2
+               1.2345.6
+               v1.23_4
+               1.2345
+               1.2345_01
+
+       "is_strict()"
+           If you want to limit yourself to a much more narrow definition of what a version string constitutes, "is_strict()" is limited to version strings like the following list:
+
+               v1.234.5
+               2.3456
+
+       See version::Internals for details of the regular expressions that define the legal version string forms, as well as how to use those regular expressions in your own code if "is_lax()" and
+       "is_strict()" are not sufficient for your needs.
+
+   How to compare version objects
+       Version objects overload the "cmp" and "<=>" operators.  Perl automatically generates all of the other comparison operators based on those two so all the normal logical comparisons will work.
+
+         if ( version->parse($v1) == version->parse($v2) ) {
+           # do stuff
+         }
+
+       If a version object is compared against a non-version object, the non-object term will be converted to a version object using "parse()".  This may give surprising results:
+
+         $v1 = version->parse("v0.95.0");
+         $bool = $v1 < 0.94; # TRUE since 0.94 is v0.940.0
+
+       Always comparing to a version object will help avoid surprises:
+
+         $bool = $v1 < version->parse("v0.94.0"); # FALSE
+
+       Note that "alpha" version objects (where the version string contains a trailing underscore segment) compare as less than the equivalent version without an underscore:
+
+         $bool = version->parse("1.23_45") < version->parse("1.2345"); # TRUE
+
+       See version::Internals for more details on "alpha" versions.
+
+OBJECT METHODS
+   is_alpha()
+       True if and only if the version object was created with a underscore, e.g.
+
+         version->parse('1.002_03')->is_alpha;  # TRUE
+         version->declare('1.2.3_4')->is_alpha; # TRUE
+
+   is_qv()
+       True only if the version object is a dotted-decimal version, e.g.
+
+         version->parse('v1.2.0')->is_qv;       # TRUE
+         version->declare('v1.2')->is_qv;       # TRUE
+         qv('1.2')->is_qv;                      # TRUE
+         version->parse('1.2')->is_qv;          # FALSE
+
+   normal()
+       Returns a string with a standard 'normalized' dotted-decimal form with a leading-v and at least 3 components.
+
+        version->declare('v1.2')->normal;  # v1.2.0
+        version->parse('1.2')->normal;     # v1.200.0
+
+   numify()
+       Returns a value representing the object in a pure decimal.
+
+        version->declare('v1.2')->numify;  # 1.002000
+        version->parse('1.2')->numify;     # 1.200
+
+   stringify()
+       Returns a string that is as close to the original representation as possible.  If the original representation was a numeric literal, it will be returned the way perl would normally represent it
+       in a string.  This method is used whenever a version object is interpolated into a string.
+
+        version->declare('v1.2')->stringify;    # v1.2
+        version->parse('1.200')->stringify;     # 1.2
+        version->parse(1.02_30)->stringify;     # 1.023
+
+EXPORTED FUNCTIONS
+   qv()
+       This function is no longer recommended for use, but is maintained for compatibility with existing code.  If you do not want to have it exported to your namespace, use this form:
+
+         use version 0.77 ();
+
+   is_lax()
+       (Not exported by default)
+
+       This function takes a scalar argument and returns a boolean value indicating whether the argument meets the "lax" rules for a version number.  Leading and trailing spaces are not allowed.
+
+   is_strict()
+       (Not exported by default)
+
+       This function takes a scalar argument and returns a boolean value indicating whether the argument meets the "strict" rules for a version number.  Leading and trailing spaces are not allowed.
+
+AUTHOR
+       John Peacock <jpeacock@cpan.org>
+
+SEE ALSO
+       version::Internals.
+
+       perl.
+
+perl v5.36.0                                                                                    2022-12-12                                                                                  version(3perl)

@@ -1,0 +1,104 @@
+timeval(3bsd)                                                                                      LOCAL                                                                                     timeval(3bsd)
+
+NAME
+     timeval, timespec — time structures
+
+LIBRARY
+     Utility functions from BSD systems (libbsd, -lbsd)
+
+SYNOPSIS
+     #include <sys/time.h>
+     (See libbsd(7) for include usage.)
+
+     void
+     TIMEVAL_TO_TIMESPEC(struct timeval *tv, struct timespec *ts);
+
+     void
+     TIMESPEC_TO_TIMEVAL(struct timeval *tv, struct timespec *ts);
+
+DESCRIPTION
+     The <sys/time.h> header, included by <time.h>, defines various structures related to time and timers.
+
+      1.   The following structure is used by gettimeofday(2), among others:
+
+                 struct timeval {
+                         time_t          tv_sec;
+                         suseconds_t     tv_usec;
+                 };
+
+           The tv_sec member represents the elapsed time, in whole seconds.  The tv_usec member captures rest of the elapsed time, represented as the number of microseconds.
+
+      2.   The following structure is used by nanosleep(2), among others:
+
+                 struct timespec {
+                         time_t          tv_sec;
+                         long            tv_nsec;
+                 };
+
+           The tv_sec member is again the elapsed time in whole seconds.  The tv_nsec member represents the rest of the elapsed time in nanoseconds.
+
+           A microsecond is equal to one millionth of a second, 1000 nanoseconds, or 1/1000 milliseconds.  To ease the conversions, the macros TIMEVAL_TO_TIMESPEC() and TIMESPEC_TO_TIMEVAL() can be used
+           to convert between struct timeval and struct timespec.
+
+EXAMPLES
+     It can be stressed that the traditional UNIX timeval and timespec structures represent elapsed time, measured by the system clock.  The following sketch implements a function suitable for use in a
+     context where the timespec structure is required for a conditional timeout:
+
+           static void
+           example(struct timespec *spec, time_t minutes)
+           {
+                   struct timeval elapsed;
+
+                   (void)gettimeofday(&elapsed, NULL);
+
+                   _DIAGASSERT(spec != NULL);
+                   TIMEVAL_TO_TIMESPEC(&elapsed, spec);
+
+                   /* Add the offset for timeout in minutes. */
+                   spec->tv_sec = spec->tv_sec + minutes * 60;
+           }
+
+     A better alternative would use the more precise clock_gettime(2).
+
+SEE ALSO
+     timeradd(3bsd)
+
+BSD                                                                                           April 12, 2011                                                                                           BSD
+timespec(3type)                                                                                                                                                                            timespec(3type)
+
+NAME
+       timespec - time in seconds and nanoseconds
+
+LIBRARY
+       Standard C library (libc)
+
+SYNOPSIS
+       #include <time.h>
+
+       struct timespec {
+           time_t     tv_sec;   /* Seconds */
+           /* ... */  tv_nsec;  /* Nanoseconds [0, 999'999'999] */
+       };
+
+DESCRIPTION
+       Describes times in seconds and nanoseconds.
+
+       tv_nsec  is  of an implementation-defined signed type capable of holding the specified range.  Under glibc, this is usually long, and long long on X32.  It can be safely down-cast to any concrete
+       32-bit integer type for processing.
+
+VERSIONS
+       Prior to C23, tv_nsec was long.
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+NOTES
+       The following headers also provide this type: <aio.h>, <mqueue.h>, <sched.h>, <signal.h>, <sys/select.h>, and <sys/stat.h>.
+
+SEE ALSO
+       clock_gettime(2), clock_nanosleep(2), nanosleep(2), timerfd_gettime(2), timer_gettime(2), time_t(3type), timeval(3type)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                 timespec(3type)

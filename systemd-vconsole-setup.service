@@ -1,0 +1,37 @@
+SYSTEMD-VCONSOLE-SETUP.SERVICE(8)                                                     systemd-vconsole-setup.service                                                     SYSTEMD-VCONSOLE-SETUP.SERVICE(8)
+
+NAME
+       systemd-vconsole-setup.service, systemd-vconsole-setup - Configure the virtual consoles
+
+SYNOPSIS
+       systemd-vconsole-setup.service
+
+       /usr/lib/systemd/systemd-vconsole-setup [TTY]
+
+DESCRIPTION
+       systemd-vconsole-setup sets up and configures either all virtual consoles, or — if the optional TTY parameter is provided — a specific one. When the system is booting up, it's called by systemd-
+       udevd(8) during VT console subsystem initialization. Also, systemd-localed.service(8) invokes it as needed when language or console changes are made. Internally, this program calls loadkeys(1)
+       and setfont(8).
+
+       Execute systemctl restart systemd-vconsole-setup.service in order to apply any manual changes made to /etc/vconsole.conf.
+
+       See vconsole.conf(5) for information about the configuration files and kernel command line options understood by this program.
+
+CREDENTIALS
+       systemd-vconsole-setup supports the service credentials logic as implemented by LoadCredential=/SetCredential= (see systemd.exec(1) for details). The following credentials are used when passed
+       in:
+
+       vconsole.keymap, vconsole.keymap_toggle
+           The keymap (and toggle keymap) to apply. The matching options in vconsole.conf and on the kernel command line take precedence over these credentials.
+
+           Note the relationship to the firstboot.keymap credential understood by systemd-firstboot.service(8): both ultimately affect the same setting, but firstboot.keymap is written into
+           /etc/vconsole.conf on first boot (if not already configured), and then read from there by systemd-vconsole-setup, while vconsole.keymap is read on every boot, and is not persisted to disk
+           (but any configuration in vconsole.conf will take precedence if present).
+
+       vconsole.font, vconsole.font_map, vconsole.font_unimap
+           The console font settings to apply. The matching options in vconsole.conf and on the kernel command line take precedence over these credentials.
+
+SEE ALSO
+       systemd(1), vconsole.conf(5), loadkeys(1), setfont(8), systemd-localed.service(8)
+
+systemd 253                                                                                                                                                              SYSTEMD-VCONSOLE-SETUP.SERVICE(8)

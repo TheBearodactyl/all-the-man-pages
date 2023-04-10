@@ -1,0 +1,149 @@
+if_nameindex(3)                                                                          Library Functions Manual                                                                          if_nameindex(3)
+
+NAME
+       if_nameindex, if_freenameindex - get network interface names and indexes
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <net/if.h>
+
+       struct if_nameindex *if_nameindex(void);
+       void if_freenameindex(struct if_nameindex *ptr);
+
+DESCRIPTION
+       The  if_nameindex() function returns an array of if_nameindex structures, each containing information about one of the network interfaces on the local system.  The if_nameindex structure contains
+       at least the following entries:
+
+           unsigned int if_index; /* Index of interface (1, 2, ...) */
+           char        *if_name;  /* Null-terminated name ("eth0", etc.) */
+
+       The if_index field contains the interface index.  The if_name field points to the null-terminated interface name.  The end of the array is indicated by entry with if_index set to zero and if_name
+       set to NULL.
+
+       The data structure returned by if_nameindex() is dynamically allocated and should be freed using if_freenameindex() when no longer needed.
+
+RETURN VALUE
+       On success, if_nameindex() returns pointer to the array; on error, NULL is returned, and errno is set to indicate the error.
+
+ERRORS
+       if_nameindex() may fail and set errno if:
+
+       ENOBUFS
+              Insufficient resources available.
+
+       if_nameindex() may also fail for any of the errors specified for socket(2), bind(2), ioctl(2), getsockname(2), recvmsg(2), sendto(2), or malloc(3).
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │if_nameindex(), if_freenameindex()                                                                                                                                      │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008, RFC 3493.
+
+HISTORY
+       glibc 2.1.  POSIX.1-2001.  BSDi.
+
+       Before glibc 2.3.4, the implementation supported only interfaces with IPv4 addresses.  Support of interfaces that don't have IPv4 addresses is available only on kernels that support netlink.
+
+EXAMPLES
+       The program below demonstrates the use of the functions described on this page.  An example of the output this program might produce is the following:
+
+           $ ./a.out
+           1: lo
+           2: wlan0
+           3: em1
+
+   Program source
+       #include <net/if.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       int
+       main(void)
+       {
+           struct if_nameindex *if_ni, *i;
+
+           if_ni = if_nameindex();
+           if (if_ni == NULL) {
+               perror("if_nameindex");
+               exit(EXIT_FAILURE);
+           }
+
+           for (i = if_ni; !(i->if_index == 0 && i->if_name == NULL); i++)
+               printf("%u: %s\n", i->if_index, i->if_name);
+
+           if_freenameindex(if_ni);
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       getsockopt(2), setsockopt(2), getifaddrs(3), if_indextoname(3), if_nametoindex(3), ifconfig(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                 if_nameindex(3)
+IF_NAMEINDEX(3P)                                                                         POSIX Programmer's Manual                                                                        IF_NAMEINDEX(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       if_nameindex — return all network interface names and indexes
+
+SYNOPSIS
+       #include <net/if.h>
+
+       struct if_nameindex *if_nameindex(void);
+
+DESCRIPTION
+       The if_nameindex() function shall return an array of if_nameindex structures, one structure per interface. The end of the array is indicated by a structure with an if_index field of zero  and  an
+       if_name field of NULL.
+
+       Applications should call if_freenameindex() to release the memory that may be dynamically allocated by this function, after they have finished using it.
+
+RETURN VALUE
+       An array of structures identifying local interfaces. A null pointer is returned upon an error, with errno set to indicate the error.
+
+ERRORS
+       The if_nameindex() function may fail if:
+
+       ENOBUFS
+              Insufficient resources are available to complete the function.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       getsockopt(), if_freenameindex(), if_indextoname(), if_nametoindex(), setsockopt()
+
+       The Base Definitions volume of POSIX.1‐2017, <net_if.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                   IF_NAMEINDEX(3P)

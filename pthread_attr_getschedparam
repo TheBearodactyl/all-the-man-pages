@@ -1,0 +1,192 @@
+pthread_attr_setschedparam(Library Functions Manupthread_attr_setschedparam(3)
+
+NAME
+       pthread_attr_setschedparam, pthread_attr_getschedparam - set/get sched‐
+       uling parameter attributes in thread attributes object
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_attr_setschedparam(pthread_attr_t *restrict attr,
+                                     const struct sched_param *restrict param);
+       int pthread_attr_getschedparam(const pthread_attr_t *restrict attr,
+                                     struct sched_param *restrict param);
+
+DESCRIPTION
+       The pthread_attr_setschedparam() function sets the scheduling parameter
+       attributes  of  the thread attributes object referred to by attr to the
+       values specified in the buffer pointed to by param.   These  attributes
+       determine  the  scheduling  parameters  of  a  thread created using the
+       thread attributes object attr.
+
+       The pthread_attr_getschedparam() returns the scheduling  parameter  at‐
+       tributes  of the thread attributes object attr in the buffer pointed to
+       by param.
+
+       Scheduling parameters are maintained in the following structure:
+
+           struct sched_param {
+               int sched_priority;     /* Scheduling priority */
+           };
+
+       As can be seen, only one scheduling parameter is  supported.   For  de‐
+       tails  of the permitted ranges for scheduling priorities in each sched‐
+       uling policy, see sched(7).
+
+       In order for the parameter setting made by pthread_attr_setschedparam()
+       to  have  effect  when  calling  pthread_create(3), the caller must use
+       pthread_attr_setinheritsched(3) to set the inherit-scheduler  attribute
+       of the attributes object attr to PTHREAD_EXPLICIT_SCHED.
+
+RETURN VALUE
+       On  success,  these functions return 0; on error, they return a nonzero
+       error number.
+
+ERRORS
+       pthread_attr_setschedparam() can fail with the following error:
+
+       EINVAL The priority specified in param does not make sense for the cur‐
+              rent scheduling policy of attr.
+
+       POSIX.1  also  documents  an  ENOTSUP  error for pthread_attr_setsched‐
+       param().  This value is never returned on Linux (but portable  and  fu‐
+       ture-proof  applications  should  nevertheless handle this error return
+       value).
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_attr_setschedparam(),               │ Thread safety │ MT-Safe │
+       │pthread_attr_getschedparam()                │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.  glibc 2.0.
+
+NOTES
+       See pthread_attr_setschedpolicy(3) for a list of the thread  scheduling
+       policies supported on Linux.
+
+EXAMPLES
+       See pthread_setschedparam(3).
+
+SEE ALSO
+       sched_get_priority_min(2), pthread_attr_init(3),
+       pthread_attr_setinheritsched(3), pthread_attr_setschedpolicy(3),
+       pthread_create(3), pthread_setschedparam(3), pthread_setschedprio(3),
+       pthreads(7), sched(7)
+
+Linux man-pages 6.04              2023-03-30     pthread_attr_setschedparam(3)
+PTHREAD_ATTR_GETSCHEDPARAM(POSIX Programmer's MaPTHREAD_ATTR_GETSCHEDPARAM(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_attr_getschedparam, pthread_attr_setschedparam —  get  and  set
+       the schedparam attribute
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_attr_getschedparam(const pthread_attr_t *restrict attr,
+           struct sched_param *restrict param);
+       int pthread_attr_setschedparam(pthread_attr_t *restrict attr,
+           const struct sched_param *restrict param);
+
+DESCRIPTION
+       The pthread_attr_getschedparam() and pthread_attr_setschedparam() func‐
+       tions, respectively, shall get and set  the  scheduling  parameter  at‐
+       tributes  in the attr argument. The contents of the param structure are
+       defined in the <sched.h> header. For the SCHED_FIFO and SCHED_RR  poli‐
+       cies, the only required member of param is sched_priority.
+
+       For the SCHED_SPORADIC policy, the required members of the param struc‐
+       ture are sched_priority,  sched_ss_low_priority,  sched_ss_repl_period,
+       sched_ss_init_budget,    and    sched_ss_max_repl.     The    specified
+       sched_ss_repl_period must be greater than or  equal  to  the  specified
+       sched_ss_init_budget  for  the  function to succeed; if it is not, then
+       the function shall fail. The value of sched_ss_max_repl shall be within
+       the  inclusive  range [1,{SS_REPL_MAX}] for the function to succeed; if
+       not,  the  function  shall  fail.   It  is  unspecified   whether   the
+       sched_ss_repl_period and sched_ss_init_budget values are stored as pro‐
+       vided by this function or are rounded to align with the  resolution  of
+       the clock being used.
+
+       The  behavior  is undefined if the value specified by the attr argument
+       to pthread_attr_getschedparam()  or  pthread_attr_setschedparam()  does
+       not refer to an initialized thread attributes object.
+
+RETURN VALUE
+       If      successful,      the      pthread_attr_getschedparam()      and
+       pthread_attr_setschedparam() functions shall return zero; otherwise, an
+       error number shall be returned to indicate the error.
+
+ERRORS
+       The pthread_attr_setschedparam() function shall fail if:
+
+       ENOTSUP
+              An  attempt  was  made  to  set  the attribute to an unsupported
+              value.
+
+       The pthread_attr_setschedparam() function may fail if:
+
+       EINVAL The value of param is not valid.
+
+       These functions shall not return an error code of [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       After these attributes have been set, a thread can be created with  the
+       specified attributes using pthread_create().  Using these routines does
+       not affect the current running thread.
+
+RATIONALE
+       If an implementation detects that the value specified by the attr argu‐
+       ment  to  pthread_attr_getschedparam()  or pthread_attr_setschedparam()
+       does not refer to an initialized thread attributes object, it is recom‐
+       mended that the function should fail and report an [EINVAL] error.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       pthread_attr_destroy(), pthread_attr_getscope(), pthread_attr_getinher‐
+       itsched(), pthread_attr_getschedpolicy(), pthread_create()
+
+       The Base Definitions volume of POSIX.1‐2017, <pthread.h>, <sched.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017       PTHREAD_ATTR_GETSCHEDPARAM(3P)

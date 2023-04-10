@@ -1,0 +1,47 @@
+gnutls_rehandshake(3)                                                                             gnutls                                                                             gnutls_rehandshake(3)
+
+NAME
+       gnutls_rehandshake - API function
+
+SYNOPSIS
+       #include <gnutls/gnutls.h>
+
+       int gnutls_rehandshake(gnutls_session_t session);
+
+ARGUMENTS
+       gnutls_session_t session
+                   is a gnutls_session_t type.
+
+DESCRIPTION
+       This function can only be called in server side, and instructs a TLS 1.2 or earlier client to renegotiate parameters (perform a handshake), by sending a hello request message.
+
+       If this function succeeds, the calling application should call gnutls_record_recv() until GNUTLS_E_REHANDSHAKE is returned to clear any pending data. If the GNUTLS_E_REHANDSHAKE error code is not
+       seen, then the handshake request was not followed by the peer (the TLS protocol does not require the client to do, and such compliance should be handled by the application protocol).
+
+       Once the GNUTLS_E_REHANDSHAKE error code is seen, the calling application should proceed to calling gnutls_handshake() to negotiate the new parameters.
+
+       If the client does not wish to renegotiate parameters he may reply with an alert message, and in that case  the  return  code  seen  by  subsequent  gnutls_record_recv()  will  be  GNUTLS_E_WARN‐
+       ING_ALERT_RECEIVED with the specific alert being GNUTLS_A_NO_RENEGOTIATION.  A client may also choose to ignore this request.
+
+       Under  TLS 1.3 this function is equivalent to gnutls_session_key_update() with the GNUTLS_KU_PEER flag. In that case subsequent calls to gnutls_record_recv() will not return GNUTLS_E_REHANDSHAKE,
+       and calls to gnutls_handshake() in server side are a no-op.
+
+       This function always fails with GNUTLS_E_INVALID_REQUEST when called in client side.
+
+RETURNS
+       GNUTLS_E_SUCCESS on success, otherwise a negative error code.
+
+REPORTING BUGS
+       Report bugs to <bugs@gnutls.org>.
+       Home page: https://www.gnutls.org
+
+COPYRIGHT
+       Copyright © 2001- Free Software Foundation, Inc., and others.
+       Copying and distribution of this file, with or without modification, are permitted in any medium without royalty provided the copyright notice and this notice are preserved.
+
+SEE ALSO
+       The full documentation for gnutls is maintained as a Texinfo manual.  If the /usr/share/doc/gnutls/ directory does not contain the HTML form visit
+
+       https://www.gnutls.org/manual/
+
+gnutls                                                                                             3.8.0                                                                             gnutls_rehandshake(3)

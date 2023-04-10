@@ -1,0 +1,158 @@
+tmpnam(3)                                                                                Library Functions Manual                                                                                tmpnam(3)
+
+NAME
+       tmpnam, tmpnam_r - create a name for a temporary file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       [[deprecated]] char *tmpnam(char *s);
+       [[deprecated]] char *tmpnam_r(char *s);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       tmpnam_r()
+           Since glibc 2.19:
+               _DEFAULT_SOURCE
+           Up to and including glibc 2.19:
+               _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       Note: avoid using these functions; use mkstemp(3) or tmpfile(3) instead.
+
+       The  tmpnam()  function  returns  a pointer to a string that is a valid filename, and such that a file with this name did not exist at some point in time, so that naive programmers may think it a
+       suitable name for a temporary file.  If the argument s is NULL, this name is generated in an internal static buffer and may be overwritten by the next call to tmpnam().  If s  is  not  NULL,  the
+       name is copied to the character array (of length at least L_tmpnam) pointed to by s and the value s is returned in case of success.
+
+       The created pathname has a directory prefix P_tmpdir.  (Both L_tmpnam and P_tmpdir are defined in <stdio.h>, just like the TMP_MAX mentioned below.)
+
+       The tmpnam_r() function performs the same task as tmpnam(), but returns NULL (to indicate an error) if s is NULL.
+
+RETURN VALUE
+       These functions return a pointer to a unique temporary filename, or NULL if a unique name cannot be generated.
+
+ERRORS
+       No errors are defined.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬──────────────────────────┐
+       │Interface                                                                                                                                              │ Attribute     │ Value                    │
+       ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼──────────────────────────┤
+       │tmpnam()                                                                                                                                               │ Thread safety │ MT-Unsafe race:tmpnam/!s │
+       ├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼──────────────────────────┤
+       │tmpnam_r()                                                                                                                                             │ Thread safety │ MT-Safe                  │
+       └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴──────────────────────────┘
+
+STANDARDS
+       tmpnam()
+              C11, POSIX.1-2008.
+
+       tmpnam_r()
+              None.
+
+HISTORY
+       tmpnam()
+              SVr4, 4.3BSD, C89, POSIX.1-2001.  Obsolete in POSIX.1-2008.
+
+       tmpnam_r()
+              Solaris.
+
+NOTES
+       The tmpnam() function generates a different string each time it is called, up to TMP_MAX times.  If it is called more than TMP_MAX times, the behavior is implementation defined.
+
+       Although these functions generate names that are difficult to guess, it is nevertheless possible that between the time that the pathname is returned and the time that the program opens it, anoth‐
+       er program might create that pathname using open(2), or create it as a symbolic link.  This can lead to security holes.  To avoid such possibilities, use the open(2) O_EXCL flag to open the path‐
+       name.  Or better yet, use mkstemp(3) or tmpfile(3).
+
+       Portable applications that use threads cannot call tmpnam() with a NULL argument if either _POSIX_THREADS or _POSIX_THREAD_SAFE_FUNCTIONS is defined.
+
+BUGS
+       Never use these functions.  Use mkstemp(3) or tmpfile(3) instead.
+
+SEE ALSO
+       mkstemp(3), mktemp(3), tempnam(3), tmpfile(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       tmpnam(3)
+TMPNAM(3P)                                                                               POSIX Programmer's Manual                                                                              TMPNAM(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       tmpnam — create a name for a temporary file
+
+SYNOPSIS
+       #include <stdio.h>
+
+       char *tmpnam(char *s);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  tmpnam() function shall generate a string that is a valid pathname that does not name an existing file. The function is potentially capable of generating {TMP_MAX} different strings, but any
+       or all of them may already be in use by existing files and thus not be suitable return values.
+
+       The tmpnam() function generates a different string each time it is called from the same process, up to {TMP_MAX} times. If it is called more than {TMP_MAX} times, the behavior is  implementation-
+       defined.
+
+       The implementation shall behave as if no function defined in this volume of POSIX.1‐2017, except tempnam(), calls tmpnam().
+
+       The tmpnam() function need not be thread-safe if called with a NULL parameter.
+
+RETURN VALUE
+       Upon successful completion, tmpnam() shall return a pointer to a string. If no suitable string can be generated, the tmpnam() function shall return a null pointer.
+
+       If  the argument s is a null pointer, tmpnam() shall leave its result in an internal static object and return a pointer to that object. Subsequent calls to tmpnam() may modify the same object. If
+       the argument s is not a null pointer, it is presumed to point to an array of at least L_tmpnam chars; tmpnam() shall write its result in that array and shall return the argument as its value.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+   Generating a Pathname
+       The following example generates a unique pathname and stores it in the array pointed to by ptr.
+
+           #include <stdio.h>
+           ...
+           char pathname[L_tmpnam+1];
+           char *ptr;
+
+           ptr = tmpnam(pathname);
+
+APPLICATION USAGE
+       This function only creates pathnames. It is the application's responsibility to create and remove the files.
+
+       Between the time a pathname is created and the file is opened, it is possible for some other process to create a file with the same name.  Applications may find tmpfile() more useful.
+
+       Applications should use the tmpfile(), mkstemp(), or mkdtemp() functions instead of the obsolescent tmpnam() function.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       The tmpnam() function may be removed in a future version.
+
+SEE ALSO
+       fopen(), open(), mkdtemp(), tempnam(), tmpfile(), unlink()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         TMPNAM(3P)

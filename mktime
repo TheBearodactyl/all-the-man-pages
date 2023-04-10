@@ -1,0 +1,260 @@
+ctime(3)                                                                                 Library Functions Manual                                                                                 ctime(3)
+
+NAME
+       asctime, ctime, gmtime, localtime, mktime, asctime_r, ctime_r, gmtime_r, localtime_r - transform date and time to broken-down time or ASCII
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <time.h>
+
+       char *asctime(const struct tm *tm);
+       char *asctime_r(const struct tm *restrict tm,
+                           char buf[restrict 26]);
+
+       char *ctime(const time_t *timep);
+       char *ctime_r(const time_t *restrict timep,
+                           char buf[restrict 26]);
+
+       struct tm *gmtime(const time_t *timep);
+       struct tm *gmtime_r(const time_t *restrict timep,
+                           struct tm *restrict result);
+
+       struct tm *localtime(const time_t *timep);
+       struct tm *localtime_r(const time_t *restrict timep,
+                           struct tm *restrict result);
+
+       time_t mktime(struct tm *tm);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       asctime_r(), ctime_r(), gmtime_r(), localtime_r():
+           _POSIX_C_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       The ctime(), gmtime(), and localtime() functions all take an argument of data type time_t, which represents calendar time.  When interpreted as an absolute time value, it represents the number of
+       seconds elapsed since the Epoch, 1970-01-01 00:00:00 +0000 (UTC).
+
+       The asctime() and mktime() functions both take an argument representing broken-down time, which is a representation separated into year, month, day, and so on.
+
+       Broken-down time is stored in the structure tm, described in tm(3type).
+
+       The call ctime(t) is equivalent to asctime(localtime(t)).  It converts the calendar time t into a null-terminated string of the form
+
+           "Wed Jun 30 21:49:08 1993\n"
+
+       The abbreviations for the days of the week are "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", and "Sat".  The abbreviations for the months are "Jan", "Feb", "Mar", "Apr", "May", "Jun",  "Jul",  "Aug",
+       "Sep",  "Oct", "Nov", and "Dec".  The return value points to a statically allocated string which might be overwritten by subsequent calls to any of the date and time functions.  The function also
+       sets the external variables tzname, timezone, and daylight (see tzset(3)) with information about the current timezone.  The reentrant version ctime_r() does the same, but stores the string  in  a
+       user-supplied buffer which should have room for at least 26 bytes.  It need not set tzname, timezone, and daylight.
+
+       The  gmtime()  function  converts the calendar time timep to broken-down time representation, expressed in Coordinated Universal Time (UTC).  It may return NULL when the year does not fit into an
+       integer.  The return value points to a statically allocated struct which might be overwritten by subsequent calls to any of the date and time functions.  The gmtime_r() function  does  the  same,
+       but stores the data in a user-supplied struct.
+
+       The  localtime() function converts the calendar time timep to broken-down time representation, expressed relative to the user's specified timezone.  The function acts as if it called tzset(3) and
+       sets the external variables tzname with information about the current timezone, timezone with the difference between Coordinated Universal Time (UTC) and local standard time in seconds, and  day‐
+       light  to  a  nonzero  value  if daylight savings time rules apply during some part of the year.  The return value points to a statically allocated struct which might be overwritten by subsequent
+       calls to any of the date and time functions.  The localtime_r() function does the same, but stores the data in a user-supplied struct.  It need not set tzname, timezone, and daylight.
+
+       The asctime() function converts the broken-down time value tm into a null-terminated string with the same format as ctime().  The return value points to a statically allocated string which  might
+       be  overwritten  by  subsequent calls to any of the date and time functions.  The asctime_r() function does the same, but stores the string in a user-supplied buffer which should have room for at
+       least 26 bytes.
+
+       The mktime() function converts a broken-down time structure, expressed as local time, to calendar time representation.  The function ignores the values supplied by the caller in the  tm_wday  and
+       tm_yday  fields.   The  value  specified  in the tm_isdst field informs mktime() whether or not daylight saving time (DST) is in effect for the time supplied in the tm structure: a positive value
+       means DST is in effect; zero means that DST is not in effect; and a negative value means that mktime() should (use timezone information and system databases to) attempt to determine  whether  DST
+       is in effect at the specified time.
+
+       The  mktime() function modifies the fields of the tm structure as follows: tm_wday and tm_yday are set to values determined from the contents of the other fields; if structure members are outside
+       their valid interval, they will be normalized (so that, for example, 40 October is changed into 9 November); tm_isdst is set (regardless of its initial value) to a positive value or to 0, respec‐
+       tively, to indicate whether DST is or is not in effect at the specified time.  Calling mktime() also sets the external variable tzname with information about the current timezone.
+
+       If the specified broken-down time cannot be represented as calendar time (seconds since the Epoch), mktime() returns (time_t) -1 and does not alter the members of the broken-down time structure.
+
+RETURN VALUE
+       On success, gmtime() and localtime() return a pointer to a struct tm.
+
+       On success, gmtime_r() and localtime_r() return the address of the structure pointed to by result.
+
+       On success, asctime() and ctime() return a pointer to a string.
+
+       On success, asctime_r() and ctime_r() return a pointer to the string pointed to by buf.
+
+       On success, mktime() returns the calendar time (seconds since the Epoch), expressed as a value of type time_t.
+
+       On error, mktime() returns the value (time_t) -1.  The remaining functions return NULL on error.  On error, errno is set to indicate the error.
+
+ERRORS
+       EOVERFLOW
+              The result cannot be represented.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌───────────────────────────────────────────────┬───────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface                                      │ Attribute     │ Value                                                                                                                            │
+       ├───────────────────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │asctime()                                      │ Thread safety │ MT-Unsafe race:asctime locale                                                                                                    │
+       ├───────────────────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │asctime_r()                                    │ Thread safety │ MT-Safe locale                                                                                                                   │
+       ├───────────────────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │ctime()                                        │ Thread safety │ MT-Unsafe race:tmbuf race:asctime env locale                                                                                     │
+       ├───────────────────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │ctime_r(), gmtime_r(), localtime_r(), mktime() │ Thread safety │ MT-Safe env locale                                                                                                               │
+       ├───────────────────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │gmtime(), localtime()                          │ Thread safety │ MT-Unsafe race:tmbuf env locale                                                                                                  │
+       └───────────────────────────────────────────────┴───────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+VERSIONS
+       POSIX doesn't specify the parameters of ctime_r() to be restrict; that is specific to glibc.
+
+       In many implementations, including glibc, a 0 in tm_mday is interpreted as meaning the last day of the preceding month.
+
+       According  to  POSIX.1-2001, localtime() is required to behave as though tzset(3) was called, while localtime_r() does not have this requirement.  For portable code, tzset(3) should be called be‐
+       fore localtime_r().
+
+STANDARDS
+       asctime()
+       ctime()
+       gmtime()
+       localtime()
+       mktime()
+              C11, POSIX.1-2008.
+
+       asctime_r()
+       ctime_r()
+       gmtime_r()
+       localtime_r()
+              POSIX.1-2008.
+
+HISTORY
+       gmtime()
+       localtime()
+       mktime()
+              C89, POSIX.1-2001.
+
+       asctime()
+       ctime()
+              C89, POSIX.1-2001.  Marked obsolete in POSIX.1-2008 (recommending strftime(3)).
+
+       gmtime_r()
+       localtime_r()
+              POSIX.1-2001.
+
+       asctime_r()
+       ctime_r()
+              POSIX.1-2001.  Marked obsolete in POSIX.1-2008 (recommending strftime(3)).
+
+NOTES
+       The four functions asctime(), ctime(), gmtime(), and localtime() return a pointer to static data and hence are not thread-safe.  The thread-safe versions, asctime_r(), ctime_r(), gmtime_r(),  and
+       localtime_r(), are specified by SUSv2.
+
+       POSIX.1-2001  says:  "The asctime(), ctime(), gmtime(), and localtime() functions shall return values in one of two static objects: a broken-down time structure and an array of type char.  Execu‐
+       tion of any of the functions may overwrite the information returned in either of these objects by any of the other functions."  This can occur in the glibc implementation.
+
+SEE ALSO
+       date(1), gettimeofday(2), time(2), utime(2), clock(3), difftime(3), strftime(3), strptime(3), timegm(3), tzset(3), time(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        ctime(3)
+MKTIME(3P)                                                                               POSIX Programmer's Manual                                                                              MKTIME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       mktime — convert broken-down time into time since the Epoch
+
+SYNOPSIS
+       #include <time.h>
+
+       time_t mktime(struct tm *timeptr);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  mktime() function shall convert the broken-down time, expressed as local time, in the structure pointed to by timeptr, into a time since the Epoch value with the same encoding as that of the
+       values returned by time().  The original values of the tm_wday and tm_yday components of the structure shall be ignored, and the original values of the other components shall not be restricted to
+       the ranges described in <time.h>.
+
+       A positive or 0 value for tm_isdst shall cause mktime() to presume initially that Daylight Savings Time, respectively, is or is not in effect for the specified time. A negative value for tm_isdst
+       shall cause mktime() to attempt to determine whether Daylight Savings Time is in effect for the specified time.
+
+       Local timezone information shall be set as though mktime() called tzset().
+
+       The relationship between the tm structure (defined in the <time.h> header) and the time in seconds since the Epoch is that the result shall be as specified in the expression given in the  defini‐
+       tion  of seconds since the Epoch (see the Base Definitions volume of POSIX.1‐2017, Section 4.16, Seconds Since the Epoch) corrected for timezone and any seasonal time adjustments, where the names
+       other than tm_yday in the structure and in the expression correspond, and the tm_yday value used in the expression is the day of the year from 0 to 365 inclusive, calculated  from  the  other  tm
+       structure members specified in <time.h> (excluding tm_wday).
+
+       Upon  successful  completion,  the  values of the tm_wday and tm_yday components of the structure shall be set appropriately, and the other components shall be set to represent the specified time
+       since the Epoch, but with their values forced to the ranges indicated in the <time.h> entry; the final value of tm_mday shall not be set until tm_mon and tm_year are determined.
+
+RETURN VALUE
+       The mktime() function shall return the specified time since the Epoch encoded as a value of type time_t.  If the time since the Epoch cannot be represented, the function shall  return  the  value
+       (time_t)-1 and set errno to indicate the error.
+
+ERRORS
+       The mktime() function shall fail if:
+
+       EOVERFLOW
+              The result cannot be represented.
+
+       The following sections are informative.
+
+EXAMPLES
+       What day of the week is July 4, 2001?
+
+           #include <stdio.h>
+           #include <time.h>
+
+           struct tm time_str;
+
+           char daybuf[20];
+
+           int main(void)
+           {
+               time_str.tm_year = 2001 — 1900;
+               time_str.tm_mon = 7 — 1;
+               time_str.tm_mday = 4;
+               time_str.tm_hour = 0;
+               time_str.tm_min = 0;
+               time_str.tm_sec = 1;
+               time_str.tm_isdst = -1;
+               if (mktime(&time_str) == -1)
+                   (void)puts("-unknown-");
+               else {
+                   (void)strftime(daybuf, sizeof(daybuf), "%A", &time_str);
+                   (void)puts(daybuf);
+               }
+               return 0;
+           }
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       asctime(), clock(), ctime(), difftime(), gmtime(), localtime(), strftime(), strptime(), time(), tzset(), utime()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 4.16, Seconds Since the Epoch, <time.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         MKTIME(3P)

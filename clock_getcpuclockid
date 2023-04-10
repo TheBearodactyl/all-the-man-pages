@@ -1,0 +1,162 @@
+clock_getcpuclockid(3)                                                                   Library Functions Manual                                                                   clock_getcpuclockid(3)
+
+NAME
+       clock_getcpuclockid - obtain ID of a process CPU-time clock
+
+LIBRARY
+       Standard C library (libc, -lc), since glibc 2.17
+
+       Before glibc 2.17, Real-time library (librt, -lrt)
+
+SYNOPSIS
+       #include <time.h>
+
+       int clock_getcpuclockid(pid_t pid, clockid_t *clockid);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       clock_getcpuclockid():
+           _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       The clock_getcpuclockid() function obtains the ID of the CPU-time clock of the process whose ID is pid, and returns it in the location pointed to by clockid.  If pid is zero, then the clock ID of
+       the CPU-time clock of the calling process is returned.
+
+RETURN VALUE
+       On success, clock_getcpuclockid() returns 0; on error, it returns one of the positive error numbers listed in ERRORS.
+
+ERRORS
+       ENOSYS The kernel does not support obtaining the per-process CPU-time clock of another process, and pid does not specify the calling process.
+
+       EPERM  The caller does not have permission to access the CPU-time clock of the process specified by pid.  (Specified in POSIX.1-2001; does not occur on Linux unless the kernel does not support
+              obtaining the per-process CPU-time clock of another process.)
+
+       ESRCH  There is no process with the ID pid.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │clock_getcpuclockid()                                                                                                                                                   │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.2.  POSIX.1-2001.
+
+NOTES
+       Calling clock_gettime(2) with the clock ID obtained by a call to clock_getcpuclockid() with a pid of 0, is the same as using the clock ID CLOCK_PROCESS_CPUTIME_ID.
+
+EXAMPLES
+       The  example  program below obtains the CPU-time clock ID of the process whose ID is given on the command line, and then uses clock_gettime(2) to obtain the time on that clock.  An example run is
+       the following:
+
+           $ ./a.out 1                 # Show CPU clock of init process
+           CPU-time clock for PID 1 is 2.213466748 seconds
+
+   Program source
+
+       #define _XOPEN_SOURCE 600
+       #include <stdint.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <time.h>
+       #include <unistd.h>
+
+       int
+       main(int argc, char *argv[])
+       {
+           clockid_t clockid;
+           struct timespec ts;
+
+           if (argc != 2) {
+               fprintf(stderr, "%s <process-ID>\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           if (clock_getcpuclockid(atoi(argv[1]), &clockid) != 0) {
+               perror("clock_getcpuclockid");
+               exit(EXIT_FAILURE);
+           }
+
+           if (clock_gettime(clockid, &ts) == -1) {
+               perror("clock_gettime");
+               exit(EXIT_FAILURE);
+           }
+
+           printf("CPU-time clock for PID %s is %jd.%09ld seconds\n",
+                  argv[1], (intmax_t) ts.tv_sec, ts.tv_nsec);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       clock_getres(2), timer_create(2), pthread_getcpuclockid(3), time(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                          clock_getcpuclockid(3)
+CLOCK_GETCPUCLOCKID(3P)                                                                  POSIX Programmer's Manual                                                                 CLOCK_GETCPUCLOCKID(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       clock_getcpuclockid — access a process CPU-time clock (ADVANCED REALTIME)
+
+SYNOPSIS
+       #include <time.h>
+
+       int clock_getcpuclockid(pid_t pid, clockid_t *clock_id);
+
+DESCRIPTION
+       The clock_getcpuclockid() function shall return the clock ID of the CPU-time clock of the process specified by pid.  If the process described by pid exists and the calling process has permission,
+       the clock ID of this clock shall be returned in clock_id.
+
+       If pid is zero, the clock_getcpuclockid() function shall return the clock ID of the CPU-time clock of the process making the call, in clock_id.
+
+       The conditions under which one process has permission to obtain the CPU-time clock ID of other processes are implementation-defined.
+
+RETURN VALUE
+       Upon successful completion, clock_getcpuclockid() shall return zero; otherwise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The clock_getcpuclockid() function shall fail if:
+
+       EPERM  The requesting process does not have permission to access the CPU-time clock for the process.
+
+       The clock_getcpuclockid() function may fail if:
+
+       ESRCH  No process can be found corresponding to the process specified by pid.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The clock_getcpuclockid() function is part of the Process CPU-Time Clocks option and need not be provided on all implementations.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       clock_getres(), timer_create()
+
+       The Base Definitions volume of POSIX.1‐2017, <time.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                            CLOCK_GETCPUCLOCKID(3P)

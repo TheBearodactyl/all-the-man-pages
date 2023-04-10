@@ -1,0 +1,138 @@
+hwlocality_distances_get(3)                                                              Hardware Locality (hwloc)                                                             hwlocality_distances_get(3)
+
+NAME
+       hwlocality_distances_get - Retrieve distances between objects
+
+SYNOPSIS
+   Data Structures
+       struct hwloc_distances_s
+
+   Enumerations
+       enum hwloc_distances_kind_e { HWLOC_DISTANCES_KIND_FROM_OS, HWLOC_DISTANCES_KIND_FROM_USER, HWLOC_DISTANCES_KIND_MEANS_LATENCY, HWLOC_DISTANCES_KIND_MEANS_BANDWIDTH,
+           HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES }
+       enum hwloc_distances_transform_e { HWLOC_DISTANCES_TRANSFORM_REMOVE_NULL, HWLOC_DISTANCES_TRANSFORM_LINKS, HWLOC_DISTANCES_TRANSFORM_MERGE_SWITCH_PORTS,
+           HWLOC_DISTANCES_TRANSFORM_TRANSITIVE_CLOSURE }
+
+   Functions
+       int hwloc_distances_get (hwloc_topology_t topology, unsigned *nr, struct hwloc_distances_s **distances, unsigned long kind, unsigned long flags)
+       int hwloc_distances_get_by_depth (hwloc_topology_t topology, int depth, unsigned *nr, struct hwloc_distances_s **distances, unsigned long kind, unsigned long flags)
+       int hwloc_distances_get_by_type (hwloc_topology_t topology, hwloc_obj_type_t type, unsigned *nr, struct hwloc_distances_s **distances, unsigned long kind, unsigned long flags)
+       int hwloc_distances_get_by_name (hwloc_topology_t topology, const char *name, unsigned *nr, struct hwloc_distances_s **distances, unsigned long flags)
+       const char * hwloc_distances_get_name (hwloc_topology_t topology, struct hwloc_distances_s *distances)
+       void hwloc_distances_release (hwloc_topology_t topology, struct hwloc_distances_s *distances)
+       int hwloc_distances_transform (hwloc_topology_t topology, struct hwloc_distances_s *distances, enum hwloc_distances_transform_e transform, void *transform_attr, unsigned long flags)
+
+Detailed Description
+Enumeration Type Documentation
+   enum hwloc_distances_kind_e
+       Kinds of distance matrices. The kind attribute of struct hwloc_distances_s is a OR'ed set of kinds.
+
+       A kind of format HWLOC_DISTANCES_KIND_FROM_* specifies where the distance information comes from, if known.
+
+       A kind of format HWLOC_DISTANCES_KIND_MEANS_* specifies whether values are latencies or bandwidths, if applicable.
+
+       Enumerator
+
+       HWLOC_DISTANCES_KIND_FROM_OS
+              These distances were obtained from the operating system or hardware.
+
+       HWLOC_DISTANCES_KIND_FROM_USER
+              These distances were provided by the user.
+
+       HWLOC_DISTANCES_KIND_MEANS_LATENCY
+              Distance values are similar to latencies between objects. Values are smaller for closer objects, hence minimal on the diagonal of the matrix (distance between an object and itself). It
+              could also be the number of network hops between objects, etc.
+
+       HWLOC_DISTANCES_KIND_MEANS_BANDWIDTH
+              Distance values are similar to bandwidths between objects. Values are higher for closer objects, hence maximal on the diagonal of the matrix (distance between an object and itself). Such
+              values are currently ignored for distance-based grouping.
+
+       HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES
+              This distances structure covers objects of different types. This may apply to the 'NVLinkBandwidth' structure in presence of a NVSwitch or POWER processor NVLink port.
+
+   enum hwloc_distances_transform_e
+       Transformations of distances structures.
+
+       Enumerator
+
+       HWLOC_DISTANCES_TRANSFORM_REMOVE_NULL
+              Remove NULL objects from the distances structure. Every object that was replaced with NULL in the objs array is removed and the values array is updated accordingly.
+
+       At least 2 objects must remain, otherwise hwloc_distances_transform() will return -1 with errno set to EINVAL.
+
+       kind will be updated with or without HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES according to the remaining objects.
+
+       HWLOC_DISTANCES_TRANSFORM_LINKS
+              Replace bandwidth values with a number of links. Usually all values will be either 0 (no link) or 1 (one link). However some matrices could get larger values if some pairs of peers are
+              connected by different numbers of links.
+
+       Values on the diagonal are set to 0.
+
+       This transformation only applies to bandwidth matrices.
+
+       HWLOC_DISTANCES_TRANSFORM_MERGE_SWITCH_PORTS
+              Merge switches with multiple ports into a single object. This currently only applies to NVSwitches where GPUs seem connected to different separate switch ports in the NVLinkBandwidth
+              matrix. This transformation will replace all of them with the same port connected to all GPUs. Other ports are removed by applying HWLOC_DISTANCES_TRANSFORM_REMOVE_NULL internally.
+
+       HWLOC_DISTANCES_TRANSFORM_TRANSITIVE_CLOSURE
+              Apply a transitive closure to the matrix to connect objects across switches. This currently only applies to GPUs and NVSwitches in the NVLinkBandwidth matrix. All pairs of GPUs will be
+              reported as directly connected.
+
+Function Documentation
+   int hwloc_distances_get (hwloc_topology_t topology, unsigned * nr, struct hwloc_distances_s ** distances, unsigned long kind, unsigned long flags)
+       Retrieve distance matrices. Retrieve distance matrices from the topology into the distances array.
+
+       flags is currently unused, should be 0.
+
+       kind serves as a filter. If 0, all distance matrices are returned. If it contains some HWLOC_DISTANCES_KIND_FROM_*, only distance matrices whose kind matches one of these are returned. If it
+       contains some HWLOC_DISTANCES_KIND_MEANS_*, only distance matrices whose kind matches one of these are returned.
+
+       On input, nr points to the number of distance matrices that may be stored in distances. On output, nr points to the number of distance matrices that were actually found, even if some of them
+       couldn't be stored in distances. Distance matrices that couldn't be stored are ignored, but the function still returns success (0). The caller may find out by comparing the value pointed by nr
+       before and after the function call.
+
+       Each distance matrix returned in the distances array should be released by the caller using hwloc_distances_release().
+
+   int hwloc_distances_get_by_depth (hwloc_topology_t topology, int depth, unsigned * nr, struct hwloc_distances_s ** distances, unsigned long kind, unsigned long flags)
+       Retrieve distance matrices for object at a specific depth in the topology. Identical to hwloc_distances_get() with the additional depth filter.
+
+   int hwloc_distances_get_by_name (hwloc_topology_t topology, const char * name, unsigned * nr, struct hwloc_distances_s ** distances, unsigned long flags)
+       Retrieve a distance matrix with the given name. Usually only one distances structure may match a given name.
+
+       The name of the most common structure is 'NUMALatency'. Others include 'XGMIBandwidth', 'XGMIHops', 'XeLinkBandwidth', and 'NVLinkBandwidth'.
+
+   int hwloc_distances_get_by_type (hwloc_topology_t topology, hwloc_obj_type_t type, unsigned * nr, struct hwloc_distances_s ** distances, unsigned long kind, unsigned long flags)
+       Retrieve distance matrices for object of a specific type. Identical to hwloc_distances_get() with the additional type filter.
+
+   const char* hwloc_distances_get_name (hwloc_topology_t topology, struct hwloc_distances_s * distances)
+       Get a description of what a distances structure contains. For instance 'NUMALatency' for hardware-provided NUMA distances (ACPI SLIT), or NULL if unknown.
+
+   void hwloc_distances_release (hwloc_topology_t topology, struct hwloc_distances_s * distances)
+       Release a distance matrix structure previously returned by hwloc_distances_get().
+
+       Note
+           This function is not required if the structure is removed with hwloc_distances_release_remove().
+
+   int hwloc_distances_transform (hwloc_topology_t topology, struct hwloc_distances_s * distances, enum hwloc_distances_transform_e transform, void * transform_attr, unsigned long flags)
+       Apply a transformation to a distances structure. Modify a distances structure that was previously obtained with hwloc_distances_get() or one of its variants.
+
+       This modifies the local copy of the distances structures but does not modify the distances information stored inside the topology (retrieved by another call to hwloc_distances_get() or exported
+       to XML). To do so, one should add a new distances structure with same name, kind, objects and values (see Add distances between objects) and then remove this old one with
+       hwloc_distances_release_remove().
+
+       transform must be one of the transformations listed in hwloc_distances_transform_e.
+
+       These transformations may modify the contents of the objs or values arrays.
+
+       transform_attr must be NULL for now.
+
+       flags must be 0 for now.
+
+       Note
+           Objects in distances array objs may be directly modified in place without using hwloc_distances_transform(). One may use hwloc_get_obj_with_same_locality() to easily convert between similar
+           objects of different types.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                  hwlocality_distances_get(3)

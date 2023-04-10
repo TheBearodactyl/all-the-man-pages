@@ -1,0 +1,626 @@
+SYMLINK(3P)                POSIX Programmer's Manual               SYMLINK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       symlink, symlinkat — make a symbolic link
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int symlink(const char *path1, const char *path2);
+
+       #include <fcntl.h>
+
+       int symlinkat(const char *path1, int fd, const char *path2);
+
+DESCRIPTION
+       The symlink() function shall create a symbolic link called  path2  that
+       contains  the string pointed to by path1 (path2 is the name of the sym‐
+       bolic link created, path1 is  the  string  contained  in  the  symbolic
+       link).
+
+       The  string  pointed  to by path1 shall be treated only as a string and
+       shall not be validated as a pathname.
+
+       If the symlink() function fails for any reason other  than  [EIO],  any
+       file named by path2 shall be unaffected.
+
+       If  path2  names a symbolic link, symlink() shall fail and set errno to
+       [EEXIST].
+
+       The symbolic link's user ID shall be set to the process' effective user
+       ID.  The  symbolic  link's group ID shall be set to the group ID of the
+       parent directory or to the effective group ID of the process. Implemen‐
+       tations  shall provide a way to initialize the symbolic link's group ID
+       to the group ID of the parent directory. Implementations may, but  need
+       not,  provide  an implementation-defined way to initialize the symbolic
+       link's group ID to the effective group ID of the calling process.
+
+       The values of the file mode bits for the created symbolic link are  un‐
+       specified.  All interfaces specified by POSIX.1‐2008 shall behave as if
+       the contents of symbolic links can always  be  read,  except  that  the
+       value  of  the file mode bits returned in the st_mode field of the stat
+       structure is unspecified.
+
+       Upon successful completion, symlink() shall mark for  update  the  last
+       data  access, last data modification, and last file status change time‐
+       stamps of the symbolic link. Also, the last data modification and  last
+       file  status  change  timestamps of the directory that contains the new
+       entry shall be marked for update.
+
+       The symlinkat() function shall be equivalent to the symlink()  function
+       except  in the case where path2 specifies a relative path. In this case
+       the symbolic link is created relative to the directory associated  with
+       the file descriptor fd instead of the current working directory. If the
+       access mode of the open file description associated with the  file  de‐
+       scriptor  is  not  O_SEARCH, the function shall check whether directory
+       searches are permitted using the current permissions of  the  directory
+       underlying  the  file  descriptor.  If the access mode is O_SEARCH, the
+       function shall not perform the check.
+
+       If symlinkat() is passed the special value AT_FDCWD in the  fd  parame‐
+       ter, the current working directory shall be used and the behavior shall
+       be identical to a call to symlink().
+
+RETURN VALUE
+       Upon successful completion, these functions shall return 0.  Otherwise,
+       these functions shall return -1 and set errno to indicate the error.
+
+ERRORS
+       These functions shall fail if:
+
+       EACCES Write  permission  is denied in the directory where the symbolic
+              link is being created, or search permission is denied for a com‐
+              ponent of the path prefix of path2.
+
+       EEXIST The path2 argument names an existing file.
+
+       EIO    An  I/O  error  occurs while reading from or writing to the file
+              system.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of
+              the path2 argument.
+
+       ENAMETOOLONG
+              The length of a component of the pathname specified by the path2
+              argument is longer than {NAME_MAX} or the length  of  the  path1
+              argument is longer than {SYMLINK_MAX}.
+
+       ENOENT A  component of the path prefix of path2 does not name an exist‐
+              ing file or path2 is an empty string.
+
+       ENOENT or ENOTDIR
+              The path2 argument contains at least one  non-<slash>  character
+              and  ends with one or more trailing <slash> characters. If path2
+              without the trailing <slash> characters would name  an  existing
+              file, an [ENOENT] error shall not occur.
+
+       ENOSPC The  directory  in  which the entry for the new symbolic link is
+              being placed cannot be extended because no space is left on  the
+              file  system  containing the directory, or the new symbolic link
+              cannot be created because no space is left on  the  file  system
+              which shall contain the link, or the file system is out of file-
+              allocation resources.
+
+       ENOTDIR
+              A component of the path prefix of path2 names an  existing  file
+              that is neither a directory nor a symbolic link to a directory.
+
+       EROFS  The new symbolic link would reside on a read-only file system.
+
+       The symlinkat() function shall fail if:
+
+       EACCES The  access mode of the open file description associated with fd
+              is not O_SEARCH and the permissions of the directory  underlying
+              fd do not permit directory searches.
+
+       EBADF  The  path2 argument does not specify an absolute path and the fd
+              argument is neither AT_FDCWD nor a valid  file  descriptor  open
+              for reading or searching.
+
+       ENOTDIR
+              The  path2 argument is not an absolute path and fd is a file de‐
+              scriptor associated with a non-directory file.
+
+       These functions may fail if:
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were  encountered  during
+              resolution of the path2 argument.
+
+       ENAMETOOLONG
+              The  length of the path2 argument exceeds {PATH_MAX} or pathname
+              resolution of a symbolic link in the path2 argument produced  an
+              intermediate result with a length that exceeds {PATH_MAX}.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Like  a hard link, a symbolic link allows a file to have multiple logi‐
+       cal names. The presence of a hard link guarantees the  existence  of  a
+       file,  even  after  the original name has been removed. A symbolic link
+       provides no such assurance; in fact, the file named by the path1  argu‐
+       ment need not exist when the link is created. A symbolic link can cross
+       file system boundaries.
+
+       Normal permission checks are made on each  component  of  the  symbolic
+       link pathname during its resolution.
+
+RATIONALE
+       The  purpose of the symlinkat() function is to create symbolic links in
+       directories other than the current working directory  without  exposure
+       to  race conditions. Any part of the path of a file could be changed in
+       parallel to a call to symlink(), resulting in unspecified behavior.  By
+       opening  a  file descriptor for the target directory and using the sym‐
+       linkat() function it can be guaranteed that the created  symbolic  link
+       is located relative to the desired directory.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fdopendir(), fstatat(), lchown(), link(), open(), readlink(), rename(),
+       unlink()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                          SYMLINK(3P)
+symlink(2)                    System Calls Manual                   symlink(2)
+
+NAME
+       symlink, symlinkat - make a new name for a file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int symlink(const char *target, const char *linkpath);
+
+       #include <fcntl.h>           /* Definition of AT_* constants */
+       #include <unistd.h>
+
+       int symlinkat(const char *target, int newdirfd, const char *linkpath);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       symlink():
+           _XOPEN_SOURCE >= 500 || _POSIX_C_SOURCE >= 200112L
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+       symlinkat():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _ATFILE_SOURCE
+
+DESCRIPTION
+       symlink()  creates  a  symbolic  link named linkpath which contains the
+       string target.
+
+       Symbolic links are interpreted at run time as if the  contents  of  the
+       link  had  been substituted into the path being followed to find a file
+       or directory.
+
+       Symbolic links may contain ..  path components, which (if used  at  the
+       start of the link) refer to the parent directories of that in which the
+       link resides.
+
+       A symbolic link (also known as a soft link) may point  to  an  existing
+       file  or  to  a nonexistent one; the latter case is known as a dangling
+       link.
+
+       The permissions of a symbolic link are irrelevant; the ownership is ig‐
+       nored  when following the link (except when the protected_symlinks fea‐
+       ture is enabled, as explained in proc(5)), but is checked when  removal
+       or  renaming  of  the  link is requested and the link is in a directory
+       with the sticky bit (S_ISVTX) set.
+
+       If linkpath exists, it will not be overwritten.
+
+   symlinkat()
+       The symlinkat() system call operates in exactly the same  way  as  sym‐
+       link(), except for the differences described here.
+
+       If  the  pathname given in linkpath is relative, then it is interpreted
+       relative to the directory referred to by the file  descriptor  newdirfd
+       (rather  than  relative to the current working directory of the calling
+       process, as is done by symlink() for a relative pathname).
+
+       If linkpath is relative and newdirfd is  the  special  value  AT_FDCWD,
+       then  linkpath is interpreted relative to the current working directory
+       of the calling process (like symlink()).
+
+       If linkpath is absolute, then newdirfd is ignored.
+
+       See openat(2) for an explanation of the need for symlinkat().
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and  errno  is
+       set to indicate the error.
+
+ERRORS
+       EACCES Write  access to the directory containing linkpath is denied, or
+              one of the directories in the path prefix of  linkpath  did  not
+              allow search permission.  (See also path_resolution(7).)
+
+       EBADF  (symlinkat())  linkpath  is  relative  but  newdirfd  is neither
+              AT_FDCWD nor a valid file descriptor.
+
+       EDQUOT The user's quota of resources on the  filesystem  has  been  ex‐
+              hausted.   The resources could be inodes or disk blocks, depend‐
+              ing on the filesystem implementation.
+
+       EEXIST linkpath already exists.
+
+       EFAULT target or linkpath points outside your accessible address space.
+
+       EIO    An I/O error occurred.
+
+       ELOOP  Too many symbolic links were encountered in resolving linkpath.
+
+       ENAMETOOLONG
+              target or linkpath was too long.
+
+       ENOENT A directory component in linkpath does not exist or  is  a  dan‐
+              gling symbolic link, or target or linkpath is an empty string.
+
+       ENOENT (symlinkat())  linkpath  is  a  relative  pathname  and newdirfd
+              refers to a directory that has been deleted.
+
+       ENOMEM Insufficient kernel memory was available.
+
+       ENOSPC The device containing the file has no room for the new directory
+              entry.
+
+       ENOTDIR
+              A  component  used as a directory in linkpath is not, in fact, a
+              directory.
+
+       ENOTDIR
+              (symlinkat()) linkpath is relative and newdirfd is  a  file  de‐
+              scriptor referring to a file other than a directory.
+
+       EPERM  The filesystem containing linkpath does not support the creation
+              of symbolic links.
+
+       EROFS  linkpath is on a read-only filesystem.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       symlink()
+              SVr4, 4.3BSD, POSIX.1-2001.
+
+       symlinkat()
+              POSIX.1-2008.  Linux 2.6.16, glibc 2.4.
+
+   glibc notes
+       On older kernels where symlinkat() is unavailable,  the  glibc  wrapper
+       function  falls back to the use of symlink().  When linkpath is a rela‐
+       tive pathname, glibc constructs a pathname based on the  symbolic  link
+       in /proc/self/fd that corresponds to the newdirfd argument.
+
+NOTES
+       No checking of target is done.
+
+       Deleting  the  name referred to by a symbolic link will actually delete
+       the file (unless it also has other hard links).  If  this  behavior  is
+       not desired, use link(2).
+
+SEE ALSO
+       ln(1),  namei(1),  lchown(2),  link(2), lstat(2), open(2), readlink(2),
+       rename(2), unlink(2), path_resolution(7), symlink(7)
+
+Linux man-pages 6.04              2023-03-30                        symlink(2)
+symlink(7)             Miscellaneous Information Manual             symlink(7)
+
+NAME
+       symlink - symbolic link handling
+
+DESCRIPTION
+       Symbolic  links  are files that act as pointers to other files.  To un‐
+       derstand their behavior, you must first understand how hard links work.
+
+       A hard link to a file is indistinguishable from the original  file  be‐
+       cause it is a reference to the object underlying the original filename.
+       (To be precise: each of the hard links to a file is a reference to  the
+       same inode number, where an inode number is an index into the inode ta‐
+       ble, which contains metadata about all  files  on  a  filesystem.   See
+       stat(2).)  Changes to a file are independent of the name used to refer‐
+       ence the file.  Hard links may not refer to directories (to prevent the
+       possibility  of  loops  within the filesystem tree, which would confuse
+       many programs) and may not refer to files on different filesystems (be‐
+       cause inode numbers are not unique across filesystems).
+
+       A  symbolic  link is a special type of file whose contents are a string
+       that is the pathname of another  file,  the  file  to  which  the  link
+       refers.   (The  contents  of  a  symbolic  link can be read using read‐
+       link(2).)  In other words, a symbolic link  is  a  pointer  to  another
+       name, and not to an underlying object.  For this reason, symbolic links
+       may refer to directories and may cross filesystem boundaries.
+
+       There is no requirement that the pathname referred  to  by  a  symbolic
+       link should exist.  A symbolic link that refers to a pathname that does
+       not exist is said to be a dangling link.
+
+       Because a symbolic link  and  its  referenced  object  coexist  in  the
+       filesystem  name  space,  confusion can arise in distinguishing between
+       the link itself and the referenced object.  On historical systems, com‐
+       mands  and system calls adopted their own link-following conventions in
+       a somewhat ad-hoc fashion.  Rules for a more uniform approach, as  they
+       are  implemented  on Linux and other systems, are outlined here.  It is
+       important that site-local applications also conform to these rules,  so
+       that the user interface can be as consistent as possible.
+
+   Magic links
+       There  is a special class of symbolic-link-like objects known as "magic
+       links", which can be found in certain pseudofilesystems such as proc(5)
+       (examples  include  /proc/pid/exe  and  /proc/pid/fd/*).  Unlike normal
+       symbolic links, magic links are not  resolved  through  pathname-expan‐
+       sion,  but  instead act as direct references to the kernel's own repre‐
+       sentation of a file handle.  As such, these magic links allow users  to
+       access  files which cannot be referenced with normal paths (such as un‐
+       linked files still referenced by a running program ).
+
+       Because they can  bypass  ordinary  mount_namespaces(7)-based  restric‐
+       tions,  magic  links  have  been  used as attack vectors in various ex‐
+       ploits.
+
+   Symbolic link ownership, permissions, and timestamps
+       The owner and group of an existing symbolic link can be  changed  using
+       lchown(2).   The  ownership of a symbolic link matters when the link is
+       being removed or renamed in a directory that has  the  sticky  bit  set
+       (see  inode(7)),  and when the fs.protected_symlinks sysctl is set (see
+       proc(5)).
+
+       The last access and last modification timestamps of a symbolic link can
+       be changed using utimensat(2) or lutimes(3).
+
+       On  Linux, the permissions of an ordinary symbolic link are not used in
+       any operations; the permissions are always 0777 (read, write, and  exe‐
+       cute for all user categories), and can't be changed.
+
+       However, magic links do not follow this rule.  They can have a non-0777
+       mode, though this mode is not currently used in any permission checks.
+
+   Obtaining a file descriptor that refers to a symbolic link
+       Using the combination of the O_PATH and  O_NOFOLLOW  flags  to  open(2)
+       yields  a  file  descriptor that can be passed as the dirfd argument in
+       system calls such as fstatat(2), fchownat(2),  fchmodat(2),  linkat(2),
+       and  readlinkat(2),  in  order  to  operate on the symbolic link itself
+       (rather than the file to which it refers).
+
+       By default (i.e., if the AT_SYMLINK_FOLLOW flag is not  specified),  if
+       name_to_handle_at(2)  is applied to a symbolic link, it yields a handle
+       for the symbolic link (rather than the file to which it  refers).   One
+       can  then  obtain  a file descriptor for the symbolic link (rather than
+       the file to which it refers) by specifying the O_PATH flag in a  subse‐
+       quent call to open_by_handle_at(2).  Again, that file descriptor can be
+       used in the aforementioned system calls to operate on the symbolic link
+       itself.
+
+   Handling of symbolic links by system calls and commands
+       Symbolic  links  are handled either by operating on the link itself, or
+       by operating on the object referred to by  the  link.   In  the  latter
+       case,  an  application or system call is said to follow the link.  Sym‐
+       bolic links may refer to other symbolic links, in which case the  links
+       are  dereferenced until an object that is not a symbolic link is found,
+       a symbolic link that refers to a file which does not exist is found, or
+       a  loop is detected.  (Loop detection is done by placing an upper limit
+       on the number of links that may be followed, and an  error  results  if
+       this limit is exceeded.)
+
+       There  are three separate areas that need to be discussed.  They are as
+       follows:
+
+       •  Symbolic links used as filename arguments for system calls.
+
+       •  Symbolic links specified as command-line arguments to utilities that
+          are not traversing a file tree.
+
+       •  Symbolic  links  encountered by utilities that are traversing a file
+          tree (either specified on the command line or encountered as part of
+          the file hierarchy walk).
+
+       Before  describing  the treatment of symbolic links by system calls and
+       commands, we require some terminology.  Given a pathname  of  the  form
+       a/b/c,  the  part  preceding  the final slash (i.e., a/b) is called the
+       dirname component, and the part following the final slash (i.e., c)  is
+       called the basename component.
+
+   Treatment of symbolic links in system calls
+       The  first area is symbolic links used as filename arguments for system
+       calls.
+
+       The treatment of symbolic links within a pathname passed  to  a  system
+       call is as follows:
+
+       (1)  Within the dirname component of a pathname, symbolic links are al‐
+            ways followed in nearly every system call.  (This is also true for
+            commands.)   The one exception is openat2(2), which provides flags
+            that can be used to explicitly prevent following of symbolic links
+            in the dirname component.
+
+       (2)  Except  as  noted below, all system calls follow symbolic links in
+            the basename component of a pathname.  For example, if there  were
+            a  symbolic  link  slink  which pointed to a file named afile, the
+            system call open("slink" ...) would return a file  descriptor  re‐
+            ferring to the file afile.
+
+       Various system calls do not follow links in the basename component of a
+       pathname,  and  operate  on  the  symbolic  link  itself.   They   are:
+       lchown(2),  lgetxattr(2), llistxattr(2), lremovexattr(2), lsetxattr(2),
+       lstat(2), readlink(2), rename(2), rmdir(2), and unlink(2).
+
+       Certain other system calls optionally  follow  symbolic  links  in  the
+       basename component of a pathname.  They are: faccessat(2), fchownat(2),
+       fstatat(2),  linkat(2),   name_to_handle_at(2),   open(2),   openat(2),
+       open_by_handle_at(2),  and utimensat(2); see their manual pages for de‐
+       tails.  Because remove(3) is an alias for unlink(2), that library func‐
+       tion  also does not follow symbolic links.  When rmdir(2) is applied to
+       a symbolic link, it fails with the error ENOTDIR.
+
+       link(2)  warrants  special  discussion.   POSIX.1-2001  specifies  that
+       link(2)  should dereference oldpath if it is a symbolic link.  However,
+       Linux does not do this.  (By default, Solaris  is  the  same,  but  the
+       POSIX.1-2001  specified behavior can be obtained with suitable compiler
+       options.)  POSIX.1-2008 changed the specification to allow  either  be‐
+       havior in an implementation.
+
+   Commands not traversing a file tree
+       The  second  area is symbolic links, specified as command-line filename
+       arguments, to commands which are not traversing a file tree.
+
+       Except as noted below, commands follow symbolic links named as command-
+       line arguments.  For example, if there were a symbolic link slink which
+       pointed to a file named afile, the command cat slink would display  the
+       contents of the file afile.
+
+       It  is  important to realize that this rule includes commands which may
+       optionally traverse file trees; for example, the command chown file  is
+       included  in this rule, while the command chown -R file, which performs
+       a tree traversal, is not.  (The latter is described in the third  area,
+       below.)
+
+       If  it  is explicitly intended that the command operate on the symbolic
+       link instead of following the symbolic link—for example, it is  desired
+       that  chown  slink  change  the  ownership  of  the file that slink is,
+       whether it is a symbolic link or not—then the -h option should be used.
+       In  the  above  example, chown root slink would change the ownership of
+       the file referred to by slink, while chown -h root slink  would  change
+       the ownership of slink itself.
+
+       There are some exceptions to this rule:
+
+       •  The  mv(1)  and rm(1) commands do not follow symbolic links named as
+          arguments, but respectively  attempt  to  rename  and  delete  them.
+          (Note,  if  the symbolic link references a file via a relative path,
+          moving it to another directory may very well cause it to stop  work‐
+          ing, since the path may no longer be correct.)
+
+       •  The  ls(1)  command is also an exception to this rule.  For compati‐
+          bility with historic systems (when ls(1) is not doing a  tree  walk—
+          that is, -R option is not specified), the ls(1) command follows sym‐
+          bolic links named as arguments if the -H or -L option is  specified,
+          or  if the -F, -d, or -l options are not specified.  (The ls(1) com‐
+          mand is the only command where the -H and -L options affect its  be‐
+          havior even though it is not doing a walk of a file tree.)
+
+       •  The  file(1) command is also an exception to this rule.  The file(1)
+          command does not follow symbolic links named as argument by default.
+          The  file(1) command does follow symbolic links named as argument if
+          the -L option is specified.
+
+   Commands traversing a file tree
+       The following commands either optionally or always traverse file trees:
+       chgrp(1),  chmod(1),  chown(1),  cp(1),  du(1), find(1), ls(1), pax(1),
+       rm(1), and tar(1).
+
+       It is important to realize that the following rules  apply  equally  to
+       symbolic  links encountered during the file tree traversal and symbolic
+       links listed as command-line arguments.
+
+       The first rule applies to symbolic links  that  reference  files  other
+       than  directories.   Operations  that  apply to symbolic links are per‐
+       formed on the links themselves, but otherwise the links are ignored.
+
+       The command rm -r slink directory will remove slink,  as  well  as  any
+       symbolic  links encountered in the tree traversal of directory, because
+       symbolic links may be removed.  In no case will rm(1) affect  the  file
+       referred to by slink.
+
+       The  second  rule  applies to symbolic links that refer to directories.
+       Symbolic links that refer to directories are never followed by default.
+       This  is often referred to as a "physical" walk, as opposed to a "logi‐
+       cal" walk (where symbolic links that  refer  to  directories  are  fol‐
+       lowed).
+
+       Certain  conventions are (should be) followed as consistently as possi‐
+       ble by commands that perform file tree walks:
+
+       •  A command can be made to follow any symbolic links named on the com‐
+          mand  line, regardless of the type of file they reference, by speci‐
+          fying the -H (for "half-logical") flag.  This flag  is  intended  to
+          make  the  command-line name space look like the logical name space.
+          (Note, for commands that do not always do file tree traversals,  the
+          -H flag will be ignored if the -R flag is not also specified.)
+
+          For example, the command chown -HR user slink will traverse the file
+          hierarchy rooted in the file pointed to by slink.  Note, the  -H  is
+          not  the  same  as  the  previously  discussed -h flag.  The -H flag
+          causes symbolic links specified on the command line to  be  derefer‐
+          enced  for  the  purposes of both the action to be performed and the
+          tree walk, and it is as if the user had specified the  name  of  the
+          file to which the symbolic link pointed.
+
+       •  A command can be made to follow any symbolic links named on the com‐
+          mand line, as well as any symbolic links encountered during the tra‐
+          versal, regardless of the type of file they reference, by specifying
+          the -L (for "logical") flag.  This flag is intended to make the  en‐
+          tire  name  space look like the logical name space.  (Note, for com‐
+          mands that do not always do file tree traversals, the -L  flag  will
+          be ignored if the -R flag is not also specified.)
+
+          For  example, the command chown -LR user slink will change the owner
+          of the file referred to by slink.  If slink refers to  a  directory,
+          chown  will traverse the file hierarchy rooted in the directory that
+          it references.  In addition, if any symbolic links  are  encountered
+          in  any  file tree that chown traverses, they will be treated in the
+          same fashion as slink.
+
+       •  A command can be made to provide the default behavior by  specifying
+          the -P (for "physical") flag.  This flag is intended to make the en‐
+          tire name space look like the physical name space.
+
+       For commands that do not by default do file tree  traversals,  the  -H,
+       -L,  and -P flags are ignored if the -R flag is not also specified.  In
+       addition, you may specify the -H, -L, and -P options  more  than  once;
+       the  last one specified determines the command's behavior.  This is in‐
+       tended to permit you to alias commands to behave one way or the  other,
+       and then override that behavior on the command line.
+
+       The ls(1) and rm(1) commands have exceptions to these rules:
+
+       •  The rm(1) command operates on the symbolic link, and not the file it
+          references, and therefore never follows a symbolic link.  The  rm(1)
+          command does not support the -H, -L, or -P options.
+
+       •  To  maintain  compatibility with historic systems, the ls(1) command
+          acts a little differently.  If you do not specify the -F, -d, or  -l
+          options,  ls(1)  will follow symbolic links specified on the command
+          line.  If the -L flag  is  specified,  ls(1)  follows  all  symbolic
+          links,  regardless  of  their type, whether specified on the command
+          line or encountered in the tree walk.
+
+SEE ALSO
+       chgrp(1), chmod(1), find(1),  ln(1),  ls(1),  mv(1),  namei(1),  rm(1),
+       lchown(2),  link(2),  lstat(2), readlink(2), rename(2), symlink(2), un‐
+       link(2), utimensat(2), lutimes(3), path_resolution(7)
+
+Linux man-pages 6.04              2023-04-03                        symlink(7)

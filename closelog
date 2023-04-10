@@ -1,0 +1,326 @@
+syslog(3)                                                                                Library Functions Manual                                                                                syslog(3)
+
+NAME
+       closelog, openlog, syslog, vsyslog - send messages to the system logger
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <syslog.h>
+
+       void openlog(const char *ident, int option, int facility);
+       void syslog(int priority, const char *format, ...);
+       void closelog(void);
+
+       void vsyslog(int priority, const char *format, va_list ap);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       vsyslog():
+           Since glibc 2.19:
+               _DEFAULT_SOURCE
+           glibc 2.19 and earlier:
+               _BSD_SOURCE
+
+DESCRIPTION
+   openlog()
+       openlog() opens a connection to the system logger for a program.
+
+       The  string  pointed to by ident is prepended to every message, and is typically set to the program name.  If ident is NULL, the program name is used.  (POSIX.1-2008 does not specify the behavior
+       when ident is NULL.)
+
+       The option argument specifies flags which control the operation of openlog() and subsequent calls to syslog().  The facility argument establishes a default to be used if none is specified in sub‐
+       sequent calls to syslog().  The values that may be specified for option and facility are described below.
+
+       The use of openlog() is optional; it will automatically be called by syslog() if necessary, in which case ident will default to NULL.
+
+   syslog() and vsyslog()
+       syslog() generates a log message, which will be distributed by syslogd(8).
+
+       The  priority  argument  is  formed by ORing together a facility value and a level value (described below).  If no facility value is ORed into priority, then the default value set by openlog() is
+       used, or, if there was no preceding openlog() call, a default of LOG_USER is employed.
+
+       The remaining arguments are a format, as in printf(3), and any arguments required by the format, except that the two-character sequence %m will be  replaced  by  the  error  message  string  str‐
+       error(errno).  The format string need not include a terminating newline character.
+
+       The function vsyslog() performs the same task as syslog() with the difference that it takes a set of arguments which have been obtained using the stdarg(3) variable argument list macros.
+
+   closelog()
+       closelog() closes the file descriptor being used to write to the system logger.  The use of closelog() is optional.
+
+   Values for option
+       The option argument to openlog() is a bit mask constructed by ORing together any of the following values:
+
+       LOG_CONS       Write directly to the system console if there is an error while sending to the system logger.
+
+       LOG_NDELAY     Open  the  connection  immediately (normally, the connection is opened when the first message is logged).  This may be useful, for example, if a subsequent chroot(2) would make the
+                      pathname used internally by the logging facility unreachable.
+
+       LOG_NOWAIT     Don't wait for child processes that may have been created while logging the message.  (The GNU C library does not create a child process, so this option has no effect on Linux.)
+
+       LOG_ODELAY     The converse of LOG_NDELAY; opening of the connection is delayed until syslog() is called.  (This is the default, and need not be specified.)
+
+       LOG_PERROR     (Not in POSIX.1-2001 or POSIX.1-2008.)  Also log the message to stderr.
+
+       LOG_PID        Include the caller's PID with each message.
+
+   Values for facility
+       The facility argument is used to specify what type of program is logging the message.  This lets the configuration file specify that messages from different facilities  will  be  handled  differ‐
+       ently.
+
+       LOG_AUTH       security/authorization messages
+
+       LOG_AUTHPRIV   security/authorization messages (private)
+
+       LOG_CRON       clock daemon (cron and at)
+
+       LOG_DAEMON     system daemons without separate facility value
+
+       LOG_FTP        ftp daemon
+
+       LOG_KERN       kernel messages (these can't be generated from user processes)
+
+       LOG_LOCAL0 through LOG_LOCAL7
+                      reserved for local use
+
+       LOG_LPR        line printer subsystem
+
+       LOG_MAIL       mail subsystem
+
+       LOG_NEWS       USENET news subsystem
+
+       LOG_SYSLOG     messages generated internally by syslogd(8)
+
+       LOG_USER (default)
+                      generic user-level messages
+
+       LOG_UUCP       UUCP subsystem
+
+   Values for level
+       This determines the importance of the message.  The levels are, in order of decreasing importance:
+
+       LOG_EMERG      system is unusable
+
+       LOG_ALERT      action must be taken immediately
+
+       LOG_CRIT       critical conditions
+
+       LOG_ERR        error conditions
+
+       LOG_WARNING    warning conditions
+
+       LOG_NOTICE     normal, but significant, condition
+
+       LOG_INFO       informational message
+
+       LOG_DEBUG      debug-level message
+
+       The function setlogmask(3) can be used to restrict logging to specified levels only.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────────┐
+       │Interface                                                                                                                                                    │ Attribute     │ Value              │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────────┤
+       │openlog(), closelog()                                                                                                                                        │ Thread safety │ MT-Safe            │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────────┤
+       │syslog(), vsyslog()                                                                                                                                          │ Thread safety │ MT-Safe env locale │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────────┘
+
+STANDARDS
+       syslog()
+       openlog()
+       closelog()
+              POSIX.1-2008.
+
+       vsyslog()
+              None.
+
+HISTORY
+       syslog()
+              4.2BSD, SUSv2, POSIX.1-2001.
+
+       openlog()
+       closelog()
+              4.3BSD, SUSv2, POSIX.1-2001.
+
+       vsyslog()
+              4.3BSD-Reno.
+
+       POSIX.1-2001 specifies only the LOG_USER and LOG_LOCAL* values for facility.  However, with the exception of LOG_AUTHPRIV and LOG_FTP, the other facility values appear on most UNIX systems.
+
+       The LOG_PERROR value for option is not specified by POSIX.1-2001 or POSIX.1-2008, but is available in most versions of UNIX.
+
+NOTES
+       The  argument  ident in the call of openlog() is probably stored as-is.  Thus, if the string it points to is changed, syslog() may start prepending the changed string, and if the string it points
+       to ceases to exist, the results are undefined.  Most portable is to use a string constant.
+
+       Never pass a string with user-supplied data as a format, use the following instead:
+
+           syslog(priority, "%s", string);
+
+SEE ALSO
+       journalctl(1), logger(1), setlogmask(3), syslog.conf(5), syslogd(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       syslog(3)
+CLOSELOG(3P)                                                                             POSIX Programmer's Manual                                                                            CLOSELOG(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       closelog, openlog, setlogmask, syslog — control system log
+
+SYNOPSIS
+       #include <syslog.h>
+
+       void closelog(void);
+       void openlog(const char *ident, int logopt, int facility);
+       int setlogmask(int maskpri);
+       void syslog(int priority, const char *message, ... /* arguments */);
+
+DESCRIPTION
+       The syslog() function shall send a message to an implementation-defined logging facility, which may log it in an implementation-defined system log, write it to the system console, forward it to a
+       list of users, or forward it to the logging facility on another host over the network.  The logged message shall include a message header and a message body.  The message header contains at least
+       a timestamp and a tag string.
+
+       The message body is generated from the message and following arguments in the same manner as if these were arguments to printf(), except that the additional conversion specification %m  shall  be
+       recognized;  it  shall  convert no arguments, shall cause the output of the error message string associated with the value of errno on entry to syslog(), and may be mixed with argument specifica‐
+       tions of the "%n$" form. If a complete conversion specification with the m conversion specifier character is not just %m, the behavior is undefined. A trailing <newline> may be added if needed.
+
+       Values of the priority argument are formed by OR'ing together a severity-level value and an optional facility value. If no facility value is specified, the current default facility value is used.
+
+       Possible values of severity level include:
+
+       LOG_EMERG   A panic condition.
+
+       LOG_ALERT   A condition that should be corrected immediately, such as a corrupted system database.
+
+       LOG_CRIT    Critical conditions, such as hard device errors.
+
+       LOG_ERR     Errors.
+
+       LOG_WARNING
+                   Warning messages.
+
+       LOG_NOTICE  Conditions that are not error conditions, but that may require special handling.
+
+       LOG_INFO    Informational messages.
+
+       LOG_DEBUG   Messages that contain information normally of use only when debugging a program.
+
+       The facility indicates the application or system component generating the message. Possible facility values include:
+
+       LOG_USER    Messages generated by arbitrary processes. This is the default facility identifier if none is specified.
+
+       LOG_LOCAL0  Reserved for local use.
+
+       LOG_LOCAL1  Reserved for local use.
+
+       LOG_LOCAL2  Reserved for local use.
+
+       LOG_LOCAL3  Reserved for local use.
+
+       LOG_LOCAL4  Reserved for local use.
+
+       LOG_LOCAL5  Reserved for local use.
+
+       LOG_LOCAL6  Reserved for local use.
+
+       LOG_LOCAL7  Reserved for local use.
+
+       The openlog() function shall set process attributes that affect subsequent calls to syslog().  The ident argument is a string that is prepended to every message.  The  logopt  argument  indicates
+       logging options. Values for logopt are constructed by a bitwise-inclusive OR of zero or more of the following:
+
+       LOG_PID     Log the process ID with each message. This is useful for identifying specific processes.
+
+       LOG_CONS    Write  messages to the system console if they cannot be sent to the logging facility. The syslog() function ensures that the process does not acquire the console as a controlling ter‐
+                   minal in the process of writing the message.
+
+       LOG_NDELAY  Open the connection to the logging facility immediately. Normally the open is delayed until the first message is logged. This is useful for programs that need to manage the  order  in
+                   which file descriptors are allocated.
+
+       LOG_ODELAY  Delay open until syslog() is called.
+
+       LOG_NOWAIT  Do not wait for child processes that may have been created during the course of logging the message. This option should be used by processes that enable notification of child termina‐
+                   tion using SIGCHLD, since syslog() may otherwise block waiting for a child whose exit status has already been collected.
+
+       The facility argument encodes a default facility to be assigned to all messages that do not have an explicit facility already encoded. The initial default facility is LOG_USER.
+
+       The openlog() and syslog() functions may allocate a file descriptor. It is not necessary to call openlog() prior to calling syslog().
+
+       The closelog() function shall close any open file descriptors allocated by previous calls to openlog() or syslog().
+
+       The setlogmask() function shall set the log priority mask for the current process to maskpri and return the previous mask. If the maskpri argument is 0, the current  log  mask  is  not  modified.
+       Calls  by  the current process to syslog() with a priority not set in maskpri shall be rejected. The default log mask allows all priorities to be logged. A call to openlog() is not required prior
+       to calling setlogmask().
+
+       Symbolic constants for use as values of the logopt, facility, priority, and maskpri arguments are defined in the <syslog.h> header.
+
+RETURN VALUE
+       The setlogmask() function shall return the previous log priority mask. The closelog(), openlog(), and syslog() functions shall not return a value.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+   Using openlog()
+       The following example causes subsequent calls to syslog() to log the process ID with each message, and to write messages to the system console if they cannot be sent to the logging facility.
+
+           #include <syslog.h>
+
+           char *ident = "Process demo";
+           int logopt = LOG_PID | LOG_CONS;
+           int facility = LOG_USER;
+           ...
+           openlog(ident, logopt, facility);
+
+   Using setlogmask()
+       The following example causes subsequent calls to syslog() to accept error messages, and to reject all other messages.
+
+           #include <syslog.h>
+
+           int result;
+           int mask = LOG_MASK (LOG_ERR);
+           ...
+           result = setlogmask(mask);
+
+   Using syslog
+       The following example sends the message "Thisisamessage" to the default logging facility, marking the message as an error message generated by random processes.
+
+           #include <syslog.h>
+
+           char *message = "This is a message";
+           int priority = LOG_ERR | LOG_USER;
+           ...
+           syslog(priority, message);
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fprintf()
+
+       The Base Definitions volume of POSIX.1‐2017, <syslog.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       CLOSELOG(3P)

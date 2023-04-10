@@ -1,0 +1,61 @@
+ARES_SET_SOCKET_FUNCTIONS(3)                                                             Library Functions Manual                                                             ARES_SET_SOCKET_FUNCTIONS(3)
+
+NAME
+       ares_set_socket_functions - Set socket io callbacks
+
+SYNOPSIS
+       #include <ares.h>
+
+       struct ares_socket_functions {
+           ares_socket_t (*asocket)(int, int, int, void *);
+           int (*aclose)(ares_socket_t, void *);
+           int (*aconnect)(ares_socket_t, const struct sockaddr *, ares_socklen_t, void *);
+           ares_ssize_t (*arecvfrom)(ares_socket_t, void *, size_t, int,
+                                     struct sockaddr *, ares_socklen_t *, void *);
+           ares_ssize_t (*asendv)(ares_socket_t, const struct iovec *, int, void *);
+       };
+
+       void ares_set_socket_functions(ares_channel channel,
+                                      const struct ares_socket_functions * functions,
+                                      void *user_data);
+
+DESCRIPTION
+       This  function  sets a set of callback functions in the given ares channel handle.  These callback functions will be invoked to create/destroy socket objects and perform io, instead of the normal
+       system calls. A client application can override normal network operation fully through this functionality, and provide its own transport layer.
+
+       All callback functions are expected to operate like their system equivalents, and to set errno(3) to an appropriate error code on failure. C-ares also expects all io  functions  to  behave  asyn‐
+       chronously, i.e. as if the socket object has been set to non-blocking mode. Thus read/write calls (for TCP connections) are expected to often generate EAGAIN or EWOULDBLOCK.
+
+       The user_data value is provided to each callback function invocation to serve as context.
+
+       The ares_socket_functions must provide the following callbacks:
+
+       asocket           ares_socket_t(*)(int domain, int type, int protocol, void * user_data)
+                         Creates  an endpoint for communication and returns a descriptor. domain, type, and protocol each correspond to the parameters of socket(2).  Returns ahandle to the newly created
+                         socket, or -1 on error.
+
+       aclose            int(*)(ares_socket_t fd, void * user_data)
+                         Closes the socket endpoint indicated by fd. See close(2)
+
+       aconnect          int(*)(ares_socket_t fd, const struct sockaddr * addr, ares_socklen_t addr_len, void * user_data)
+                         Initiate a connection to the address indicated by addr on a socket. See connect(2)
+
+       arecvfrom         ares_ssize_t(*)(ares_socket_t fd, void * buffer, size_t buf_size, int flags, struct sockaddr * addr, ares_socklen_t * addr_len, void * user_data)
+                         Receives data from remote socket endpoint, if available. If the addr parameter is not NULL and the connection protocol provides the source address, the callback should fill this
+                         in. See recvfrom(2)
+
+       asendv            ares_ssize_t(*)(ares_socket_t fd, const struct iovec * data, int len, void * user_data)
+                         Send data, as provided by the iovec array data, to the socket endpoint. See writev(2),
+
+       The ares_socket_functions struct provided is not copied but directly referenced, and must thus remain valid through out the channels and any created socket's lifetime.
+
+AVAILABILITY
+       Added in c-ares 1.13.0
+
+SEE ALSO
+       ares_init_options(3), socket(2), close(2), connect(2), recv(2), recvfrom(2), send(2), writev(2)
+
+AUTHOR
+       Carl Wilund
+
+                                                                                                13 Dec 2016                                                                   ARES_SET_SOCKET_FUNCTIONS(3)

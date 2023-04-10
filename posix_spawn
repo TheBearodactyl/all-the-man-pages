@@ -1,0 +1,1027 @@
+posix_spawn(3)             Library Functions Manual             posix_spawn(3)
+
+NAME
+       posix_spawn, posix_spawnp - spawn a process
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <spawn.h>
+
+       int posix_spawn(pid_t *restrict pid, const char *restrict path,
+                       const posix_spawn_file_actions_t *restrict file_actions,
+                       const posix_spawnattr_t *restrict attrp,
+                       char *const argv[restrict],
+                       char *const envp[restrict]);
+       int posix_spawnp(pid_t *restrict pid, const char *restrict file,
+                       const posix_spawn_file_actions_t *restrict file_actions,
+                       const posix_spawnattr_t *restrict attrp,
+                       char *const argv[restrict],
+                       char *const envp[restrict]);
+
+DESCRIPTION
+       The posix_spawn() and posix_spawnp() functions are used to create a new
+       child process that executes a specified  file.   These  functions  were
+       specified  by  POSIX  to  provide a standardized method of creating new
+       processes on machines that lack the capability to support  the  fork(2)
+       system  call.   These  machines  are  generally small, embedded systems
+       lacking MMU support.
+
+       The posix_spawn() and posix_spawnp() functions provide the  functional‐
+       ity  of a combined fork(2) and exec(3), with some optional housekeeping
+       steps in the child process before the exec(3).  These functions are not
+       meant to replace the fork(2) and execve(2) system calls.  In fact, they
+       provide only a subset of the functionality that can be achieved by  us‐
+       ing the system calls.
+
+       The  only  difference  between  posix_spawn() and posix_spawnp() is the
+       manner in which they specify the file  to  be  executed  by  the  child
+       process.   With  posix_spawn(),  the  executable file is specified as a
+       pathname (which can be absolute or relative).  With posix_spawnp(), the
+       executable  file is specified as a simple filename; the system searches
+       for this file in the list of directories specified by PATH (in the same
+       way  as for execvp(3)).  For the remainder of this page, the discussion
+       is phrased in terms  of  posix_spawn(),  with  the  understanding  that
+       posix_spawnp() differs only on the point just described.
+
+       The remaining arguments to these two functions are as follows:
+
+       pid    points  to a buffer that is used to return the process ID of the
+              new child process.
+
+       file_actions
+              points to a spawn file actions object  that  specifies  file-re‐
+              lated  actions  to be performed in the child between the fork(2)
+              and exec(3) steps.  This object is initialized and populated be‐
+              fore   the   posix_spawn()   call   using   posix_spawn_file_ac‐
+              tions_init(3) and the posix_spawn_file_actions_*() functions.
+
+       attrp  points to an  attributes  objects  that  specifies  various  at‐
+              tributes  of the created child process.  This object is initial‐
+              ized  and  populated  before  the   posix_spawn()   call   using
+              posix_spawnattr_init(3) and the posix_spawnattr_*() functions.
+
+       argv
+       envp   specify  the  argument list and environment for the program that
+              is executed in the child process, as for execve(2).
+
+       Below, the functions are described in terms of  a  three-step  process:
+       the  fork()  step, the pre-exec() step (executed in the child), and the
+       exec() step (executed in the child).
+
+   fork() step
+       Since glibc 2.24,  the  posix_spawn()  function  commences  by  calling
+       clone(2)  with  CLONE_VM  and CLONE_VFORK flags.  Older implementations
+       use fork(2), or possibly vfork(2) (see below).
+
+       The PID of the new child process is placed in *pid.  The  posix_spawn()
+       function then returns control to the parent process.
+
+       Subsequently,  the  parent can use one of the system calls described in
+       wait(2) to check the status of the child process.  If the  child  fails
+       in  any  of the housekeeping steps described below, or fails to execute
+       the desired file, it exits with a status of 127.
+
+       Before glibc 2.24, the child process is created using vfork(2)  instead
+       of fork(2) when either of the following is true:
+
+       •  the spawn-flags element of the attributes object pointed to by attrp
+          contains the GNU-specific flag POSIX_SPAWN_USEVFORK; or
+
+       •  file_actions is NULL and the spawn-flags element of  the  attributes
+          object  pointed to by attrp does not contain POSIX_SPAWN_SETSIGMASK,
+          POSIX_SPAWN_SETSIGDEF,                    POSIX_SPAWN_SETSCHEDPARAM,
+          POSIX_SPAWN_SETSCHEDULER,  POSIX_SPAWN_SETPGROUP, or POSIX_SPAWN_RE‐
+          SETIDS.
+
+       In other words, vfork(2) is used if the caller requests it, or if there
+       is  no  cleanup  expected in the child before it exec(3)s the requested
+       file.
+
+   pre-exec() step: housekeeping
+       In between the fork() and the exec() steps, a child process may need to
+       perform   a   set  of  housekeeping  actions.   The  posix_spawn()  and
+       posix_spawnp() functions support a small, well-defined  set  of  system
+       tasks that the child process can accomplish before it executes the exe‐
+       cutable file.  These operations are controlled by the attributes object
+       pointed  to by attrp and the file actions object pointed to by file_ac‐
+       tions.  In the child, processing is done in the following sequence:
+
+       (1)  Process attribute actions: signal mask, signal  default  handlers,
+            scheduling  algorithm and parameters, process group, and effective
+            user and group IDs are changed as specified by the attributes  ob‐
+            ject pointed to by attrp.
+
+       (2)  File  actions, as specified in the file_actions argument, are per‐
+            formed in the order that they were specified using  calls  to  the
+            posix_spawn_file_actions_add*() functions.
+
+       (3)  File descriptors with the FD_CLOEXEC flag set are closed.
+
+       All  process  attributes in the child, other than those affected by at‐
+       tributes specified in the object pointed to by attrp and the  file  ac‐
+       tions  in  the  object  pointed to by file_actions, will be affected as
+       though the child was created with fork(2) and it executed  the  program
+       with execve(2).
+
+       The  process  attributes  actions  are defined by the attributes object
+       pointed to by attrp.  The spawn-flags attribute (set using  posix_spaw‐
+       nattr_setflags(3))  controls  the general actions that occur, and other
+       attributes in the object specify values to be  used  during  those  ac‐
+       tions.
+
+       The  effects  of  the flags that may be specified in spawn-flags are as
+       follows:
+
+       POSIX_SPAWN_SETSIGMASK
+              Set the signal mask to the signal set specified  in  the  spawn-
+              sigmask  attribute  of  the  object pointed to by attrp.  If the
+              POSIX_SPAWN_SETSIGMASK flag is not set, then the child  inherits
+              the parent's signal mask.
+
+       POSIX_SPAWN_SETSIGDEF
+              Reset the disposition of all signals in the set specified in the
+              spawn-sigdefault attribute of the object pointed to by attrp  to
+              the  default.   For the treatment of the dispositions of signals
+              not specified in the spawn-sigdefault attribute, or  the  treat‐
+              ment when POSIX_SPAWN_SETSIGDEF is not specified, see execve(2).
+
+       POSIX_SPAWN_SETSCHEDPARAM
+              If  this  flag  is set, and the POSIX_SPAWN_SETSCHEDULER flag is
+              not set, then set the scheduling parameters  to  the  parameters
+              specified  in  the  spawn-schedparam  attribute  of  the  object
+              pointed to by attrp.
+
+       POSIX_SPAWN_SETSCHEDULER
+              Set the scheduling policy algorithm and parameters of the child,
+              as follows:
+
+              •  The  scheduling  policy  is set to the value specified in the
+                 spawn-schedpolicy attribute of the object pointed to  by  at‐
+                 trp.
+
+              •  The  scheduling  parameters are set to the value specified in
+                 the spawn-schedparam attribute of the object  pointed  to  by
+                 attrp (but see BUGS).
+
+              If  the POSIX_SPAWN_SETSCHEDPARAM and POSIX_SPAWN_SETSCHEDPOLICY
+              flags are not specified, the child  inherits  the  corresponding
+              scheduling attributes from the parent.
+
+       POSIX_SPAWN_RESETIDS
+              If this flag is set, reset the effective UID and GID to the real
+              UID and GID of the parent process.  If this  flag  is  not  set,
+              then  the child retains the effective UID and GID of the parent.
+              In either case, if the set-user-ID and  set-group-ID  permission
+              bits are enabled on the executable file, their effect will over‐
+              ride the setting of the effective UID and GID (se execve(2)).
+
+       POSIX_SPAWN_SETPGROUP
+              Set the process group to the value specified in the spawn-pgroup
+              attribute  of  the  object  pointed  to by attrp.  If the spawn-
+              pgroup attribute has the value 0, the child's process  group  ID
+              is  made  the  same as its process ID.  If the POSIX_SPAWN_SETP‐
+              GROUP flag is not set, the child inherits the  parent's  process
+              group ID.
+
+       POSIX_SPAWN_USEVFORK
+              Since glibc 2.24, this flag has no effect.  On older implementa‐
+              tions, setting this flag forces the fork() step to use  vfork(2)
+              instead  of fork(2).  The _GNU_SOURCE feature test macro must be
+              defined to obtain the definition of this constant.
+
+       POSIX_SPAWN_SETSID (since glibc 2.26)
+              If this flag is set, the child process shall create a  new  ses‐
+              sion  and  become  the  session leader.  The child process shall
+              also become the process group leader of the new process group in
+              the session (see setsid(2)).  The _GNU_SOURCE feature test macro
+              must be defined to obtain the definition of this constant.
+
+       If attrp is NULL, then the default behaviors described above  for  each
+       flag apply.
+
+       The  file_actions argument specifies a sequence of file operations that
+       are performed in the child process after  the  general  processing  de‐
+       scribed  above, and before it performs the exec(3).  If file_actions is
+       NULL, then no special action is taken, and standard  exec(3)  semantics
+       apply—file  descriptors  open  before  the  exec remain open in the new
+       process, except those for which the FD_CLOEXEC flag has been set.  File
+       locks remain in place.
+
+       If  file_actions  is  not  NULL, then it contains an ordered set of re‐
+       quests to open(2), close(2), and dup2(2)  files.   These  requests  are
+       added   to  the  file_actions  by  posix_spawn_file_actions_addopen(3),
+       posix_spawn_file_actions_addclose(3), and  posix_spawn_file_actions_ad‐
+       ddup2(3).   The  requested  operations  are performed in the order they
+       were added to file_actions.
+
+       If any of the housekeeping actions fails (due  to  bogus  values  being
+       passed  or  other  reasons  why  signal  handling,  process scheduling,
+       process group ID functions, and file descriptor operations might fail),
+       the child process exits with exit value 127.
+
+   exec() step
+       Once the child has successfully forked and performed all requested pre-
+       exec steps, the child runs the requested executable.
+
+       The child process takes its environment from the envp  argument,  which
+       is interpreted as if it had been passed to execve(2).  The arguments to
+       the created process come from the argv argument, which is processed  as
+       for execve(2).
+
+RETURN VALUE
+       Upon  successful completion, posix_spawn() and posix_spawnp() place the
+       PID of the child process in pid, and return 0.  If there  is  an  error
+       during  the fork() step, then no child is created, the contents of *pid
+       are unspecified, and these functions return  an  error  number  as  de‐
+       scribed below.
+
+       Even  when  these  functions return a success status, the child process
+       may still fail for a plethora of reasons related to its pre-exec() ini‐
+       tialization.   In  addition,  the  exec(3)  may  fail.  In all of these
+       cases, the child process will exit with the exit value of 127.
+
+ERRORS
+       The posix_spawn() and posix_spawnp() functions fail only  in  the  case
+       where  the  underlying  fork(2),  vfork(2), or clone(2) call fails;  in
+       these cases, these functions return an error number, which will be  one
+       of the errors described for fork(2), vfork(2), or clone(2).
+
+       In addition, these functions fail if:
+
+       ENOSYS Function not supported on this system.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.2.  POSIX.1-2001.
+
+NOTES
+       The  housekeeping activities in the child are controlled by the objects
+       pointed to by attrp (for non-file actions) and  file_actions  In  POSIX
+       parlance,  the  posix_spawnattr_t  and  posix_spawn_file_actions_t data
+       types are referred to as objects, and their elements are not  specified
+       by  name.  Portable programs should initialize these objects using only
+       the POSIX-specified functions.  (In other words, although these objects
+       may  be  implemented as structures containing fields, portable programs
+       must avoid dependence on such implementation details.)
+
+       According to POSIX, it is unspecified whether fork handlers established
+       with pthread_atfork(3) are called when posix_spawn() is invoked.  Since
+       glibc 2.24, the fork handlers are not executed in any case.   On  older
+       implementations,  fork handlers are called only if the child is created
+       using fork(2).
+
+       There is no "posix_fspawn"  function  (i.e.,  a  function  that  is  to
+       posix_spawn()  as fexecve(3) is to execve(2)).  However, this function‐
+       ality can be obtained by specifying the path argument  as  one  of  the
+       files in the caller's /proc/self/fd directory.
+
+BUGS
+       POSIX.1  says that when POSIX_SPAWN_SETSCHEDULER is specified in spawn-
+       flags, then the  POSIX_SPAWN_SETSCHEDPARAM  (if  present)  is  ignored.
+       However, before glibc 2.14, calls to posix_spawn() failed with an error
+       if  POSIX_SPAWN_SETSCHEDULER  was  specified  without  also  specifying
+       POSIX_SPAWN_SETSCHEDPARAM.
+
+EXAMPLES
+       The  program  below  demonstrates  the  use of various functions in the
+       POSIX spawn API.  The program accepts command-line attributes that  can
+       be  used  to create file actions and attributes objects.  The remaining
+       command-line arguments are used as the executable name and command-line
+       arguments of the program that is executed in the child.
+
+       In the first run, the date(1) command is executed in the child, and the
+       posix_spawn() call employs no file actions or attributes objects.
+
+           $ ./a.out date
+           PID of child: 7634
+           Tue Feb  1 19:47:50 CEST 2011
+           Child status: exited, status=0
+
+       In the next run, the -c command-line option is used to  create  a  file
+       actions object that closes standard output in the child.  Consequently,
+       date(1) fails when trying to perform output and exits with a status  of
+       1.
+
+           $ ./a.out -c date
+           PID of child: 7636
+           date: write error: Bad file descriptor
+           Child status: exited, status=1
+
+       In  the  next  run, the -s command-line option is used to create an at‐
+       tributes object that specifies that  all  (blockable)  signals  in  the
+       child  should  be blocked.  Consequently, trying to kill child with the
+       default signal sent by kill(1) (i.e., SIGTERM) fails, because that sig‐
+       nal  is  blocked.   Therefore,  to kill the child, SIGKILL is necessary
+       (SIGKILL can't be blocked).
+
+           $ ./a.out -s sleep 60 &
+           [1] 7637
+           $ PID of child: 7638
+
+           $ kill 7638
+           $ kill -KILL 7638
+           $ Child status: killed by signal 9
+           [1]+  Done                    ./a.out -s sleep 60
+
+       When we try to execute a nonexistent command in the child, the  exec(3)
+       fails and the child exits with a status of 127.
+
+           $ ./a.out xxxxx
+           PID of child: 10190
+           Child status: exited, status=127
+
+   Program source
+
+       #include <errno.h>
+       #include <spawn.h>
+       #include <stdint.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+       #include <unistd.h>
+       #include <wait.h>
+
+       #define errExit(msg)    do { perror(msg); \
+                                    exit(EXIT_FAILURE); } while (0)
+
+       #define errExitEN(en, msg) \
+                               do { errno = en; perror(msg); \
+                                    exit(EXIT_FAILURE); } while (0)
+
+       char **environ;
+
+       int
+       main(int argc, char *argv[])
+       {
+           pid_t child_pid;
+           int s, opt, status;
+           sigset_t mask;
+           posix_spawnattr_t attr;
+           posix_spawnattr_t *attrp;
+           posix_spawn_file_actions_t file_actions;
+           posix_spawn_file_actions_t *file_actionsp;
+
+           /* Parse command-line options, which can be used to specify an
+              attributes object and file actions object for the child. */
+
+           attrp = NULL;
+           file_actionsp = NULL;
+
+           while ((opt = getopt(argc, argv, "sc")) != -1) {
+               switch (opt) {
+               case 'c':       /* -c: close standard output in child */
+
+                   /* Create a file actions object and add a "close"
+                      action to it. */
+
+                   s = posix_spawn_file_actions_init(&file_actions);
+                   if (s != 0)
+                       errExitEN(s, "posix_spawn_file_actions_init");
+
+                   s = posix_spawn_file_actions_addclose(&file_actions,
+                                                         STDOUT_FILENO);
+                   if (s != 0)
+                       errExitEN(s, "posix_spawn_file_actions_addclose");
+
+                   file_actionsp = &file_actions;
+                   break;
+
+               case 's':       /* -s: block all signals in child */
+
+                   /* Create an attributes object and add a "set signal mask"
+                      action to it. */
+
+                   s = posix_spawnattr_init(&attr);
+                   if (s != 0)
+                       errExitEN(s, "posix_spawnattr_init");
+                   s = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETSIGMASK);
+                   if (s != 0)
+                       errExitEN(s, "posix_spawnattr_setflags");
+
+                   sigfillset(&mask);
+                   s = posix_spawnattr_setsigmask(&attr, &mask);
+                   if (s != 0)
+                       errExitEN(s, "posix_spawnattr_setsigmask");
+
+                   attrp = &attr;
+                   break;
+               }
+           }
+
+           /* Spawn the child. The name of the program to execute and the
+              command-line arguments are taken from the command-line arguments
+              of this program. The environment of the program execed in the
+              child is made the same as the parent's environment. */
+
+           s = posix_spawnp(&child_pid, argv[optind], file_actionsp, attrp,
+                            &argv[optind], environ);
+           if (s != 0)
+               errExitEN(s, "posix_spawn");
+
+           /* Destroy any objects that we created earlier. */
+
+           if (attrp != NULL) {
+               s = posix_spawnattr_destroy(attrp);
+               if (s != 0)
+                   errExitEN(s, "posix_spawnattr_destroy");
+           }
+
+           if (file_actionsp != NULL) {
+               s = posix_spawn_file_actions_destroy(file_actionsp);
+               if (s != 0)
+                   errExitEN(s, "posix_spawn_file_actions_destroy");
+           }
+
+           printf("PID of child: %jd\n", (intmax_t) child_pid);
+
+           /* Monitor status of the child until it terminates. */
+
+           do {
+               s = waitpid(child_pid, &status, WUNTRACED | WCONTINUED);
+               if (s == -1)
+                   errExit("waitpid");
+
+               printf("Child status: ");
+               if (WIFEXITED(status)) {
+                   printf("exited, status=%d\n", WEXITSTATUS(status));
+               } else if (WIFSIGNALED(status)) {
+                   printf("killed by signal %d\n", WTERMSIG(status));
+               } else if (WIFSTOPPED(status)) {
+                   printf("stopped by signal %d\n", WSTOPSIG(status));
+               } else if (WIFCONTINUED(status)) {
+                   printf("continued\n");
+               }
+           } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       close(2), dup2(2), execl(2), execlp(2), fork(2), open(2),
+       sched_setparam(2), sched_setscheduler(2), setpgid(2), setuid(2),
+       sigaction(2), sigprocmask(2), posix_spawn_file_actions_addclose(3),
+       posix_spawn_file_actions_adddup2(3),
+       posix_spawn_file_actions_addopen(3),
+       posix_spawn_file_actions_destroy(3), posix_spawn_file_actions_init(3),
+       posix_spawnattr_destroy(3), posix_spawnattr_getflags(3),
+       posix_spawnattr_getpgroup(3), posix_spawnattr_getschedparam(3),
+       posix_spawnattr_getschedpolicy(3), posix_spawnattr_getsigdefault(3),
+       posix_spawnattr_getsigmask(3), posix_spawnattr_init(3),
+       posix_spawnattr_setflags(3), posix_spawnattr_setpgroup(3),
+       posix_spawnattr_setschedparam(3), posix_spawnattr_setschedpolicy(3),
+       posix_spawnattr_setsigdefault(3), posix_spawnattr_setsigmask(3),
+       pthread_atfork(3), <spawn.h>, Base Definitions volume of POSIX.1-2001,
+       http://www.opengroup.org/unix/online.html
+
+Linux man-pages 6.04              2023-03-30                    posix_spawn(3)
+POSIX_SPAWN(3P)            POSIX Programmer's Manual           POSIX_SPAWN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       posix_spawn, posix_spawnp — spawn a process (ADVANCED REALTIME)
+
+SYNOPSIS
+       #include <spawn.h>
+
+       int posix_spawn(pid_t *restrict pid, const char *restrict path,
+           const posix_spawn_file_actions_t *file_actions,
+           const posix_spawnattr_t *restrict attrp,
+           char *const argv[restrict], char *const envp[restrict]);
+       int posix_spawnp(pid_t *restrict pid, const char *restrict file,
+           const posix_spawn_file_actions_t *file_actions,
+           const posix_spawnattr_t *restrict attrp,
+           char *const argv[restrict], char *const envp[restrict]);
+
+DESCRIPTION
+       The posix_spawn() and  posix_spawnp()  functions  shall  create  a  new
+       process  (child  process)  from  the  specified  process image. The new
+       process image shall be  constructed  from  a  regular  executable  file
+       called the new process image file.
+
+       When  a  C  program is executed as the result of this call, it shall be
+       entered as a C-language function call as follows:
+
+           int main(int argc, char *argv[]);
+
+       where argc is the argument count and argv  is  an  array  of  character
+       pointers  to the arguments themselves. In addition, the following vari‐
+       able:
+
+           extern char **environ;
+
+       shall be initialized as a pointer to an array of character pointers  to
+       the environment strings.
+
+       The  argument argv is an array of character pointers to null-terminated
+       strings. The last member of this array shall be a null pointer  and  is
+       not counted in argc.  These strings constitute the argument list avail‐
+       able to the new process image. The value in argv[0] should point  to  a
+       filename string that is associated with the process image being started
+       by the posix_spawn() or posix_spawnp() function.
+
+       The argument envp is an array of character pointers to  null-terminated
+       strings.  These  strings constitute the environment for the new process
+       image. The environment array is terminated by a null pointer.
+
+       The number of bytes available for the combined argument and environment
+       lists  of  the  child  process  is {ARG_MAX}.  The implementation shall
+       specify in the system documentation (see the Base Definitions volume of
+       POSIX.1‐2017,  Chapter  2, Conformance) whether any list overhead, such
+       as length words, null terminators, pointers, or alignment bytes, is in‐
+       cluded in this total.
+
+       The  path  argument  to posix_spawn() is a pathname that identifies the
+       new process image file to execute.
+
+       The file parameter to posix_spawnp() shall be used to construct a path‐
+       name  that identifies the new process image file. If the file parameter
+       contains a <slash> character, the file parameter shall be used  as  the
+       pathname for the new process image file. Otherwise, the path prefix for
+       this file shall be obtained by a search of the  directories  passed  as
+       the  environment  variable  PATH  (see  the  Base Definitions volume of
+       POSIX.1‐2017, Chapter 8, Environment Variables).  If  this  environment
+       variable  is not defined, the results of the search are implementation-
+       defined.
+
+       If file_actions is a null pointer, then file descriptors  open  in  the
+       calling  process  shall  remain  open  in the child process, except for
+       those whose close-on-exec flag FD_CLOEXEC is set  (see  fcntl()).   For
+       those  file  descriptors  that remain open, the child process shall not
+       inherit any file locks, but all remaining attributes of the correspond‐
+       ing open file descriptions (see fcntl()), shall remain unchanged.
+
+       If  file_actions  is  not  NULL,  then the file descriptors open in the
+       child process shall be those open in the calling process as modified by
+       the  spawn  file  actions  object  pointed  to  by file_actions and the
+       FD_CLOEXEC flag of each remaining open file descriptor after the  spawn
+       file actions have been processed. The effective order of processing the
+       spawn file actions shall be:
+
+        1. The set of open file descriptors for the child process  shall  ini‐
+           tially  be  the  same  set  as is open for the calling process. The
+           child process shall not inherit any file locks, but  all  remaining
+           attributes  of  the  corresponding  open file descriptions (see fc‐
+           ntl()), shall remain unchanged.
+
+        2. The signal mask, signal default actions, and the effective user and
+           group  IDs  for  the child process shall be changed as specified in
+           the attributes object referenced by attrp.
+
+        3. The file actions specified by the spawn file actions  object  shall
+           be  performed  in  the  order in which they were added to the spawn
+           file actions object.
+
+        4. Any file descriptor that has its FD_CLOEXEC flag set (see  fcntl())
+           shall be closed.
+
+       If  file  descriptor  0,  1,  or 2 would otherwise be closed in the new
+       process image created by posix_spawn() or  posix_spawnp(),  implementa‐
+       tions  may  open an unspecified file for the file descriptor in the new
+       process image. If a standard utility or a conforming application is ex‐
+       ecuted  with  file  descriptor  0 not open for reading or with file de‐
+       scriptor 1 or 2 not open for writing,  the  environment  in  which  the
+       utility  or application is executed shall be deemed non-conforming, and
+       consequently the utility or application might not behave  as  described
+       in this standard.
+
+       The  posix_spawnattr_t  spawn  attributes  object  type  is  defined in
+       <spawn.h>.  It shall contain at least the attributes defined below.
+
+       If the POSIX_SPAWN_SETPGROUP flag is set in the  spawn-flags  attribute
+       of  the  object  referenced by attrp, and the spawn-pgroup attribute of
+       the same object is non-zero, then the child's process group shall be as
+       specified in the spawn-pgroup attribute of the object referenced by at‐
+       trp.
+
+       As a special case, if the POSIX_SPAWN_SETPGROUP  flag  is  set  in  the
+       spawn-flags attribute of the object referenced by attrp, and the spawn-
+       pgroup attribute of the same object is set  to  zero,  then  the  child
+       shall  be  in  a new process group with a process group ID equal to its
+       process ID.
+
+       If the POSIX_SPAWN_SETPGROUP flag is not set in the spawn-flags  attri‐
+       bute of the object referenced by attrp, the new child process shall in‐
+       herit the parent's process group.
+
+       If the POSIX_SPAWN_SETSCHEDPARAM flag is set in the spawn-flags  attri‐
+       bute of the object referenced by attrp, but POSIX_SPAWN_SETSCHEDULER is
+       not set, the new process image shall initially have the scheduling pol‐
+       icy  of the calling process with the scheduling parameters specified in
+       the spawn-schedparam attribute of the object referenced by attrp.
+
+       If the POSIX_SPAWN_SETSCHEDULER flag is set in the  spawn-flags  attri‐
+       bute  of  the  object referenced by attrp (regardless of the setting of
+       the POSIX_SPAWN_SETSCHEDPARAM flag), the new process image  shall  ini‐
+       tially  have  the  scheduling policy specified in the spawn-schedpolicy
+       attribute of the object referenced by attrp and the scheduling  parame‐
+       ters specified in the spawn-schedparam attribute of the same object.
+
+       The  POSIX_SPAWN_RESETIDS  flag in the spawn-flags attribute of the ob‐
+       ject referenced by attrp governs the effective user  ID  of  the  child
+       process.  If  this flag is not set, the child process shall inherit the
+       effective user ID of the parent process. If this flag is set,  the  ef‐
+       fective  user  ID  of  the child process shall be reset to the parent's
+       real user ID. In either case, if the set-user-ID mode bit  of  the  new
+       process  image  file is set, the effective user ID of the child process
+       shall become that file's owner ID before the new process  image  begins
+       execution.
+
+       The  POSIX_SPAWN_RESETIDS  flag in the spawn-flags attribute of the ob‐
+       ject referenced by attrp also governs the effective  group  ID  of  the
+       child process. If this flag is not set, the child process shall inherit
+       the effective group ID of the parent process. If this flag is set,  the
+       effective  group ID of the child process shall be reset to the parent's
+       real group ID. In either case, if the set-group-ID mode bit of the  new
+       process  image file is set, the effective group ID of the child process
+       shall become that file's group ID before the new process  image  begins
+       execution.
+
+       If  the POSIX_SPAWN_SETSIGMASK flag is set in the spawn-flags attribute
+       of the object referenced by attrp, the child  process  shall  initially
+       have  the  signal  mask specified in the spawn-sigmask attribute of the
+       object referenced by attrp.
+
+       If the POSIX_SPAWN_SETSIGDEF flag is set in the  spawn-flags  attribute
+       of  the object referenced by attrp, the signals specified in the spawn-
+       sigdefault attribute of the same object shall be set to  their  default
+       actions  in the child process. Signals set to the default action in the
+       parent process shall be set to the default action in the child process.
+
+       Signals set to be caught by the calling process shall be set to the de‐
+       fault action in the child process.
+
+       Except  for  SIGCHLD,  signals set to be ignored by the calling process
+       image shall be set to be ignored by the child process, unless otherwise
+       specified  by  the  POSIX_SPAWN_SETSIGDEF  flag being set in the spawn-
+       flags attribute of the object referenced by attrp and the signals being
+       indicated in the spawn-sigdefault attribute of the object referenced by
+       attrp.
+
+       If the SIGCHLD signal is set to be ignored by the calling  process,  it
+       is  unspecified  whether  the SIGCHLD signal is set to be ignored or to
+       the default action in the child process, unless otherwise specified  by
+       the  POSIX_SPAWN_SETSIGDEF  flag being set in the spawn_flags attribute
+       of the object referenced by attrp and the SIGCHLD  signal  being  indi‐
+       cated in the spawn_sigdefault attribute of the object referenced by at‐
+       trp.
+
+       If the value of the attrp pointer is NULL, then the default values  are
+       used.
+
+       All  process  attributes, other than those influenced by the attributes
+       set in the object referenced by attrp as specified above or by the file
+       descriptor manipulations specified in file_actions, shall appear in the
+       new process image as though fork() had been called to  create  a  child
+       process  and  then  a  member  of the exec family of functions had been
+       called by the child process to execute the new process image.
+
+       It is implementation-defined whether the fork  handlers  are  run  when
+       posix_spawn() or posix_spawnp() is called.
+
+RETURN VALUE
+       Upon  successful completion, posix_spawn() and posix_spawnp() shall re‐
+       turn the process ID of the child process to the parent process, in  the
+       variable  pointed  to by a non-NULL pid argument, and shall return zero
+       as the function return value.  Otherwise, no  child  process  shall  be
+       created,  the  value  stored into the variable pointed to by a non-NULL
+       pid is unspecified, and an error number shall be returned as the  func‐
+       tion  return value to indicate the error. If the pid argument is a null
+       pointer, the process ID of the child is not returned to the caller.
+
+ERRORS
+       These functions may fail if:
+
+       EINVAL The value specified by file_actions or attrp is invalid.
+
+       If this error occurs after the  calling  process  successfully  returns
+       from  the  posix_spawn()  or posix_spawnp() function, the child process
+       may exit with exit status 127.
+
+       If posix_spawn() or posix_spawnp() fail for any  of  the  reasons  that
+       would  cause  fork() or one of the exec family of functions to fail, an
+       error value shall be returned as described by fork() and exec,  respec‐
+       tively  (or, if the error occurs after the calling process successfully
+       returns, the child process shall exit with exit status 127).
+
+       If POSIX_SPAWN_SETPGROUP is set in the spawn-flags attribute of the ob‐
+       ject  referenced  by  attrp,  and posix_spawn() or posix_spawnp() fails
+       while changing the child's process group, an error value shall  be  re‐
+       turned  as  described  by  setpgid() (or, if the error occurs after the
+       calling process successfully returns, the child process shall exit with
+       exit status 127).
+
+       If POSIX_SPAWN_SETSCHEDPARAM is set and POSIX_SPAWN_SETSCHEDULER is not
+       set in the spawn-flags attribute of the  object  referenced  by  attrp,
+       then  if  posix_spawn()  or posix_spawnp() fails for any of the reasons
+       that would cause sched_setparam() to fail, an error value shall be  re‐
+       turned  as described by sched_setparam() (or, if the error occurs after
+       the calling process successfully returns, the child process shall  exit
+       with exit status 127).
+
+       If  POSIX_SPAWN_SETSCHEDULER is set in the spawn-flags attribute of the
+       object referenced by attrp,  and  if  posix_spawn()  or  posix_spawnp()
+       fails  for  any of the reasons that would cause sched_setscheduler() to
+       fail, an error value shall be returned as described by  sched_setsched‐
+       uler()  (or, if the error occurs after the calling process successfully
+       returns, the child process shall exit with exit status 127).
+
+       If the file_actions argument is not  NULL,  and  specifies  any  close,
+       dup2,  or  open  actions  to  be  performed,  and  if  posix_spawn() or
+       posix_spawnp() fails for any of the reasons that would  cause  close(),
+       dup2(),  or  open()  to  fail,  an error value shall be returned as de‐
+       scribed by close(), dup2(), and open(), respectively (or, if the  error
+       occurs  after  the  calling  process  successfully  returns,  the child
+       process shall exit with exit status 127). An open file action  may,  by
+       itself,  result in any of the errors described by close() or dup2(), in
+       addition to those described by open().
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       These functions are part of the Spawn option and need not  be  provided
+       on all implementations.
+
+       See also the APPLICATION USAGE section for exec.
+
+RATIONALE
+       The  posix_spawn()  function and its close relation posix_spawnp() have
+       been introduced to overcome the following perceived  difficulties  with
+       fork():  the  fork()  function  is difficult or impossible to implement
+       without swapping or dynamic address translation.
+
+        *  Swapping is generally too slow for a realtime environment.
+
+        *  Dynamic address translation is not available everywhere that  POSIX
+           might be useful.
+
+        *  Processes  are too useful to simply option out of POSIX whenever it
+           must run without address translation or other MMU services.
+
+       Thus, POSIX needs process creation and file execution  primitives  that
+       can be efficiently implemented without address translation or other MMU
+       services.
+
+       The posix_spawn() function is implementable as a library  routine,  but
+       both  posix_spawn()  and  posix_spawnp()  are designed as kernel opera‐
+       tions. Also, although they may be an  efficient  replacement  for  many
+       fork()/exec  pairs,  their  goal  is to provide useful process creation
+       primitives for systems that have difficulty with fork(), not to provide
+       drop-in replacements for fork()/exec.
+
+       This  view  of  the role of posix_spawn() and posix_spawnp() influenced
+       the design of their API. It does not attempt to provide the full  func‐
+       tionality  of  fork()/exec in which arbitrary user-specified operations
+       of any sort are permitted between the creation of the child process and
+       the execution of the new process image; any attempt to reach that level
+       would need to provide a programming language  as  parameters.  Instead,
+       posix_spawn()  and  posix_spawnp() are process creation primitives like
+       the Start_Process and Start_Process_Search Ada language bindings  pack‐
+       age POSIX_Process_Primitives and also like those in many operating sys‐
+       tems that are not UNIX systems, but with some POSIX-specific additions.
+
+       To achieve its coverage goals, posix_spawn()  and  posix_spawnp()  have
+       control  of  six  types of inheritance: file descriptors, process group
+       ID, user and group ID, signal mask, scheduling, and whether each signal
+       ignored  in the parent will remain ignored in the child, or be reset to
+       its default action in the child.
+
+       Control of file descriptors is required to allow an independently writ‐
+       ten  child process image to access data streams opened by and even gen‐
+       erated or read by the parent process without being  specifically  coded
+       to  know  which parent files and file descriptors are to be used.  Con‐
+       trol of the process group ID is required to control how the job control
+       of the child process relates to that of the parent.
+
+       Control  of the signal mask and signal defaulting is sufficient to sup‐
+       port the implementation of system().  Although support for system()  is
+       not  explicitly  one of the goals for posix_spawn() and posix_spawnp(),
+       it is covered under the ``at least 50%'' coverage goal.
+
+       The intention is that the normal  file  descriptor  inheritance  across
+       fork(),  the subsequent effect of the specified spawn file actions, and
+       the normal file descriptor inheritance across one of the exec family of
+       functions  should  fully specify open file inheritance. The implementa‐
+       tion need make no decisions regarding the set of open file  descriptors
+       when  the  child process image begins execution, those decisions having
+       already been made by the caller and expressed as the set of  open  file
+       descriptors  and their FD_CLOEXEC flags at the time of the call and the
+       spawn file actions object specified in the call. We have  been  assured
+       that  in  cases  where the POSIX Start_Process Ada primitives have been
+       implemented in a library, this method of  controlling  file  descriptor
+       inheritance may be implemented very easily.
+
+       We can identify several problems with posix_spawn() and posix_spawnp(),
+       but there does not appear to be a solution that introduces fewer  prob‐
+       lems.  Environment modification for child process attributes not speci‐
+       fiable via the attrp or file_actions arguments must be done in the par‐
+       ent  process, and since the parent generally wants to save its context,
+       it is more costly than similar functionality with fork()/exec.   It  is
+       also  complicated to modify the environment of a multi-threaded process
+       temporarily, since all threads must agree when it is safe for the envi‐
+       ronment  to be changed. However, this cost is only borne by those invo‐
+       cations of posix_spawn() and posix_spawnp()  that  use  the  additional
+       functionality.  Since  extensive  modifications are not the usual case,
+       and are particularly unlikely in time-critical code,  keeping  much  of
+       the  environment control out of posix_spawn() and posix_spawnp() is ap‐
+       propriate design.
+
+       The posix_spawn() and posix_spawnp() functions  do  not  have  all  the
+       power of fork()/exec.  This is to be expected. The fork() function is a
+       wonderfully powerful operation. We do not expect to duplicate its func‐
+       tionality  in a simple, fast function with no special hardware require‐
+       ments. It is worth noting that  posix_spawn()  and  posix_spawnp()  are
+       very  similar to the process creation operations on many operating sys‐
+       tems that are not UNIX systems.
+
+   Requirements
+       The requirements for posix_spawn() and posix_spawnp() are:
+
+        *  They must be implementable without an MMU or unusual hardware.
+
+        *  They must be compatible with existing POSIX standards.
+
+       Additional goals are:
+
+        *  They should be efficiently implementable.
+
+        *  They should be able to replace at least 50% of  typical  executions
+           of fork().
+
+        *  A  system  with posix_spawn() and posix_spawnp() and without fork()
+           should be useful, at least for realtime applications.
+
+        *  A system with fork() and the exec family should be able  to  imple‐
+           ment posix_spawn() and posix_spawnp() as library routines.
+
+   Two-Syntax
+       POSIX  exec  has  several calling sequences with approximately the same
+       functionality. These appear to be required for compatibility  with  ex‐
+       isting  practice.  Since  the  existing practice for the posix_spawn*()
+       functions is otherwise substantially unlike POSIX, we  feel  that  sim‐
+       plicity  outweighs  compatibility. There are, therefore, only two names
+       for the posix_spawn*() functions.
+
+       The  parameter  list  does  not  differ   between   posix_spawn()   and
+       posix_spawnp();  posix_spawnp()  interprets  the  second parameter more
+       elaborately than posix_spawn().
+
+   Compatibility with POSIX.5 (Ada)
+       The  Start_Process  and  Start_Process_Search   procedures   from   the
+       POSIX_Process_Primitives  package  from  the  Ada  language  binding to
+       POSIX.1 encapsulate fork() and exec functionality in a  manner  similar
+       to  that  of  posix_spawn() and posix_spawnp().  Originally, in keeping
+       with our simplicity goal, the standard developers had limited the capa‐
+       bilities  of  posix_spawn() and posix_spawnp() to a subset of the capa‐
+       bilities of Start_Process and Start_Process_Search; certain non-default
+       capabilities  were  not supported. However, based on suggestions by the
+       ballot group to improve file descriptor mapping or drop it, and on  the
+       advice  of  an Ada Language Bindings working group member, the standard
+       developers decided that posix_spawn() and posix_spawnp() should be suf‐
+       ficiently powerful to implement Start_Process and Start_Process_Search.
+       The rationale is that if the Ada language binding to such  a  primitive
+       had already been approved as an IEEE standard, there can be little jus‐
+       tification for not approving the functionally-equivalent parts of  a  C
+       binding.  The  only  three  capabilities  provided by posix_spawn() and
+       posix_spawnp()   that   are   not   provided   by   Start_Process   and
+       Start_Process_Search  are  optionally  specifying  the  child's process
+       group ID, the set of signals to be reset to default signal handling  in
+       the child process, and the child's scheduling policy and parameters.
+
+       For  the  Ada language binding for Start_Process to be implemented with
+       posix_spawn(), that binding would need to explicitly pass an empty sig‐
+       nal  mask  and  the  parent's environment to posix_spawn() whenever the
+       caller of Start_Process  allowed  these  arguments  to  default,  since
+       posix_spawn()   does   not   provide  such  defaults.  The  ability  of
+       Start_Process to mask user-specified signals during  its  execution  is
+       functionally  unique to the Ada language binding and must be dealt with
+       in the binding separately from the call to posix_spawn().
+
+   Process Group
+       The process group inheritance field can  be  used  to  join  the  child
+       process with an existing process group. By assigning a value of zero to
+       the spawn-pgroup attribute of  the  object  referenced  by  attrp,  the
+       setpgid()  mechanism  will  place  the  child  process in a new process
+       group.
+
+   Threads
+       Without the posix_spawn() and posix_spawnp() functions, systems without
+       address  translation  can  still  use threads to give an abstraction of
+       concurrency. In many cases, thread creation suffices, but it is not al‐
+       ways  a good substitute. The posix_spawn() and posix_spawnp() functions
+       are considerably ``heavier'' than thread creation. Processes have  sev‐
+       eral  important  attributes  that  threads do not. Even without address
+       translation, a process may have base-and-bound memory protection.  Each
+       process  has  a  process  environment including security attributes and
+       file capabilities, and powerful scheduling attributes.   Processes  ab‐
+       stract the behavior of non-uniform-memory-architecture multi-processors
+       better than threads, and they are more convenient to use for activities
+       that are not closely linked.
+
+       The  posix_spawn()  and  posix_spawnp() functions may not bring support
+       for multiple processes to every configuration. Process creation is  not
+       the only piece of operating system support required to support multiple
+       processes. The total cost of support  for  multiple  processes  may  be
+       quite  high in some circumstances. Existing practice shows that support
+       for multiple processes is uncommon and threads are common among  ``tiny
+       kernels''.   There  should, therefore, probably continue to be AEPs for
+       operating systems with only one process.
+
+   Asynchronous Error Notification
+       A library implementation of posix_spawn() or posix_spawnp() may not  be
+       able  to  detect all possible errors before it forks the child process.
+       POSIX.1‐2008 provides for an error indication  returned  from  a  child
+       process which could not successfully complete the spawn operation via a
+       special exit status which may be detected using the  status  value  re‐
+       turned by wait(), waitid(), and waitpid().
+
+       The stat_val interface and the macros used to interpret it are not well
+       suited to the purpose of returning API errors, but they  are  the  only
+       path available to a library implementation. Thus, an implementation may
+       cause the child process to exit with exit status 127 for any error  de‐
+       tected   during   the   spawn   process   after  the  posix_spawn()  or
+       posix_spawnp() function has successfully returned.
+
+       The standard developers had proposed using two additional macros to in‐
+       terpret  stat_val.  The first, WIFSPAWNFAIL, would have detected a sta‐
+       tus that indicated that the child exited because of an  error  detected
+       during  the posix_spawn() or posix_spawnp() operations rather than dur‐
+       ing actual execution of the child process image;  the  second,  WSPAWN‐
+       ERRNO, would have extracted the error value if WIFSPAWNFAIL indicated a
+       failure. Unfortunately, the ballot group strongly opposed this  because
+       it   would   make   a   library   implementation  of  posix_spawn()  or
+       posix_spawnp() dependent on kernel modifications  to  waitpid()  to  be
+       able to embed special information in stat_val to indicate a spawn fail‐
+       ure.
+
+       The 8 bits  of  child  process  exit  status  that  are  guaranteed  by
+       POSIX.1‐2008  to be accessible to the waiting parent process are insuf‐
+       ficient to disambiguate a spawn error from any other kind of error that
+       may  be  returned  by  an arbitrary process image. No other bits of the
+       exit status are required to be visible in  stat_val,  so  these  macros
+       could  not  be strictly implemented at the library level.  Reserving an
+       exit status of 127 for such spawn errors is consistent with the use  of
+       this  value  by system() and popen() to signal failures in these opera‐
+       tions that occur after the function has returned but before a shell  is
+       able to execute. The exit status of 127 does not uniquely identify this
+       class of error, nor does it provide any detailed information on the na‐
+       ture of the failure. Note that a kernel implementation of posix_spawn()
+       or posix_spawnp() is permitted (and encouraged) to return any  possible
+       error  as  the function value, thus providing more detailed failure in‐
+       formation to the parent process.
+
+       Thus,  no  special  macros  are  available  to   isolate   asynchronous
+       posix_spawn() or posix_spawnp() errors. Instead, errors detected by the
+       posix_spawn() or posix_spawnp() operations in the context of the  child
+       process  before  the new process image executes are reported by setting
+       the child's exit status to 127.  The calling process may use the WIFEX‐
+       ITED  and  WEXITSTATUS  macros  on the stat_val stored by the wait() or
+       waitpid() functions to detect spawn failures to the extent  that  other
+       status  values  with which the child process image may exit (before the
+       parent can conclusively determine that the child process image has  be‐
+       gun execution) are distinct from exit status 127.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       alarm(), chmod(), close(), dup(), exec, exit(), fcntl(), fork(), fs‐
+       tatat(), kill(), open(), posix_spawn_file_actions_addclose(),
+       posix_spawn_file_actions_adddup2(), posix_spawn_file_actions_destroy(),
+       posix_spawnattr_destroy(), posix_spawnattr_getsigdefault(), posix_spaw‐
+       nattr_getflags(), posix_spawnattr_getpgroup(), posix_spaw‐
+       nattr_getschedparam(), posix_spawnattr_getschedpolicy(), posix_spaw‐
+       nattr_getsigmask(), sched_setparam(), sched_setscheduler(), setpgid(),
+       setuid(), times(), wait(), waitid()
+
+       The Base Definitions volume of  POSIX.1‐2017,  Chapter  8,  Environment
+       Variables, <spawn.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                      POSIX_SPAWN(3P)

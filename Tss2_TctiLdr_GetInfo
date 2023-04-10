@@ -1,0 +1,67 @@
+Tss2_TctiLdr_GetInfo(3)                                                                  Library Functions Manual                                                                  Tss2_TctiLdr_GetInfo(3)
+
+NAME
+       Tss2_TctiLdr_GetInfo - Query TctiLdr library for the TSS2_TCTI_INFO structure associated with a TCTI library.
+
+SYNOPSIS
+       #include <tss2/tss2_tctildr.h>
+
+       TSS2_RC Tss2_TctiLdr_GetInfo (constchar *name", TSS2_TCTI_INFO **info);
+
+DESCRIPTION
+       The  Tss2_TctiLdr_GetInfo() function attempts to instantiate a TSS2_TCTI_INFO structure appropriate for the TCTI library associated with the provided name.  The TSS2_TCTI_INFO* reference returned
+       by this function must be freed by the Tss2_TctiLdr_FreeInfo () function.
+
+       The name parameter is a C string. If this string is NULL then the library will select a default TCTI for the caller. This is the same TCTI library that will be used to initialize the context  re‐
+       turned  by  Tss2_TctiLdr_Initialize  when  passed  a NULL name.  If non-NULL, the Tss2_TctiLdr_GetInfo () uses the same algorithm to map the string to the name of an installed TCTI library as the
+       Tss2_TctiLdr_Initialize () function.
+
+       The info parameter is a reference to a TSS2_TCTI_INFO*.  The reference returned will be allocated by the function and must be freed by the caller.
+
+RETURN VALUE
+       A successful call to this function will return TSS2_RC_SUCCESS. An unsuccessful call to this function will return a response code described below in section ERRORS.
+
+ERRORS
+       TSS2_TCTI_RC_MEMORY is returned if memory allocation fails
+
+       TSS2_TCTI_RC_NOT_SUPPORTED is returned when the loader is unable to locate a TCTI library with the provided name
+
+       TSS2_TCTI_RC_IO_ERROR is returned if a failure occurs in the underlying library loading mechanism
+
+       TSS2_TCTI_RC_BAD_REFERENCE is returned if the info parameter is NULL
+
+EXAMPLE
+       Example code.
+
+       #include <inttypes.h>
+       #include <stdlib.h>
+       #include <stdio.h>
+
+       #include <tss2/tss2_tctildr.h>
+
+       TSS2_TCTI_INFO *info = NULL;
+       TSS2_RC rc = Tss2_TctiLdr_GetInfo (NULL, &info);
+       if (rc != TSS2_RC_SUCCESS) {
+           fprintf (stderr, "Initialization of default TCTI context failed with "
+                    "response code: 0x%" PRIx32 "0, rc);
+           exit (EXIT_FAILURE);
+       }
+
+       if (info != NULL) {
+           Tss2_TctiLdr_FreeInfo (info);
+           info = NULL;
+       }
+
+       exit (EXIT_SUCCESS);
+
+AUTHOR
+       Philip Tricca <philip.b.tricca@intel.com>
+
+SEE ALSO
+       Tss2_Tcti_Device_Init(3), Tss2_Tcti_Socket_Init(3), Tss2_TctiLdr_Initialize(3), Tss2_TctiLdr_Finalize(3), tcti-device(7), tcti-socket(7), tcti-tabrmd(7), tpm2-abrmd(8)
+
+COLOPHON
+       This page is part of release 3.2.0 of Open Source implementation of the TCG TPM2 Software Stack (TSS2). A description of the project, information about reporting bugs, and the latest  version  of
+       this page can be found at https://github.com/tpm2-software/tpm2-tss/.
+
+TPM2 Software Stack                                                                              JUNE 2019                                                                         Tss2_TctiLdr_GetInfo(3)

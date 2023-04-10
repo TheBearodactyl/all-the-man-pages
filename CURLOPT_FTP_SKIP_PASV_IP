@@ -1,0 +1,47 @@
+CURLOPT_FTP_SKIP_PASV_IP(3)                                                              curl_easy_setopt options                                                              CURLOPT_FTP_SKIP_PASV_IP(3)
+
+NAME
+       CURLOPT_FTP_SKIP_PASV_IP - ignore the IP address in the PASV response
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       CURLcode curl_easy_setopt(CURL *handle, CURLOPT_FTP_SKIP_PASV_IP, long skip);
+
+DESCRIPTION
+       Pass  a  long. If skip is set to 1, it instructs libcurl to not use the IP address the server suggests in its 227-response to libcurl's PASV command when libcurl connects the data connection. In‐
+       stead libcurl will re-use the same IP address it already uses for the control connection. But it will use the port number from the 227-response.
+
+       This option thus allows libcurl to work around broken server installations that due to NATs, firewalls or incompetence report the wrong IP address back. Setting the option also reduces  the  risk
+       for various sorts of client abuse by malicious servers.
+
+       This option has no effect if PORT, EPRT or EPSV is used instead of PASV.
+
+DEFAULT
+       1 since 7.74.0, was 0 before then.
+
+PROTOCOLS
+       FTP
+
+EXAMPLE
+       CURL *curl = curl_easy_init();
+       if(curl) {
+         curl_easy_setopt(curl, CURLOPT_URL, "ftp://example.com/file.txt");
+
+         /* please ignore the IP in the PASV response */
+         curl_easy_setopt(curl, CURLOPT_FTP_SKIP_PASV_IP, 1L);
+         ret = curl_easy_perform(curl);
+
+         curl_easy_cleanup(curl);
+       }
+
+AVAILABILITY
+       Added in 7.14.2
+
+RETURN VALUE
+       Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
+
+SEE ALSO
+       CURLOPT_FTPPORT(3), CURLOPT_FTP_USE_EPRT(3),
+
+libcurl 7.37.0                                                                                  19 Jun 2014                                                                    CURLOPT_FTP_SKIP_PASV_IP(3)

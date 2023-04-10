@@ -1,0 +1,207 @@
+inet_pton(3)                                                                             Library Functions Manual                                                                             inet_pton(3)
+
+NAME
+       inet_pton - convert IPv4 and IPv6 addresses from text to binary form
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <arpa/inet.h>
+
+       int inet_pton(int af, const char *restrict src, void *restrict dst);
+
+DESCRIPTION
+       This  function  converts  the  character  string  src  into a network address structure in the af address family, then copies the network address structure to dst.  The af argument must be either
+       AF_INET or AF_INET6.  dst is written in network byte order.
+
+       The following address families are currently supported:
+
+       AF_INET
+              src points to a character string containing an IPv4 network address in dotted-decimal format, "ddd.ddd.ddd.ddd", where ddd is a decimal number of up to three digits in the range 0 to  255.
+              The address is converted to a struct in_addr and copied to dst, which must be sizeof(struct in_addr) (4) bytes (32 bits) long.
+
+       AF_INET6
+              src points to a character string containing an IPv6 network address.  The address is converted to a struct in6_addr and copied to dst, which must be sizeof(struct in6_addr) (16) bytes (128
+              bits) long.  The allowed formats for IPv6 addresses follow these rules:
+
+              •  The preferred format is x:x:x:x:x:x:x:x.  This form consists of eight hexadecimal numbers, each of which expresses a 16-bit value (i.e., each x can be up to 4 hex digits).
+
+              •  A series of contiguous zero values in the preferred format can be abbreviated to ::.  Only one instance of :: can occur in an address.  For example, the loopback address 0:0:0:0:0:0:0:1
+                 can be abbreviated as ::1.  The wildcard address, consisting of all zeros, can be written as ::.
+
+              •  An  alternate  format  is useful for expressing IPv4-mapped IPv6 addresses.  This form is written as x:x:x:x:x:x:d.d.d.d, where the six leading xs are hexadecimal values that define the
+                 six most-significant 16-bit pieces of the address (i.e., 96 bits), and the ds express a value in dotted-decimal notation that defines the least significant 32 bits of the  address.   An
+                 example of such an address is ::FFFF:204.152.189.116.
+
+              See RFC 2373 for further details on the representation of IPv6 addresses.
+
+RETURN VALUE
+       inet_pton()  returns 1 on success (network address was successfully converted).  0 is returned if src does not contain a character string representing a valid network address in the specified ad‐
+       dress family.  If af does not contain a valid address family, -1 is returned and errno is set to EAFNOSUPPORT.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                                                                                                                                                        │ Attribute     │ Value          │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────┤
+       │inet_pton()                                                                                                                                                      │ Thread safety │ MT-Safe locale │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────┘
+
+VERSIONS
+       Unlike inet_aton(3) and inet_addr(3), inet_pton() supports IPv6 addresses.  On the other hand, inet_pton() accepts only IPv4 addresses in dotted-decimal notation,  whereas  inet_aton(3)  and  in‐
+       et_addr(3)  allow the more general numbers-and-dots notation (hexadecimal and octal number formats, and formats that don't require all four bytes to be explicitly written).  For an interface that
+       handles both IPv6 addresses, and IPv4 addresses in numbers-and-dots notation, see getaddrinfo(3).
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+BUGS
+       AF_INET6 does not recognize IPv4 addresses.  An explicit IPv4-mapped IPv6 address must be supplied in src instead.
+
+EXAMPLES
+       The program below demonstrates the use of inet_pton() and inet_ntop(3).  Here are some example runs:
+
+           $ ./a.out i6 0:0:0:0:0:0:0:0
+           ::
+           $ ./a.out i6 1:0:0:0:0:0:0:8
+           1::8
+           $ ./a.out i6 0:0:0:0:0:FFFF:204.152.189.116
+           ::ffff:204.152.189.116
+
+   Program source
+
+       #include <arpa/inet.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+
+       int
+       main(int argc, char *argv[])
+       {
+           unsigned char buf[sizeof(struct in6_addr)];
+           int domain, s;
+           char str[INET6_ADDRSTRLEN];
+
+           if (argc != 3) {
+               fprintf(stderr, "Usage: %s {i4|i6|<num>} string\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           domain = (strcmp(argv[1], "i4") == 0) ? AF_INET :
+                    (strcmp(argv[1], "i6") == 0) ? AF_INET6 : atoi(argv[1]);
+
+           s = inet_pton(domain, argv[2], buf);
+           if (s <= 0) {
+               if (s == 0)
+                   fprintf(stderr, "Not in presentation format");
+               else
+                   perror("inet_pton");
+               exit(EXIT_FAILURE);
+           }
+
+           if (inet_ntop(domain, buf, str, INET6_ADDRSTRLEN) == NULL) {
+               perror("inet_ntop");
+               exit(EXIT_FAILURE);
+           }
+
+           printf("%s\n", str);
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       getaddrinfo(3), inet(3), inet_ntop(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                    inet_pton(3)
+INET_NTOP(3P)                                                                            POSIX Programmer's Manual                                                                           INET_NTOP(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       inet_ntop, inet_pton — convert IPv4 and IPv6 addresses between binary and text form
+
+SYNOPSIS
+       #include <arpa/inet.h>
+
+       const char *inet_ntop(int af, const void *restrict src,
+           char *restrict dst, socklen_t size);
+       int inet_pton(int af, const char *restrict src, void *restrict dst);
+
+DESCRIPTION
+       The inet_ntop() function shall convert a numeric address into a text string suitable for presentation. The af argument shall specify the family of the address. This can be  AF_INET  or  AF_INET6.
+       The  src  argument  points to a buffer holding an IPv4 address if the af argument is AF_INET, or an IPv6 address if the af argument is AF_INET6; the address must be in network byte order. The dst
+       argument points to a buffer where the function stores the resulting text string; it shall not be NULL. The size argument specifies the size of this buffer, which shall be large enough to hold the
+       text string (INET_ADDRSTRLEN characters for IPv4, INET6_ADDRSTRLEN characters for IPv6).
+
+       The  inet_pton()  function  shall  convert an address in its standard text presentation form into its numeric binary form. The af argument shall specify the family of the address. The AF_INET and
+       AF_INET6 address families shall be supported. The src argument points to the string being passed in. The dst argument points to a buffer into which the function stores the numeric  address;  this
+       shall be large enough to hold the numeric address (32 bits for AF_INET, 128 bits for AF_INET6).
+
+       If the af argument of inet_pton() is AF_INET, the src string shall be in the standard IPv4 dotted-decimal form:
+
+           ddd.ddd.ddd.ddd
+
+       where  "ddd"  is  a one to three digit decimal number between 0 and 255 (see inet_addr()).  The inet_pton() function does not accept other formats (such as the octal numbers, hexadecimal numbers,
+       and fewer than four numbers that inet_addr() accepts).
+
+       If the af argument of inet_pton() is AF_INET6, the src string shall be in one of the following standard IPv6 text forms:
+
+        1. The preferred form is "x:x:x:x:x:x:x:x", where the 'x's are the hexadecimal values of the eight 16-bit pieces of the address.  Leading zeros in individual fields can  be  omitted,  but  there
+           shall be one to four hexadecimal digits in every field.
+
+        2. A  string of contiguous zero fields in the preferred form can be shown as "::".  The "::" can only appear once in an address. Unspecified addresses ("0:0:0:0:0:0:0:0") may be represented sim‐
+           ply as "::".
+
+        3. A third form that is sometimes more convenient when dealing with a mixed environment of IPv4 and IPv6 nodes is "x:x:x:x:x:x:d.d.d.d", where the 'x's are the  hexadecimal  values  of  the  six
+           high-order 16-bit pieces of the address, and the 'd's are the decimal values of the four low-order 8-bit pieces of the address (standard IPv4 representation).
+
+       Note:     A more extensive description of the standard representations of IPv6 addresses can be found in RFC 2373.
+
+RETURN VALUE
+       The inet_ntop() function shall return a pointer to the buffer containing the text string if the conversion succeeds, and NULL otherwise, and set errno to indicate the error.
+
+       The  inet_pton()  function  shall  return 1 if the conversion succeeds, with the address pointed to by dst in network byte order. It shall return 0 if the input is not a valid IPv4 dotted-decimal
+       string or a valid IPv6 address string, or -1 with errno set to [EAFNOSUPPORT] if the af argument is unknown.
+
+ERRORS
+       The inet_ntop() and inet_pton() functions shall fail if:
+
+       EAFNOSUPPORT
+              The af argument is invalid.
+
+       ENOSPC The size of the inet_ntop() result buffer is inadequate.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       The Base Definitions volume of POSIX.1‐2017, <arpa_inet.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                      INET_NTOP(3P)

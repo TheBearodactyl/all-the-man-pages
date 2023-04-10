@@ -1,0 +1,275 @@
+pthread_setcancelstate(3)  Library Functions Manual  pthread_setcancelstate(3)
+
+NAME
+       pthread_setcancelstate, pthread_setcanceltype - set cancelability state
+       and type
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_setcancelstate(int state, int *oldstate);
+       int pthread_setcanceltype(int type, int *oldtype);
+
+DESCRIPTION
+       The pthread_setcancelstate() sets the cancelability state of the  call‐
+       ing  thread  to  the  value given in state.  The previous cancelability
+       state of the thread is returned in the buffer pointed to  by  oldstate.
+       The state argument must have one of the following values:
+
+       PTHREAD_CANCEL_ENABLE
+              The  thread  is  cancelable.   This is the default cancelability
+              state in all new threads, including  the  initial  thread.   The
+              thread's  cancelability type determines when a cancelable thread
+              will respond to a cancelation request.
+
+       PTHREAD_CANCEL_DISABLE
+              The thread is not cancelable.  If a cancelation request  is  re‐
+              ceived, it is blocked until cancelability is enabled.
+
+       The  pthread_setcanceltype() sets the cancelability type of the calling
+       thread to the value given in type.  The previous cancelability type  of
+       the  thread  is returned in the buffer pointed to by oldtype.  The type
+       argument must have one of the following values:
+
+       PTHREAD_CANCEL_DEFERRED
+              A cancelation request is deferred until the thread next calls  a
+              function that is a cancelation point (see pthreads(7)).  This is
+              the default cancelability type in all new threads, including the
+              initial thread.
+
+              Even  with deferred cancelation, a cancelation point in an asyn‐
+              chronous signal handler may still be acted upon and  the  effect
+              is as if it was an asynchronous cancelation.
+
+       PTHREAD_CANCEL_ASYNCHRONOUS
+              The  thread can be canceled at any time.  (Typically, it will be
+              canceled immediately upon receiving a cancelation  request,  but
+              the system doesn't guarantee this.)
+
+       The  set-and-get  operation  performed  by  each  of these functions is
+       atomic with respect to other threads in the process  calling  the  same
+       function.
+
+RETURN VALUE
+       On  success,  these functions return 0; on error, they return a nonzero
+       error number.
+
+ERRORS
+       The pthread_setcancelstate() can fail with the following error:
+
+       EINVAL Invalid value for state.
+
+       The pthread_setcanceltype() can fail with the following error:
+
+       EINVAL Invalid value for type.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌──────────────────────────────────────┬─────────────────────┬─────────┐
+       │Interface                             │ Attribute           │ Value   │
+       ├──────────────────────────────────────┼─────────────────────┼─────────┤
+       │pthread_setcancelstate(),             │ Thread safety       │ MT-Safe │
+       │pthread_setcanceltype()               │                     │         │
+       ├──────────────────────────────────────┼─────────────────────┼─────────┤
+       │pthread_setcancelstate(),             │ Async-cancel safety │ AC-Safe │
+       │pthread_setcanceltype()               │                     │         │
+       └──────────────────────────────────────┴─────────────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.0 POSIX.1-2001.
+
+NOTES
+       For details of what happens when a thread is canceled, see pthread_can‐
+       cel(3).
+
+       Briefly disabling cancelability is useful if  a  thread  performs  some
+       critical  action that must not be interrupted by a cancelation request.
+       Beware of disabling cancelability for long periods,  or  around  opera‐
+       tions  that  may  block  for  long  periods, since that will render the
+       thread unresponsive to cancelation requests.
+
+   Asynchronous cancelability
+       Setting the cancelability type to PTHREAD_CANCEL_ASYNCHRONOUS is rarely
+       useful.   Since  the  thread  could  be canceled at any time, it cannot
+       safely reserve resources (e.g., allocating memory with malloc(3)),  ac‐
+       quire mutexes, semaphores, or locks, and so on.  Reserving resources is
+       unsafe because the application has no way of knowing what the state  of
+       these  resources  is when the thread is canceled; that is, did cancela‐
+       tion occur before the resources were  reserved,  while  they  were  re‐
+       served,  or  after they were released?  Furthermore, some internal data
+       structures (e.g., the linked list of free blocks managed  by  the  mal‐
+       loc(3)  family  of  functions)  may be left in an inconsistent state if
+       cancelation occurs in the middle of the function  call.   Consequently,
+       clean-up handlers cease to be useful.
+
+       Functions  that can be safely asynchronously canceled are called async-
+       cancel-safe functions.  POSIX.1-2001 and POSIX.1-2008 require only that
+       pthread_cancel(3),   pthread_setcancelstate(),  and  pthread_setcancel‐
+       type() be async-cancel-safe.  In general, other library functions can't
+       be safely called from an asynchronously cancelable thread.
+
+       One  of  the  few  circumstances in which asynchronous cancelability is
+       useful is for cancelation of a thread that is in a  pure  compute-bound
+       loop.
+
+   Portability notes
+       The  Linux  threading  implementations  permit the oldstate argument of
+       pthread_setcancelstate() to be NULL,  in  which  case  the  information
+       about  the  previous cancelability state is not returned to the caller.
+       Many other implementations also permit a  NULL  oldstat  argument,  but
+       POSIX.1  does  not  specify this point, so portable applications should
+       always specify a non-NULL value in oldstate.  A precisely analogous set
+       of  statements  applies  for the oldtype argument of pthread_setcancel‐
+       type().
+
+EXAMPLES
+       See pthread_cancel(3).
+
+SEE ALSO
+       pthread_cancel(3),   pthread_cleanup_push(3),    pthread_testcancel(3),
+       pthreads(7)
+
+Linux man-pages 6.04              2023-03-30         pthread_setcancelstate(3)
+PTHREAD_SETCANCELSTATE(3P) POSIX Programmer's ManualPTHREAD_SETCANCELSTATE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_setcancelstate, pthread_setcanceltype, pthread_testcancel — set
+       cancelability state
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_setcancelstate(int state, int *oldstate);
+       int pthread_setcanceltype(int type, int *oldtype);
+       void pthread_testcancel(void);
+
+DESCRIPTION
+       The  pthread_setcancelstate()  function  shall  atomically both set the
+       calling thread's cancelability state to the indicated state and  return
+       the  previous  cancelability  state  at the location referenced by old‐
+       state.   Legal  values  for   state   are   PTHREAD_CANCEL_ENABLE   and
+       PTHREAD_CANCEL_DISABLE.
+
+       The  pthread_setcanceltype()  function  shall  atomically  both set the
+       calling thread's cancelability type to the indicated  type  and  return
+       the  previous cancelability type at the location referenced by oldtype.
+       Legal values for  type  are  PTHREAD_CANCEL_DEFERRED  and  PTHREAD_CAN‐
+       CEL_ASYNCHRONOUS.
+
+       The  cancelability state and type of any newly created threads, includ‐
+       ing the thread in which main() was first invoked, shall be PTHREAD_CAN‐
+       CEL_ENABLE and PTHREAD_CANCEL_DEFERRED respectively.
+
+       The  pthread_testcancel() function shall create a cancellation point in
+       the calling thread. The pthread_testcancel() function shall have no ef‐
+       fect if cancelability is disabled.
+
+RETURN VALUE
+       If successful, the pthread_setcancelstate() and pthread_setcanceltype()
+       functions shall return zero; otherwise, an error number  shall  be  re‐
+       turned to indicate the error.
+
+ERRORS
+       The pthread_setcancelstate() function may fail if:
+
+       EINVAL The specified state is not PTHREAD_CANCEL_ENABLE or PTHREAD_CAN‐
+              CEL_DISABLE.
+
+       The pthread_setcanceltype() function may fail if:
+
+       EINVAL The   specified   type   is   not   PTHREAD_CANCEL_DEFERRED   or
+              PTHREAD_CANCEL_ASYNCHRONOUS.
+
+       These functions shall not return an error code of [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       In order to write a signal handler for an asynchronous signal which can
+       run safely in a cancellable thread,  pthread_setcancelstate()  must  be
+       used  to  disable  cancellation  for the duration of any calls that the
+       signal handler makes which are cancellation points. However, the  stan‐
+       dard   does   not  permit  strictly  conforming  applications  to  call
+       pthread_setcancelstate() from a signal handler since  it  is  not  cur‐
+       rently  required  to  be  async-signal-safe.  On  implementations where
+       pthread_setcancelstate() is not async-signal-safe, alternatives are  to
+       ensure  either that the corresponding signals are blocked during execu‐
+       tion of functions that are not async-cancel-safe or  that  cancellation
+       is  disabled during times when those signals could be delivered. Imple‐
+       mentations are strongly  encouraged  to  make  pthread_setcancelstate()
+       async-signal-safe.
+
+RATIONALE
+       The pthread_setcancelstate() and pthread_setcanceltype() functions con‐
+       trol the points at which a thread may be asynchronously  canceled.  For
+       cancellation  control  to be usable in modular fashion, some rules need
+       to be followed.
+
+       An object can be considered to be a generalization of a  procedure.  It
+       is  a  set  of  procedures  and  global variables written as a unit and
+       called by clients not known by the object. Objects may depend on  other
+       objects.
+
+       First,  cancelability  should  only  be disabled on entry to an object,
+       never explicitly enabled. On exit from  an  object,  the  cancelability
+       state should always be restored to its value on entry to the object.
+
+       This follows from a modularity argument: if the client of an object (or
+       the client of an object that uses that object) has disabled cancelabil‐
+       ity,  it  is  because  the  client  does not want to be concerned about
+       cleaning up if the thread is canceled while executing some sequence  of
+       actions. If an object is called in such a state and it enables cancela‐
+       bility and a cancellation request is pending for that thread, then  the
+       thread is canceled, contrary to the wish of the client that disabled.
+
+       Second, the cancelability type may be explicitly set to either deferred
+       or asynchronous upon entry to an object. But as with the  cancelability
+       state,  on  exit from an object the cancelability type should always be
+       restored to its value on entry to the object.
+
+       Finally, only functions that are  cancel-safe  may  be  called  from  a
+       thread that is asynchronously cancelable.
+
+FUTURE DIRECTIONS
+       The  pthread_setcancelstate()  function  may  be  added to the table of
+       async-signal-safe functions in Section 2.4.3, Signal Actions.
+
+SEE ALSO
+       pthread_cancel()
+
+       The Base Definitions volume of POSIX.1‐2017, <pthread.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017           PTHREAD_SETCANCELSTATE(3P)

@@ -1,0 +1,121 @@
+OSSL_ALGORITHM(3ssl)                OpenSSL               OSSL_ALGORITHM(3ssl)
+
+NAME
+       OSSL_ALGORITHM - OpenSSL Core type to define a fetchable algorithm
+
+SYNOPSIS
+        #include <openssl/core.h>
+
+        typedef struct ossl_algorithm_st OSSL_ALGORITHM;
+        struct ossl_algorithm_st {
+            const char *algorithm_names;     /* key */
+            const char *property_definition; /* key */
+            const OSSL_DISPATCH *implementation;
+            const char *algorithm_description;
+        };
+
+DESCRIPTION
+       The OSSL_ALGORITHM type is a public structure that describes an
+       algorithm that a provider(7) provides.  Arrays of this type are
+       returned by providers on demand from the OpenSSL libraries to describe
+       what algorithms the providers provide implementations of, and with what
+       properties.
+
+       Arrays of this type must be terminated with a tuple where
+       algorithm_names is NULL.
+
+       This type of array is typically returned by the provider's operation
+       querying function, further described in "Provider Functions" in
+       provider-base(7).
+
+   OSSL_ALGORITHM fields
+       algorithm_names
+           This string is a colon separated set of names / identities, and is
+           used by the appropriate fetching functionality (such as
+           EVP_CIPHER_fetch(3), EVP_MD_fetch(3), etc) to find the desired
+           algorithm.
+
+           Multiple names / identities allow a specific algorithm
+           implementation to be fetched multiple ways.  For example, the RSA
+           algorithm has the following known identities:
+
+           •   "RSA"
+
+           •   "rsaEncryption"
+
+               This is the name of the algorithm's OBJECT IDENTIFIER (OID), as
+               given by the PKCS#1 RFC's ASN.1 module <https://www.rfc-
+               editor.org/rfc/rfc8017#appendix-C>
+
+           •   1.2.840.113549.1.1.1
+
+               This is the OID itself for "rsaEncryption", in canonical
+               decimal text form.
+
+           The resulting algorithm_names string would look like this:
+
+            "RSA:rsaEncryption:1.2.840.113549.1.1.1"
+
+           The OpenSSL libraries use the first of the algorithm names as the
+           main or canonical name, on a per algorithm implementation basis.
+
+           See the notes "On the subject of algorithm names" below for a more
+           in depth discussion on algorithm_names and how that may interact
+           with applications and libraries, including OpenSSL's.
+
+       property_definition
+           This string defines a set of properties associated with a
+           particular algorithm implementation, and is used by the appropriate
+           fetching functionality (such as EVP_CIPHER_fetch(3),
+           EVP_MD_fetch(3), etc) for a finer grained lookup of an algorithm
+           implementation, which is useful in case multiple implementations of
+           the same algorithm are available.
+
+           See property(7) for a further description of the contents of this
+           string.
+
+       implementation
+           Pointer to an OSSL_DISPATCH(3) array, containing pointers to the
+           functions of a particular algorithm implementation.
+
+       algorithm_description
+           A string with a short human-readable description of the algorithm.
+
+NOTES
+   On the subject of algorithm names
+       Providers may find the need to register ASN.1 OIDs for algorithms using
+       OBJ_create(3) (via the core_obj_create upcall described in
+       provider-base(7), because some application or library -- possibly still
+       the OpenSSL libraries, even -- use NIDs to look up algorithms.
+
+       In that scenario, you must make sure that the corresponding
+       OSSL_ALGORITHM's algorithm_names includes both the short and the long
+       name.
+
+       Most of the time, registering ASN.1 OIDs like this shouldn't be
+       necessary, and applications and libraries are encouraged to use
+       OBJ_obj2txt(3) to get a text representation of the OID, which may be a
+       long or short name for OIDs that are registered, or the OID itself in
+       canonical decimal text form if not (or if OBJ_obj2txt(3) is called with
+       no_name = 1).
+
+       It's recommended to make sure that the corresponding OSSL_ALGORITHM's
+       algorithm_names include known names as well as the OID itself in
+       canonical decimal text form.  That should cover all scenarios.
+
+SEE ALSO
+       crypto(7), provider-base(7), openssl-core.h(7),
+       openssl-core_dispatch.h(7), OSSL_DISPATCH(3)
+
+HISTORY
+       OSSL_ALGORITHM was added in OpenSSL 3.0
+
+COPYRIGHT
+       Copyright 2022 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use
+       this file except in compliance with the License.  You can obtain a copy
+       in the file LICENSE in the source distribution or at
+       <https://www.openssl.org/source/license.html>.
+
+3.0.8                             2023-02-07              OSSL_ALGORITHM(3ssl)

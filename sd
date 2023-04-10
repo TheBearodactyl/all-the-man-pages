@@ -1,0 +1,131 @@
+SD(1)                       General Commands Manual                      SD(1)
+
+NAME
+       sd
+
+SYNOPSIS
+       sd [FLAGS] find replace_with [FILES]
+
+FLAGS
+       -p, --preview
+              Emit the replacement to STDOUT
+
+       -s, --string-mode
+              Treat expressions as non-regex strings.
+
+       -f, --flags
+              Treat expressions as non-regex strings.  /** Regex flags. May be
+              combined (like `-f mc`).
+
+              c - case-sensitive i - case-insensitive m - multi-line  matching
+              w - match full words only
+
+EXIT STATUS
+       0      Successful program execution.
+
+       1      Unsuccessful program execution.
+
+       101    The program panicked.
+
+EXAMPLES
+       String-literal mode
+              $ echo 'lots((([]))) of special chars' | sd -s '((([])))' ''
+              lots of special chars
+
+       Regex use. Let's trim some trailing whitespace
+              $ echo 'lorem ipsum 23   ' | sd ' ''
+              lorem ipsum 23
+
+       Indexed capture groups
+              $ echo 'cargo +nightly watch' | sd '(96
+              cmd: cargo, channel: nightly, subcmd: watch
+
+       Named capture groups
+              $  echo  "123.45"  |  sd '(?P<dollars>+).(?P<cents>+)' '$dollars
+              dollars and $cents cents'
+              123 dollars and 45 cents
+
+       Find & replace in file
+              $ sd 'window.fetch' 'fetch' http.js
+
+       Find & replace from STDIN an emit to STDOUT
+              $ sd 'window.fetch' 'fetch' < http.js
+
+                                                                         SD(1)
+sd(4)                      Kernel Interfaces Manual                      sd(4)
+
+NAME
+       sd - driver for SCSI disk drives
+
+SYNOPSIS
+       #include <linux/hdreg.h>        /* for HDIO_GETGEO */
+       #include <linux/fs.h>           /* for BLKGETSIZE and BLKRRPART */
+
+CONFIGURATION
+       The block device name has the following form: sdlp, where l is a letter
+       denoting the physical drive, and p is a number denoting  the  partition
+       on  that  physical drive.  Often, the partition number, p, will be left
+       off when the device corresponds to the whole drive.
+
+       SCSI disks have a major device number of 8, and a minor  device  number
+       of  the form (16 * drive_number) + partition_number, where drive_number
+       is the number of the physical drive in order of detection,  and  parti‐
+       tion_number is as follows:
+
+       •  partition 0 is the whole drive
+
+       •  partitions 1–4 are the DOS "primary" partitions
+
+       •  partitions 5–8 are the DOS "extended" (or "logical") partitions
+
+       For example, /dev/sda will have major 8, minor 0, and will refer to all
+       of the first SCSI drive in the system; and /dev/sdb3 will have major 8,
+       minor  19,  and  will refer to the third DOS "primary" partition on the
+       second SCSI drive in the system.
+
+       At this time, only block devices are provided.  Raw  devices  have  not
+       yet been implemented.
+
+DESCRIPTION
+       The following ioctls are provided:
+
+       HDIO_GETGEO
+              Returns the BIOS disk parameters in the following structure:
+
+           struct hd_geometry {
+               unsigned char  heads;
+               unsigned char  sectors;
+               unsigned short cylinders;
+               unsigned long  start;
+           };
+
+              A pointer to this structure is passed as the ioctl(2) parameter.
+
+              The  information  returned in the parameter is the disk geometry
+              of the drive as understood by DOS!  This  geometry  is  not  the
+              physical  geometry  of  the drive.  It is used when constructing
+              the drive's partition table, however, and is needed  for  conve‐
+              nient operation of fdisk(1), efdisk(1), and lilo(1).  If the ge‐
+              ometry information is not available, zero will be  returned  for
+              all of the parameters.
+
+       BLKGETSIZE
+              Returns  the  device  size  in  sectors.  The ioctl(2) parameter
+              should be a pointer to a long.
+
+       BLKRRPART
+              Forces a reread of the SCSI disk partition tables.  No parameter
+              is needed.
+
+              The  SCSI  ioctl(2)  operations  are  also  supported.   If  the
+              ioctl(2) parameter is required, and it is  NULL,  then  ioctl(2)
+              fails with the error EINVAL.
+
+FILES
+       /dev/sd[a-h]
+              the whole device
+
+       /dev/sd[a-h][0-8]
+              individual block partitions
+
+Linux man-pages 6.04              2023-02-05                             sd(4)

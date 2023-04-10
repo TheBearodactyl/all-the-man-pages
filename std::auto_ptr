@@ -1,0 +1,255 @@
+std::auto_ptr< _Tp >(3)    Library Functions Manual    std::auto_ptr< _Tp >(3)
+
+NAME
+       std::auto_ptr< _Tp > - A simple smart pointer providing strict
+       ownership semantics.
+
+SYNOPSIS
+       #include <memory>
+
+   Public Types
+       typedef _Tp element_type
+           The pointed-to type.
+
+   Public Member Functions
+       auto_ptr (auto_ptr &__a)  throw ()
+           An auto_ptr can be constructed from another auto_ptr.
+       template<typename _Tp1 > auto_ptr (auto_ptr< _Tp1 > &__a)  throw ()
+           An auto_ptr can be constructed from another auto_ptr.
+       auto_ptr (auto_ptr_ref< element_type > __ref)  throw ()
+           Automatic conversions.
+       auto_ptr (element_type *__p=0)  throw ()
+           An auto_ptr is usually constructed from a raw pointer.
+       ~auto_ptr ()
+       element_type * get () const  throw ()
+           Bypassing the smart pointer.
+       template<typename _Tp1 > operator auto_ptr< _Tp1 > ()  throw ()
+       template<typename _Tp1 > operator auto_ptr_ref< _Tp1 > ()  throw ()
+       element_type & operator* () const  throw ()
+           Smart pointer dereferencing.
+       element_type * operator-> () const  throw ()
+           Smart pointer dereferencing.
+       auto_ptr & operator= (auto_ptr &__a)  throw ()
+           auto_ptr assignment operator.
+       template<typename _Tp1 > auto_ptr & operator= (auto_ptr< _Tp1 > &__a)
+           throw ()
+           auto_ptr assignment operator.
+       auto_ptr & operator= (auto_ptr_ref< element_type > __ref)  throw ()
+       element_type * release ()  throw ()
+           Bypassing the smart pointer.
+       void reset (element_type *__p=0)  throw ()
+           Forcibly deletes the managed object.
+
+Detailed Description
+   template<typename _Tp>
+       class std::auto_ptr< _Tp >"A simple smart pointer providing strict
+       ownership semantics.
+
+       The Standard says:
+
+       An auto_ptr owns the object it holds a pointer to.  Copying
+       an auto_ptr copies the pointer and transfers ownership to the
+       destination.  If more than one auto_ptr owns the same object
+       at the same time the behavior of the program is undefined.
+
+       The uses of auto_ptr include providing temporary
+       exception-safety for dynamically allocated memory, passing
+       ownership of dynamically allocated memory to a function, and
+       returning dynamically allocated memory from a function.  auto_ptr does not meet the CopyConstructible and Assignable
+       requirements for Standard Library container elements and thus
+       instantiating a Standard Library container with an auto_ptr results in undefined behavior.
+
+        Quoted from [20.4.5]/3.
+
+       Good examples of what can and cannot be done with auto_ptr can be found
+       in the libstdc++ testsuite.
+
+       _GLIBCXX_RESOLVE_LIB_DEFECTS
+
+       127.
+           auto_ptr<> conversion issues These resolutions have all been
+           incorporated.
+
+       Definition at line 89 of file memory.
+
+Member Typedef Documentation
+   template<typename _Tp > typedef _Tp std::auto_ptr< _Tp >::element_type
+       The pointed-to type.
+
+       Definition at line 96 of file memory.
+
+Constructor & Destructor Documentation
+   template<typename _Tp > std::auto_ptr< _Tp >::auto_ptr (element_type * __p
+       = 0) [inline],  [explicit]
+       An auto_ptr is usually constructed from a raw pointer.
+
+       Parameters
+           __p A pointer (defaults to NULL).
+
+       This object now owns the object pointed to by __p.
+
+       Definition at line 105 of file memory.
+
+   template<typename _Tp > std::auto_ptr< _Tp >::auto_ptr (auto_ptr< _Tp > &
+       __a) [inline]
+       An auto_ptr can be constructed from another auto_ptr.
+
+       Parameters
+           __a Another auto_ptr of the same type.
+
+       This object now owns the object previously owned by __a, which has
+       given up ownership.
+
+       Definition at line 114 of file memory.
+
+   template<typename _Tp > template<typename _Tp1 > std::auto_ptr< _Tp
+       >::auto_ptr (auto_ptr< _Tp1 > & __a) [inline]
+       An auto_ptr can be constructed from another auto_ptr.
+
+       Parameters
+           __a Another auto_ptr of a different but related type.
+
+       A pointer-to-Tp1 must be convertible to a pointer-to-Tp/element_type.
+
+       This object now owns the object previously owned by __a, which has
+       given up ownership.
+
+       Definition at line 127 of file memory.
+
+   template<typename _Tp > std::auto_ptr< _Tp >::~auto_ptr () [inline]
+       When the auto_ptr goes out of scope, the object it owns is deleted. If
+       it no longer owns anything (i.e., get() is NULL), then this has no
+       effect.
+
+       The C++ standard says there is supposed to be an empty throw
+       specification here, but omitting it is standard conforming. Its
+       presence can be detected only if _Tp::~_Tp() throws, but this is
+       prohibited. [17.4.3.6]/2
+
+       Definition at line 172 of file memory.
+
+   template<typename _Tp > std::auto_ptr< _Tp >::auto_ptr (auto_ptr_ref<
+       element_type > __ref) [inline]
+       Automatic conversions. These operations are supposed to convert an
+       auto_ptr into and from an auto_ptr_ref automatically as needed. This
+       would allow constructs such as
+
+       auto_ptr<Derived>  func_returning_auto_ptr(.....);
+       ...
+       auto_ptr<Base> ptr = func_returning_auto_ptr(.....);
+
+       But it doesn't work, and won't be fixed. For further details see
+       http://cplusplus.github.io/LWG/lwg-closed.html#463
+
+       Definition at line 266 of file memory.
+
+Member Function Documentation
+   template<typename _Tp > element_type * std::auto_ptr< _Tp >::get () const
+       [inline]
+       Bypassing the smart pointer.
+
+       Returns
+           The raw pointer being managed.
+
+       You can get a copy of the pointer that this object owns, for situations
+       such as passing to a function which only accepts a raw pointer.
+
+       Note
+           This auto_ptr still owns the memory.
+
+       Definition at line 213 of file memory.
+
+   template<typename _Tp > template<typename _Tp1 > std::auto_ptr< _Tp
+       >::operator auto_ptr< _Tp1 > () [inline]
+       Definition at line 285 of file memory.
+
+   template<typename _Tp > template<typename _Tp1 > std::auto_ptr< _Tp
+       >::operator auto_ptr_ref< _Tp1 > () [inline]
+       Definition at line 281 of file memory.
+
+   template<typename _Tp > element_type & std::auto_ptr< _Tp >::operator* ()
+       const [inline]
+       Smart pointer dereferencing. If this auto_ptr no longer owns anything,
+       then this operation will crash. (For a smart pointer, no longer owns
+       anything is the same as being a null pointer, and you know what happens
+       when you dereference one of those...)
+
+       Definition at line 183 of file memory.
+
+   template<typename _Tp > element_type * std::auto_ptr< _Tp >::operator-> ()
+       const [inline]
+       Smart pointer dereferencing. This returns the pointer itself, which the
+       language then will automatically cause to be dereferenced.
+
+       Definition at line 196 of file memory.
+
+   template<typename _Tp > auto_ptr & std::auto_ptr< _Tp >::operator=
+       (auto_ptr< _Tp > & __a) [inline]
+       auto_ptr assignment operator.
+
+       Parameters
+           __a Another auto_ptr of the same type.
+
+       This object now owns the object previously owned by __a, which has
+       given up ownership. The object that this one used to own and track has
+       been deleted.
+
+       Definition at line 138 of file memory.
+
+       References std::auto_ptr< _Tp >::reset().
+
+   template<typename _Tp > template<typename _Tp1 > auto_ptr & std::auto_ptr<
+       _Tp >::operator= (auto_ptr< _Tp1 > & __a) [inline]
+       auto_ptr assignment operator.
+
+       Parameters
+           __a Another auto_ptr of a different but related type.
+
+       A pointer-to-Tp1 must be convertible to a pointer-to-Tp/element_type.
+
+       This object now owns the object previously owned by __a, which has
+       given up ownership. The object that this one used to own and track has
+       been deleted.
+
+       Definition at line 156 of file memory.
+
+       References std::auto_ptr< _Tp >::reset().
+
+   template<typename _Tp > auto_ptr & std::auto_ptr< _Tp >::operator=
+       (auto_ptr_ref< element_type > __ref) [inline]
+       Definition at line 270 of file memory.
+
+   template<typename _Tp > element_type * std::auto_ptr< _Tp >::release ()
+       [inline]
+       Bypassing the smart pointer.
+
+       Returns
+           The raw pointer being managed.
+
+       You can get a copy of the pointer that this object owns, for situations
+       such as passing to a function which only accepts a raw pointer.
+
+       Note
+           This auto_ptr no longer owns the memory. When this object goes out
+           of scope, nothing will happen.
+
+       Definition at line 227 of file memory.
+
+   template<typename _Tp > void std::auto_ptr< _Tp >::reset (element_type *
+       __p = 0) [inline]
+       Forcibly deletes the managed object.
+
+       Parameters
+           __p A pointer (defaults to NULL).
+
+       This object now owns the object pointed to by __p. The previous object
+       has been deleted.
+
+       Definition at line 242 of file memory.
+
+       Referenced by std::auto_ptr< _Tp >::operator=().
+
+Author
+       Generated automatically by Doxygen for libstdc++ from the source code.
+
+libstdc++                       Wed Feb 1 2023         std::auto_ptr< _Tp >(3)

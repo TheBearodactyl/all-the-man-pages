@@ -1,0 +1,282 @@
+sem_wait(3)                Library Functions Manual                sem_wait(3)
+
+NAME
+       sem_wait, sem_timedwait, sem_trywait - lock a semaphore
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <semaphore.h>
+
+       int sem_wait(sem_t *sem);
+       int sem_trywait(sem_t *sem);
+       int sem_timedwait(sem_t *restrict sem,
+                         const struct timespec *restrict abs_timeout);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       sem_timedwait():
+           _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       sem_wait()  decrements (locks) the semaphore pointed to by sem.  If the
+       semaphore's value is greater than zero, then  the  decrement  proceeds,
+       and  the function returns, immediately.  If the semaphore currently has
+       the value zero, then the call blocks until either it  becomes  possible
+       to  perform the decrement (i.e., the semaphore value rises above zero),
+       or a signal handler interrupts the call.
+
+       sem_trywait() is the same as sem_wait(), except that if  the  decrement
+       cannot  be immediately performed, then call returns an error (errno set
+       to EAGAIN) instead of blocking.
+
+       sem_timedwait() is the same  as  sem_wait(),  except  that  abs_timeout
+       specifies  a  limit on the amount of time that the call should block if
+       the decrement cannot be immediately performed.  The  abs_timeout  argu‐
+       ment points to a timespec(3) structure that specifies an absolute time‐
+       out in seconds and nanoseconds since  the  Epoch,  1970-01-01  00:00:00
+       +0000 (UTC).
+
+       If  the  timeout  has  already expired by the time of the call, and the
+       semaphore could not be locked immediately, then  sem_timedwait()  fails
+       with a timeout error (errno set to ETIMEDOUT).
+
+       If  the  operation  can  be performed immediately, then sem_timedwait()
+       never fails with a timeout error, regardless of the value of  abs_time‐
+       out.   Furthermore,  the validity of abs_timeout is not checked in this
+       case.
+
+RETURN VALUE
+       All of these functions return 0 on success; on error, the value of  the
+       semaphore  is left unchanged, -1 is returned, and errno is set to indi‐
+       cate the error.
+
+ERRORS
+       EAGAIN (sem_trywait()) The operation could  not  be  performed  without
+              blocking (i.e., the semaphore currently has the value zero).
+
+       EINTR  The call was interrupted by a signal handler; see signal(7).
+
+       EINVAL sem is not a valid semaphore.
+
+       EINVAL (sem_timedwait()) The value of abs_timeout.tv_nsecs is less than
+              0, or greater than or equal to 1000 million.
+
+       ETIMEDOUT
+              (sem_timedwait()) The call timed out before the semaphore  could
+              be locked.
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │sem_wait(), sem_trywait(), sem_timedwait()  │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+EXAMPLES
+       The (somewhat trivial) program shown below operates on an unnamed sema‐
+       phore.   The program expects two command-line arguments.  The first ar‐
+       gument specifies a seconds value that is used to set an alarm timer  to
+       generate  a SIGALRM signal.  This handler performs a sem_post(3) to in‐
+       crement  the  semaphore  that  is  being  waited  on  in  main()  using
+       sem_timedwait().  The second command-line argument specifies the length
+       of the timeout, in seconds, for sem_timedwait().  The  following  shows
+       what happens on two different runs of the program:
+
+           $ ./a.out 2 3
+           About to call sem_timedwait()
+           sem_post() from handler
+           sem_timedwait() succeeded
+           $ ./a.out 2 1
+           About to call sem_timedwait()
+           sem_timedwait() timed out
+
+   Program source
+
+       #include <errno.h>
+       #include <semaphore.h>
+       #include <signal.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <time.h>
+       #include <unistd.h>
+
+       #include <assert.h>
+
+       sem_t sem;
+
+       #define handle_error(msg) \
+           do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+       static void
+       handler(int sig)
+       {
+           write(STDOUT_FILENO, "sem_post() from handler\n", 24);
+           if (sem_post(&sem) == -1) {
+               write(STDERR_FILENO, "sem_post() failed\n", 18);
+               _exit(EXIT_FAILURE);
+           }
+       }
+
+       int
+       main(int argc, char *argv[])
+       {
+           struct sigaction sa;
+           struct timespec ts;
+           int s;
+
+           if (argc != 3) {
+               fprintf(stderr, "Usage: %s <alarm-secs> <wait-secs>\n",
+                       argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           if (sem_init(&sem, 0, 0) == -1)
+               handle_error("sem_init");
+
+           /* Establish SIGALRM handler; set alarm timer using argv[1]. */
+
+           sa.sa_handler = handler;
+           sigemptyset(&sa.sa_mask);
+           sa.sa_flags = 0;
+           if (sigaction(SIGALRM, &sa, NULL) == -1)
+               handle_error("sigaction");
+
+           alarm(atoi(argv[1]));
+
+           /* Calculate relative interval as current time plus
+              number of seconds given argv[2]. */
+
+           if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+               handle_error("clock_gettime");
+
+           ts.tv_sec += atoi(argv[2]);
+
+           printf("%s() about to call sem_timedwait()\n", __func__);
+           while ((s = sem_timedwait(&sem, &ts)) == -1 && errno == EINTR)
+               continue;       /* Restart if interrupted by handler. */
+
+           /* Check what happened. */
+
+           if (s == -1) {
+               if (errno == ETIMEDOUT)
+                   printf("sem_timedwait() timed out\n");
+               else
+                   perror("sem_timedwait");
+           } else
+               printf("sem_timedwait() succeeded\n");
+
+           exit((s == 0) ? EXIT_SUCCESS : EXIT_FAILURE);
+       }
+
+SEE ALSO
+       clock_gettime(2),  sem_getvalue(3), sem_post(3), timespec(3), sem_over‐
+       view(7), time(7)
+
+Linux man-pages 6.04              2023-03-30                       sem_wait(3)
+SEM_TRYWAIT(3P)            POSIX Programmer's Manual           SEM_TRYWAIT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       sem_trywait, sem_wait — lock a semaphore
+
+SYNOPSIS
+       #include <semaphore.h>
+
+       int sem_trywait(sem_t *sem);
+       int sem_wait(sem_t *sem);
+
+DESCRIPTION
+       The sem_trywait() function shall lock the semaphore referenced  by  sem
+       only  if  the  semaphore is currently not locked; that is, if the sema‐
+       phore value is currently positive. Otherwise, it  shall  not  lock  the
+       semaphore.
+
+       The  sem_wait()  function shall lock the semaphore referenced by sem by
+       performing a semaphore lock operation on that semaphore. If  the  sema‐
+       phore value is currently zero, then the calling thread shall not return
+       from the call to sem_wait() until it either locks the semaphore or  the
+       call is interrupted by a signal.
+
+       Upon  successful return, the state of the semaphore shall be locked and
+       shall remain locked until the sem_post() function is executed  and  re‐
+       turns successfully.
+
+       The sem_wait() function is interruptible by the delivery of a signal.
+
+RETURN VALUE
+       The  sem_trywait()  and  sem_wait()  functions shall return zero if the
+       calling process successfully performed the semaphore lock operation  on
+       the  semaphore  designated  by  sem.  If the call was unsuccessful, the
+       state of the semaphore shall be unchanged, and the function  shall  re‐
+       turn a value of -1 and set errno to indicate the error.
+
+ERRORS
+       The sem_trywait() function shall fail if:
+
+       EAGAIN The  semaphore  was  already locked, so it cannot be immediately
+              locked by the sem_trywait() operation.
+
+       The sem_trywait() and sem_wait() functions may fail if:
+
+       EDEADLK
+              A deadlock condition was detected.
+
+       EINTR  A signal interrupted this function.
+
+       EINVAL The sem argument does not refer to a valid semaphore.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Applications using these functions may be subject  to  priority  inver‐
+       sion, as discussed in the Base Definitions volume of POSIX.1‐2017, Sec‐
+       tion 3.291, Priority Inversion.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       semctl(), semget(), semop(), sem_post(), sem_timedwait()
+
+       The Base Definitions volume of POSIX.1‐2017,  Section  3.291,  Priority
+       Inversion, Section 4.12, Memory Synchronization, <semaphore.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                      SEM_TRYWAIT(3P)

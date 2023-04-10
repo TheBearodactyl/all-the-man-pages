@@ -1,0 +1,80 @@
+DETOX(1)                                                                                BSD General Commands Manual                                                                               DETOX(1)
+
+NAME
+     detox — clean up filenames
+
+SYNOPSIS
+     detox [-hnLrv] [-s sequence] [-f configfile] [--dry-run] [--special] file ...
+
+DESCRIPTION
+     The detox utility renames files to make them easier to work with.  It removes spaces and other such annoyances.  It'll also translate or cleanup Latin-1 (ISO 8859-1) characters encoded in 8-bit
+     ASCII, Unicode characters encoded in UTF-8, and CGI escaped characters.
+
+   Sequences
+     detox is driven by a configurable series of filters, called a sequence.  Sequences are covered in more detail in detoxrc(5) and are discoverable with the -L option.  Some examples of default se‐
+     quences are iso8859_1 and utf_8.
+
+   Options
+     The main options:
+
+     -f configfile
+                 Use configfile instead of the default configuration files for loading translation sequences.  No other config file will be parsed.
+
+     -h --help   Display helpful information.
+
+     -L          List the currently available sequences.  When paired with -v this option shows what filters are used in each sequence and any properties applied to the filters.
+
+     -n --dry-run
+                 Doesn't actually change anything.  This implies the -v option.
+
+     -r          Recurse into subdirectories.
+
+     -s sequence
+                 Use sequence instead of default.
+
+     --special   Works on special files (including links).  Normally detox ignores these files.
+
+     -v          Be verbose about which files are being renamed.
+
+     -V          Show the current version of detox.
+
+   Deprecated Options
+     Deprecated Options are options that were available in earlier versions of detox but have lost their meaning and are being phased out.
+
+     --remove-trailing
+                 Removes _ and - after .'s in filenames.  This was first provided in the 0.9 series of detox.  After the introduction of sequences, it lost its meaning, as you could now determine the
+                 properties of wipeup through a particular sequence's configuration.  It presently forces all instances of the wipeup filter to use remove trailing, regardless of what's actually in the
+                 config files.
+
+FILES
+     detoxrc        The system-wide detoxrc file.
+     ~/.detoxrc     A user's personal detoxrc.  Normally it extends the system-wide detoxrc, unless -f has been specified, in which case, it is ignored.
+     iso8859_1.tbl  The default ISO 8859-1 translation table.
+     unicode.tbl    The default Unicode (UTF-8) translation table.
+
+EXAMPLES
+     detox -s iso8859_1 -r -v -n /tmp/new_files
+                 Will run the sequence iso8859_1 recursively, listing any changes, without changing anything, on the files of /tmp/new_files.
+
+     detox -f my_detoxrc -L -v
+                 Will list the sequences within my_detoxrc, showing their filters and options.
+
+SEE ALSO
+     inline-detox(1), detoxrc(5), detox.tbl(5).
+
+HISTORY
+     detox was originally designed to clean up files that I had received from friends which had been created using other operating systems.  It's trivial to create a filename with spaces, parenthesis,
+     brackets, and ampersands under some operating systems.  These have special meaning within FreeBSD and Linux, and cause problems when you go to access them.  I created detox to clean up these files.
+
+AUTHORS
+     detox was written by Doug Harple.
+
+BUGS
+     If, after the translation of a filename is finished, a file already exists with that same name, detox will not rename the file.  This could cause a problem with the max_length filter, if it was im‐
+     perative that the files be cut down to a certain length.
+
+     Long options don't work under Solaris or Darwin.
+
+     An error in the config file will cause a segfault as it's going to print the offending word within the config file.
+
+BSD                                                                                          February 11, 2021                                                                                         BSD

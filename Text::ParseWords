@@ -1,0 +1,90 @@
+Text::ParseWords(3perl)                                                              Perl Programmers Reference Guide                                                              Text::ParseWords(3perl)
+
+NAME
+       Text::ParseWords - parse text into an array of tokens or array of arrays
+
+SYNOPSIS
+         use Text::ParseWords;
+         @lists = nested_quotewords($delim, $keep, @lines);
+         @words = quotewords($delim, $keep, @lines);
+         @words = shellwords(@lines);
+         @words = parse_line($delim, $keep, $line);
+         @words = old_shellwords(@lines); # DEPRECATED!
+
+DESCRIPTION
+       The "nested_quotewords()" and "quotewords()" functions accept a delimiter (which can be a regular expression) and a list of lines and then breaks those lines up into a list of words ignoring
+       delimiters that appear inside quotes.  "quotewords()" returns all of the tokens in a single long list, while "nested_quotewords()" returns a list of token lists corresponding to the elements of
+       @lines.  "parse_line()" does tokenizing on a single string.  The "*quotewords()" functions simply call "parse_line()", so if you're only splitting one line you can call "parse_line()" directly
+       and save a function call.
+
+       The $keep controls what happens with delimters and special characters:
+
+       true
+           If true, then the tokens are split on the specified delimiter, but all other characters (including quotes and backslashes) are kept in the tokens.
+
+       false
+           If $keep is false then the "*quotewords()" functions remove all quotes and backslashes that are not themselves backslash-escaped or inside of single quotes (i.e., "quotewords()" tries to
+           interpret these characters just like the Bourne shell).  NB: these semantics are significantly different from the original version of this module shipped with Perl 5.000 through 5.004.
+
+       "delimiters"
+           As an additional feature, $keep may be the keyword "delimiters" which causes the functions to preserve the delimiters in each string as tokens in the token lists, in addition to preserving
+           quote and backslash characters.
+
+       "shellwords()" is written as a special case of "quotewords()", and it does token parsing with whitespace as a delimiter-- similar to most Unix shells.
+
+EXAMPLES
+       The sample program:
+
+         use Text::ParseWords;
+         @words = quotewords('\s+', 0, q{this   is "a test" of\ quotewords \"for you});
+         $i = 0;
+         foreach (@words) {
+             print "$i: <$_>\n";
+             $i++;
+         }
+
+       produces:
+
+         0: <this>
+         1: <is>
+         2: <a test>
+         3: <of quotewords>
+         4: <"for>
+         5: <you>
+
+       demonstrating:
+
+       0   a simple word
+
+       1   multiple spaces are skipped because of our $delim
+
+       2   use of quotes to include a space in a word
+
+       3   use of a backslash to include a space in a word
+
+       4   use of a backslash to remove the special meaning of a double-quote
+
+       5   another simple word (note the lack of effect of the backslashed double-quote)
+
+       Replacing "quotewords('\s+', 0, q{this   is...})" with "shellwords(q{this   is...})" is a simpler way to accomplish the same thing.
+
+SEE ALSO
+       Text::CSV - for parsing CSV files
+
+AUTHORS
+       The original author is unknown, but presumably this evolved from "shellwords.pl" in Perl 4.
+
+       Much of the code for "parse_line()" (including the primary regexp) came from Joerk Behrends <jbehrends@multimediaproduzenten.de>.
+
+       Examples section and other documentation provided by John Heidemann <johnh@ISI.EDU>.
+
+       Hal Pomeranz <pomeranz@netcom.com> maintained this from 1994 through 1999, and did the first CPAN release.
+
+       Alexandr Ciornii <alexchornyATgmail.com> maintained this from 2008 to 2015.
+
+       Many other people have contributed, with special thanks due to Michael Schwern <schwern@envirolink.org> and Jeff Friedl <jfriedl@yahoo-inc.com>.
+
+COPYRIGHT AND LICENSE
+       This library is free software; you may redistribute and/or modify it under the same terms as Perl itself.
+
+perl v5.36.0                                                                                    2022-12-12                                                                         Text::ParseWords(3perl)

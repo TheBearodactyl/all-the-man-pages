@@ -1,0 +1,189 @@
+pthread_setconcurrency(3)  Library Functions Manual  pthread_setconcurrency(3)
+
+NAME
+       pthread_setconcurrency,  pthread_getconcurrency  -  set/get the concur‐
+       rency level
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_setconcurrency(int new_level);
+       int pthread_getconcurrency(void);
+
+DESCRIPTION
+       The pthread_setconcurrency() function informs the implementation of the
+       application's  desired  concurrency level, specified in new_level.  The
+       implementation takes this only as a hint: POSIX.1 does not specify  the
+       level  of  concurrency  that  should be provided as a result of calling
+       pthread_setconcurrency().
+
+       Specifying new_level as 0 instructs the implementation  to  manage  the
+       concurrency level as it deems appropriate.
+
+       pthread_getconcurrency()  returns  the current value of the concurrency
+       level for this process.
+
+RETURN VALUE
+       On success, pthread_setconcurrency() returns 0; on error, it returns  a
+       nonzero error number.
+
+       pthread_getconcurrency()  always  succeeds,  returning  the concurrency
+       level set by a previous call  to  pthread_setconcurrency(),  or  0,  if
+       pthread_setconcurrency() has not previously been called.
+
+ERRORS
+       pthread_setconcurrency() can fail with the following error:
+
+       EINVAL new_level is negative.
+
+       POSIX.1  also  documents  an  EAGAIN  error  ("the  value  specified by
+       new_level would cause a system resource to be exceeded").
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_setconcurrency(),                   │ Thread safety │ MT-Safe │
+       │pthread_getconcurrency()                    │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.1.  POSIX.1-2001.
+
+NOTES
+       The default concurrency level is 0.
+
+       Concurrency levels are meaningful only for  M:N  threading  implementa‐
+       tions,  where  at  any moment a subset of a process's set of user-level
+       threads may be bound to a smaller number of kernel-scheduling entities.
+       Setting the concurrency level allows the application to give the system
+       a hint as to the number of kernel-scheduling entities  that  should  be
+       provided for efficient execution of the application.
+
+       Both  LinuxThreads  and NPTL are 1:1 threading implementations, so set‐
+       ting the concurrency level has no meaning.  In other  words,  on  Linux
+       these  functions merely exist for compatibility with other systems, and
+       they have no effect on the execution of a program.
+
+SEE ALSO
+       pthread_attr_setscope(3), pthreads(7)
+
+Linux man-pages 6.04              2023-03-30         pthread_setconcurrency(3)
+PTHREAD_GETCONCURRENCY(3P) POSIX Programmer's ManualPTHREAD_GETCONCURRENCY(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_getconcurrency, pthread_setconcurrency — get and set the  level
+       of concurrency
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_getconcurrency(void);
+       int pthread_setconcurrency(int new_level);
+
+DESCRIPTION
+       Unbound  threads in a process may or may not be required to be simulta‐
+       neously active. By default, the threads implementation ensures  that  a
+       sufficient  number  of  threads are active so that the process can con‐
+       tinue to make progress. While this conserves system resources,  it  may
+       not produce the most effective level of concurrency.
+
+       The  pthread_setconcurrency()  function allows an application to inform
+       the threads implementation of its desired concurrency level, new_level.
+       The actual level of concurrency provided by the implementation as a re‐
+       sult of this function call is unspecified.
+
+       If new_level is zero, it causes the implementation to maintain the con‐
+       currency  level  at  its  discretion as if pthread_setconcurrency() had
+       never been called.
+
+       The pthread_getconcurrency() function shall return the value set  by  a
+       previous   call   to  the  pthread_setconcurrency()  function.  If  the
+       pthread_setconcurrency() function was not previously called, this func‐
+       tion shall return zero to indicate that the implementation is maintain‐
+       ing the concurrency level.
+
+       A call to pthread_setconcurrency() shall inform the  implementation  of
+       its  desired concurrency level.  The implementation shall use this as a
+       hint, not a requirement.
+
+       If an implementation does not support multiplexing of user  threads  on
+       top  of several kernel-scheduled entities, the pthread_setconcurrency()
+       and pthread_getconcurrency() functions are  provided  for  source  code
+       compatibility  but  they  shall have no effect when called. To maintain
+       the  function  semantics,  the  new_level  parameter  is   saved   when
+       pthread_setconcurrency()  is  called  so  that  a  subsequent  call  to
+       pthread_getconcurrency() shall return the same value.
+
+RETURN VALUE
+       If successful, the pthread_setconcurrency() function shall return zero;
+       otherwise, an error number shall be returned to indicate the error.
+
+       The  pthread_getconcurrency()  function shall always return the concur‐
+       rency level set by a previous call to pthread_setconcurrency().  If the
+       pthread_setconcurrency()  function  has never been called, pthread_get‐
+       concurrency() shall return zero.
+
+ERRORS
+       The pthread_setconcurrency() function shall fail if:
+
+       EINVAL The value specified by new_level is negative.
+
+       EAGAIN The value specified by new_level would cause a  system  resource
+              to be exceeded.
+
+       The pthread_setconcurrency() function shall not return an error code of
+       [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Application developers should note that an  implementation  can  always
+       ignore  any calls to pthread_setconcurrency() and return a constant for
+       pthread_getconcurrency().  For this reason, it is not recommended  that
+       portable applications use this function.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       These functions may be removed in a future version.
+
+SEE ALSO
+       The Base Definitions volume of POSIX.1‐2017, <pthread.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017           PTHREAD_GETCONCURRENCY(3P)

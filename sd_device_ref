@@ -1,0 +1,56 @@
+SD_DEVICE_REF(3)                 sd_device_ref                SD_DEVICE_REF(3)
+
+NAME
+       sd_device_ref, sd_device_unref, sd_device_unrefp - Create or destroy
+       references to a device object
+
+SYNOPSIS
+       #include <systemd/sd-device.h>
+
+       sd_device* sd_device_ref(sd_device *device);
+
+       sd_device* sd_device_unref(sd_device *device);
+
+       void sd_device_unrefp(sd_device **device);
+
+       sd_device_ref() increases the internal reference counter of device by
+       one.
+
+       sd_device_unref() decreases the internal reference counter of device by
+       one. Once the reference count has dropped to zero, device is destroyed
+       and cannot be used anymore, so further calls to sd_device_ref() or
+       sd_device_unref() are illegal.
+
+       sd_device_unrefp() is similar to sd_device_unref() but takes a pointer
+       to a pointer to an sd_device object. This call is useful in conjunction
+       with GCC's and LLVM's Clean-up Variable Attribute[1]. Note that this
+       function is defined as an inline function. Use a declaration like the
+       following, in order to allocate a device object that is freed
+       automatically as the code block is left:
+
+       {
+         __attribute__((cleanup(sd_device_unrefp))) sd_device *device = NULL;
+         int r;
+         ...
+         r = sd_device_new_from_syspath(&device, "...");
+         if (r < 0) {
+           errno = -r;
+           fprintf(stderr, "Failed to allocate device: %m\n");
+         }
+         ...
+       }
+
+       sd_device_ref() and sd_device_unref() execute no operation if the
+       argument is NULL.  sd_device_unrefp() will first dereference its
+       argument, which must not be NULL, and will execute no operation if that
+       is NULL.
+
+RETURN VALUE
+       sd_device_ref() always returns the argument, and sd_device_unref()
+       always returns NULL.
+
+NOTES
+        1. Clean-up Variable Attribute
+           https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html
+
+systemd 253                                                   SD_DEVICE_REF(3)

@@ -1,0 +1,75 @@
+SYSTEMD-HOMED.SERVICE(8)     systemd-homed.service    SYSTEMD-HOMED.SERVICE(8)
+
+NAME
+       systemd-homed.service, systemd-homed - Home Area/User Account Manager
+
+SYNOPSIS
+       systemd-homed.service
+
+       /usr/lib/systemd/systemd-homed
+
+DESCRIPTION
+       systemd-homed is a system service that may be used to create, remove,
+       change or inspect home areas (directories and network mounts and real
+       or loopback block devices with a filesystem, optionally encrypted).
+
+       Most of systemd-homed's functionality is accessible through the
+       homectl(1) command.
+
+       See the Home Directories[1] documentation for details about the format
+       and design of home areas managed by systemd-homed.service.
+
+       Each home directory managed by systemd-homed.service synthesizes a
+       local user and group. These are made available to the system using the
+       User/Group Record Lookup API via Varlink[2], and thus may be browsed
+       with userdbctl(1).
+
+KEY MANAGEMENT
+       User records are cryptographically signed with a public/private key
+       pair (the signature is part of the JSON record itself). For a user to
+       be permitted to log in locally the public key matching the signature of
+       their user record must be installed. For a user record to be modified
+       locally the private key matching the signature must be installed
+       locally, too. The keys are stored in the /var/lib/systemd/home/
+       directory:
+
+       /var/lib/systemd/home/local.private
+           The private key of the public/private key pair used for local
+           records. Currently, only a single such key may be installed.
+
+       /var/lib/systemd/home/local.public
+           The public key of the public/private key pair used for local
+           records. Currently, only a single such key may be installed.
+
+       /var/lib/systemd/home/*.public
+           Additional public keys. Any users whose user records are signed
+           with any of these keys are permitted to log in locally. An
+           arbitrary number of keys may be installed this way.
+
+       All key files listed above are in PEM format.
+
+       In order to migrate a home directory from a host "foobar" to another
+       host "quux" it is hence sufficient to copy
+       /var/lib/systemd/home/local.public from the host "foobar" to "quux",
+       maybe calling the file on the destination
+       /var/lib/systemd/home/foobar.public, reflecting the origin of the key.
+       If the user record should be modifiable on "quux" the pair
+       /var/lib/systemd/home/local.public and
+       /var/lib/systemd/home/local.private need to be copied from "foobar" to
+       "quux", and placed under the identical paths there, as currently only a
+       single private key is supported per host. Note of course that the
+       latter means that user records generated/signed before the key pair is
+       copied in, lose their validity.
+
+SEE ALSO
+       systemd(1), homed.conf(5), homectl(1), pam_systemd_home(8),
+       userdbctl(1), org.freedesktop.home1(5)
+
+NOTES
+        1. Home Directories
+           https://systemd.io/HOME_DIRECTORY
+
+        2. User/Group Record Lookup API via Varlink
+           https://systemd.io/USER_GROUP_API
+
+systemd 253                                           SYSTEMD-HOMED.SERVICE(8)

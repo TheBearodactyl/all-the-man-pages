@@ -1,0 +1,284 @@
+setjmp(3)                  Library Functions Manual                  setjmp(3)
+
+NAME
+       setjmp, sigsetjmp, longjmp, siglongjmp  - performing a nonlocal goto
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <setjmp.h>
+
+       int setjmp(jmp_buf env);
+       int sigsetjmp(sigjmp_buf env, int savesigs);
+
+       [[noreturn]] void longjmp(jmp_buf env, int val);
+       [[noreturn]] void siglongjmp(sigjmp_buf env, int val);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       setjmp(): see NOTES.
+
+       sigsetjmp():
+           _POSIX_C_SOURCE
+
+DESCRIPTION
+       The  functions described on this page are used for performing "nonlocal
+       gotos": transferring execution from one function to a predetermined lo‐
+       cation  in  another function.  The setjmp() function dynamically estab‐
+       lishes the target to which  control  will  later  be  transferred,  and
+       longjmp() performs the transfer of execution.
+
+       The setjmp() function saves various information about the calling envi‐
+       ronment (typically, the stack pointer, the instruction pointer,  possi‐
+       bly  the  values  of other registers and the signal mask) in the buffer
+       env for later use by longjmp().  In this case, setjmp() returns 0.
+
+       The longjmp() function uses the information saved in  env  to  transfer
+       control  back  to  the  point  where setjmp() was called and to restore
+       ("rewind") the stack to its state at the time of the setjmp() call.  In
+       addition,  and  depending on the implementation (see NOTES), the values
+       of some other registers and the process signal mask may be restored  to
+       their state at the time of the setjmp() call.
+
+       Following  a  successful  longjmp(), execution continues as if setjmp()
+       had returned for a second time.  This  "fake"  return  can  be  distin‐
+       guished from a true setjmp() call because the "fake" return returns the
+       value provided in val.  If the programmer mistakenly passes the value 0
+       in val, the "fake" return will instead return 1.
+
+   sigsetjmp() and siglongjmp()
+       sigsetjmp()  and  siglongjmp() also perform nonlocal gotos, but provide
+       predictable handling of the process signal mask.
+
+       If, and only if, the savesigs argument provided to sigsetjmp() is  non‐
+       zero, the process's current signal mask is saved in env and will be re‐
+       stored if a siglongjmp() is later performed with this env.
+
+RETURN VALUE
+       setjmp() and sigsetjmp() return 0 when called directly; on  the  "fake"
+       return  that  occurs after longjmp() or siglongjmp(), the nonzero value
+       specified in val is returned.
+
+       The longjmp() or siglongjmp() functions do not return.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │setjmp(), sigsetjmp()                       │ Thread safety │ MT-Safe │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │longjmp(), siglongjmp()                     │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       setjmp()
+       longjmp()
+              C11, POSIX.1-2008.
+
+       sigsetjmp()
+       siglongjmp()
+              POSIX.1-2008.
+
+HISTORY
+       setjmp()
+       longjmp()
+              POSIX.1-2001, C89.
+
+       sigsetjmp()
+       siglongjmp()
+              POSIX.1-2001.
+
+       POSIX  does  not specify whether setjmp() will save the signal mask (to
+       be later restored during longjmp()).  In System  V  it  will  not.   In
+       4.3BSD  it  will, and there is a function _setjmp() that will not.  The
+       behavior under Linux depends on the glibc version and  the  setting  of
+       feature  test macros.  Before glibc 2.19, setjmp() follows the System V
+       behavior  by  default,  but  the  BSD  behavior  is  provided  if   the
+       _BSD_SOURCE  feature  test  macro  is  explicitly  defined  and none of
+       _POSIX_SOURCE,   _POSIX_C_SOURCE,   _XOPEN_SOURCE,   _GNU_SOURCE,    or
+       _SVID_SOURCE is defined.  Since glibc 2.19, <setjmp.h> exposes only the
+       System V version of setjmp().  Programs that  need  the  BSD  semantics
+       should  replace calls to setjmp() with calls to sigsetjmp() with a non‐
+       zero savesigs argument.
+
+NOTES
+       setjmp() and longjmp() can be useful for  dealing  with  errors  inside
+       deeply  nested function calls or to allow a signal handler to pass con‐
+       trol to a specific point in the program, rather than returning  to  the
+       point  where  the  handler interrupted the main program.  In the latter
+       case, if you want to  portably  save  and  restore  signal  masks,  use
+       sigsetjmp() and siglongjmp().  See also the discussion of program read‐
+       ability below.
+
+CAVEATS
+       The compiler may optimize variables into registers, and  longjmp()  may
+       restore  the values of other registers in addition to the stack pointer
+       and program counter.  Consequently, the values of  automatic  variables
+       are  unspecified after a call to longjmp() if they meet all the follow‐
+       ing criteria:
+
+       •  they are local to the function that made the corresponding  setjmp()
+          call;
+
+       •  their   values  are  changed  between  the  calls  to  setjmp()  and
+          longjmp(); and
+
+       •  they are not declared as volatile.
+
+       Analogous remarks apply for siglongjmp().
+
+   Nonlocal gotos and program readability
+       While it can be abused, the traditional C "goto" statement at least has
+       the benefit that lexical cues (the goto statement and the target label)
+       allow the programmer to easily perceive the flow of control.   Nonlocal
+       gotos  provide  no  such cues: multiple setjmp() calls might employ the
+       same jmp_buf variable so that the content of the  variable  may  change
+       over the lifetime of the application.  Consequently, the programmer may
+       be forced to perform detailed reading of the code to determine the  dy‐
+       namic target of a particular longjmp() call.  (To make the programmer's
+       life easier, each setjmp() call should employ a  unique  jmp_buf  vari‐
+       able.)
+
+       Adding  further  difficulty,  the  setjmp() and longjmp() calls may not
+       even be in the same source code module.
+
+       In summary, nonlocal gotos can make programs harder to  understand  and
+       maintain, and an alternative should be used if possible.
+
+   Undefined Behavior
+       If  the  function  which  called  setjmp()  returns before longjmp() is
+       called, the behavior is undefined.  Some kind  of  subtle  or  unsubtle
+       chaos is sure to result.
+
+       If,  in a multithreaded program, a longjmp() call employs an env buffer
+       that was initialized by a call to setjmp() in a different  thread,  the
+       behavior is undefined.
+
+       POSIX.1-2008 Technical Corrigendum 2 adds longjmp() and siglongjmp() to
+       the list of async-signal-safe functions.  However, the standard  recom‐
+       mends avoiding the use of these functions from signal handlers and goes
+       on to point out that if these functions are called from a  signal  han‐
+       dler  that  interrupted  a call to a non-async-signal-safe function (or
+       some equivalent, such as the steps equivalent to exit(3) that occur up‐
+       on a return from the initial call to main()), the behavior is undefined
+       if the program subsequently makes a  call  to  a  non-async-signal-safe
+       function.  The only way of avoiding undefined behavior is to ensure one
+       of the following:
+
+       •  After long jumping from the signal handler,  the  program  does  not
+          call  any  non-async-signal-safe  functions and does not return from
+          the initial call to main().
+
+       •  Any signal whose handler performs a long jump must be blocked during
+          every call to a non-async-signal-safe function and no non-async-sig‐
+          nal-safe functions are called after returning from the initial  call
+          to main().
+
+SEE ALSO
+       signal(7), signal-safety(7)
+
+Linux man-pages 6.04              2023-03-30                         setjmp(3)
+SIGSETJMP(3P)              POSIX Programmer's Manual             SIGSETJMP(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       sigsetjmp — set jump point for a non-local goto
+
+SYNOPSIS
+       #include <setjmp.h>
+
+       int sigsetjmp(sigjmp_buf env, int savemask);
+
+DESCRIPTION
+       The sigsetjmp() function shall be equivalent to the setjmp()  function,
+       except as follows:
+
+        *  References to setjmp() are equivalent to sigsetjmp().
+
+        *  References to longjmp() are equivalent to siglongjmp().
+
+        *  If  the  value of the savemask argument is not 0, sigsetjmp() shall
+           also save the current signal mask of the calling thread as part  of
+           the calling environment.
+
+RETURN VALUE
+       If the return is from a successful direct invocation, sigsetjmp() shall
+       return 0. If the return is from a  call  to  siglongjmp(),  sigsetjmp()
+       shall return a non-zero value.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The distinction between setjmp()/longjmp() and sigsetjmp()/siglongjmp()
+       is only significant for programs which use sigaction(),  sigprocmask(),
+       or sigsuspend().
+
+       Note that since this function is defined in terms of setjmp(), if save‐
+       mask is zero, it is unspecified whether the signal mask is saved.
+
+RATIONALE
+       The ISO C standard specifies various restrictions on the usage  of  the
+       setjmp() macro in order to permit implementors to recognize the name in
+       the compiler and not implement an actual function. These same  restric‐
+       tions apply to the sigsetjmp() macro.
+
+       There  are  processors that cannot easily support these calls, but this
+       was not considered a sufficient reason to exclude them.
+
+       4.2 BSD, 4.3 BSD, and XSI-conformant systems  provide  functions  named
+       _setjmp()  and  _longjmp()  that, together with setjmp() and longjmp(),
+       provide the same functionality as  sigsetjmp()  and  siglongjmp().   On
+       those  systems,  setjmp()  and longjmp() save and restore signal masks,
+       while _setjmp() and _longjmp() do not. On System V  Release  3  and  in
+       corresponding issues of the SVID, setjmp() and longjmp() are explicitly
+       defined not to save and restore signal masks. In order to permit exist‐
+       ing  practice  in both cases, the relation of setjmp() and longjmp() to
+       signal masks is not specified, and a new set of  functions  is  defined
+       instead.
+
+       The longjmp() and siglongjmp() functions operate as in the previous is‐
+       sue provided the matching setjmp() or sigsetjmp() has been performed in
+       the  same  thread. Non-local jumps into contexts saved by other threads
+       would be at best a questionable practice and were not considered worthy
+       of standardization.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       pthread_sigmask(), siglongjmp(), signal(), sigsuspend()
+
+       The Base Definitions volume of POSIX.1‐2017, <setjmp.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                        SIGSETJMP(3P)

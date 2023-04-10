@@ -1,0 +1,575 @@
+SEMOP(3P)                  POSIX Programmer's Manual                 SEMOP(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       semop — XSI semaphore operations
+
+SYNOPSIS
+       #include <sys/sem.h>
+
+       int semop(int semid, struct sembuf *sops, size_t nsops);
+
+DESCRIPTION
+       The semop() function operates on XSI semaphores (see the  Base  Defini‐
+       tions volume of POSIX.1‐2017, Section 4.17, Semaphore).  It is unspeci‐
+       fied whether this function interoperates with the realtime interprocess
+       communication facilities defined in Section 2.8, Realtime.
+
+       The  semop()  function shall perform atomically a user-defined array of
+       semaphore operations in array order on the set of semaphores associated
+       with the semaphore identifier specified by the argument semid.
+
+       The argument sops is a pointer to a user-defined array of semaphore op‐
+       eration structures. The implementation shall  not  modify  elements  of
+       this  array  unless  the application uses implementation-defined exten‐
+       sions.
+
+       The argument nsops is the number of such structures in the array.
+
+       Each structure, sembuf, includes the following members:
+
+             ┌───────────────┬───────────────┬──────────────────────────┐
+             │ Member Type   │ Member Name   │       Description        │
+             ├───────────────┼───────────────┼──────────────────────────┤
+             │unsigned short │ sem_num       │Semaphore number.         │
+             │short          │ sem_op        │Semaphore operation.      │
+             │short          │ sem_flg       │Operation flags.          │
+             └───────────────┴───────────────┴──────────────────────────┘
+       Each semaphore operation specified by sem_op is performed on the corre‐
+       sponding semaphore specified by semid and sem_num.
+
+       The variable sem_op specifies one of three semaphore operations:
+
+        1. If  sem_op  is a negative integer and the calling process has alter
+           permission, one of the following shall occur:
+
+            *  If semval(see <sys/sem.h>) is greater than or equal to the  ab‐
+               solute  value  of  sem_op, the absolute value of sem_op is sub‐
+               tracted from semval.  Also, if (sem_flg &SEM_UNDO) is non-zero,
+               the absolute value of sem_op shall be added to the semadj value
+               of the calling process for the specified semaphore.
+
+            *  If semval is  less  than  the  absolute  value  of  sem_op  and
+               (sem_flg &IPC_NOWAIT) is non-zero, semop() shall return immedi‐
+               ately.
+
+            *  If semval is  less  than  the  absolute  value  of  sem_op  and
+               (sem_flg &IPC_NOWAIT) is 0, semop() shall increment the semncnt
+               associated with the specified semaphore and  suspend  execution
+               of the calling thread until one of the following conditions oc‐
+               curs:
+
+               --  The value of semval becomes greater than or  equal  to  the
+                   absolute  value  of sem_op.  When this occurs, the value of
+                   semncnt associated with the specified  semaphore  shall  be
+                   decremented,  the  absolute  value  of sem_op shall be sub‐
+                   tracted from semval and, if  (sem_flg  &SEM_UNDO)  is  non-
+                   zero,  the  absolute  value of sem_op shall be added to the
+                   semadj value of the calling process for the specified sema‐
+                   phore.
+
+               --  The  semid  for which the calling thread is awaiting action
+                   is removed from the system. When this occurs,  errno  shall
+                   be set to [EIDRM] and -1 shall be returned.
+
+               --  The  calling thread receives a signal that is to be caught.
+                   When this occurs, the value of semncnt associated with  the
+                   specified  semaphore  shall be decremented, and the calling
+                   thread shall resume execution in the manner  prescribed  in
+                   sigaction().
+
+        2. If  sem_op  is a positive integer and the calling process has alter
+           permission, the value of sem_op shall be added to  semval  and,  if
+           (sem_flg  &SEM_UNDO) is non-zero, the value of sem_op shall be sub‐
+           tracted from the semadj value of the calling process for the speci‐
+           fied semaphore.
+
+        3. If  sem_op is 0 and the calling process has read permission, one of
+           the following shall occur:
+
+            *  If semval is 0, semop() shall return immediately.
+
+            *  If semval is non-zero and (sem_flg  &IPC_NOWAIT)  is  non-zero,
+               semop() shall return immediately.
+
+            *  If  semval  is non-zero and (sem_flg &IPC_NOWAIT) is 0, semop()
+               shall increment the semzcnt associated with the specified sema‐
+               phore  and suspend execution of the calling thread until one of
+               the following occurs:
+
+               --  The value of semval becomes 0, at which time the  value  of
+                   semzcnt  associated  with  the specified semaphore shall be
+                   decremented.
+
+               --  The semid for which the calling thread is  awaiting  action
+                   is  removed  from the system. When this occurs, errno shall
+                   be set to [EIDRM] and -1 shall be returned.
+
+               --  The calling thread receives a signal that is to be  caught.
+                   When  this occurs, the value of semzcnt associated with the
+                   specified semaphore shall be decremented, and  the  calling
+                   thread  shall  resume execution in the manner prescribed in
+                   sigaction().
+
+       Upon successful completion, the value  of  sempid  for  each  semaphore
+       specified  in  the array pointed to by sops shall be set to the process
+       ID of the calling process. Also, the sem_otime timestamp shall  be  set
+       to  the  current  time,  as described in Section 2.7.1, IPC General De‐
+       scription.
+
+RETURN VALUE
+       Upon successful completion, semop() shall return 0; otherwise, it shall
+       return -1 and set errno to indicate the error.
+
+ERRORS
+       The semop() function shall fail if:
+
+       E2BIG  The value of nsops is greater than the system-imposed maximum.
+
+       EACCES Operation  permission is denied to the calling process; see Sec‐
+              tion 2.7, XSI Interprocess Communication.
+
+       EAGAIN The operation would result in suspension of the calling  process
+              but (sem_flg &IPC_NOWAIT) is non-zero.
+
+       EFBIG  The  value  of sem_num is greater than or equal to the number of
+              semaphores in the set associated with semid.
+
+       EIDRM  The semaphore identifier semid is removed from the system.
+
+       EINTR  The semop() function was interrupted by a signal.
+
+       EINVAL The value of semid is not a valid semaphore identifier,  or  the
+              number  of  individual  semaphores for which the calling process
+              requests a SEM_UNDO would exceed the system-imposed limit.
+
+       ENOSPC The limit on the number of  individual  processes  requesting  a
+              SEM_UNDO would be exceeded.
+
+       ERANGE An operation would cause a semval to overflow the system-imposed
+              limit, or an operation would cause a semadj  value  to  overflow
+              the system-imposed limit.
+
+       The following sections are informative.
+
+EXAMPLES
+   Setting Values in Semaphores
+       The  following example sets the values of the two semaphores associated
+       with the semid identifier to the values contained in the sb array.
+
+           #include <sys/sem.h>
+           ...
+           int semid;
+           struct sembuf sb[2];
+           int nsops = 2;
+           int result;
+
+           /* Code to initialize semid. */
+           ...
+
+           /* Adjust value of semaphore in the semaphore array semid. */
+           sb[0].sem_num = 0;
+           sb[0].sem_op = -1;
+           sb[0].sem_flg = SEM_UNDO | IPC_NOWAIT;
+           sb[1].sem_num = 1;
+           sb[1].sem_op = 1;
+           sb[1].sem_flg = 0;
+
+           result = semop(semid, sb, nsops);
+
+   Creating a Semaphore Identifier
+       The following example gets a unique  semaphore  key  using  the  ftok()
+       function,  then  gets a semaphore ID associated with that key using the
+       semget() function (the first call also tests to make sure the semaphore
+       exists).   If  the semaphore does not exist, the program creates it, as
+       shown by the second call to semget().  In creating  the  semaphore  for
+       the  queuing process, the program attempts to create one semaphore with
+       read/write permission for all. It also uses the  IPC_EXCL  flag,  which
+       forces semget() to fail if the semaphore already exists.
+
+       After  creating  the  semaphore, the program uses calls to semctl() and
+       semop() to initialize it to the values in the sbuf array. The number of
+       processes  that  can  execute concurrently without queuing is initially
+       set to 2. The final call to semget()  creates  a  semaphore  identifier
+       that can be used later in the program.
+
+       Processes that obtain semid without creating it check that sem_otime is
+       non-zero, to ensure that the creating process has completed the semop()
+       initialization.
+
+       The  final call to semop() acquires the semaphore and waits until it is
+       free; the SEM_UNDO option releases the semaphore when the  process  ex‐
+       its,  waiting  until  there are less than two processes running concur‐
+       rently.
+
+           #include <stdio.h>
+           #include <sys/sem.h>
+           #include <sys/stat.h>
+           #include <errno.h>
+           #include <stdlib.h>
+           ...
+           key_t semkey;
+           int semid;
+           struct sembuf sbuf;
+           union semun {
+               int val;
+               struct semid_ds *buf;
+               unsigned short *array;
+           } arg;
+           struct semid_ds ds;
+           ...
+           /* Get unique key for semaphore. */
+           if ((semkey = ftok("/tmp", 'a')) == (key_t) -1) {
+               perror("IPC error: ftok"); exit(1);
+           }
+
+           /* Get semaphore ID associated with this key. */
+           if ((semid = semget(semkey, 0, 0)) == -1) {
+
+               /* Semaphore does not exist - Create. */
+               if ((semid = semget(semkey, 1, IPC_CREAT | IPC_EXCL | S_IRUSR |
+                   S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) != -1)
+               {
+                   /* Initialize the semaphore. */
+                   arg.val = 0;
+                   sbuf.sem_num = 0;
+                   sbuf.sem_op = 2;  /* This is the number of runs without queuing. */
+                   sbuf.sem_flg = 0;
+                   if (semctl(semid, 0, SETVAL, arg) == -1
+                       || semop(semid, &sbuf, 1) == -1) {
+                       perror("IPC error: semop"); exit(1);
+                   }
+               }
+               else if (errno == EEXIST) {
+                   if ((semid = semget(semkey, 0, 0)) == -1) {
+                       perror("IPC error 1: semget"); exit(1);
+                   }
+                   goto check_init;
+               }
+               else {
+                   perror("IPC error 2: semget"); exit(1);
+               }
+           }
+           else
+           {
+               /* Check that semid has completed initialization. */
+               /* An application can use a retry loop at this point rather than
+                  exiting. */
+               check_init:
+               arg.buf = &ds;
+               if (semctl(semid, 0, IPC_STAT, arg) < 0) {
+                   perror("IPC error 3: semctl"); exit(1);
+               }
+               if (ds.sem_otime == 0) {
+                   perror("IPC error 4: semctl"); exit(1);
+               }
+           }
+           ...
+           sbuf.sem_num = 0;
+           sbuf.sem_op = -1;
+           sbuf.sem_flg = SEM_UNDO;
+           if (semop(semid, &sbuf, 1) == -1) {
+               perror("IPC Error: semop"); exit(1);
+           }
+
+APPLICATION USAGE
+       The POSIX Realtime Extension defines alternative interfaces for  inter‐
+       process  communication.  Application  developers  who  need  to use IPC
+       should design their applications so that modules using the IPC routines
+       described  in Section 2.7, XSI Interprocess Communication can be easily
+       modified to use the alternative interfaces.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.7, XSI Interprocess  Communication,  Section  2.8,  Realtime,
+       exec,  exit(),  fork(), semctl(), semget(), sem_close(), sem_destroy(),
+       sem_getvalue(),  sem_init(),  sem_open(),  sem_post(),   sem_trywait(),
+       sem_unlink()
+
+       The  Base  Definitions volume of POSIX.1‐2017, Section 4.17, Semaphore,
+       <sys_ipc.h>, <sys_sem.h>, <sys_types.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                            SEMOP(3P)
+semop(2)                      System Calls Manual                     semop(2)
+
+NAME
+       semop, semtimedop - System V semaphore operations
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/sem.h>
+
+       int semop(int semid, struct sembuf *sops, size_t nsops);
+       int semtimedop(int semid, struct sembuf *sops, size_t nsops,
+                      const struct timespec *_Nullable timeout);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       semtimedop():
+           _GNU_SOURCE
+
+DESCRIPTION
+       Each semaphore in a System V semaphore set has the following associated
+       values:
+
+           unsigned short  semval;   /* semaphore value */
+           unsigned short  semzcnt;  /* # waiting for zero */
+           unsigned short  semncnt;  /* # waiting for increase */
+           pid_t           sempid;   /* PID of process that last
+                                        modified the semaphore value */
+
+       semop() performs operations on selected semaphores in the set indicated
+       by  semid.   Each of the nsops elements in the array pointed to by sops
+       is a structure that specifies an operation to be performed on a  single
+       semaphore.   The  elements of this structure are of type struct sembuf,
+       containing the following members:
+
+           unsigned short sem_num;  /* semaphore number */
+           short          sem_op;   /* semaphore operation */
+           short          sem_flg;  /* operation flags */
+
+       Flags recognized in sem_flg are IPC_NOWAIT and SEM_UNDO.  If an  opera‐
+       tion  specifies  SEM_UNDO,  it  will  be  automatically undone when the
+       process terminates.
+
+       The set of operations contained in sops is performed  in  array  order,
+       and  atomically, that is, the operations are performed either as a com‐
+       plete unit, or not at all.  The behavior of the system call if not  all
+       operations  can be performed immediately depends on the presence of the
+       IPC_NOWAIT flag in the individual sem_flg fields, as noted below.
+
+       Each operation is performed on the sem_num-th semaphore  of  the  sema‐
+       phore  set,  where the first semaphore of the set is numbered 0.  There
+       are three types of operation, distinguished by the value of sem_op.
+
+       If sem_op is a positive integer, the operation adds this value  to  the
+       semaphore  value  (semval).   Furthermore, if SEM_UNDO is specified for
+       this operation, the system subtracts the value sem_op  from  the  sema‐
+       phore adjustment (semadj) value for this semaphore.  This operation can
+       always proceed—it never forces a thread to wait.  The  calling  process
+       must have alter permission on the semaphore set.
+
+       If  sem_op  is zero, the process must have read permission on the sema‐
+       phore set.  This is a "wait-for-zero" operation: if semval is zero, the
+       operation  can immediately proceed.  Otherwise, if IPC_NOWAIT is speci‐
+       fied in sem_flg, semop() fails with errno set to EAGAIN  (and  none  of
+       the operations in sops is performed).  Otherwise, semzcnt (the count of
+       threads waiting until this semaphore's value becomes  zero)  is  incre‐
+       mented by one and the thread sleeps until one of the following occurs:
+
+       •  semval becomes 0, at which time the value of semzcnt is decremented.
+
+       •  The  semaphore  set is removed: semop() fails, with errno set to EI‐
+          DRM.
+
+       •  The calling thread catches a signal: the value of semzcnt is  decre‐
+          mented and semop() fails, with errno set to EINTR.
+
+       If  sem_op is less than zero, the process must have alter permission on
+       the semaphore set.  If semval is greater than or equal to the  absolute
+       value  of  sem_op,  the operation can proceed immediately: the absolute
+       value of sem_op is subtracted from semval, and, if SEM_UNDO  is  speci‐
+       fied  for  this operation, the system adds the absolute value of sem_op
+       to the semaphore adjustment (semadj) value for this semaphore.  If  the
+       absolute  value  of  sem_op  is  greater than semval, and IPC_NOWAIT is
+       specified in sem_flg, semop() fails, with errno set to EAGAIN (and none
+       of  the  operations  in  sops  is  performed).  Otherwise, semncnt (the
+       counter of threads waiting for this semaphore's value to  increase)  is
+       incremented by one and the thread sleeps until one of the following oc‐
+       curs:
+
+       •  semval becomes greater than  or  equal  to  the  absolute  value  of
+          sem_op: the operation now proceeds, as described above.
+
+       •  The  semaphore  set  is removed from the system: semop() fails, with
+          errno set to EIDRM.
+
+       •  The calling thread catches a signal: the value of semncnt is  decre‐
+          mented and semop() fails, with errno set to EINTR.
+
+       On successful completion, the sempid value for each semaphore specified
+       in the array pointed to by sops is set to the caller's process ID.   In
+       addition, the sem_otime is set to the current time.
+
+   semtimedop()
+       semtimedop()  behaves identically to semop() except that in those cases
+       where the calling thread would sleep, the duration  of  that  sleep  is
+       limited  by the amount of elapsed time specified by the timespec struc‐
+       ture whose address is passed in the timeout argument.  (This sleep  in‐
+       terval  will  be rounded up to the system clock granularity, and kernel
+       scheduling delays mean  that  the  interval  may  overrun  by  a  small
+       amount.)   If  the  specified time limit has been reached, semtimedop()
+       fails with errno set to EAGAIN (and none of the operations in  sops  is
+       performed).  If the timeout argument is NULL, then semtimedop() behaves
+       exactly like semop().
+
+       Note that if semtimedop() is interrupted by a signal, causing the  call
+       to  fail  with  the  error  EINTR, the contents of timeout are left un‐
+       changed.
+
+RETURN VALUE
+       On success, semop() and semtimedop() return 0.  On failure, they return
+       -1, and set errno to indicate the error.
+
+ERRORS
+       E2BIG  The argument nsops is greater than SEMOPM, the maximum number of
+              operations allowed per system call.
+
+       EACCES The calling process does not have the  permissions  required  to
+              perform  the  specified  semaphore operations, and does not have
+              the CAP_IPC_OWNER capability in the user namespace that  governs
+              its IPC namespace.
+
+       EAGAIN An operation could not proceed immediately and either IPC_NOWAIT
+              was specified in sem_flg or the time limit specified in  timeout
+              expired.
+
+       EFAULT An  address specified in either the sops or the timeout argument
+              isn't accessible.
+
+       EFBIG  For some operation the value  of  sem_num  is  less  than  0  or
+              greater than or equal to the number of semaphores in the set.
+
+       EIDRM  The semaphore set was removed.
+
+       EINTR  While  blocked  in this system call, the thread caught a signal;
+              see signal(7).
+
+       EINVAL The semaphore set doesn't exist, or semid is less than zero,  or
+              nsops has a nonpositive value.
+
+       ENOMEM The  sem_flg of some operation specified SEM_UNDO and the system
+              does not have enough memory to allocate the undo structure.
+
+       ERANGE For some operation sem_op+semval is greater than SEMVMX, the im‐
+              plementation dependent maximum value for semval.
+
+STANDARDS
+       POSIX.1-2008.
+
+VERSIONS
+       Linux   2.5.52   (backported   into   Linux   2.4.22),   glibc   2.3.3.
+       POSIX.1-2001, SVr4.
+
+NOTES
+       The sem_undo structures of a process aren't inherited by the child pro‐
+       duced  by  fork(2),  but  they are inherited across an execve(2) system
+       call.
+
+       semop() is never automatically restarted after being interrupted  by  a
+       signal  handler,  regardless of the setting of the SA_RESTART flag when
+       establishing a signal handler.
+
+       A semaphore adjustment (semadj) value is a  per-process,  per-semaphore
+       integer  that is the negated sum of all operations performed on a sema‐
+       phore specifying the SEM_UNDO flag.  Each process has a list of  semadj
+       values—one  value  for  each  semaphore  on which it has operated using
+       SEM_UNDO.  When a process terminates, each of its per-semaphore  semadj
+       values is added to the corresponding semaphore, thus undoing the effect
+       of that process's operations on the semaphore  (but  see  BUGS  below).
+       When a semaphore's value is directly set using the SETVAL or SETALL re‐
+       quest to semctl(2), the corresponding semadj values  in  all  processes
+       are  cleared.   The  clone(2)  CLONE_SYSVSEM  flag allows more than one
+       process to share a semadj list; see clone(2) for details.
+
+       The semval, sempid, semzcnt, and semnct values for a semaphore can  all
+       be retrieved using appropriate semctl(2) calls.
+
+   Semaphore limits
+       The  following  limits  on  semaphore  set resources affect the semop()
+       call:
+
+       SEMOPM Maximum number of operations allowed for one semop() call.   Be‐
+              fore Linux 3.19, the default value for this limit was 32.  Since
+              Linux 3.19, the default value is 500.  On Linux, this limit  can
+              be  read  and  modified  via  the  third field of /proc/sys/ker‐
+              nel/sem.  Note: this limit should not be raised above 1000,  be‐
+              cause  of  the  risk  of that semop() fails due to kernel memory
+              fragmentation when allocating memory to copy the sops array.
+
+       SEMVMX Maximum allowable value  for  semval:  implementation  dependent
+              (32767).
+
+       The implementation has no intrinsic limits for the adjust on exit maxi‐
+       mum value (SEMAEM), the system wide maximum number of  undo  structures
+       (SEMMNU)  and the per-process maximum number of undo entries system pa‐
+       rameters.
+
+BUGS
+       When a process terminates, its set of associated semadj  structures  is
+       used to undo the effect of all of the semaphore operations it performed
+       with the SEM_UNDO flag.  This raises a difficulty: if one (or more)  of
+       these  semaphore  adjustments  would result in an attempt to decrease a
+       semaphore's value below zero, what should an  implementation  do?   One
+       possible approach would be to block until all the semaphore adjustments
+       could be performed.  This is however undesirable since it  could  force
+       process  termination  to  block  for arbitrarily long periods.  Another
+       possibility is that such semaphore adjustments could be  ignored  alto‐
+       gether  (somewhat  analogously  to failing when IPC_NOWAIT is specified
+       for a semaphore operation).  Linux adopts a third approach:  decreasing
+       the  semaphore  value  as  far as possible (i.e., to zero) and allowing
+       process termination to proceed immediately.
+
+       In Linux 2.6.x, x <= 10, there is a bug that in some circumstances pre‐
+       vents  a  thread  that  is waiting for a semaphore value to become zero
+       from being woken up when the value does actually become zero.  This bug
+       is fixed in Linux 2.6.11.
+
+EXAMPLES
+       The  following  code  segment  uses  semop() to atomically wait for the
+       value of semaphore 0 to become zero, and then increment  the  semaphore
+       value by one.
+
+           struct sembuf sops[2];
+           int semid;
+
+           /* Code to set semid omitted */
+
+           sops[0].sem_num = 0;        /* Operate on semaphore 0 */
+           sops[0].sem_op = 0;         /* Wait for value to equal 0 */
+           sops[0].sem_flg = 0;
+
+           sops[1].sem_num = 0;        /* Operate on semaphore 0 */
+           sops[1].sem_op = 1;         /* Increment value by one */
+           sops[1].sem_flg = 0;
+
+           if (semop(semid, sops, 2) == -1) {
+               perror("semop");
+               exit(EXIT_FAILURE);
+           }
+
+       A further example of the use of semop() can be found in shmop(2).
+
+SEE ALSO
+       clone(2),    semctl(2),   semget(2),   sigaction(2),   capabilities(7),
+       sem_overview(7), sysvipc(7), time(7)
+
+Linux man-pages 6.04              2023-03-30                          semop(2)

@@ -1,0 +1,227 @@
+SETREUID(3P)               POSIX Programmer's Manual              SETREUID(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       setreuid — set real and effective user IDs
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int setreuid(uid_t ruid, uid_t euid);
+
+DESCRIPTION
+       The setreuid() function shall set the real and effective  user  IDs  of
+       the  current process to the values specified by the ruid and euid argu‐
+       ments. If ruid or euid is -1, the corresponding effective or real  user
+       ID of the current process shall be left unchanged.
+
+       A  process  with appropriate privileges can set either ID to any value.
+       An unprivileged process can only set the effective user ID if the  euid
+       argument  is  equal  to either the real, effective, or saved user ID of
+       the process.
+
+       If the real user ID is being set (ruid is not  -1),  or  the  effective
+       user ID is being set to a value not equal to the real user ID, then the
+       saved set-user-ID of the current process shall be set equal to the  new
+       effective user ID.
+
+       It  is  unspecified whether a process without appropriate privileges is
+       permitted to change the real user ID to  match  the  current  effective
+       user ID or saved set-user-ID of the process.
+
+RETURN VALUE
+       Upon successful completion, 0 shall be returned. Otherwise, -1 shall be
+       returned and errno set to indicate the error.
+
+ERRORS
+       The setreuid() function shall fail if:
+
+       EINVAL The value of the ruid or euid argument  is  invalid  or  out-of-
+              range.
+
+       EPERM  The  current  process  does not have appropriate privileges, and
+              either an attempt was made to change the effective user ID to  a
+              value other than the real user ID or the saved set-user-ID or an
+              attempt was made to change the real user ID to a value not  per‐
+              mitted by the implementation.
+
+       The following sections are informative.
+
+EXAMPLES
+   Setting the Effective User ID to the Real User ID
+       The following example sets the effective user ID of the calling process
+       to the real user ID, so that files created later will be owned  by  the
+       current  user.  It also sets the saved set-user-ID to the real user ID,
+       so any future attempt to set the effective user ID back to its previous
+       value will fail.
+
+           #include <unistd.h>
+           #include <sys/types.h>
+           ...
+           setreuid(getuid(), getuid());
+           ...
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       Earlier  versions  of  this  standard did not specify whether the saved
+       set-user-ID was affected by setreuid() calls.  This  version  specifies
+       common  existing  practice  that constitutes an important security fea‐
+       ture. The ability to set both the effective user ID and saved set-user-
+       ID  to be the same as the real user ID means that any security weakness
+       in code that is executed after that point cannot  result  in  malicious
+       code being executed with the previous effective user ID. Privileged ap‐
+       plications could already do this using just setuid(), but for non-priv‐
+       ileged  applications  the only standard method available is to use this
+       feature of setreuid().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       getegid(), geteuid(), getgid(), getuid(),  setegid(),  seteuid(),  set‐
+       gid(), setregid(), setuid()
+
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                         SETREUID(3P)
+setreuid(2)                   System Calls Manual                  setreuid(2)
+
+NAME
+       setreuid, setregid - set real and/or effective user or group ID
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int setreuid(uid_t ruid, uid_t euid);
+       int setregid(gid_t rgid, gid_t egid);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       setreuid(), setregid():
+           _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+DESCRIPTION
+       setreuid() sets real and effective user IDs of the calling process.
+
+       Supplying a value of -1 for either the real or effective user ID forces
+       the system to leave that ID unchanged.
+
+       Unprivileged processes may only set the effective user ID to  the  real
+       user ID, the effective user ID, or the saved set-user-ID.
+
+       Unprivileged users may only set the real user ID to the real user ID or
+       the effective user ID.
+
+       If the real user ID is set (i.e., ruid is not -1) or the effective user
+       ID  is set to a value not equal to the previous real user ID, the saved
+       set-user-ID will be set to the new effective user ID.
+
+       Completely analogously, setregid() sets real and effective  group  ID's
+       of the calling process, and all of the above holds with "group" instead
+       of "user".
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and  errno  is
+       set to indicate the error.
+
+       Note: there are cases where setreuid() can fail even when the caller is
+       UID 0; it is a grave security error to omit checking for a failure  re‐
+       turn from setreuid().
+
+ERRORS
+       EAGAIN The call would change the caller's real UID (i.e., ruid does not
+              match the caller's real UID), but there was a temporary  failure
+              allocating the necessary kernel data structures.
+
+       EAGAIN ruid  does  not  match the caller's real UID and this call would
+              bring the number of processes belonging to the real user ID ruid
+              over the caller's RLIMIT_NPROC resource limit.  Since Linux 3.1,
+              this error case no longer occurs (but robust applications should
+              check  for  this  error);  see  the description of EAGAIN in ex‐
+              ecve(2).
+
+       EINVAL One or more of the target user or group IDs is not valid in this
+              user namespace.
+
+       EPERM  The  calling  process is not privileged (on Linux, does not have
+              the necessary capability in its user  namespace:  CAP_SETUID  in
+              the case of setreuid(), or CAP_SETGID in the case of setregid())
+              and a change other than (i) swapping the effective user  (group)
+              ID  with  the  real  user (group) ID, or (ii) setting one to the
+              value of the other or (iii) setting the effective  user  (group)
+              ID  to  the  value of the saved set-user-ID (saved set-group-ID)
+              was specified.
+
+VERSIONS
+       POSIX.1 does not specify all of the UID changes that Linux permits  for
+       an  unprivileged process.  For setreuid(), the effective user ID can be
+       made the same as the real user ID or the saved set-user-ID, and  it  is
+       unspecified  whether unprivileged processes may set the real user ID to
+       the real user ID, the effective user ID, or the saved set-user-ID.  For
+       setregid(),  the real group ID can be changed to the value of the saved
+       set-group-ID, and the effective group ID can be changed to the value of
+       the  real  group  ID or the saved set-group-ID.  The precise details of
+       what ID changes are permitted vary across implementations.
+
+       POSIX.1 makes no specification about the effect of these calls  on  the
+       saved set-user-ID and saved set-group-ID.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, 4.3BSD (first appeared in 4.2BSD).
+
+       Setting  the  effective user (group) ID to the saved set-user-ID (saved
+       set-group-ID) is possible since Linux 1.1.37 (1.1.38).
+
+       The original Linux setreuid() and  setregid()  system  calls  supported
+       only  16-bit  user  and  group  IDs.  Subsequently, Linux 2.4 added se‐
+       treuid32() and setregid32(), supporting  32-bit  IDs.   The  glibc  se‐
+       treuid()  and  setregid() wrapper functions transparently deal with the
+       variations across kernel versions.
+
+   C library/kernel differences
+       At the kernel level, user IDs and group IDs are a per-thread attribute.
+       However,  POSIX  requires  that all threads in a process share the same
+       credentials.  The NPTL threading implementation handles the  POSIX  re‐
+       quirements  by providing wrapper functions for the various system calls
+       that change process UIDs and GIDs.  These wrapper functions  (including
+       those for setreuid() and setregid()) employ a signal-based technique to
+       ensure that when one thread  changes  credentials,  all  of  the  other
+       threads in the process also change their credentials.  For details, see
+       nptl(7).
+
+SEE ALSO
+       getgid(2), getuid(2), seteuid(2), setgid(2),  setresuid(2),  setuid(2),
+       capabilities(7), credentials(7), user_namespaces(7)
+
+Linux man-pages 6.04              2023-03-30                       setreuid(2)

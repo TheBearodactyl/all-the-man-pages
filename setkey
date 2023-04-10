@@ -1,0 +1,238 @@
+encrypt(3)                 Library Functions Manual                 encrypt(3)
+
+NAME
+       encrypt, setkey, encrypt_r, setkey_r - encrypt 64-bit messages
+
+LIBRARY
+       Encryption and decryption library (libcrypto, -lcrypto)
+
+SYNOPSIS
+       #define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+       #include <unistd.h>
+
+       [[deprecated]] void encrypt(char block[64], int edflag);
+
+       #define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+       #include <stdlib.h>
+
+       [[deprecated]] void setkey(const char *key);
+
+       #define _GNU_SOURCE         /* See feature_test_macros(7) */
+       #include <crypt.h>
+
+       [[deprecated]] void setkey_r(const char *key, struct crypt_data *data);
+       [[deprecated]] void encrypt_r(char *block, int edflag,
+                                     struct crypt_data *data);
+
+DESCRIPTION
+       These  functions  encrypt  and  decrypt  64-bit messages.  The setkey()
+       function sets the key used by encrypt().  The key argument used here is
+       an  array  of  64 bytes, each of which has numerical value 1 or 0.  The
+       bytes key[n] where n=8*i-1 are  ignored,  so  that  the  effective  key
+       length is 56 bits.
+
+       The  encrypt()  function modifies the passed buffer, encoding if edflag
+       is 0, and decoding if 1 is being passed.  Like the key  argument,  also
+       block  is  a  bit vector representation of the actual value that is en‐
+       coded.  The result is returned in that same vector.
+
+       These two functions are not reentrant, that is, the key data is kept in
+       static storage.  The functions setkey_r() and encrypt_r() are the reen‐
+       trant versions.  They use the following structure to hold the key data:
+
+           struct crypt_data {
+               char keysched[16 * 8];
+               char sb0[32768];
+               char sb1[32768];
+               char sb2[32768];
+               char sb3[32768];
+               char crypt_3_buf[14];
+               char current_salt[2];
+               long current_saltbits;
+               int  direction;
+               int  initialized;
+           };
+
+       Before calling setkey_r() set data->initialized to zero.
+
+RETURN VALUE
+       These functions do not return any value.
+
+ERRORS
+       Set errno to zero before calling the above functions.  On success,  er‐
+       rno is unchanged.
+
+       ENOSYS The  function  is  not provided.  (For example because of former
+              USA export restrictions.)
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌───────────────────────────────┬───────────────┬──────────────────────┐
+       │Interface                      │ Attribute     │ Value                │
+       ├───────────────────────────────┼───────────────┼──────────────────────┤
+       │encrypt(), setkey()            │ Thread safety │ MT-Unsafe race:crypt │
+       ├───────────────────────────────┼───────────────┼──────────────────────┤
+       │encrypt_r(), setkey_r()        │ Thread safety │ MT-Safe              │
+       └───────────────────────────────┴───────────────┴──────────────────────┘
+
+STANDARDS
+       encrypt()
+       setkey()
+              POSIX.1-2008.
+
+       encrypt_r()
+       setkey_r()
+              None.
+
+HISTORY
+       Removed in glibc 2.28.
+
+       Because they employ the DES block cipher, which is no longer considered
+       secure, these functions were removed from glibc.   Applications  should
+       switch to a modern cryptography library, such as libgcrypt.
+
+       encrypt()
+       setkey()
+              POSIX.1-2001, SUS, SVr4.
+
+   Availability in glibc
+       See crypt(3).
+
+   Features in glibc
+       In glibc 2.2, these functions use the DES algorithm.
+
+EXAMPLES
+       #define _XOPEN_SOURCE
+       #include <crypt.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       int
+       main(void)
+       {
+           char key[64];
+           char orig[9] = "eggplant";
+           char buf[64];
+           char txt[9];
+
+           for (size_t i = 0; i < 64; i++) {
+               key[i] = rand() & 1;
+           }
+
+           for (size_t i = 0; i < 8; i++) {
+               for (size_t j = 0; j < 8; j++) {
+                   buf[i * 8 + j] = orig[i] >> j & 1;
+               }
+               setkey(key);
+           }
+           printf("Before encrypting: %s\n", orig);
+
+           encrypt(buf, 0);
+           for (size_t i = 0; i < 8; i++) {
+               for (size_t j = 0, txt[i] = '\0'; j < 8; j++) {
+                   txt[i] |= buf[i * 8 + j] << j;
+               }
+               txt[8] = '\0';
+           }
+           printf("After encrypting:  %s\n", txt);
+
+           encrypt(buf, 1);
+           for (size_t i = 0; i < 8; i++) {
+               for (size_t j = 0, txt[i] = '\0'; j < 8; j++) {
+                   txt[i] |= buf[i * 8 + j] << j;
+               }
+               txt[8] = '\0';
+           }
+           printf("After decrypting:  %s\n", txt);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       cbc_crypt(3), crypt(3), ecb_crypt(3)
+
+Linux man-pages 6.04              2023-03-30                        encrypt(3)
+SETKEY(3P)                 POSIX Programmer's Manual                SETKEY(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       setkey — set encoding key (CRYPT)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       void setkey(const char *key);
+
+DESCRIPTION
+       The setkey() function provides access to an implementation-defined  en‐
+       coding  algorithm.  The  argument  of setkey() is an array of length 64
+       bytes containing only the bytes with numerical value of  0  and  1.  If
+       this  string  is  divided  into  groups of 8, the low-order bit in each
+       group is ignored; this gives a 56-bit key which is used  by  the  algo‐
+       rithm.  This is the key that shall be used with the algorithm to encode
+       a string block passed to encrypt().
+
+       The setkey() function shall not change the setting of errno if success‐
+       ful.  An  application  wishing to check for error situations should set
+       errno to 0 before calling setkey().  If errno is non-zero on return, an
+       error has occurred.
+
+       The setkey() function need not be thread-safe.
+
+RETURN VALUE
+       No values are returned.
+
+ERRORS
+       The setkey() function shall fail if:
+
+       ENOSYS The functionality is not supported on this implementation.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       Decoding  need  not be implemented in all environments. This is related
+       to government restrictions in some countries on encryption and  decryp‐
+       tion routines. Historical practice has been to ship a different version
+       of the encryption library without the decryption feature  in  the  rou‐
+       tines  supplied.  Thus  the exported version of encrypt() does encoding
+       but not decoding.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       A future version of the standard may mark this interface as obsolete or
+       remove it altogether.
+
+SEE ALSO
+       crypt(), encrypt()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdlib.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SETKEY(3P)

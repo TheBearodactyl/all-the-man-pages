@@ -1,0 +1,291 @@
+native::Fs(3)         User Contributed Perl Documentation        native::Fs(3)
+
+NAME
+       SVN::Fs - Subversion filesystem functions
+
+DESCRIPTION
+       SVN::Fs wraps the functions in svn_fs.h.  The actual namespace for
+       filesystem objects is "_p_svn_fs_t".
+
+FUNCTIONS
+       SVN::Fs::berkeley_logfiles($path, $only_unused)
+       SVN::Fs::berkeley_recover($path)
+       SVN::Fs::check_related($id1, $id2)
+       SVN::Fs::compare_ids($id1, $id2)
+       SVN::Fs::contents_changed($root1, $path1, $root2, $path2)
+       SVN::Fs::create($path, $config)
+       SVN::Fs::delete_fs($path)
+       SVN::Fs::deltify_revision($fs, $rev)
+       SVN::Fs::get_file_delta_stream($source_root, $source_path,
+       $target_root, $target_path)
+       SVN::Fs::hotcopy($src_path, $dest_path, $clean)
+       SVN::Fs::initialize($pool)
+       SVN::Fs::merge($source_root, $source_path, $target_root, $target_path,
+       $ancestor_root, $ancestor_path)
+       SVN::Fs::open($path, $config)
+       SVN::Fs::path($fs)
+       SVN::Fs::print_modules($s)
+           TODO - doesn't work, segfaults if $s is null, doesn't do anything
+           if its an empty string
+
+       SVN::Fs::props_changed($root1, $path1, $root2, $path2)
+           See also "SVN::Fs::contents_changed"
+
+       SVN::Fs::purge_txn($fs, $txn_id)
+           Cleanup the transaction $txn_id, removing it completely from the
+           filesystem $fs.
+
+       SVN::Fs::set_warning_func($fs, $code, $baton)
+       SVN::Fs::unparse_id($id)
+           Return a string containing the unparsed form of the node or node
+           revision id $id, which must be a "_p_svn_fs_id_t" object.
+
+           TODO - why isn't this a method of that object?
+
+       SVN::Fs::version()
+           TODO - what can we do with the _p_svn_version_t value returned?
+
+       SVN::Fs::create_access($username)
+           Return a new "_p_svn_fs_access_t" object representing $username.
+           $username is presumed to have been authenticated by the caller.
+
+_p_svn_fs_t
+       $fs->begin_txn($rev)
+           Creates a new transaction in the repository, and returns a
+           "_p_svn_fs_txn_t" object representing it.  The new transaction's
+           base revision will be $rev, which should be a number.
+
+       $fs->change_rev_prop
+       $fs->generate_lock_token()
+           Generate a unique lock-token using $fs.
+
+           TODO - translate this to apply to Perl: This can be used in to
+           populate lock->token before calling svn_fs_attach_lock().
+
+       $fs->get_access()
+           The filesystem's current access context, as a "_p_svn_fs_access_t"
+           object.  Returns undef if no access context has been set with the
+           "set_access()" method.
+
+       $fs->get_lock
+       $fs->get_locks
+       $fs->get_uuid()
+           The UUID associated with $fs.
+
+       $fs->list_transactions()
+           A reference to an array of all currently active transactions in the
+           filesystem.  Each one is a string containing the transaction's ID,
+           suitable for passing to "$fs->open_txn()".
+
+       $fs->lock
+       $fs->open_txn($name)
+           Get a transaction in the repository by name.  Returns a
+           "_p_svn_fs_txn_t" object.
+
+       $fs->revision_prop($rev, $propname)
+           The value of revision property $propname in revision $rev.
+
+       $fs->revision_proplist($rev)
+           A hashref containing the names and values of all revision
+           properties from revision $rev.
+
+       $fs->revision_root
+       $fs->set_access($access)
+           Associate an access context with an open filesystem.
+
+           This method can be run multiple times on the same open filesystem,
+           in order to change the filesystem access context for different
+           filesystem operations.  $access should be a "_p_svn_fs_access_t"
+           object, or undef to disassociate the current access context from
+           the filesystem.
+
+       $fs->set_uuid($uuid)
+           Associate $uuid with $fs.
+
+       $fs->unlock
+       $fs->youngest_rev()
+           Return the number of the youngest revision in the filesystem.  The
+           oldest revision in any filesystem is numbered zero.
+
+_p_svn_fs_root_t
+       $root->apply_text
+       $root->apply_textdelta
+       $root->change_node_prop($path, $propname, $value)
+       $root->check_path($path)
+           Kind of node at $path.  A number which matches one of these
+           constants: $SVN::Node::none, $SVN::Node::file, $SVN::Node::dir,
+           $SVN::Node::unknown.
+
+       $root->close_root
+       $root->closest_copy
+       $root->copied_from
+       $root->copy
+       $root->delete
+       $root->dir_entries
+       $root->file_contents
+       $root->file_length
+       $root->file_md5_checksum
+       $root->fs()
+           The filesystem to which $root belongs, as a "_p_svn_fs_t" object.
+
+       $root->is_dir($path)
+           True if there is a node at $path which is a directory.
+
+       $root->is_file($path)
+           True if there is a node at $path which is a file.
+
+       $root->is_revision_root()
+           True if the root comes from a revision (i.e., the contents has
+           already been committed).
+
+       $root->is_txn_root()
+           True if the root comes from a transaction.
+
+       $root->make_dir
+       $root->make_file
+       $root->node_created_path($path)
+       $root->node_created_rev($path)
+       $root->node_history($path)
+           TODO - _p_svn_fs_history_t
+
+       $root->node_id($path)
+       $root->node_prop($path, $propname)
+       $root->node_proplist($path)
+       $root->paths_changed()
+           A reference to a hash indicating what changes are made in the root.
+           The keys are the paths of the files changed, starting with "/" to
+           indicate the top-level directory of the repository.  The values are
+           "_p_svn_fs_path_change_t" objects which contain information about
+           what kind of changes are made.
+
+       $root->revision_link
+       $root->revision_root_revision
+           Revision number of the revision the root comes from.  For
+           transaction roots, returns $SVN::Core::INVALID_REVNUM.
+
+_p_svn_fs_history_t
+       $history->location()
+           In list context, a list of two items: the path to the node whose
+           history this is, and the revision number in which it exists.  In
+           scalar context returns only the revision number.
+
+       $history->prev($cross_copies)
+
+_p_svn_fs_txn_t
+       $txn->abort()
+           Abort the transaction.  Any changes made in $txn are discarded, and
+           the filesystem is left unchanged.
+
+           Note: This function first sets the state of $txn to 'dead', and
+           then attempts to purge it and any related data from the filesystem.
+           If some part of the cleanup process fails, $txn and some portion of
+           its data may remain in the database after this function returns.
+           Use "$fs->purge_txn()" to retry the transaction cleanup.
+
+       $txn->base_revision()
+           The transaction's base revision number.
+
+       $txn->change_prop($name, $value)
+           Add, change, or remove a property from the transaction.  If $value
+           is "undef" then the property $name is removed, if it exists.
+           Otherwise the property $name is set to the new value.
+
+       $txn->commit
+       $txn->name()
+           Full name of the revision, in the same format as can be passed to
+           "$fs->open_txn()".
+
+       $txn->prop($name)
+           The value of the transaction's $name property.
+
+       $txn->proplist()
+           A reference to a hash containing all the transaction's properties,
+           keyed by name.
+
+       $txn->root()
+           The root directory of the transaction, as a "_p_svn_fs_root_t"
+           object.
+
+_p_svn_fs_access_t
+   SYNOPSIS
+           my $access = SVN::Fs::create_access($username);
+
+           my $access = $fs->get_access;
+           $fs->set_access($access);
+
+           my $username = $access->get_username;
+
+           $access->add_lock_token($token);
+
+   METHODS
+       $access->add_lock_token($token)
+           Push a lock-token into the access context.  The context remembers
+           all tokens it receives, and makes them available to fs functions.
+
+       $access->get_username
+           The username represented by the access context.
+
+svn_fs_dirent_t
+       An object representing a directory entry.  Values of this type are
+       returned as the values in the hash returned by "$root->dir_entries()".
+       They are like svn_dirent_t objects, but have less information.
+
+       $dirent->id()
+           TODO
+
+       $dirent->kind()
+           Node kind.  A number which matches one of these constants:
+           $SVN::Node::none, $SVN::Node::file, $SVN::Node::dir,
+           $SVN::Node::unknown.
+
+       $dirent->name()
+           The filename of the directory entry.
+
+_p_svn_fs_path_change_t
+       $change->change_kind()
+           The type of change made.  A number which matches one of the
+           following:
+
+           $SVN::Fs::PathChange::modify
+               Content at path modified.
+
+           $SVN::Fs::PathChange::add
+               Path added in transaction.
+
+           $SVN::Fs::PathChange::delete
+               Path removed in transaction.
+
+           $SVN::Fs::PathChange::replace
+               Path removed and re-added in transaction.
+
+           $SVN::Fs::PathChange::reset
+               Ignore all previous change items for path (internal-use only).
+
+       $change->node_rev_id()
+           Node revision id of changed path.  A "_p_svn_fs_id_t" object.
+
+       $change->prop_mod()
+           True if the properties were modified.
+
+       $change->text_mod()
+           True if the text (content) was modified.
+
+COPYRIGHT
+           Licensed to the Apache Software Foundation (ASF) under one
+           or more contributor license agreements.  See the NOTICE file
+           distributed with this work for additional information
+           regarding copyright ownership.  The ASF licenses this file
+           to you under the Apache License, Version 2.0 (the
+           "License"); you may not use this file except in compliance
+           with the License.  You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+           Unless required by applicable law or agreed to in writing,
+           software distributed under the License is distributed on an
+           "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+           KIND, either express or implied.  See the License for the
+           specific language governing permissions and limitations
+           under the License.
+
+perl v5.36.0                      2022-12-23                     native::Fs(3)

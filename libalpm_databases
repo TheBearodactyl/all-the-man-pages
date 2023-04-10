@@ -1,0 +1,307 @@
+libalpm_databases(3)                                                                     Library Functions Manual                                                                     libalpm_databases(3)
+
+NAME
+       libalpm_databases - Database
+
+        - Functions to query and manipulate the database of libalpm.
+
+SYNOPSIS
+   Typedefs
+       typedef struct __alpm_db_t alpm_db_t
+           A database.
+
+   Enumerations
+       enum alpm_db_usage_t { ALPM_DB_USAGE_SYNC = 1, ALPM_DB_USAGE_SEARCH = (1 << 1), ALPM_DB_USAGE_INSTALL = (1 << 2), ALPM_DB_USAGE_UPGRADE = (1 << 3), ALPM_DB_USAGE_ALL = (1 << 4) - 1 }
+           The usage level of a database.
+
+   Functions
+       alpm_db_t * alpm_get_localdb (alpm_handle_t *handle)
+           Get the database of locally installed packages.
+       alpm_list_t * alpm_get_syncdbs (alpm_handle_t *handle)
+           Get the list of sync databases.
+       alpm_db_t * alpm_register_syncdb (alpm_handle_t *handle, const char *treename, int level)
+           Register a sync database of packages.
+       int alpm_unregister_all_syncdbs (alpm_handle_t *handle)
+           Unregister all package databases.
+       int alpm_db_unregister (alpm_db_t *db)
+           Unregister a package database.
+       const char * alpm_db_get_name (const alpm_db_t *db)
+           Get the name of a package database.
+       int alpm_db_get_siglevel (alpm_db_t *db)
+           Get the signature verification level for a database.
+       int alpm_db_get_valid (alpm_db_t *db)
+           Check the validity of a database.
+       int alpm_db_update (alpm_handle_t *handle, alpm_list_t *dbs, int force)
+           Update package databases.
+       alpm_pkg_t * alpm_db_get_pkg (alpm_db_t *db, const char *name)
+           Get a package entry from a package database.
+       alpm_list_t * alpm_db_get_pkgcache (alpm_db_t *db)
+           Get the package cache of a package database.
+       alpm_group_t * alpm_db_get_group (alpm_db_t *db, const char *name)
+           Get a group entry from a package database.
+       alpm_list_t * alpm_db_get_groupcache (alpm_db_t *db)
+           Get the group cache of a package database.
+       int alpm_db_search (alpm_db_t *db, const alpm_list_t *needles, alpm_list_t **ret)
+           Searches a database with regular expressions.
+
+   Server accessors
+       alpm_list_t * alpm_db_get_servers (const alpm_db_t *db)
+           Get the list of servers assigned to this db.
+       int alpm_db_set_servers (alpm_db_t *db, alpm_list_t *servers)
+           Sets the list of servers for the database to use.
+       int alpm_db_add_server (alpm_db_t *db, const char *url)
+           Add a download server to a database.
+       int alpm_db_remove_server (alpm_db_t *db, const char *url)
+           Remove a download server from a database.
+
+   Usage accessors
+       int alpm_db_set_usage (alpm_db_t *db, int usage)
+           Sets the usage of a database.
+       int alpm_db_get_usage (alpm_db_t *db, int *usage)
+           Gets the usage of a database.
+
+Detailed Description
+       Functions to query and manipulate the database of libalpm.
+
+Typedef Documentation
+   typedef struct __alpm_db_t alpm_db_t
+       A database. A database is a container that stores metadata about packages.
+
+       A database can be located on the local filesystem or on a remote server.
+
+       To use a database, it must first be registered via alpm_register_syncdb. If the database is already present in dbpath then it will be usable. Otherwise, the database needs to be downloaded using
+       alpm_db_update. Even if the source of the database is the local filesystem.
+
+       After this, the database can be used to query packages and groups. Any packages or groups from the database will continue to be owned by the database and do not need to be freed by the user. They
+       will be freed when the database is unregistered.
+
+       Databases are automatically unregistered when the alpm_handle_t is released.
+
+Enumeration Type Documentation
+   enum alpm_db_usage_t
+       The usage level of a database.
+
+       Enumerator
+
+       ALPM_DB_USAGE_SYNC
+              Enable refreshes for this database.
+
+       ALPM_DB_USAGE_SEARCH
+              Enable search for this database.
+
+       ALPM_DB_USAGE_INSTALL
+              Enable installing packages from this database.
+
+       ALPM_DB_USAGE_UPGRADE
+              Enable sysupgrades with this database.
+
+       ALPM_DB_USAGE_ALL
+              Enable all usage levels.
+
+Function Documentation
+   int alpm_db_add_server (alpm_db_t * db, const char * url)
+       Add a download server to a database.
+
+       Parameters
+           db database pointer
+           url url of the server
+
+       Returns
+           0 on success, -1 on error (pm_errno is set accordingly)
+
+   alpm_group_t * alpm_db_get_group (alpm_db_t * db, const char * name)
+       Get a group entry from a package database. Looking up a group is O(1) and will be significantly faster than iterating over the groupcahe.
+
+       Parameters
+           db pointer to the package database to get the group from
+           name of the group
+
+       Returns
+           the groups entry on success, NULL on error
+
+   alpm_list_t * alpm_db_get_groupcache (alpm_db_t * db)
+       Get the group cache of a package database.
+
+       Parameters
+           db pointer to the package database to get the group from
+
+       Returns
+           the list of groups on success, NULL on error
+
+   const char * alpm_db_get_name (const alpm_db_t * db)
+       Get the name of a package database.
+
+       Parameters
+           db pointer to the package database
+
+       Returns
+           the name of the package database, NULL on error
+
+   alpm_pkg_t * alpm_db_get_pkg (alpm_db_t * db, const char * name)
+       Get a package entry from a package database. Looking up a package is O(1) and will be significantly faster than iterating over the pkgcahe.
+
+       Parameters
+           db pointer to the package database to get the package from
+           name of the package
+
+       Returns
+           the package entry on success, NULL on error
+
+   alpm_list_t * alpm_db_get_pkgcache (alpm_db_t * db)
+       Get the package cache of a package database. This is a list of all packages the db contains.
+
+       Parameters
+           db pointer to the package database to get the package from
+
+       Returns
+           the list of packages on success, NULL on error
+
+   alpm_list_t * alpm_db_get_servers (const alpm_db_t * db)
+       Get the list of servers assigned to this db.
+
+       Parameters
+           db pointer to the database to get the servers from
+
+       Returns
+           a char* list of servers
+
+   int alpm_db_get_siglevel (alpm_db_t * db)
+       Get the signature verification level for a database. Will return the default verification level if this database is set up with ALPM_SIG_USE_DEFAULT.
+
+       Parameters
+           db pointer to the package database
+
+       Returns
+           the signature verification level
+
+   int alpm_db_get_usage (alpm_db_t * db, int * usage)
+       Gets the usage of a database.
+
+       Parameters
+           db pointer to the package database to get the status of
+           usage pointer to an alpm_db_usage_t to store db's status
+
+       Returns
+           0 on success, or -1 on error
+
+   int alpm_db_get_valid (alpm_db_t * db)
+       Check the validity of a database. This is most useful for sync databases and verifying signature status. If invalid, the handle error code will be set accordingly.
+
+       Parameters
+           db pointer to the package database
+
+       Returns
+           0 if valid, -1 if invalid (pm_errno is set accordingly)
+
+   int alpm_db_remove_server (alpm_db_t * db, const char * url)
+       Remove a download server from a database.
+
+       Parameters
+           db database pointer
+           url url of the server
+
+       Returns
+           0 on success, 1 on server not present, -1 on error (pm_errno is set accordingly)
+
+   int alpm_db_search (alpm_db_t * db, const alpm_list_t * needles, alpm_list_t ** ret)
+       Searches a database with regular expressions.
+
+       Parameters
+           db pointer to the package database to search in
+           needles a list of regular expressions to search for
+           ret pointer to list for storing packages matching all regular expressions - must point to an empty (NULL) alpm_list_t *.
+
+       Returns
+           0 on success, -1 on error (pm_errno is set accordingly)
+
+   int alpm_db_set_servers (alpm_db_t * db, alpm_list_t * servers)
+       Sets the list of servers for the database to use.
+
+       Parameters
+           db the database to set the servers. The list will be duped and the original will still need to be freed by the caller.
+           servers a char* list of servers.
+
+   int alpm_db_set_usage (alpm_db_t * db, int usage)
+       Sets the usage of a database.
+
+       Parameters
+           db pointer to the package database to set the status for
+           usage a bitmask of alpm_db_usage_t values
+
+       Returns
+           0 on success, or -1 on error
+
+   int alpm_db_unregister (alpm_db_t * db)
+       Unregister a package database. Databases can not be unregistered when there is an active transaction.
+
+       Parameters
+           db pointer to the package database to unregister
+
+       Returns
+           0 on success, -1 on error (pm_errno is set accordingly)
+
+   int alpm_db_update (alpm_handle_t * handle, alpm_list_t * dbs, int force)
+       Update package databases. An update of the package databases in the list dbs will be attempted. Unless force is true, the update will only be performed if the remote databases were modified since
+       the last update.
+
+       This operation requires a database lock, and will return an applicable error if the lock could not be obtained.
+
+       Example:
+
+       alpm_list_t *dbs = alpm_get_syncdbs(config->handle);
+       ret = alpm_db_update(config->handle, dbs, force);
+       if(ret < 0) {
+           pm_printf(ALPM_LOG_ERROR, _("failed to synchronize all databases (%s)\n"),
+               alpm_strerror(alpm_errno(config->handle)));
+       }
+
+       Note
+           After a successful update, the package cache  will be invalidated
+
+       Parameters
+           handle the context handle
+           dbs list of package databases to update
+           force if true, then forces the update, otherwise update only in case the databases aren't up to date
+
+       Returns
+           0 on success, -1 on error (pm_errno is set accordingly), 1 if all databases are up to to date
+
+   alpm_db_t * alpm_get_localdb (alpm_handle_t * handle)
+       Get the database of locally installed packages. The returned pointer points to an internal structure of libalpm which should only be manipulated through libalpm functions.
+
+       Returns
+           a reference to the local database
+
+   alpm_list_t * alpm_get_syncdbs (alpm_handle_t * handle)
+       Get the list of sync databases. Returns a list of alpm_db_t structures, one for each registered sync database.
+
+       Parameters
+           handle the context handle
+
+       Returns
+           a reference to an internal list of alpm_db_t structures
+
+   alpm_db_t * alpm_register_syncdb (alpm_handle_t * handle, const char * treename, int level)
+       Register a sync database of packages. Databases can not be registered when there is an active transaction.
+
+       Parameters
+           handle the context handle
+           treename the name of the sync repository
+           level what level of signature checking to perform on the database; note that this must be a '.sig' file type verification
+
+       Returns
+           an alpm_db_t* on success (the value), NULL on error
+
+   int alpm_unregister_all_syncdbs (alpm_handle_t * handle)
+       Unregister all package databases. Databases can not be unregistered while there is an active transaction.
+
+       Parameters
+           handle the context handle
+
+       Returns
+           0 on success, -1 on error (pm_errno is set accordingly)
+
+Author
+       Generated automatically by Doxygen for libalpm from the source code.
+
+libalpm                                                                                       Sat Mar 18 2023                                                                         libalpm_databases(3)

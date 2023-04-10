@@ -1,0 +1,212 @@
+posix_openpt(3)            Library Functions Manual            posix_openpt(3)
+
+NAME
+       posix_openpt - open a pseudoterminal device
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+       #include <fcntl.h>
+
+       int posix_openpt(int flags);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       posix_openpt():
+           _XOPEN_SOURCE >= 600
+
+DESCRIPTION
+       The  posix_openpt()  function opens an unused pseudoterminal master de‐
+       vice, returning a file descriptor that can be used to refer to that de‐
+       vice.
+
+       The  flags argument is a bit mask that ORs together zero or more of the
+       following flags:
+
+       O_RDWR Open the device for both reading and writing.  It  is  usual  to
+              specify this flag.
+
+       O_NOCTTY
+              Do  not  make  this  device  the  controlling  terminal  for the
+              process.
+
+RETURN VALUE
+       On success, posix_openpt() returns a file descriptor (a nonnegative in‐
+       teger)  which  is the lowest numbered unused file descriptor.  On fail‐
+       ure, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       See open(2).
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │posix_openpt()                              │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.2.1.  POSIX.1-2001.
+
+       It is part of the UNIX 98 pseudoterminal support (see pts(4)).
+
+NOTES
+       Some  older  UNIX  implementations  that support System V (aka UNIX 98)
+       pseudoterminals don't have this function, but it can be  easily  imple‐
+       mented by opening the pseudoterminal multiplexor device:
+
+           int
+           posix_openpt(int flags)
+           {
+               return open("/dev/ptmx", flags);
+           }
+
+       Calling  posix_openpt()  creates a pathname for the corresponding pseu‐
+       doterminal slave device.  The pathname of the slave device can  be  ob‐
+       tained using ptsname(3).  The slave device pathname exists only as long
+       as the master device is open.
+
+SEE ALSO
+       open(2), getpt(3), grantpt(3), ptsname(3), unlockpt(3), pts(4), pty(7)
+
+Linux man-pages 6.04              2023-03-30                   posix_openpt(3)
+POSIX_OPENPT(3P)           POSIX Programmer's Manual          POSIX_OPENPT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       posix_openpt — open a pseudo-terminal device
+
+SYNOPSIS
+       #include <stdlib.h>
+       #include <fcntl.h>
+
+       int posix_openpt(int oflag);
+
+DESCRIPTION
+       The posix_openpt() function shall establish a connection between a mas‐
+       ter  device  for  a pseudo-terminal and a file descriptor. The file de‐
+       scriptor shall be allocated as described in Section 2.14, File Descrip‐
+       tor  Allocation  and  can  be used by other I/O functions that refer to
+       that pseudo-terminal.
+
+       The file status flags and file access modes of the open  file  descrip‐
+       tion shall be set according to the value of oflag.
+
+       Values  for  oflag  are  constructed by a bitwise-inclusive OR of flags
+       from the following list, defined in <fcntl.h>:
+
+       O_RDWR      Open for reading and writing.
+
+       O_NOCTTY    If set posix_openpt() shall not cause the  terminal  device
+                   to become the controlling terminal for the process.
+
+       The behavior of other values for the oflag argument is unspecified.
+
+RETURN VALUE
+       Upon  successful  completion,  the posix_openpt() function shall open a
+       file descriptor for a master pseudo-terminal device and return  a  non-
+       negative  integer representing the file descriptor. Otherwise, -1 shall
+       be returned and errno set to indicate the error.
+
+ERRORS
+       The posix_openpt() function shall fail if:
+
+       EMFILE All file descriptors available  to  the  process  are  currently
+              open.
+
+       ENFILE The  maximum  allowable number of files is currently open in the
+              system.
+
+       The posix_openpt() function may fail if:
+
+       EINVAL The value of oflag is not valid.
+
+       EAGAIN Out of pseudo-terminal resources.
+
+       ENOSR  Out of STREAMS resources.
+
+       The following sections are informative.
+
+EXAMPLES
+   Opening a Pseudo-Terminal and Returning the Name of the Slave Device and  a
+       File Descriptor
+           #include <fcntl.h>
+           #include <stdio.h>
+
+           int masterfd, slavefd;
+           char *slavedevice;
+
+           masterfd = posix_openpt(O_RDWR|O_NOCTTY);
+
+           if (masterfd == -1
+               || grantpt (masterfd) == -1
+               || unlockpt (masterfd) == -1
+               || (slavedevice = ptsname (masterfd)) == NULL)
+               return -1;
+
+           printf("slave device is: %s\n", slavedevice);
+
+           slavefd = open(slavedevice, O_RDWR|O_NOCTTY);
+           if (slavefd < 0)
+               return -1;
+
+APPLICATION USAGE
+       This function is a method for portably obtaining a file descriptor of a
+       master terminal device for a pseudo-terminal.  The  grantpt()  and  pt‐
+       sname()  functions can be used to manipulate mode and ownership permis‐
+       sions, and to obtain the name of the slave device, respectively.
+
+RATIONALE
+       The standard developers considered the matter of adding a  special  de‐
+       vice  for  cloning  master pseudo-terminals: the /dev/ptmx device. How‐
+       ever, consensus could not be reached, and it was felt that adding a new
+       function  would  permit other implementations. The posix_openpt() func‐
+       tion is designed to complement the grantpt(), ptsname(), and unlockpt()
+       functions.
+
+       On  implementations  supporting the /dev/ptmx clone device, opening the
+       master device of a pseudo-terminal is simply:
+
+           mfdp = open("/dev/ptmx", oflag );
+           if (mfdp < 0)
+               return -1;
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.14, File Descriptor Allocation, grantpt(), open(), ptsname(),
+       unlockpt()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <stdlib.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                     POSIX_OPENPT(3P)

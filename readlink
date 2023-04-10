@@ -1,0 +1,443 @@
+READLINK(1)                      User Commands                     READLINK(1)
+
+NAME
+       readlink - print resolved symbolic links or canonical file names
+
+SYNOPSIS
+       readlink [OPTION]... FILE...
+
+DESCRIPTION
+       Note  realpath(1)  is the preferred command to use for canonicalization
+       functionality.
+
+       Print value of a symbolic link or canonical file name
+
+       -f, --canonicalize
+              canonicalize by following every symlink in  every  component  of
+              the  given name recursively; all but the last component must ex‐
+              ist
+
+       -e, --canonicalize-existing
+              canonicalize by following every symlink in  every  component  of
+              the given name recursively, all components must exist
+
+       -m, --canonicalize-missing
+              canonicalize  by  following  every symlink in every component of
+              the given name recursively, without requirements  on  components
+              existence
+
+       -n, --no-newline
+              do not output the trailing delimiter
+
+       -q, --quiet
+
+       -s, --silent
+              suppress most error messages (on by default)
+
+       -v, --verbose
+              report error messages
+
+       -z, --zero
+              end each output line with NUL, not newline
+
+       --help display this help and exit
+
+       --version
+              output version information and exit
+
+AUTHOR
+       Written by Dmitry V. Levin.
+
+REPORTING BUGS
+       GNU coreutils online help: <https://www.gnu.org/software/coreutils/>
+       Report any translation bugs to <https://translationproject.org/team/>
+
+COPYRIGHT
+       Copyright  ©  2023  Free Software Foundation, Inc.  License GPLv3+: GNU
+       GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+       This is free software: you are free  to  change  and  redistribute  it.
+       There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       readlink(2), realpath(1), realpath(3)
+
+       Full documentation <https://www.gnu.org/software/coreutils/readlink>
+       or available locally via: info '(coreutils) readlink invocation'
+
+GNU coreutils 9.2                 April 2023                       READLINK(1)
+READLINK(3P)               POSIX Programmer's Manual              READLINK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       readlink, readlinkat — read the contents of a symbolic link
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t readlink(const char *restrict path, char *restrict buf,
+           size_t bufsize);
+
+       #include <fcntl.h>
+
+       ssize_t readlinkat(int fd, const char *restrict path,
+           char *restrict buf, size_t bufsize);
+
+DESCRIPTION
+       The readlink() function shall place the contents of the  symbolic  link
+       referred  to  by path in the buffer buf which has size bufsize.  If the
+       number of bytes in the symbolic link is less than bufsize, the contents
+       of  the  remainder  of  buf are unspecified. If the buf argument is not
+       large enough to contain the link content, the first bufsize bytes shall
+       be placed in buf.
+
+       If  the value of bufsize is greater than {SSIZE_MAX}, the result is im‐
+       plementation-defined.
+
+       Upon successful completion, readlink() shall mark for update  the  last
+       data access timestamp of the symbolic link.
+
+       The  readlinkat()  function shall be equivalent to the readlink() func‐
+       tion except in the case where path specifies a relative path.  In  this
+       case  the symbolic link whose content is read is relative to the direc‐
+       tory associated with the file descriptor  fd  instead  of  the  current
+       working  directory. If the access mode of the open file description as‐
+       sociated with the file descriptor is not O_SEARCH, the  function  shall
+       check  whether  directory searches are permitted using the current per‐
+       missions of the directory underlying the file descriptor. If the access
+       mode is O_SEARCH, the function shall not perform the check.
+
+       If  readlinkat() is passed the special value AT_FDCWD in the fd parame‐
+       ter, the current working directory shall be used and the behavior shall
+       be identical to a call to readlink().
+
+RETURN VALUE
+       Upon  successful  completion, these functions shall return the count of
+       bytes placed in the buffer. Otherwise, these functions shall  return  a
+       value  of -1, leave the buffer unchanged, and set errno to indicate the
+       error.
+
+ERRORS
+       These functions shall fail if:
+
+       EACCES Search permission is denied for a component of the  path  prefix
+              of path.
+
+       EINVAL The path argument names a file that is not a symbolic link.
+
+       EIO    An I/O error occurred while reading from the file system.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of
+              the path argument.
+
+       ENAMETOOLONG
+              The  length  of  a  component  of  a  pathname  is  longer  than
+              {NAME_MAX}.
+
+       ENOENT A component of path does not name an existing file or path is an
+              empty string.
+
+       ENOTDIR
+              A component of the path prefix names an existing  file  that  is
+              neither  a  directory nor a symbolic link to a directory, or the
+              path argument contains at least one  non-<slash>  character  and
+              ends  with  one or more trailing <slash> characters and the last
+              pathname component names an existing file that is neither a  di‐
+              rectory nor a symbolic link to a directory.
+
+       The readlinkat() function shall fail if:
+
+       EACCES The  access mode of the open file description associated with fd
+              is not O_SEARCH and the permissions of the directory  underlying
+              fd do not permit directory searches.
+
+       EBADF  The  path  argument does not specify an absolute path and the fd
+              argument is neither AT_FDCWD nor a valid  file  descriptor  open
+              for reading or searching.
+
+       ENOTDIR
+              The  path  argument is not an absolute path and fd is a file de‐
+              scriptor associated with a non-directory file.
+
+       These functions may fail if:
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were  encountered  during
+              resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolu‐
+              tion of a symbolic link produced an intermediate result  with  a
+              length that exceeds {PATH_MAX}.
+
+       The following sections are informative.
+
+EXAMPLES
+   Reading the Name of a Symbolic Link
+       The  following  example  shows  how to read the name of a symbolic link
+       named /modules/pass1.
+
+           #include <unistd.h>
+
+           char buf[1024];
+           ssize_t len;
+           ...
+           if ((len = readlink("/modules/pass1", buf, sizeof(buf)-1)) != -1)
+               buf[len] = '\0';
+
+APPLICATION USAGE
+       Conforming applications should not assume that the returned contents of
+       the symbolic link are null-terminated.
+
+RATIONALE
+       The  type  associated with bufsiz is a size_t in order to be consistent
+       with both the ISO C standard and the definition of read().  The  behav‐
+       ior  specified for readlink() when bufsiz is zero represents historical
+       practice. For this case, the standard developers  considered  a  change
+       whereby  readlink() would return the number of non-null bytes contained
+       in the symbolic link with the buffer buf remaining unchanged;  however,
+       since  the stat structure member st_size value can be used to determine
+       the size of buffer necessary to contain the contents  of  the  symbolic
+       link  as  returned  by  readlink(), this proposal was rejected, and the
+       historical practice retained.
+
+       The purpose of the readlinkat() function is to read the content of sym‐
+       bolic  links  in  directories  other than the current working directory
+       without exposure to race conditions.  Any part of the path  of  a  file
+       could  be changed in parallel to a call to readlink(), resulting in un‐
+       specified behavior. By opening a file descriptor for the target  direc‐
+       tory  and using the readlinkat() function it can be guaranteed that the
+       symbolic link read is located relative to the desired directory.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fstatat(), symlink()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                         READLINK(3P)
+readlink(2)                   System Calls Manual                  readlink(2)
+
+NAME
+       readlink, readlinkat - read value of a symbolic link
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t readlink(const char *restrict pathname, char *restrict buf,
+                        size_t bufsiz);
+
+       #include <fcntl.h>            /* Definition of AT_* constants */
+       #include <unistd.h>
+
+       ssize_t readlinkat(int dirfd, const char *restrict pathname,
+                        char *restrict buf, size_t bufsiz);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       readlink():
+           _XOPEN_SOURCE >= 500 || _POSIX_C_SOURCE >= 200112L
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+       readlinkat():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _ATFILE_SOURCE
+
+DESCRIPTION
+       readlink()  places  the  contents  of the symbolic link pathname in the
+       buffer buf, which has size bufsiz.  readlink() does not append a termi‐
+       nating  null byte to buf.  It will (silently) truncate the contents (to
+       a length of bufsiz characters), in case the buffer is too small to hold
+       all of the contents.
+
+   readlinkat()
+       The  readlinkat() system call operates in exactly the same way as read‐
+       link(), except for the differences described here.
+
+       If the pathname given in pathname is relative, then it  is  interpreted
+       relative  to  the  directory  referred  to by the file descriptor dirfd
+       (rather than relative to the current working directory of  the  calling
+       process, as is done by readlink() for a relative pathname).
+
+       If  pathname  is relative and dirfd is the special value AT_FDCWD, then
+       pathname is interpreted relative to the current  working  directory  of
+       the calling process (like readlink()).
+
+       If pathname is absolute, then dirfd is ignored.
+
+       Since  Linux 2.6.39, pathname can be an empty string, in which case the
+       call operates on the symbolic link referred to by dirfd  (which  should
+       have been obtained using open(2) with the O_PATH and O_NOFOLLOW flags).
+
+       See openat(2) for an explanation of the need for readlinkat().
+
+RETURN VALUE
+       On  success, these calls return the number of bytes placed in buf.  (If
+       the returned value equals bufsiz, then truncation may  have  occurred.)
+       On error, -1 is returned and errno is set to indicate the error.
+
+ERRORS
+       EACCES Search  permission is denied for a component of the path prefix.
+              (See also path_resolution(7).)
+
+       EBADF  (readlinkat()) pathname is relative but dirfd is neither  AT_FD‐
+              CWD nor a valid file descriptor.
+
+       EFAULT buf extends outside the process's allocated address space.
+
+       EINVAL bufsiz is not positive.
+
+       EINVAL The  named file (i.e., the final filename component of pathname)
+              is not a symbolic link.
+
+       EIO    An I/O error occurred while reading from the filesystem.
+
+       ELOOP  Too many symbolic links  were  encountered  in  translating  the
+              pathname.
+
+       ENAMETOOLONG
+              A pathname, or a component of a pathname, was too long.
+
+       ENOENT The named file does not exist.
+
+       ENOMEM Insufficient kernel memory was available.
+
+       ENOTDIR
+              A component of the path prefix is not a directory.
+
+       ENOTDIR
+              (readlinkat()) pathname is relative and dirfd is a file descrip‐
+              tor referring to a file other than a directory.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       readlink()
+              4.4BSD (first appeared in 4.2BSD), POSIX.1-2001, POSIX.1-2008.
+
+       readlinkat()
+              POSIX.1-2008.  Linux 2.6.16, glibc 2.4.
+
+       Up to and including glibc 2.4, the return type of  readlink()  was  de‐
+       clared  as  int.   Nowadays, the return type is declared as ssize_t, as
+       (newly) required in POSIX.1-2001.
+
+   glibc
+       On older kernels where readlinkat() is unavailable, the  glibc  wrapper
+       function falls back to the use of readlink().  When pathname is a rela‐
+       tive pathname, glibc constructs a pathname based on the  symbolic  link
+       in /proc/self/fd that corresponds to the dirfd argument.
+
+NOTES
+       Using  a  statically sized buffer might not provide enough room for the
+       symbolic link contents.  The required size for the buffer  can  be  ob‐
+       tained  from  the  stat.st_size value returned by a call to lstat(2) on
+       the link.  However, the number of bytes written by readlink() and read‐
+       linkat()  should  be checked to make sure that the size of the symbolic
+       link did not increase between the calls.   Dynamically  allocating  the
+       buffer  for  readlink() and readlinkat() also addresses a common porta‐
+       bility problem when using PATH_MAX for the buffer size,  as  this  con‐
+       stant  is not guaranteed to be defined per POSIX if the system does not
+       have such limit.
+
+EXAMPLES
+       The following program allocates the buffer needed by readlink() dynami‐
+       cally from the information provided by lstat(2), falling back to a buf‐
+       fer of size PATH_MAX in cases where lstat(2) reports a size of zero.
+
+       #include <limits.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <sys/stat.h>
+       #include <unistd.h>
+
+       int
+       main(int argc, char *argv[])
+       {
+           char         *buf;
+           ssize_t      nbytes, bufsiz;
+           struct stat  sb;
+
+           if (argc != 2) {
+               fprintf(stderr, "Usage: %s <pathname>\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           if (lstat(argv[1], &sb) == -1) {
+               perror("lstat");
+               exit(EXIT_FAILURE);
+           }
+
+           /* Add one to the link size, so that we can determine whether
+              the buffer returned by readlink() was truncated. */
+
+           bufsiz = sb.st_size + 1;
+
+           /* Some magic symlinks under (for example) /proc and /sys
+              report 'st_size' as zero. In that case, take PATH_MAX as
+              a "good enough" estimate. */
+
+           if (sb.st_size == 0)
+               bufsiz = PATH_MAX;
+
+           buf = malloc(bufsiz);
+           if (buf == NULL) {
+               perror("malloc");
+               exit(EXIT_FAILURE);
+           }
+
+           nbytes = readlink(argv[1], buf, bufsiz);
+           if (nbytes == -1) {
+               perror("readlink");
+               exit(EXIT_FAILURE);
+           }
+
+           /* Print only 'nbytes' of 'buf', as it doesn't contain a terminating
+              null byte ('\0'). */
+           printf("'%s' points to '%.*s'\n", argv[1], (int) nbytes, buf);
+
+           /* If the return value was equal to the buffer size, then the
+              the link target was larger than expected (perhaps because the
+              target was changed between the call to lstat() and the call to
+              readlink()). Warn the user that the returned target may have
+              been truncated. */
+
+           if (nbytes == bufsiz)
+               printf("(Returned buffer may have been truncated)\n");
+
+           free(buf);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       readlink(1), lstat(2), stat(2), symlink(2),  realpath(3),  path_resolu‐
+       tion(7), symlink(7)
+
+Linux man-pages 6.04              2023-03-30                       readlink(2)

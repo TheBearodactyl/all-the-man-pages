@@ -1,0 +1,89 @@
+Tss2_TctiLdr_Initialize(3)                                                               Library Functions Manual                                                               Tss2_TctiLdr_Initialize(3)
+
+NAME
+       Tss2_TctiLdr_Initialize, Tss2_TctiLdr_Initialize_Ex - Instantiate and initialize a TCTI context.
+
+SYNOPSIS
+       #include <tss2/tss2_tctildr.h>
+
+       TSS2_RC Tss2_TctiLdr_Initialize (const char *nameConf, TSS2_TCTI_CONTEXT **context);
+
+       TSS2_RC Tss2_TctiLdr_Initialize_Ex (const char *name, const char *conf, TSS2_TCTI_CONTEXT **context);
+
+DESCRIPTION
+       The Tss2_TctiLdr_Initialize() and Tss2_TctiLdr_Initialize_Ex() functions initialize a TCTI context used to communicate with the TPM2 or some intermediate component in the TCG TPM2 software stack.
+
+       Tss2_TctiLdr_Initialize()  takes a single string that encodes both the name of the TCTI library the caller wishes to instantiate and its desired configuration in the nameConf parameter.  nameConf
+       is a string comprised of two substrings: name and conf parameters respectively.  These substrings are combined with name first, separated by a single ':' / colon character:  'name:conf'.  Consult
+       the section titled TCTI CONFIG for information about the encoding of these strings.  The context parameter is used to return a reference to the TCTI context created by the function.
+
+       Tss2_TctiLdr_Initialize_Ex()  behaves identically to the Tss2_TctiLdr_Initialize() function with the exception that the TCTI name and configuration are passed as separate strings. The encoding of
+       these strings is described in section TCTI_CONFIG.
+
+TCTI CONFIG
+       If the name string is NULL or the emptry string then the initialization functions will select a default TCTI appropriate for the platform. On Linux this means first trying to load a library named
+       libtss2-tcti-default.so.   This is a placeholder for distros to provide a distro specific default. It is recommended that this be a symlink to another installed TCTI library.  If attempts to load
+       this shared object fails the implementation will attempt known TCTIs in the following order:
+
+       • libtss2-tcti-tabrmd.so.0
+
+       • libtss2-tcti-device.so.0
+
+       • libtss2-tcti-mssim.so.0
+
+       When the name string is neither NULL nor the empty string the implementation will attempt to dlopen a library with the given name. If this fails then the implementation assumes it has been passed
+       a shortened name and will attempt to load libraries by name with the following permutations:
+
+       • <name>
+
+       • libtss2-tcti-<name>.so.0
+
+       • libtss2-tcti-<name>.so
+
+       The config string is not interpreted by the TctiLdr init functions and is passed unaltered to the initialization function for the selected TCTI. The format for this string is TCTI specific.
+
+       The  Tss2_TctiLdr_Initialize  function is passed the name and conf strings as a single parameter. In this case the name and conf strings are concatinated with a single ':' / colon character sepa‐
+       rating them.
+
+       For a more thorough discussion of the TCTILDR API see the “TCG TSS 2.0 TPM Command Transmission Interface (TCTI) API Specification”.
+
+RETURN VALUE
+       A successful call to this function will return TSS2_RC_SUCCESS.  An unsuccessful call will produce a response code described in section ERRORS.
+
+ERRORS
+       TSS2_TCTI_RC_MEMORY is returned if memory allocation fails
+
+       TSS2_TCTI_RC_NOT_SUPPORTED is returned when the loader is unable to locate a TCTI library with the provided name
+
+       TSS2_TCTI_RC_IO_ERROR is returned if a failure occurs in the underlying library loading mechanism
+
+       TSS2_TCTI_RC_BAD_REFERENCE is returned if the tctiContext parameter is NULL
+
+EXAMPLE
+       Example code.
+
+       #include <inttypes.h>
+       #include <stdlib.h>
+       #include <stdio.h>
+       #include <tss2/tss2_tctildr.h>
+
+       TSS2_TCTI_CONTEXT *ctx = NULL;
+       TSS2_RC rc = Tss2_TctiLdr_Initialize (NULL, &ctx);
+       if (rc != TSS2_RC_SUCCESS) {
+           fprintf (stderr, "Initialization of default TCTI context failed with "
+                    "response code: 0x%" PRIx32 "0, rc);
+           exit (EXIT_FAILURE);
+       }
+       exit (EXIT_SUCCESS);
+
+AUTHOR
+       Philip Tricca <philip.b.tricca@intel.com>
+
+SEE ALSO
+       Tss2_Tcti_Device_Init(3), Tss2_Tcti_Socket_Init(3), Tss2_TctiLdr_Initialize(3), Tss2_TctiLdr_Finalize(3), tcti-device(7), tcti-socket(7), tcti-tabrmd(7), tpm2-abrmd(8)
+
+COLOPHON
+       This page is part of release 3.2.0 of Open Source implementation of the TCG TPM2 Software Stack (TSS2). A description of the project, information about reporting bugs, and the latest  version  of
+       this page can be found at https://github.com/tpm2-software/tpm2-tss/.
+
+TPM2 Software Stack                                                                             MARCH 2019                                                                      Tss2_TctiLdr_Initialize(3)

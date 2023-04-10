@@ -1,0 +1,42 @@
+io_uring_queue_init(3)                                                                        liburing Manual                                                                       io_uring_queue_init(3)
+
+NAME
+       io_uring_queue_init - setup io_uring submission and completion queues
+
+SYNOPSIS
+       #include <liburing.h>
+
+       int io_uring_queue_init(unsigned entries,
+                               struct io_uring *ring,
+                               unsigned flags);
+
+       int io_uring_queue_init_params(unsigned entries,
+                                      struct io_uring *ring,
+                                      struct io_uring_params *params);
+
+DESCRIPTION
+       The  io_uring_queue_init(3)  function  executes  the io_uring_setup(2) system call to initialize the submission and completion queues in the kernel with at least entries entries in the submission
+       queue and then maps the resulting file descriptor to memory shared between the application and the kernel.
+
+       By default, the CQ ring will have twice the number of entries as specified by entries for the SQ ring. This is adequate for regular file or storage workloads, but may be too small networked work‐
+       loads.  The SQ ring entries do not impose a limit on the number of in-flight requests that the ring can support, it merely limits the number that can be submitted to the kernel in one go (batch).
+       if the CQ ring overflows, e.g. more entries are generated than fits in the ring before the application can reap them, then the ring enters a CQ ring overflow state.  This  is  indicated  by  IOR‐
+       ING_SQ_CQ_OVERFLOW being set in the SQ ring flags. Unless the kernel runs out of available memory, entries are not dropped, but it is a much slower completion path and will slow down request pro‐
+       cessing. For that reason it should be avoided and the CQ ring sized appropriately for the workload. Setting cq_entries in struct io_uring_params will tell the kernel to allocate this many entries
+       for the CQ ring, independent of the SQ ring size in given in entries.  If the value isn't a power of 2, it will be rounded up to the nearest power of 2.
+
+       On success, io_uring_queue_init(3) returns 0 and ring will point to the shared memory containing the io_uring queues. On failure -errno is returned.
+
+       flags will be passed through to the io_uring_setup syscall (see io_uring_setup(2)).
+
+       If the io_uring_queue_init_params(3) variant is used, then the parameters indicated by params will be passed straight through to the io_uring_setup(2) system call.
+
+       On success, the resources held by ring should be released via a corresponding call to io_uring_queue_exit(3).
+
+RETURN VALUE
+       io_uring_queue_init(3) returns 0 on success and -errno on failure.
+
+SEE ALSO
+       io_uring_setup(2), io_uring_register_ring_fd(3), mmap(2), io_uring_queue_exit(3)
+
+liburing-0.7                                                                                   July 10, 2020                                                                        io_uring_queue_init(3)

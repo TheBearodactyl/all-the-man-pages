@@ -1,0 +1,226 @@
+Next(3)                                                                             User Contributed Perl Documentation                                                                            Next(3)
+
+NAME
+       File::Next - File-finding iterator
+
+VERSION
+       Version 1.18
+
+SYNOPSIS
+       File::Next is a lightweight, taint-safe file-finding module.  It has no non-core prerequisites.
+
+           use File::Next;
+
+           my $files = File::Next::files( '/tmp' );
+
+           while ( defined ( my $file = $files->() ) ) {
+               # do something...
+           }
+
+OPERATIONAL THEORY
+       The two major functions, files() and dirs(), return an iterator that will walk through a directory tree.  The simplest use case is:
+
+           use File::Next;
+
+           my $iter = File::Next::files( '/tmp' );
+
+           while ( defined ( my $file = $iter->() ) ) {
+               print $file, "\n";
+           }
+
+           # Prints...
+           /tmp/foo.txt
+           /tmp/bar.pl
+           /tmp/baz/1
+           /tmp/baz/2.txt
+           /tmp/baz/wango/tango/purple.txt
+
+       Note that only files are returned by "files()"'s iterator.  Directories are ignored.
+
+       In list context, the iterator returns a list containing $dir, $file and $fullpath, where $fullpath is what would get returned in scalar context.
+
+       The first parameter to any of the iterator factory functions may be a hashref of options.
+
+ITERATORS
+       For the three iterators, the \%options are optional.
+
+   files( [ \%options, ] @starting_points )
+       Returns an iterator that walks directories starting with the items in @starting_points.  Each call to the iterator returns another regular file.
+
+   dirs( [ \%options, ] @starting_points )
+       Returns an iterator that walks directories starting with the items in @starting_points.  Each call to the iterator returns another directory.
+
+   everything( [ \%options, ] @starting_points )
+       Returns an iterator that walks directories starting with the items in @starting_points.  Each call to the iterator returns another file, whether it's a regular file, directory, symlink, socket,
+       or whatever.
+
+   from_file( [ \%options, ] $filename )
+       Returns an iterator that iterates over each of the files specified in $filename.  If $filename is "-", then the files are read from STDIN.
+
+       The files are assumed to be in the file one filename per line.  If $nul_separated is passed, then the files are assumed to be NUL-separated, as by "find -print0".
+
+       If there are blank lines or empty filenames in the input stream, they are ignored.
+
+       Each filename is checked to see that it is a regular file or a named pipe.  If the file does not exists or is a directory, then a warning is thrown to warning_handler, and the file is skipped.
+
+       The following options have no effect in "from_files": descend_filter, sort_files, follow_symlinks.
+
+SUPPORT FUNCTIONS
+   sort_standard( $a, $b )
+       A sort function for passing as a "sort_files" option:
+
+           my $iter = File::Next::files( {
+               sort_files => \&File::Next::sort_standard,
+           }, 't/swamp' );
+
+       This function is the default, so the code above is identical to:
+
+           my $iter = File::Next::files( {
+               sort_files => 1,
+           }, 't/swamp' );
+
+   sort_reverse( $a, $b )
+       Same as "sort_standard", but in reverse.
+
+   reslash( $path )
+       Takes a path with all forward slashes and rebuilds it with whatever is appropriate for the platform.  For example 'foo/bar/bat' will become 'foo\bar\bat' on Windows.
+
+       This is really just a convenience function.  I'd make it private, but ack wants it, too.
+
+CONSTRUCTOR PARAMETERS
+   file_filter -> \&file_filter
+       The file_filter lets you check to see if it's really a file you want to get back.  If the file_filter returns a true value, the file will be returned; if false, it will be skipped.
+
+       The file_filter function takes no arguments but rather does its work through a collection of variables.
+
+       •   $_ is the current filename within that directory
+
+       •   $File::Next::dir is the current directory name
+
+       •   $File::Next::name is the complete pathname to the file
+
+       These are analogous to the same variables in File::Find.
+
+           my $iter = File::Next::files( { file_filter => sub { /\.txt$/ } }, '/tmp' );
+
+       By default, the file_filter is "sub {1}", or "all files".
+
+       This filter has no effect if your iterator is only returning directories.
+
+   descend_filter => \&descend_filter
+       The descend_filter lets you check to see if the iterator should descend into a given directory.  Maybe you want to skip CVS and .svn directories.
+
+           my $descend_filter = sub { $_ ne "CVS" && $_ ne ".svn" }
+
+       The descend_filter function takes no arguments but rather does its work through a collection of variables.
+
+       •   $_ is the current filename of the directory
+
+       •   $File::Next::dir is the complete directory name
+
+       The descend filter is NOT applied to any directory names specified as @starting_points in the constructor.  For example,
+
+           my $iter = File::Next::files( { descend_filter => sub{0} }, '/tmp' );
+
+       always descends into /tmp, as you would expect.
+
+       By default, the descend_filter is "sub {1}", or "always descend".
+
+   error_handler => \&error_handler
+       If error_handler is set, then any errors will be sent through it.  If the error is OS-related (ex. file not found, not permissions), the native error code is passed as a second argument.  By
+       default, this value is "CORE::die".  This function must NOT return.
+
+   warning_handler => \&warning_handler
+       If warning_handler is set, then any errors will be sent through it.  By default, this value is "CORE::warn".  Unlike the error_handler, this function must return.
+
+   sort_files => [ 0 | 1 | \&sort_sub]
+       If you want files sorted, pass in some true value, as in "sort_files => 1".
+
+       If you want a special sort order, pass in a sort function like "sort_files => sub { $a->[1] cmp $b->[1] }".  Note that the parms passed in to the sub are arrayrefs, where $a->[0] is the directory
+       name, $a->[1] is the file name and $a->[2] is the full path.  Typically you're going to be sorting on $a->[2].
+
+   follow_symlinks => [ 0 | 1 ]
+       If set to false, the iterator will ignore any files and directories that are actually symlinks.  This has no effect on non-Unixy systems such as Windows.  By default, this is true.
+
+       Note that this filter does not apply to any of the @starting_points passed in to the constructor.
+
+       You should not set "follow_symlinks => 0" unless you specifically need that behavior.  Setting "follow_symlinks => 0" can be a speed hit, because File::Next must check to see if the file or
+       directory you're about to follow is actually a symlink.
+
+   nul_separated => [ 0 | 1 ]
+       Used by the "from_file" iterator.  Specifies that the files listed in the input file are separated by NUL characters, as from the "find" command with the "-print0" argument.
+
+PRIVATE FUNCTIONS
+   _setup( $default_parms, @whatever_was_passed_to_files() )
+       Handles all the scut-work for setting up the parms passed in.
+
+       Returns a hashref of operational options, combined between $passed_parms and $defaults, plus the queue.
+
+       The queue prep stuff takes the strings in @starting_points and puts them in the format that queue needs.
+
+       The @queue that gets passed around is an array, with each entry an arrayref of $dir, $file and $fullpath.
+
+   _candidate_files( $parms, $dir )
+       Pulls out the files/dirs that might be worth looking into in $dir.  If $dir is the empty string, then search the current directory.
+
+       $parms is the hashref of parms passed into File::Next constructor.
+
+DIAGNOSTICS
+       "File::Next::files must not be invoked as File::Next->files"
+       "File::Next::dirs must not be invoked as File::Next->dirs"
+       "File::Next::everything must not be invoked as File::Next->everything"
+
+       The interface functions do not allow for the method invocation syntax and throw errors with the messages above. You can work around this limitation with "can" in UNIVERSAL.
+
+           for my $file_system_feature (qw(dirs files)) {
+               my $iterator = File::Next->can($file_system_feature)->($options, $target_directory);
+               while (defined(my $name = $iterator->())) {
+                   # ...
+               }
+           }
+
+SPEED TWEAKS
+       •   Don't set "follow_symlinks => 0" unless you need it.
+
+AUTHOR
+       Andy Lester, "<andy at petdance.com>"
+
+BUGS
+       Please report any bugs or feature requests to <http://github.com/petdance/file-next/issues>.
+
+       Note that File::Next does NOT use <http://rt.cpan.org> for bug tracking.
+
+SUPPORT
+       You can find documentation for this module with the perldoc command.
+
+           perldoc File::Next
+
+       You can also look for information at:
+
+       •   File::Next's bug queue
+
+           <http://github.com/petdance/file-next/issues>
+
+       •   CPAN Ratings
+
+           <http://cpanratings.perl.org/d/File-Next>
+
+       •   Search CPAN
+
+           <http://search.cpan.org/dist/File-Next>
+
+       •   Source code repository
+
+           <http://github.com/petdance/file-next/tree/master>
+
+ACKNOWLEDGEMENTS
+       All file-finding in this module is adapted from Mark Jason Dominus' marvelous Higher Order Perl, page 126.
+
+       Thanks to these fine contributors: Varadinsky, Paulo Custodio, Gerhard Poul, Brian Fraser, Todd Rinaldo, Bruce Woodward, Christopher J. Madsen, Bernhard Fisseni and Rob Hoelz.
+
+COPYRIGHT & LICENSE
+       Copyright 2005-2017 Andy Lester.
+
+       This program is free software; you can redistribute it and/or modify it under the terms of the Artistic License version 2.0.
+
+perl v5.36.0                                                                                    2022-05-29                                                                                         Next(3)

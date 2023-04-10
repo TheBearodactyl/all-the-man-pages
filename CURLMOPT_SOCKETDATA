@@ -1,0 +1,59 @@
+CURLMOPT_SOCKETDATA(3)                                                                   curl_multi_setopt options                                                                  CURLMOPT_SOCKETDATA(3)
+
+NAME
+       CURLMOPT_SOCKETDATA - custom pointer passed to the socket callback
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       CURLMcode curl_multi_setopt(CURLM *handle, CURLMOPT_SOCKETDATA, void *pointer);
+
+DESCRIPTION
+       A data pointer to pass to the socket callback set with the CURLMOPT_SOCKETFUNCTION(3) option.
+
+       This pointer will not be touched by libcurl but will only be passed in to the socket callbacks's clientp argument.
+
+DEFAULT
+       NULL
+
+PROTOCOLS
+       All
+
+EXAMPLE
+       static int sock_cb(CURL *e, curl_socket_t s, int what, void *cbp, void *sockp)
+       {
+         GlobalInfo *g = (GlobalInfo*) cbp;
+         SockInfo *fdp = (SockInfo*) sockp;
+
+         if(what == CURL_POLL_REMOVE) {
+           remsock(fdp);
+         }
+         else {
+           if(!fdp) {
+             addsock(s, e, what, g);
+           }
+           else {
+             setsock(fdp, s, e, what, g);
+           }
+         }
+         return 0;
+       }
+
+       main()
+       {
+         GlobalInfo setup;
+         /* ... use socket callback and custom pointer */
+         curl_multi_setopt(multi, CURLMOPT_SOCKETFUNCTION, sock_cb);
+         curl_multi_setopt(multi, CURLMOPT_SOCKETDATA, &setup);
+       }
+
+AVAILABILITY
+       Added in 7.15.4
+
+RETURN VALUE
+       Returns CURLM_OK.
+
+SEE ALSO
+       CURLMOPT_SOCKETFUNCTION(3), curl_multi_socket_action(3), CURLMOPT_TIMERFUNCTION(3)
+
+libcurl 7.39.0                                                                                  3 Nov 2014                                                                          CURLMOPT_SOCKETDATA(3)

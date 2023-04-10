@@ -1,0 +1,895 @@
+IO::Compress::Zip(3perl)                                                             Perl Programmers Reference Guide                                                             IO::Compress::Zip(3perl)
+
+NAME
+       IO::Compress::Zip - Write zip files/buffers
+
+SYNOPSIS
+           use IO::Compress::Zip qw(zip $ZipError) ;
+
+           my $status = zip $input => $output [,OPTS]
+               or die "zip failed: $ZipError\n";
+
+           my $z = IO::Compress::Zip->new( $output [,OPTS] )
+               or die "zip failed: $ZipError\n";
+
+           $z->print($string);
+           $z->printf($format, $string);
+           $z->write($string);
+           $z->syswrite($string [, $length, $offset]);
+           $z->flush();
+           $z->tell();
+           $z->eof();
+           $z->seek($position, $whence);
+           $z->binmode();
+           $z->fileno();
+           $z->opened();
+           $z->autoflush();
+           $z->input_line_number();
+           $z->newStream( [OPTS] );
+
+           $z->deflateParams();
+
+           $z->close() ;
+
+           $ZipError ;
+
+           # IO::File mode
+
+           print $z $string;
+           printf $z $format, $string;
+           tell $z
+           eof $z
+           seek $z, $position, $whence
+           binmode $z
+           fileno $z
+           close $z ;
+
+DESCRIPTION
+       This module provides a Perl interface that allows writing zip compressed data to files or buffer.
+
+       The primary purpose of this module is to provide streaming write access to zip files and buffers.
+
+       At present the following compression methods are supported by IO::Compress::Zip
+
+       Store (0)
+       Deflate (8)
+       Bzip2 (12)
+            To write Bzip2 content, the module "IO::Uncompress::Bunzip2" must be installed.
+
+       Lzma (14)
+            To write LZMA content, the module "IO::Uncompress::UnLzma" must be installed.
+
+       Zstandard (93)
+            To write Zstandard content, the module "IO::Compress::Zstd" must be installed.
+
+       Xz (95)
+            To write Xz content, the module "IO::Uncompress::UnXz" must be installed.
+
+       For reading zip files/buffers, see the companion module IO::Uncompress::Unzip.
+
+Functional Interface
+       A top-level function, "zip", is provided to carry out "one-shot" compression between buffers and/or files. For finer control over the compression process, see the "OO Interface" section.
+
+           use IO::Compress::Zip qw(zip $ZipError) ;
+
+           zip $input_filename_or_reference => $output_filename_or_reference [,OPTS]
+               or die "zip failed: $ZipError\n";
+
+       The functional interface needs Perl5.005 or better.
+
+   zip $input_filename_or_reference => $output_filename_or_reference [, OPTS]
+       "zip" expects at least two parameters, $input_filename_or_reference and $output_filename_or_reference and zero or more optional parameters (see "Optional Parameters")
+
+       The $input_filename_or_reference parameter
+
+       The parameter, $input_filename_or_reference, is used to define the source of the uncompressed data.
+
+       It can take one of the following forms:
+
+       A filename
+            If the $input_filename_or_reference parameter is a simple scalar, it is assumed to be a filename. This file will be opened for reading and the input data will be read from it.
+
+       A filehandle
+            If the $input_filename_or_reference parameter is a filehandle, the input data will be read from it.  The string '-' can be used as an alias for standard input.
+
+       A scalar reference
+            If $input_filename_or_reference is a scalar reference, the input data will be read from $$input_filename_or_reference.
+
+       An array reference
+            If $input_filename_or_reference is an array reference, each element in the array must be a filename.
+
+            The input data will be read from each file in turn.
+
+            The complete array will be walked to ensure that it only contains valid filenames before any data is compressed.
+
+       An Input FileGlob string
+            If $input_filename_or_reference is a string that is delimited by the characters "<" and ">" "zip" will assume that it is an input fileglob string. The input is the list of files that match
+            the fileglob.
+
+            See File::GlobMapper for more details.
+
+       If the $input_filename_or_reference parameter is any other type, "undef" will be returned.
+
+       In addition, if $input_filename_or_reference is a simple filename, the default values for the "Name", "Time", "TextFlag", "ExtAttr", "exUnixN" and "exTime" options will be sourced from that file.
+
+       If you do not want to use these defaults they can be overridden by explicitly setting the "Name", "Time", "TextFlag", "ExtAttr", "exUnixN" and "exTime" options or by setting the "Minimal"
+       parameter.
+
+       The $output_filename_or_reference parameter
+
+       The parameter $output_filename_or_reference is used to control the destination of the compressed data. This parameter can take one of these forms.
+
+       A filename
+            If the $output_filename_or_reference parameter is a simple scalar, it is assumed to be a filename.  This file will be opened for writing and the compressed data will be written to it.
+
+       A filehandle
+            If the $output_filename_or_reference parameter is a filehandle, the compressed data will be written to it.  The string '-' can be used as an alias for standard output.
+
+       A scalar reference
+            If $output_filename_or_reference is a scalar reference, the compressed data will be stored in $$output_filename_or_reference.
+
+       An Array Reference
+            If $output_filename_or_reference is an array reference, the compressed data will be pushed onto the array.
+
+       An Output FileGlob
+            If $output_filename_or_reference is a string that is delimited by the characters "<" and ">" "zip" will assume that it is an output fileglob string. The output is the list of files that
+            match the fileglob.
+
+            When $output_filename_or_reference is an fileglob string, $input_filename_or_reference must also be a fileglob string. Anything else is an error.
+
+            See File::GlobMapper for more details.
+
+       If the $output_filename_or_reference parameter is any other type, "undef" will be returned.
+
+   Notes
+       When $input_filename_or_reference maps to multiple files/buffers and $output_filename_or_reference is a single file/buffer the input files/buffers will each be stored in
+       $output_filename_or_reference as a distinct entry.
+
+   Optional Parameters
+       The optional parameters for the one-shot function "zip" are (for the most part) identical to those used with the OO interface defined in the "Constructor Options" section. The exceptions are
+       listed below
+
+       "AutoClose => 0|1"
+            This option applies to any input or output data streams to "zip" that are filehandles.
+
+            If "AutoClose" is specified, and the value is true, it will result in all input and/or output filehandles being closed once "zip" has completed.
+
+            This parameter defaults to 0.
+
+       "BinModeIn => 0|1"
+            This option is now a no-op. All files will be read in binmode.
+
+       "Append => 0|1"
+            The behaviour of this option is dependent on the type of output data stream.
+
+            •    A Buffer
+
+                 If "Append" is enabled, all compressed data will be append to the end of the output buffer. Otherwise the output buffer will be cleared before any compressed data is written to it.
+
+            •    A Filename
+
+                 If "Append" is enabled, the file will be opened in append mode. Otherwise the contents of the file, if any, will be truncated before any compressed data is written to it.
+
+            •    A Filehandle
+
+                 If "Append" is enabled, the filehandle will be positioned to the end of the file via a call to "seek" before any compressed data is written to it.  Otherwise the file pointer will not
+                 be moved.
+
+            When "Append" is specified, and set to true, it will append all compressed data to the output data stream.
+
+            So when the output is a filehandle it will carry out a seek to the eof before writing any compressed data. If the output is a filename, it will be opened for appending. If the output is a
+            buffer, all compressed data will be appended to the existing buffer.
+
+            Conversely when "Append" is not specified, or it is present and is set to false, it will operate as follows.
+
+            When the output is a filename, it will truncate the contents of the file before writing any compressed data. If the output is a filehandle its position will not be changed. If the output is
+            a buffer, it will be wiped before any compressed data is output.
+
+            Defaults to 0.
+
+   Examples
+       Here are a few example that show the capabilities of the module.
+
+       Streaming
+
+       This very simple command line example demonstrates the streaming capabilities of the module.  The code reads data from STDIN, compresses it, and writes the compressed data to STDOUT.
+
+           $ echo hello world | perl -MIO::Compress::Zip=zip -e 'zip \*STDIN => \*STDOUT' >output.zip
+
+       The special filename "-" can be used as a standin for both "\*STDIN" and "\*STDOUT", so the above can be rewritten as
+
+           $ echo hello world | perl -MIO::Compress::Zip=zip -e 'zip "-" => "-"' >output.zip
+
+       One problem with creating a zip archive directly from STDIN can be demonstrated by looking at the contents of the zip file, output.zip, that we have just created.
+
+           $ unzip -l output.zip
+           Archive:  output.zip
+           Length      Date    Time    Name
+           ---------  ---------- -----   ----
+               12  2019-08-16 22:21
+           ---------                     -------
+               12                     1 file
+
+       The archive member (filename) used is the empty string.
+
+       If that doesn't suit your needs, you can explicitly set the filename used in the zip archive by specifying the Name option, like so
+
+           echo hello world | perl -MIO::Compress::Zip=zip -e 'zip "-" => "-", Name => "hello.txt"' >output.zip
+
+       Now the contents of the zip file looks like this
+
+           $ unzip -l output.zip
+           Archive:  output.zip
+           Length      Date    Time    Name
+           ---------  ---------- -----   ----
+               12  2019-08-16 22:22   hello.txt
+           ---------                     -------
+               12                     1 file
+
+       Compressing a file from the filesystem
+
+       To read the contents of the file "file1.txt" and write the compressed data to the file "file1.txt.zip".
+
+           use strict ;
+           use warnings ;
+           use IO::Compress::Zip qw(zip $ZipError) ;
+
+           my $input = "file1.txt";
+           zip $input => "$input.zip"
+               or die "zip failed: $ZipError\n";
+
+       Reading from a Filehandle and writing to an in-memory buffer
+
+       To read from an existing Perl filehandle, $input, and write the compressed data to a buffer, $buffer.
+
+           use strict ;
+           use warnings ;
+           use IO::Compress::Zip qw(zip $ZipError) ;
+           use IO::File ;
+
+           my $input = IO::File->new( "<file1.txt" )
+               or die "Cannot open 'file1.txt': $!\n" ;
+           my $buffer ;
+           zip $input => \$buffer
+               or die "zip failed: $ZipError\n";
+
+       Compressing multiple files
+
+       To create a zip file, "output.zip", that contains the compressed contents of the files "alpha.txt" and "beta.txt"
+
+           use strict ;
+           use warnings ;
+           use IO::Compress::Zip qw(zip $ZipError) ;
+
+           zip [ 'alpha.txt', 'beta.txt' ] => 'output.zip'
+               or die "zip failed: $ZipError\n";
+
+       Alternatively, rather than having to explicitly name each of the files that you want to compress, you could use a fileglob to select all the "txt" files in the current directory, as follows
+
+           use strict ;
+           use warnings ;
+           use IO::Compress::Zip qw(zip $ZipError) ;
+
+           my @files = <*.txt>;
+           zip \@files => 'output.zip'
+               or die "zip failed: $ZipError\n";
+
+       or more succinctly
+
+           zip [ <*.txt> ] => 'output.zip'
+               or die "zip failed: $ZipError\n";
+
+OO Interface
+   Constructor
+       The format of the constructor for "IO::Compress::Zip" is shown below
+
+           my $z = IO::Compress::Zip->new( $output [,OPTS] )
+               or die "IO::Compress::Zip failed: $ZipError\n";
+
+       It returns an "IO::Compress::Zip" object on success and undef on failure.  The variable $ZipError will contain an error message on failure.
+
+       If you are running Perl 5.005 or better the object, $z, returned from IO::Compress::Zip can be used exactly like an IO::File filehandle.  This means that all normal output file operations can be
+       carried out with $z.  For example, to write to a compressed file/buffer you can use either of these forms
+
+           $z->print("hello world\n");
+           print $z "hello world\n";
+
+       The mandatory parameter $output is used to control the destination of the compressed data. This parameter can take one of these forms.
+
+       A filename
+            If the $output parameter is a simple scalar, it is assumed to be a filename. This file will be opened for writing and the compressed data will be written to it.
+
+       A filehandle
+            If the $output parameter is a filehandle, the compressed data will be written to it.  The string '-' can be used as an alias for standard output.
+
+       A scalar reference
+            If $output is a scalar reference, the compressed data will be stored in $$output.
+
+       If the $output parameter is any other type, "IO::Compress::Zip"::new will return undef.
+
+   Constructor Options
+       "OPTS" is any combination of zero or more the following options:
+
+       "AutoClose => 0|1"
+            This option is only valid when the $output parameter is a filehandle. If specified, and the value is true, it will result in the $output being closed once either the "close" method is called
+            or the "IO::Compress::Zip" object is destroyed.
+
+            This parameter defaults to 0.
+
+       "Append => 0|1"
+            Opens $output in append mode.
+
+            The behaviour of this option is dependent on the type of $output.
+
+            •    A Buffer
+
+                 If $output is a buffer and "Append" is enabled, all compressed data will be append to the end of $output. Otherwise $output will be cleared before any data is written to it.
+
+            •    A Filename
+
+                 If $output is a filename and "Append" is enabled, the file will be opened in append mode. Otherwise the contents of the file, if any, will be truncated before any compressed data is
+                 written to it.
+
+            •    A Filehandle
+
+                 If $output is a filehandle, the file pointer will be positioned to the end of the file via a call to "seek" before any compressed data is written to it.  Otherwise the file pointer will
+                 not be moved.
+
+            This parameter defaults to 0.
+
+       File Naming Options
+
+       A quick bit of zip file terminology -- A zip archive consists of one or more archive members, where each member has an associated filename, known as the archive member name.
+
+       The options listed in this section control how the archive member name (or filename) is stored the zip archive.
+
+       "Name => $string"
+            This option is used to explicitly set the archive member name in the zip archive to $string.  Most of the time you don't need to make use of this option.  By default when adding a filename
+            to the zip archive, the archive member name will match the filename.
+
+            You should only need to use this option if you want the archive member name to be different from the uncompressed filename or when the input is a filehandle or a buffer.
+
+            The default behaviour for what archive member name is used when the "Name" option is not specified depends on the form of the $input parameter:
+
+            •    If the $input parameter is a filename, the value of $input will be used for the archive member name .
+
+            •    If the $input parameter is not a filename, the archive member name will be an empty string.
+
+            Note that both the "CanonicalName" and "FilterName" options can modify the value used for the archive member name.
+
+            Also note that you should set the "Efs" option to true if you are working with UTF8 filenames.
+
+       "CanonicalName => 0|1"
+            This option controls whether the archive member name is normalized into Unix format before being written to the zip file.
+
+            It is recommended that you enable this option unless you really need to create a non-standard Zip file.
+
+            This is what APPNOTE.TXT has to say on what should be stored in the zip filename header field.
+
+                The name of the file, with optional relative path.
+                The path stored should not contain a drive or
+                device letter, or a leading slash.  All slashes
+                should be forward slashes '/' as opposed to
+                backwards slashes '\' for compatibility with Amiga
+                and UNIX file systems etc.
+
+            This option defaults to false.
+
+       "FilterName => sub { ... }"
+            This option allow the archive member name to be modified before it is written to the zip file.
+
+            This option takes a parameter that must be a reference to a sub.  On entry to the sub the $_ variable will contain the name to be filtered. If no filename is available $_ will contain an
+            empty string.
+
+            The value of $_ when the sub returns will be  used as the archive member name.
+
+            Note that if "CanonicalName" is enabled, a normalized filename will be passed to the sub.
+
+            If you use "FilterName" to modify the filename, it is your responsibility to keep the filename in Unix format.
+
+            Although this option can be used with the OO interface, it is of most use with the one-shot interface. For example, the code below shows how "FilterName" can be used to remove the path
+            component from a series of filenames before they are stored in $zipfile.
+
+                sub compressTxtFiles
+                {
+                    my $zipfile = shift ;
+                    my $dir     = shift ;
+
+                    zip [ <$dir/*.txt> ] => $zipfile,
+                        FilterName => sub { s[^$dir/][] } ;
+                }
+
+       "Efs => 0|1"
+            This option controls setting of the "Language Encoding Flag" (EFS) in the zip archive. When set, the filename and comment fields for the zip archive MUST be valid UTF-8.
+
+            If the string used for the filename and/or comment is not valid UTF-8 when this option is true, the script will die with a "wide character" error.
+
+            Note that this option only works with Perl 5.8.4 or better.
+
+            This option defaults to false.
+
+       Overall Zip Archive Structure
+
+       "Minimal => 1|0"
+            If specified, this option will disable the creation of all extra fields in the zip local and central headers. So the "exTime", "exUnix2", "exUnixN", "ExtraFieldLocal" and "ExtraFieldCentral"
+            options will be ignored.
+
+            This parameter defaults to 0.
+
+       "Stream => 0|1"
+            This option controls whether the zip file/buffer output is created in streaming mode.
+
+            Note that when outputting to a file with streaming mode disabled ("Stream" is 0), the output file must be seekable.
+
+            The default is 1.
+
+       "Zip64 => 0|1"
+            Create a Zip64 zip file/buffer. This option is used if you want to store files larger than 4 Gig or store more than 64K files in a single zip archive.
+
+            "Zip64" will be automatically set, as needed, if working with the one-shot interface when the input is either a filename or a scalar reference.
+
+            If you intend to manipulate the Zip64 zip files created with this module using an external zip/unzip, make sure that it supports Zip64.
+
+            In particular, if you are using Info-Zip you need to have zip version 3.x or better to update a Zip64 archive and unzip version 6.x to read a zip64 archive.
+
+            The default is 0.
+
+       Deflate Compression Options
+
+       -Level
+            Defines the compression level used by zlib. The value should either be a number between 0 and 9 (0 means no compression and 9 is maximum compression), or one of the symbolic constants
+            defined below.
+
+               Z_NO_COMPRESSION
+               Z_BEST_SPEED
+               Z_BEST_COMPRESSION
+               Z_DEFAULT_COMPRESSION
+
+            The default is Z_DEFAULT_COMPRESSION.
+
+            Note, these constants are not imported by "IO::Compress::Zip" by default.
+
+                use IO::Compress::Zip qw(:strategy);
+                use IO::Compress::Zip qw(:constants);
+                use IO::Compress::Zip qw(:all);
+
+       -Strategy
+            Defines the strategy used to tune the compression. Use one of the symbolic constants defined below.
+
+               Z_FILTERED
+               Z_HUFFMAN_ONLY
+               Z_RLE
+               Z_FIXED
+               Z_DEFAULT_STRATEGY
+
+            The default is Z_DEFAULT_STRATEGY.
+
+       Bzip2 Compression Options
+
+       "BlockSize100K => number"
+            Specify the number of 100K blocks bzip2 uses during compression.
+
+            Valid values are from 1 to 9, where 9 is best compression.
+
+            This option is only valid if the "Method" is ZIP_CM_BZIP2. It is ignored otherwise.
+
+            The default is 1.
+
+       "WorkFactor => number"
+            Specifies how much effort bzip2 should take before resorting to a slower fallback compression algorithm.
+
+            Valid values range from 0 to 250, where 0 means use the default value 30.
+
+            This option is only valid if the "Method" is ZIP_CM_BZIP2. It is ignored otherwise.
+
+            The default is 0.
+
+       Lzma and Xz Compression Options
+
+       "Preset => number"
+            Used to choose the LZMA compression preset.
+
+            Valid values are 0-9 and "LZMA_PRESET_DEFAULT".
+
+            0 is the fastest compression with the lowest memory usage and the lowest compression.
+
+            9 is the slowest compression with the highest memory usage but with the best compression.
+
+            This option is only valid if the "Method" is ZIP_CM_LZMA. It is ignored otherwise.
+
+            Defaults to "LZMA_PRESET_DEFAULT" (6).
+
+       "Extreme => 0|1"
+            Makes LZMA compression a lot slower, but a small compression gain.
+
+            This option is only valid if the "Method" is ZIP_CM_LZMA. It is ignored otherwise.
+
+            Defaults to 0.
+
+       Other Options
+
+       "Time => $number"
+            Sets the last modified time field in the zip header to $number.
+
+            This field defaults to the time the "IO::Compress::Zip" object was created if this option is not specified and the $input parameter is not a filename.
+
+       "ExtAttr => $attr"
+            This option controls the "external file attributes" field in the central header of the zip file. This is a 4 byte field.
+
+            If you are running a Unix derivative this value defaults to
+
+                0100644 << 16
+
+            This should allow read/write access to any files that are extracted from the zip file/buffer`.
+
+            For all other systems it defaults to 0.
+
+       "exTime => [$atime, $mtime, $ctime]"
+            This option expects an array reference with exactly three elements: $atime, "mtime" and $ctime. These correspond to the last access time, last modification time and creation time
+            respectively.
+
+            It uses these values to set the extended timestamp field (ID is "UT") in the local zip header using the three values, $atime, $mtime, $ctime. In addition it sets the extended timestamp field
+            in the central zip header using $mtime.
+
+            If any of the three values is "undef" that time value will not be used.  So, for example, to set only the $mtime you would use this
+
+                exTime => [undef, $mtime, undef]
+
+            If the "Minimal" option is set to true, this option will be ignored.
+
+            By default no extended time field is created.
+
+       "exUnix2 => [$uid, $gid]"
+            This option expects an array reference with exactly two elements: $uid and $gid. These values correspond to the numeric User ID (UID) and Group ID (GID) of the owner of the files
+            respectively.
+
+            When the "exUnix2" option is present it will trigger the creation of a Unix2 extra field (ID is "Ux") in the local zip header. This will be populated with $uid and $gid. An empty Unix2 extra
+            field will also be created in the central zip header.
+
+            Note - The UID & GID are stored as 16-bit integers in the "Ux" field. Use "exUnixN" if your UID or GID are 32-bit.
+
+            If the "Minimal" option is set to true, this option will be ignored.
+
+            By default no Unix2 extra field is created.
+
+       "exUnixN => [$uid, $gid]"
+            This option expects an array reference with exactly two elements: $uid and $gid. These values correspond to the numeric User ID (UID) and Group ID (GID) of the owner of the files
+            respectively.
+
+            When the "exUnixN" option is present it will trigger the creation of a UnixN extra field (ID is "ux") in both the local and central zip headers.  This will be populated with $uid and $gid.
+            The UID & GID are stored as 32-bit integers.
+
+            If the "Minimal" option is set to true, this option will be ignored.
+
+            By default no UnixN extra field is created.
+
+       "Comment => $comment"
+            Stores the contents of $comment in the Central File Header of the zip file.
+
+            Set the "Efs" option to true if you want to store a UTF8 comment.
+
+            By default, no comment field is written to the zip file.
+
+       "ZipComment => $comment"
+            Stores the contents of $comment in the End of Central Directory record of the zip file.
+
+            By default, no comment field is written to the zip file.
+
+       "Method => $method"
+            Controls which compression method is used. At present the compression methods supported are: Store (no compression at all), Deflate, Bzip2, Zstd, Xz and Lzma.
+
+            The symbols ZIP_CM_STORE, ZIP_CM_DEFLATE, ZIP_CM_BZIP2, ZIP_CM_ZSTD, ZIP_CM_XZ and ZIP_CM_LZMA are used to select the compression method.
+
+            These constants are not imported by "IO::Compress::Zip" by default.
+
+                use IO::Compress::Zip qw(:zip_method);
+                use IO::Compress::Zip qw(:constants);
+                use IO::Compress::Zip qw(:all);
+
+            Note that to create Bzip2 content, the module "IO::Compress::Bzip2" must be installed. A fatal error will be thrown if you attempt to create Bzip2 content when "IO::Compress::Bzip2" is not
+            available.
+
+            Note that to create Lzma content, the module "IO::Compress::Lzma" must be installed. A fatal error will be thrown if you attempt to create Lzma content when "IO::Compress::Lzma" is not
+            available.
+
+            Note that to create Xz content, the module "IO::Compress::Xz" must be installed. A fatal error will be thrown if you attempt to create Xz content when "IO::Compress::Xz" is not available.
+
+            Note that to create Zstd content, the module "IO::Compress::Zstd" must be installed. A fatal error will be thrown if you attempt to create Zstd content when "IO::Compress::Zstd" is not
+            available.
+
+            The default method is ZIP_CM_DEFLATE.
+
+       "TextFlag => 0|1"
+            This parameter controls the setting of a bit in the zip central header. It is used to signal that the data stored in the zip file/buffer is probably text.
+
+            In one-shot mode this flag will be set to true if the Perl "-T" operator thinks the file contains text.
+
+            The default is 0.
+
+       "ExtraFieldLocal => $data"
+       "ExtraFieldCentral => $data"
+            The "ExtraFieldLocal" option is used to store additional metadata in the local header for the zip file/buffer. The "ExtraFieldCentral" does the same for the matching central header.
+
+            An extra field consists of zero or more subfields. Each subfield consists of a two byte header followed by the subfield data.
+
+            The list of subfields can be supplied in any of the following formats
+
+                ExtraFieldLocal => [$id1, $data1,
+                                    $id2, $data2,
+                                     ...
+                                   ]
+
+                ExtraFieldLocal => [ [$id1 => $data1],
+                                     [$id2 => $data2],
+                                     ...
+                                   ]
+
+                ExtraFieldLocal => { $id1 => $data1,
+                                     $id2 => $data2,
+                                     ...
+                                   }
+
+            Where $id1, $id2 are two byte subfield ID's.
+
+            If you use the hash syntax, you have no control over the order in which the ExtraSubFields are stored, plus you cannot have SubFields with duplicate ID.
+
+            Alternatively the list of subfields can by supplied as a scalar, thus
+
+                ExtraField => $rawdata
+
+            In this case "IO::Compress::Zip" will check that $rawdata consists of zero or more conformant sub-fields.
+
+            The Extended Time field (ID "UT"), set using the "exTime" option, and the Unix2 extra field (ID "Ux), set using the "exUnix2" option, are examples of extra fields.
+
+            If the "Minimal" option is set to true, this option will be ignored.
+
+            The maximum size of an extra field 65535 bytes.
+
+       "Strict => 0|1"
+            This is a placeholder option.
+
+   Examples
+       TODO
+
+Methods
+   print
+       Usage is
+
+           $z->print($data)
+           print $z $data
+
+       Compresses and outputs the contents of the $data parameter. This has the same behaviour as the "print" built-in.
+
+       Returns true if successful.
+
+   printf
+       Usage is
+
+           $z->printf($format, $data)
+           printf $z $format, $data
+
+       Compresses and outputs the contents of the $data parameter.
+
+       Returns true if successful.
+
+   syswrite
+       Usage is
+
+           $z->syswrite $data
+           $z->syswrite $data, $length
+           $z->syswrite $data, $length, $offset
+
+       Compresses and outputs the contents of the $data parameter.
+
+       Returns the number of uncompressed bytes written, or "undef" if unsuccessful.
+
+   write
+       Usage is
+
+           $z->write $data
+           $z->write $data, $length
+           $z->write $data, $length, $offset
+
+       Compresses and outputs the contents of the $data parameter.
+
+       Returns the number of uncompressed bytes written, or "undef" if unsuccessful.
+
+   flush
+       Usage is
+
+           $z->flush;
+           $z->flush($flush_type);
+
+       Flushes any pending compressed data to the output file/buffer.
+
+       This method takes an optional parameter, $flush_type, that controls how the flushing will be carried out. By default the $flush_type used is "Z_FINISH". Other valid values for $flush_type are
+       "Z_NO_FLUSH", "Z_SYNC_FLUSH", "Z_FULL_FLUSH" and "Z_BLOCK". It is strongly recommended that you only set the "flush_type" parameter if you fully understand the implications of what it does -
+       overuse of "flush" can seriously degrade the level of compression achieved. See the "zlib" documentation for details.
+
+       Returns true on success.
+
+   tell
+       Usage is
+
+           $z->tell()
+           tell $z
+
+       Returns the uncompressed file offset.
+
+   eof
+       Usage is
+
+           $z->eof();
+           eof($z);
+
+       Returns true if the "close" method has been called.
+
+   seek
+           $z->seek($position, $whence);
+           seek($z, $position, $whence);
+
+       Provides a sub-set of the "seek" functionality, with the restriction that it is only legal to seek forward in the output file/buffer.  It is a fatal error to attempt to seek backward.
+
+       Empty parts of the file/buffer will have NULL (0x00) bytes written to them.
+
+       The $whence parameter takes one the usual values, namely SEEK_SET, SEEK_CUR or SEEK_END.
+
+       Returns 1 on success, 0 on failure.
+
+   binmode
+       Usage is
+
+           $z->binmode
+           binmode $z ;
+
+       This is a noop provided for completeness.
+
+   opened
+           $z->opened()
+
+       Returns true if the object currently refers to a opened file/buffer.
+
+   autoflush
+           my $prev = $z->autoflush()
+           my $prev = $z->autoflush(EXPR)
+
+       If the $z object is associated with a file or a filehandle, this method returns the current autoflush setting for the underlying filehandle. If "EXPR" is present, and is non-zero, it will enable
+       flushing after every write/print operation.
+
+       If $z is associated with a buffer, this method has no effect and always returns "undef".
+
+       Note that the special variable $| cannot be used to set or retrieve the autoflush setting.
+
+   input_line_number
+           $z->input_line_number()
+           $z->input_line_number(EXPR)
+
+       This method always returns "undef" when compressing.
+
+   fileno
+           $z->fileno()
+           fileno($z)
+
+       If the $z object is associated with a file or a filehandle, "fileno" will return the underlying file descriptor. Once the "close" method is called "fileno" will return "undef".
+
+       If the $z object is associated with a buffer, this method will return "undef".
+
+   close
+           $z->close() ;
+           close $z ;
+
+       Flushes any pending compressed data and then closes the output file/buffer.
+
+       For most versions of Perl this method will be automatically invoked if the IO::Compress::Zip object is destroyed (either explicitly or by the variable with the reference to the object going out
+       of scope). The exceptions are Perl versions 5.005 through 5.00504 and 5.8.0. In these cases, the "close" method will be called automatically, but not until global destruction of all live objects
+       when the program is terminating.
+
+       Therefore, if you want your scripts to be able to run on all versions of Perl, you should call "close" explicitly and not rely on automatic closing.
+
+       Returns true on success, otherwise 0.
+
+       If the "AutoClose" option has been enabled when the IO::Compress::Zip object was created, and the object is associated with a file, the underlying file will also be closed.
+
+   newStream([OPTS])
+       Usage is
+
+           $z->newStream( [OPTS] )
+
+       Closes the current compressed data stream and starts a new one.
+
+       OPTS consists of any of the options that are available when creating the $z object.
+
+       See the "Constructor Options" section for more details.
+
+   deflateParams
+       Usage is
+
+           $z->deflateParams
+
+       TODO
+
+Importing
+       A number of symbolic constants are required by some methods in "IO::Compress::Zip". None are imported by default.
+
+       :all Imports "zip", $ZipError and all symbolic constants that can be used by "IO::Compress::Zip". Same as doing this
+
+                use IO::Compress::Zip qw(zip $ZipError :constants) ;
+
+       :constants
+            Import all symbolic constants. Same as doing this
+
+                use IO::Compress::Zip qw(:flush :level :strategy :zip_method) ;
+
+       :flush
+            These symbolic constants are used by the "flush" method.
+
+                Z_NO_FLUSH
+                Z_PARTIAL_FLUSH
+                Z_SYNC_FLUSH
+                Z_FULL_FLUSH
+                Z_FINISH
+                Z_BLOCK
+
+       :level
+            These symbolic constants are used by the "Level" option in the constructor.
+
+                Z_NO_COMPRESSION
+                Z_BEST_SPEED
+                Z_BEST_COMPRESSION
+                Z_DEFAULT_COMPRESSION
+
+       :strategy
+            These symbolic constants are used by the "Strategy" option in the constructor.
+
+                Z_FILTERED
+                Z_HUFFMAN_ONLY
+                Z_RLE
+                Z_FIXED
+                Z_DEFAULT_STRATEGY
+
+       :zip_method
+            These symbolic constants are used by the "Method" option in the constructor.
+
+                ZIP_CM_STORE
+                ZIP_CM_DEFLATE
+                ZIP_CM_BZIP2
+
+EXAMPLES
+   Apache::GZip Revisited
+       See IO::Compress::FAQ
+
+   Working with Net::FTP
+       See IO::Compress::FAQ
+
+SUPPORT
+       General feedback/questions/bug reports should be sent to <https://github.com/pmqs/IO-Compress/issues> (preferred) or <https://rt.cpan.org/Public/Dist/Display.html?Name=IO-Compress>.
+
+SEE ALSO
+       Compress::Zlib, IO::Compress::Gzip, IO::Uncompress::Gunzip, IO::Compress::Deflate, IO::Uncompress::Inflate, IO::Compress::RawDeflate, IO::Uncompress::RawInflate, IO::Compress::Bzip2,
+       IO::Uncompress::Bunzip2, IO::Compress::Lzma, IO::Uncompress::UnLzma, IO::Compress::Xz, IO::Uncompress::UnXz, IO::Compress::Lzip, IO::Uncompress::UnLzip, IO::Compress::Lzop,
+       IO::Uncompress::UnLzop, IO::Compress::Lzf, IO::Uncompress::UnLzf, IO::Compress::Zstd, IO::Uncompress::UnZstd, IO::Uncompress::AnyInflate, IO::Uncompress::AnyUncompress
+
+       IO::Compress::FAQ
+
+       File::GlobMapper, Archive::Zip, Archive::Tar, IO::Zlib
+
+       For RFC 1950, 1951 and 1952 see <https://datatracker.ietf.org/doc/html/rfc1950>, <https://datatracker.ietf.org/doc/html/rfc1951> and <https://datatracker.ietf.org/doc/html/rfc1952>
+
+       The zlib compression library was written by Jean-loup Gailly "gzip@prep.ai.mit.edu" and Mark Adler "madler@alumni.caltech.edu".
+
+       The primary site for the zlib compression library is <http://www.zlib.org>.
+
+       The primary site for gzip is <http://www.gzip.org>.
+
+AUTHOR
+       This module was written by Paul Marquess, "pmqs@cpan.org".
+
+MODIFICATION HISTORY
+       See the Changes file.
+
+COPYRIGHT AND LICENSE
+       Copyright (c) 2005-2022 Paul Marquess. All rights reserved.
+
+       This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+perl v5.36.0                                                                                    2022-12-12                                                                        IO::Compress::Zip(3perl)

@@ -1,0 +1,170 @@
+TERMKEY(7)                                                                           Miscellaneous Information Manual                                                                           TERMKEY(7)
+
+NAME
+       termkey - terminal keypress reading library
+
+DESCRIPTION
+       termkey  is a library that allows programs to read and interpret keypress and other events from a terminal. It understands encoding schemes used by terminals to encode keypresses, and UTF-8 , al‐
+       lowing it to return events representing key events.
+
+       termkey operates in a pseudo object-oriented fashion. It provides one function, termkey_new(3), that returns a pointer to a newly-allocated structure. All other functions  take  this  pointer  as
+       their first argument. A typical use of this library would consist of a call to termkey_new() to construct a new instance to represent the stdin stream, then use the termkey_waitkey(3) function to
+       wait for and interpret key press events. The termkey_destroy(3) function can be used to deallocate resources used by the instance if the program has finished using it.
+
+   Reading Events
+       Each instance of a termkey structure may be used in one of three ways by the program. It may be used synchronously, blocking to wait for keypresses  from  a  filehandle.  It  may  be  used  asyn‐
+       chronously,  returning  keypresses if they are available, while co-operating with a non-blocking program. Or it may be used abstractly, interpreting key press bytes fed to it directly by the con‐
+       taining program.
+
+       To obtain the next key event synchronously, a program may call termkey_waitkey(3). This will either return an event from its internal buffer, or block until a key is available, returning it  when
+       it is ready. It behaves similarly to getc(3), fgetc(3), or similar, except that it understands and returns entire key press events, rather than single bytes.
+
+       To  work  with  an  asynchronous  program, two other functions are used. termkey_advisereadable(3) informs a termkey instance that more bytes of input may be available from its file handle, so it
+       should call read(2) to obtain them. The program can then call termkey_getkey(3) to extract key press events out of the internal buffer, in a way similar to termkey_waitkey().
+
+       Finally, bytes of input can be fed into the termkey instance directly, by calling termkey_push_bytes(3). This may be useful if the bytes have already been read from the terminal by  the  applica‐
+       tion,  or  even  in situations that don't directly involve a terminal filehandle. Because of these situations, it is possible to construct a termkey instance not associated with a file handle, by
+       passing -1 as the file descriptor.
+
+       A termkey instance contains a buffer of pending bytes that have been read but not yet consumed by termkey_getkey(3). termkey_get_buffer_remaining(3) returns the number of bytes  of  buffer  space
+       currently free in the instance. termkey_set_buffer_size(3) and termkey_get_buffer_size(3) can be used to control and return the total size of this buffer.
+
+   Key Events
+       Key events are stored in structures. Each structure holds details of one key event. This structure is defined as follows.
+
+           typedef struct {
+               TermKeyType type;
+               union {
+                   long       codepoint; /* TERMKEY_TYPE_UNICODE  */
+                   int        number;    /* TERMKEY_TYPE_FUNCTION */
+                   TermKeySym sym;       /* TERMKEY_TYPE_KEYSYM   */
+               } code;
+               int modifiers;
+               char utf8[7];
+           } TermKeyKey;
+
+       The type field indicates the type of event, and determines which of the members of the code union is valid. It will be one of the following constants:
+
+       TERMKEY_TYPE_UNICODE
+              a  Unicode  codepoint.  This value indicates that code.codepoint is valid, and will contain the codepoint number of the keypress. In Unicode mode (if the TERMKEY_FLAG_UTF8 bit is set) this
+              will be its Unicode character number. In raw byte mode, this will contain a single 8-bit byte.
+
+       TERMKEY_TYPE_FUNCTION
+              a numbered function key. This value indicates that code.number is valid, and contains the number of the numbered function key.
+
+       TERMKEY_TYPE_KEYSYM
+              a symbolic key. This value indicates that code.sym is valid, and contains the symbolic key value.
+
+       TERMKEY_TYPE_MOUSE
+              a mouse button press, release, or movement. The code structure should be considered opaque; termkey_interpret_mouse(3) may be used to interpret it.
+
+       TERMKEY_TYPE_POSITION
+              a cursor position report. The code structure should be considered opaque; termkey_interpret_position(3) may be used to interpret it.
+
+       TERMKEY_TYPE_MODEREPORT
+              an ANSI or DEC mode value report. The code structure should be considered opaque; termkey_interpret_modereport(3) may be used to interpret it.
+
+       TERMKEY_TYPE_DCS
+              a DCS sequence including its terminator. The code structure should be considered opaque; termkey_interpret_string(3) may be used to interpret it.
+
+       TERMKEY_TYPE_OSC
+              a OSC sequence including its terminator. The code structure should be considered opaque; termkey_interpret_string(3) may be used to interpret it.
+
+       TERMKEY_TYPE_UNKNOWN_CSI
+              an unrecognised CSI sequence. The code structure should be considered opaque; termkey_interpret_csi(3) may be used to interpret it.
+
+       The modifiers bitmask is composed of a bitwise-or of the constants TERMKEY_KEYMOD_SHIFT, TERMKEY_KEYMOD_CTRL and TERMKEY_KEYMOD_ALT.
+
+       The utf8 field is only set on events whose type is TERMKEY_TYPE_UNICODE. It should not be read for other events.
+
+       Key events that represent special keys (type is TERMKEY_TYPE_KEYSYM) have with them as symbolic value that identifies the special key, in code.sym. termkey_get_keyname(3) may be used to turn this
+       symbolic value into a string, and termkey_lookup_keyname(3) may be used to turn string names into symbolic values.
+
+       A  pair  of  functions are also provided to convert between key events and strings. termkey_strfkey(3) converts a key event into a string, and termkey_strpkey(3) parses a string turning it into a
+       key event.
+
+       Key events may be compared for equality or ordering by using termkey_keycmp(3).
+
+   Control Flags
+       Details of the behaviour of a termkey instance are controlled by two bitmasks of flags. termkey_set_flags(3) and termkey_get_flags(3) set or return the flags used to control  the  general  behav‐
+       iour, and termkey_set_canonflags(3) and termkey_get_canonflags(3) set or return the flags that control the key value canonicalisation behaviour performed by termkey_canonicalise(3).
+
+       The following control flags are recognised.
+
+       TERMKEY_FLAG_NOINTERPRET
+              Do not attempt to interpret C0 codes into keysyms. Instead report them as plain Ctrl-letter events.
+
+       TERMKEY_FLAG_CONVERTKP
+              Convert xterm's alternative keypad symbols into the plain ASCII codes they would represent.
+
+       TERMKEY_FLAG_RAW
+              Ignore locale settings; do not attempt to recombine UTF-8 sequences. Instead report only raw values.
+
+       TERMKEY_FLAG_UTF8
+              Ignore locale settings; force UTF-8 recombining on. This flag overrides TERMKEY_FLAG_RAW.
+
+       TERMKEY_FLAG_NOTERMIOS
+              Even if the terminal file descriptor fd represents a TTY device, do not call the tcsetattr(3) termios function on it to set it to canonical input mode.
+
+       TERMKEY_FLAG_SPACESYMBOL
+              Report space as being a symbolic key rather than a Unicode codepoint. Setting or clearing this flag in fact sets or clears the TERMKEY_CANON_SPACESYMBOL canonicalisation flag.
+
+       TERMKEY_FLAG_CTRLC
+              Disable  the  SIGINT behaviour of Ctrl-C. If this flag is provided, then Ctrl-C will be available as a normal keypress, rather than sending the process group a SIGINT. This flag only takes
+              effect without TERMKEY_FLAG_NOTERMIOS; with it, none of the signal keys are disabled anyway.
+
+       TERMKEY_FLAG_EINTR
+              Without this flag, IO operations are retried when interrupted by a signal (EINTR). With this flag the TERMKEY_RES_ERROR result is returned instead.
+
+       TERMKEY_FLAG_NOSTART
+              This flag is only meaningful to the constructor functions termkey_new(3) and termkey_new_abstract(3). If set, the constructor will not call termkey_start(3) as  part  of  the  construction
+              process. The user must call that at some future time before the instance will be usable.
+
+       The following canonicalisation flags are recognised.
+
+       TERMKEY_CANON_SPACESYMBOL
+              If this flag is set then a Unicode space character is represented using the TERMKEY_SYM_SPACE symbol. If this flag is not set, it is represented by the U+0020 Unicode codepoint.
+
+       TERMKEY_CANON_DELBS
+              If  this  flag  is  set then an ASCII DEL character is represented by the TERMKEY_SYM_BACKSPACE symbol. If not, it is represented by TERMKEY_SYM_DEL. An ASCII BS character is always repre‐
+              sented by TERMKEY_SYM_BACKSPACE, regardless of this flag.
+
+   Multi-byte Events
+       Special keys, mouse events, and UTF-8 encoded Unicode text, are all represented by more than one byte. If the start of a multi-byte sequence is seen by termkey_waitkey() it will wait a short time
+       to  see  if  the remainder of the sequence arrives. If the sequence remains unfinished after this timeout, it will be returned in its incomplete state. Partial escape sequences are returned as an
+       Escape key (TERMKEY_SYM_ESCAPE) followed by the text contained in the sequence. Partial UTF-8 sequences are returned as the Unicode replacement character, U+FFFD.
+
+       The amount of time that the termkey instance will wait is set by termkey_set_waittime(3), and is returned by termkey_get_waittime(3). Initially it will be set to 50 miliseconds.
+
+   Mouse Events
+       The TERMKEY_TYPE_MOUSE event type indicates a mouse event. The code field of the event structure should be considered opaque, though modifiers will be valid. In order to obtain the details of the
+       mouse event, call termkey_interpret_mouse(3) passing the event structure and pointers to integers to store the result in.
+
+       termkey recognises three mouse protocols: the original X10 protocol (CSI M followed by three bytes), SGR encoding (CSI < ... M, as requested by CSI ? 1006 h), and rxvt encoding (CSI ... M, as re‐
+       quested by CSI ? 1015 h). Which encoding is in use is inferred automatically by termkey, and does not need to be specified explicitly.
+
+   Position Events
+       The TERMKEY_TYPE_POSITION event type indicates a cursor position report. This is typically sent by a terminal in response to the Report Cursor Position command (CSI ? 6 n). The  event  bytes  are
+       opaque,  but  can  be obtained by calling termkey_interpret_position(3) passing the event structure and pointers to integers to store the result in. Note that only a DEC CPR sequence (CSI ? R) is
+       recognised, and not the non-DEC prefixed CSI R because the latter could be interpreted as the F3 function key instead.
+
+   Mode Reports
+       The TERMKEY_TYPE_MODEREPORT event type indicates an ANSI or DEC mode report. This is typically sent by a terminal in response to the Request Mode command (CSI $p or CSI ? $p). The event bytes are
+       opaque, but can be obtained by calling termkey_interpret_modereport(3) passing the event structure and pointers to integers to store the result in.
+
+   Control Strings
+       The  TERMKEY_TYPE_DCS and TERMKEY_TYPE_OSC event types indicate a DCS or OSC control string. These are typically sent by the terminal in response of similar kinds of strings being sent as queries
+       by the application. The event bytes are opaque, but the body of the string itself can be obtained by calling termkey_interpret_string(3) immediately after this event is received.  The  underlying
+       termkey  instance  itself can only store one pending string, so the application should be sure to call this function in a timely manner soon after the event is received; at the very least, before
+       calling any other functions that will insert bytes into or remove key events from the instance.
+
+   Unrecognised CSIs
+       The TERMKEY_TYPE_UNKNOWN_CSI event type indicates a CSI sequence that the termkey does not recognise. It will have been extracted from the stream, but is available to the application  to  inspect
+       by  calling  termkey_interpret_csi(3).  It  is  important  that  if  the application wishes to inspect this sequence it is done immediately, before any other IO operations on the termkey instance
+       (specifically, before calling termkey_waitkey() or termkey_getkey() again), otherwise the buffer space consumed by the sequence will be overwritten. Other types of key event do  not  suffer  this
+       limitation as the TermKeyKey structure is sufficient to contain all the information required.
+
+SEE ALSO
+       termkey_new(3), termkey_waitkey(3), termkey_getkey(3)
+
+                                                                                                                                                                                                TERMKEY(7)

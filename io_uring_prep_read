@@ -1,0 +1,36 @@
+io_uring_prep_read(3)                                                                         liburing Manual                                                                        io_uring_prep_read(3)
+
+NAME
+       io_uring_prep_read - prepare I/O read request
+
+SYNOPSIS
+       #include <liburing.h>
+
+       void io_uring_prep_read(struct io_uring_sqe *sqe,
+                               int fd,
+                               void *buf,
+                               unsigned nbytes,
+                               __u64 offset);
+
+DESCRIPTION
+       The io_uring_prep_read(3) prepares an IO read request. The submission queue entry sqe is setup to use the file descriptor fd to start reading nbytes into the buffer buf at the specified offset.
+
+       On  files  that  support seeking, if the offset is set to -1, the read operation commences at the file offset, and the file offset is incremented by the number of bytes read. See read(2) for more
+       details. Note that for an async API, reading and updating the current file offset may result in unpredictable behavior, unless access to the file is serialized. It is not encouraged to  use  this
+       feature, if it's possible to provide the desired IO offset from the application or library.
+
+       On files that are not capable of seeking, the offset must be 0 or -1.
+
+       After the read has been prepared it can be submitted with one of the submit functions.
+
+RETURN VALUE
+       None
+
+ERRORS
+       The CQE res field will contain the result of the operation. See the related man page for details on possible values. Note that where synchronous system calls will return -1 on failure and set er‐
+       rno to the actual error value, io_uring never uses errno.  Instead it returns the negated errno directly in the CQE res field.
+
+SEE ALSO
+       io_uring_get_sqe(3), io_uring_prep_readv(3), io_uring_prep_readv2(3), io_uring_submit(3)
+
+liburing-2.1                                                                                 November 15, 2021                                                                       io_uring_prep_read(3)

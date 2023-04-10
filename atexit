@@ -1,0 +1,164 @@
+atexit(3)                                                                                Library Functions Manual                                                                                atexit(3)
+
+NAME
+       atexit - register a function to be called at normal process termination
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       int atexit(void (*function)(void));
+
+DESCRIPTION
+       The  atexit()  function registers the given function to be called at normal process termination, either via exit(3) or via return from the program's main().  Functions so registered are called in
+       the reverse order of their registration; no arguments are passed.
+
+       The same function may be registered multiple times: it is called once for each registration.
+
+       POSIX.1 requires that an implementation allow at least ATEXIT_MAX (32) such functions to be registered.  The actual limit supported by an implementation can be obtained using sysconf(3).
+
+       When a child process is created via fork(2), it inherits copies of its parent's registrations.  Upon a successful call to one of the exec(3) functions, all registrations are removed.
+
+RETURN VALUE
+       The atexit() function returns the value 0 if successful; otherwise it returns a nonzero value.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │atexit()                                                                                                                                                                │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+       POSIX.1 says that the result of calling exit(3) more than once (i.e., calling exit(3) within a function registered using atexit()) is undefined.  On some systems (but not Linux), this can  result
+       in an infinite recursion; portable programs should not invoke exit(3) inside a function registered using atexit().
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, C89, C99, SVr4, 4.3BSD.
+
+NOTES
+       Functions registered using atexit() (and on_exit(3)) are not called if a process terminates abnormally because of the delivery of a signal.
+
+       If one of the registered functions calls _exit(2), then any remaining functions are not invoked, and the other process termination steps performed by exit(3) are not performed.
+
+       The  atexit() and on_exit(3) functions register functions on the same list: at normal process termination, the registered functions are invoked in reverse order of their registration by these two
+       functions.
+
+       According to POSIX.1, the result is undefined if longjmp(3) is used to terminate execution of one of the functions registered using atexit().
+
+   Linux notes
+       Since glibc 2.2.3, atexit() (and on_exit(3)) can be used within a shared library to establish functions that are called when the shared library is unloaded.
+
+EXAMPLES
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       void
+       bye(void)
+       {
+           printf("That was all, folks\n");
+       }
+
+       int
+       main(void)
+       {
+           long a;
+           int i;
+
+           a = sysconf(_SC_ATEXIT_MAX);
+           printf("ATEXIT_MAX = %ld\n", a);
+
+           i = atexit(bye);
+           if (i != 0) {
+               fprintf(stderr, "cannot set exit function\n");
+               exit(EXIT_FAILURE);
+           }
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       _exit(2), dlopen(3), exit(3), on_exit(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       atexit(3)
+ATEXIT(3P)                                                                               POSIX Programmer's Manual                                                                              ATEXIT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       atexit — register a function to run at process termination
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       int atexit(void (*func)(void));
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  atexit() function shall register the function pointed to by func, to be called without arguments at normal program termination. At normal program termination, all functions registered by the
+       atexit() function shall be called, in the reverse order of their registration, except that a function is called after any previously registered functions that had already been called at the  time
+       it was registered.  Normal termination occurs either by a call to exit() or a return from main().
+
+       At least 32 functions can be registered with atexit().
+
+       After a successful call to any of the exec functions, any functions previously registered by atexit() shall no longer be registered.
+
+RETURN VALUE
+       Upon successful completion, atexit() shall return 0; otherwise, it shall return a non-zero value.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The functions registered by a call to atexit() must return to ensure that all registered functions are called.
+
+       The  application  should call sysconf() to obtain the value of {ATEXIT_MAX}, the number of functions that can be registered. There is no way for an application to tell how many functions have al‐
+       ready been registered with atexit().
+
+       Since the behavior is undefined if the exit() function is called more than once, portable applications calling atexit() must ensure that the exit() function is not called at normal process termi‐
+       nation when all functions registered by the atexit() function are called.
+
+       All  functions  registered  by the atexit() function are called at normal process termination, which occurs by a call to the exit() function or a return from main() or on the last thread termina‐
+       tion, when the behavior is as if the implementation called exit() with a zero argument at thread termination time.
+
+       If, at normal process termination, a function registered by the atexit() function is called and a portable application needs to stop further exit() processing, it must call the  _exit()  function
+       or the _Exit() function or one of the functions which cause abnormal process termination.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exec, exit(), sysconf()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdlib.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         ATEXIT(3P)

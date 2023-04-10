@@ -1,0 +1,44 @@
+PCRE2_COMPILE(3)           Library Functions Manual           PCRE2_COMPILE(3)
+
+NAME
+       PCRE2 - Perl-compatible regular expressions (revised API)
+
+SYNOPSIS
+
+       #include <pcre2.h>
+
+       int pcre2_callout_enumerate(const pcre2_code *code,
+         int (*callback)(pcre2_callout_enumerate_block *, void *),
+         void *callout_data);
+
+DESCRIPTION
+
+       This  function  scans a compiled regular expression and calls the call‐
+       back() function for each callout within the pattern. The yield  of  the
+       function is zero for success and non-zero otherwise. The arguments are:
+
+         code           Points to the compiled pattern
+         callback       The callback function
+         callout_data   User data that is passed to the callback
+
+       The  callback() function is passed a pointer to a data block containing
+       the following fields (not necessarily in this order):
+
+         uint32_t   version                Block version number
+         uint32_t   callout_number         Number for numbered callouts
+         PCRE2_SIZE pattern_position       Offset to next item in pattern
+         PCRE2_SIZE next_item_length       Length of next item in pattern
+         PCRE2_SIZE callout_string_offset  Offset to string within pattern
+         PCRE2_SIZE callout_string_length  Length of callout string
+         PCRE2_SPTR callout_string         Points to callout string or is NULL
+
+       The second argument passed to the callback() function  is  the  callout
+       data that was passed to pcre2_callout_enumerate(). The callback() func‐
+       tion must return zero for success. Any other value causes  the  pattern
+       scan  to  stop,  with  the  value  being  passed  back as the result of
+       pcre2_callout_enumerate().
+
+       There is a complete description of the PCRE2 native API in the pcre2api
+       page and a description of the POSIX API in the pcre2posix page.
+
+PCRE2 10.30                      23 March 2017                PCRE2_COMPILE(3)

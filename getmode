@@ -1,0 +1,59 @@
+setmode(3bsd)                                                                                      LOCAL                                                                                     setmode(3bsd)
+
+NAME
+     getmode, setmode — modify mode bits
+
+LIBRARY
+     Utility functions from BSD systems (libbsd, -lbsd)
+
+SYNOPSIS
+     #include <unistd.h>
+     (See libbsd(7) for include usage.)
+
+     void *
+     setmode(const char *mode_str);
+
+     mode_t
+     getmode(const void *set, mode_t mode);
+
+DESCRIPTION
+     The setmode() function accepts a string representation of a file mode change, compiles it to binary form, and returns an abstract representation that may be passed to getmode().  The string may be
+     an numeric (octal) or symbolic string of the form accepted by chmod(1), and may represent either an exact mode to set or a change to make to the existing mode.
+
+     The getmode() function adjusts the file permission bits given by mode according to the compiled change representation set, and returns the adjusted mode.  While only the permission bits are al‐
+     tered, other parts of the file mode, particularly the type, may be examined.
+
+     Because some of the possible symbolic values are defined relative to the file creation mask, setmode() may call umask(2), temporarily changing the mask.  If this occurs, the file creation mask will
+     be restored before setmode() returns.  If the calling program changes the value of its file creation mask after calling setmode(), setmode() must be called again to recompile the mode string if
+     getmode() is to modify future file modes correctly.
+
+     If the mode passed to setmode() is invalid, setmode() returns NULL.
+
+     The value returned from setmode() is obtained from malloc() and should be returned to the system with free() when the program is done with it, generally after a call to getmode().
+
+EXAMPLES
+     The effects of the shell command ‘chmod a+x myscript.sh’ can be duplicated as follows:
+
+           const char *file = "myscript.sh";
+           struct stat st;
+           mode_t newmode;
+
+           stat(file, &st);
+           newmode = getmode(setmode("a+x"), st.st_mode);
+           chmod(file, newmode);
+
+ERRORS
+     The setmode() function may fail and set errno for any of the errors specified for the library routines malloc(3) or strtol(3).  In addition, setmode() will fail and set errno to:
+
+     [EINVAL]           The mode argument does not represent a valid mode.
+
+SEE ALSO
+     chmod(1), stat(2), umask(2), malloc(3)
+
+HISTORY
+     The getmode() and setmode() functions first appeared in 4.4BSD.
+
+BUGS
+     The type of set should really be some opaque struct type used only by these functions rather than void *.
+
+BSD                                                                                           January 4, 2009                                                                                          BSD

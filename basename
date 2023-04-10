@@ -1,0 +1,398 @@
+BASENAME(1)                                                                                    User Commands                                                                                   BASENAME(1)
+
+NAME
+       basename - strip directory and suffix from filenames
+
+SYNOPSIS
+       basename NAME [SUFFIX]
+       basename OPTION... NAME...
+
+DESCRIPTION
+       Print NAME with any leading directory components removed.  If specified, also remove a trailing SUFFIX.
+
+       Mandatory arguments to long options are mandatory for short options too.
+
+       -a, --multiple
+              support multiple arguments and treat each as a NAME
+
+       -s, --suffix=SUFFIX
+              remove a trailing SUFFIX; implies -a
+
+       -z, --zero
+              end each output line with NUL, not newline
+
+       --help display this help and exit
+
+       --version
+              output version information and exit
+
+EXAMPLES
+       basename /usr/bin/sort
+              -> "sort"
+
+       basename include/stdio.h .h
+              -> "stdio"
+
+       basename -s .h include/stdio.h
+              -> "stdio"
+
+       basename -a any/str1 any/str2
+              -> "str1" followed by "str2"
+
+AUTHOR
+       Written by David MacKenzie.
+
+REPORTING BUGS
+       GNU coreutils online help: <https://www.gnu.org/software/coreutils/>
+       Report any translation bugs to <https://translationproject.org/team/>
+
+COPYRIGHT
+       Copyright © 2023 Free Software Foundation, Inc.  License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+       This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       dirname(1), readlink(1)
+
+       Full documentation <https://www.gnu.org/software/coreutils/basename>
+       or available locally via: info '(coreutils) basename invocation'
+
+GNU coreutils 9.2                                                                               April 2023                                                                                     BASENAME(1)
+BASENAME(1P)                                                                             POSIX Programmer's Manual                                                                            BASENAME(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       basename — return non-directory portion of a pathname
+
+SYNOPSIS
+       basename string [suffix]
+
+DESCRIPTION
+       The string operand shall be treated as a pathname, as defined in the Base Definitions volume of POSIX.1‐2017, Section 3.271, Pathname.  The string string shall be converted to the filename corre‐
+       sponding  to  the  last pathname component in string and then the suffix string suffix, if present, shall be removed. This shall be done by performing actions equivalent to the following steps in
+       order:
+
+        1. If string is a null string, it is unspecified whether the resulting string is '.'  or a null string. In either case, skip steps 2 through 6.
+
+        2. If string is "//", it is implementation-defined whether steps 3 to 6 are skipped or processed.
+
+        3. If string consists entirely of <slash> characters, string shall be set to a single <slash> character. In this case, skip steps 4 to 6.
+
+        4. If there are any trailing <slash> characters in string, they shall be removed.
+
+        5. If there are any <slash> characters remaining in string, the prefix of string up to and including the last <slash> character in string shall be removed.
+
+        6. If the suffix operand is present, is not identical to the characters remaining in string, and is identical to a suffix of the characters remaining in string, the suffix suffix  shall  be  re‐
+           moved from string.  Otherwise, string is not modified by this step. It shall not be considered an error if suffix is not found in string.
+
+       The resulting string shall be written to standard output.
+
+OPTIONS
+       None.
+
+OPERANDS
+       The following operands shall be supported:
+
+       string    A string.
+
+       suffix    A string.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of basename:
+
+       LANG      Provide  a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       The basename utility shall write a line to the standard output in the following format:
+
+           "%s\n", <resulting string>
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The definition of pathname specifies implementation-defined behavior for pathnames starting with two <slash> characters. Therefore, applications shall not arbitrarily add  <slash>  characters  to
+       the beginning of a pathname unless they can ensure that there are more or less than two or are prepared to deal with the implementation-defined consequences.
+
+EXAMPLES
+       If the string string is a valid pathname:
+
+           $(basename -- "string")
+
+       produces a filename that could be used to open the file named by string in the directory returned by:
+
+           $(dirname -- "string")
+
+       If the string string is not a valid pathname, the same algorithm is used, but the result need not be a valid filename. The basename utility is not expected to make any judgements about the valid‐
+       ity of string as a pathname; it just follows the specified algorithm to produce a result string.
+
+       The following shell script compiles /usr/src/cmd/cat.c and moves the output to a file named cat in the current directory when invoked with the  argument  /usr/src/cmd/cat  or  with  the  argument
+       /usr/src/cmd/cat.c:
+
+           c99 -- "$(dirname -- "$1")/$(basename -- "$1" .c).c" &&
+           mv a.out "$(basename -- "$1" .c)"
+
+       The  EXAMPLES section of the basename() function (see the System Interfaces volume of POSIX.1‐2017, basename()) includes a table showing examples of the results of processing several sample path‐
+       names by the basename() and dirname() functions and by the basename and dirname utilities.
+
+RATIONALE
+       The behaviors of basename and dirname have been coordinated so that when string is a valid pathname:
+
+           $(basename -- "string")
+
+       would be a valid filename for the file in the directory:
+
+           $(dirname -- "string")
+
+       This would not work for the early proposal versions of these utilities due to the way it specified handling of trailing <slash> characters.
+
+       Since the definition of pathname specifies implementation-defined behavior for pathnames starting with two <slash> characters, this volume of POSIX.1‐2017 specifies similar implementation-defined
+       behavior for the basename and dirname utilities.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.5, Parameters and Variables, dirname
+
+       The Base Definitions volume of POSIX.1‐2017, Section 3.271, Pathname, Chapter 8, Environment Variables
+
+       The System Interfaces volume of POSIX.1‐2017, basename(), dirname()
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       BASENAME(1P)
+basename(3)                                                                              Library Functions Manual                                                                              basename(3)
+
+NAME
+       basename, dirname - parse pathname components
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <libgen.h>
+
+       char *dirname(char *path);
+       char *basename(char *path);
+
+DESCRIPTION
+       Warning: there are two different functions basename(); see below.
+
+       The  functions  dirname() and basename() break a null-terminated pathname string into directory and filename components.  In the usual case, dirname() returns the string up to, but not including,
+       the final '/', and basename() returns the component following the final '/'.  Trailing '/' characters are not counted as part of the pathname.
+
+       If path does not contain a slash, dirname() returns the string "." while basename() returns a copy of path.  If path is the string "/", then both dirname() and basename() return the  string  "/".
+       If path is a null pointer or points to an empty string, then both dirname() and basename() return the string ".".
+
+       Concatenating the string returned by dirname(), a "/", and the string returned by basename() yields a complete pathname.
+
+       Both dirname() and basename() may modify the contents of path, so it may be desirable to pass a copy when calling one of these functions.
+
+       These functions may return pointers to statically allocated memory which may be overwritten by subsequent calls.  Alternatively, they may return a pointer to some part of path, so that the string
+       referred to by path should not be modified or freed until the pointer returned by the function is no longer required.
+
+       The following list of examples (taken from SUSv2) shows the strings returned by dirname() and basename() for different paths:
+
+              path       dirname   basename
+              /usr/lib   /usr      lib
+              /usr/      /         usr
+              usr        .         usr
+              /          /         /
+              .          .         .
+              ..         .         ..
+
+RETURN VALUE
+       Both dirname() and basename() return pointers to null-terminated strings.  (Do not pass these pointers to free(3).)
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │basename(), dirname()                                                                                                                                                   │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+       There are two different versions of basename() - the POSIX version described above, and the GNU version, which one gets after
+
+               #define _GNU_SOURCE         /* See feature_test_macros(7) */
+               #include <string.h>
+
+       The GNU version never modifies its argument, and returns the empty string when path has a trailing slash, and in particular also when it is "/".  There is no GNU version of dirname().
+
+       With glibc, one gets the POSIX version of basename() when <libgen.h> is included, and the GNU version otherwise.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+BUGS
+       In the glibc implementation, the POSIX versions of these functions modify the path argument, and segfault when called with a static string such as "/usr/".
+
+       Before glibc 2.2.1, the glibc version of dirname() did not correctly handle pathnames with trailing '/' characters, and generated a segfault if given a NULL argument.
+
+EXAMPLES
+       The following code snippet demonstrates the use of basename() and dirname():
+           char *dirc, *basec, *bname, *dname;
+           char *path = "/etc/passwd";
+
+           dirc = strdup(path);
+           basec = strdup(path);
+           dname = dirname(dirc);
+           bname = basename(basec);
+           printf("dirname=%s, basename=%s\n", dname, bname);
+
+SEE ALSO
+       basename(1), dirname(1)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                     basename(3)
+BASENAME(3P)                                                                             POSIX Programmer's Manual                                                                            BASENAME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       basename — return the last component of a pathname
+
+SYNOPSIS
+       #include <libgen.h>
+
+       char *basename(char *path);
+
+DESCRIPTION
+       The basename() function shall take the pathname pointed to by path and return a pointer to the final component of the pathname, deleting any trailing '/' characters.
+
+       If the string pointed to by path consists entirely of the '/' character, basename() shall return a pointer to the string "/".  If the string pointed to by path is exactly "//", it is  implementa‐
+       tion-defined whether '/' or "//" is returned.
+
+       If path is a null pointer or points to an empty string, basename() shall return a pointer to the string ".".
+
+       The  basename() function may modify the string pointed to by path, and may return a pointer to internal storage. The returned pointer might be invalidated or the storage might be overwritten by a
+       subsequent call to basename().  The returned pointer might also be invalidated if the calling thread is terminated.
+
+       The basename() function need not be thread-safe.
+
+RETURN VALUE
+       The basename() function shall return a pointer to the final component of path.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+   Using basename()
+       The following program fragment returns a pointer to the value lib, which is the base name of /usr/lib.
+
+           #include <libgen.h>
+           ...
+           char name[] = "/usr/lib";
+           char *base;
+
+           base = basename(name);
+           ...
+
+   Sample Input and Output Strings for the basename() and dirname() Functions and the basename and dirname Utilities
+       .TS
+                                                              ┌──────────────┬───────────┬────────────┬──────────────┬─────────────────┬───────────┐
+                                                              │  basename()  │           │            │   basename   │     Output      │  Output   │
+                                                              │and dirname() │  String   │   String   │ and dirname  │   Written by    │Written by │
+                                                              │Functions path│Returned by│Returned by │  Utilities   │    basename     │ dirname   │
+                                                              │   Argument   │basename() │ dirname()  │string Operand│     Utility     │ Utility   │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"usr"         │"usr"      │"."         │usr           │usr              │.          │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"usr/"        │"usr"      │"."         │usr/          │usr              │.          │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │""            │"."        │"."         │""            │. or empty string│.          │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"/"           │"/"        │"/"         │/             │/                │/          │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"//"          │"/" or "//"│"/" or "//" │//            │/ or //          │/ or //    │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"///"         │"/"        │"/"         │///           │/                │/          │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"/usr/"       │"usr"      │"/"         │/usr/         │usr              │/          │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"/usr/lib"    │"lib"      │"/usr"      │/usr/lib      │lib              │/usr       │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"//usr//lib//"│"lib"      │"//usr"     │//usr//lib//  │lib              │//usr      │
+                                                              ├──────────────┼───────────┼────────────┼──────────────┼─────────────────┼───────────┤
+                                                              │"/home//dwc// │"test"     │"/home//dwc"│/home//dwc//  │test             │/home//dwc │
+                                                              │test"         │           │            │test          │                 │           │
+       .SH "APPLICATION USAGE" None.                          └──────────────┴───────────┴────────────┴──────────────┴─────────────────┴───────────┘
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       dirname()
+
+       The Base Definitions volume of POSIX.1‐2017, <libgen.h>
+
+       The Shell and Utilities volume of POSIX.1‐2017, basename
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       BASENAME(3P)

@@ -1,0 +1,145 @@
+SD_BUS_EMIT_SIGNAL(3)         sd_bus_emit_signal         SD_BUS_EMIT_SIGNAL(3)
+
+NAME
+       sd_bus_emit_signal, sd_bus_emit_signalv, sd_bus_emit_signal_to,
+       sd_bus_emit_signal_tov, sd_bus_emit_interfaces_added,
+       sd_bus_emit_interfaces_added_strv, sd_bus_emit_interfaces_removed,
+       sd_bus_emit_interfaces_removed_strv, sd_bus_emit_properties_changed,
+       sd_bus_emit_properties_changed_strv, sd_bus_emit_object_added,
+       sd_bus_emit_object_removed - Convenience functions for emitting
+       (standard) D-Bus signals
+
+SYNOPSIS
+       #include <systemd/sd-bus-vtable.h>
+
+       int sd_bus_emit_signal(sd_bus *bus, const char *path,
+                              const char *interface, const char *member,
+                              const char *types, ...);
+
+       int sd_bus_emit_signalv(sd_bus *bus, const char *path,
+                               const char *interface, const char *member,
+                               const char *types, va_list ap);
+
+       int sd_bus_emit_signal_to(sd_bus *bus, const char *destination,
+                                 const char *path, const char *interface,
+                                 const char *member, const char *types, ...);
+
+       int sd_bus_emit_signal_tov(sd_bus *bus, const char *destination,
+                                  const char *path, const char *interface,
+                                  const char *member, const char *types,
+                                  va_list ap);
+
+       int sd_bus_emit_interfaces_added(sd_bus *bus, const char *path,
+                                        const char *interface, ...);
+
+       int sd_bus_emit_interfaces_added_strv(sd_bus *bus, const char *path,
+                                             const char **interfaces);
+
+       int sd_bus_emit_interfaces_removed(sd_bus *bus, const char *path,
+                                          const char *interface, ...);
+
+       int sd_bus_emit_interfaces_removed_strv(sd_bus *bus, const char *path,
+                                               const char **interfaces);
+
+       int sd_bus_emit_properties_changed(sd_bus *bus, const char *path,
+                                          const char *interface,
+                                          const char *name, ...);
+
+       int sd_bus_emit_properties_changed_strv(sd_bus *bus, const char *path,
+                                               const char *interface,
+                                               const char **names);
+
+       int sd_bus_emit_object_added(sd_bus *bus, const char *path);
+
+       int sd_bus_emit_object_removed(sd_bus *bus, const char *path);
+
+DESCRIPTION
+       sd_bus_emit_signal() is a convenience function for initializing a bus
+       message object and emitting the corresponding D-Bus signal. It combines
+       the sd_bus_message_new_signal(3), sd_bus_message_append(3) and
+       sd_bus_send(3) functions into a single function call.
+       sd_bus_emit_signalv() is equivalent to sd_bus_message_append(), except
+       that it is called with a "va_list" instead of a variable number of
+       arguments.
+
+       sd_bus_emit_signal_to() and sd_bus_emit_signal_tov() are identical to
+       sd_bus_emit_signal() and sd_bus_emit_signalv(), except that they can
+       emit the signal to a single destination. Give destination as NULL to
+       broadcast the signal.
+
+       sd_bus_emit_interfaces_added() and sd_bus_emit_interfaces_removed() are
+       used to implement the InterfacesAdded and InterfacesRemoved signals of
+       the org.freedesktop.DBus.ObjectManager interface. They take a path
+       whose interfaces have been modified as an argument and a variable list
+       of interfaces that have been added or removed, respectively. The final
+       argument passed to sd_bus_emit_interfaces_added() and
+       sd_bus_emit_interfaces_removed() must be NULL. This allows both
+       functions to safely determine the number of passed interface arguments.
+       sd_bus_emit_interfaces_added_strv() and
+       sd_bus_emit_interfaces_removed_strv() are identical to their respective
+       counterparts but both take the list of interfaces as a single argument
+       instead of a variable number of arguments.
+
+       sd_bus_emit_properties_changed() is used to implement the
+       PropertiesChanged signal of the org.freedesktop.DBus.Properties
+       interface. It takes an object path, interface and a variable list of
+       property names as its arguments. The final argument passed to
+       sd_bus_emit_properties_changed() must be NULL. This allows it to safely
+       determine the number of passed property names.
+       sd_bus_emit_properties_changed_strv() is identical to
+       sd_bus_emit_properties_changed() but takes the list of property names
+       as a single argument instead of a variable number of arguments.
+
+       sd_bus_emit_object_added() and sd_bus_emit_object_removed() are
+       convenience functions for emitting the InterfacesAdded or
+       InterfacesRemoved signals for all interfaces registered on a specific
+       object path, respectively. This includes any parent fallback vtables if
+       they are not overridden by a more applicable child vtable. It also
+       includes all the standard D-Bus interfaces implemented by sd-bus itself
+       on any registered object.
+
+       Note that sd_bus_emit_interfaces_added(),
+       sd_bus_emit_interfaces_removed(), sd_bus_emit_object_added() and
+       sd_bus_emit_object_removed() require an object manager to have been
+       registered on the given object path or one of its parent object paths
+       using sd_bus_add_object_manager(3).
+
+RETURN VALUE
+       On success, these functions return a non-negative integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           One of the required parameters is NULL or invalid. A reserved D-Bus
+           interface was passed as the interface parameter.
+
+       -ENOPKG
+           The bus cannot be resolved.
+
+       -ECHILD
+           The bus was created in a different process.
+
+       -ENOMEM
+           Memory allocation failed.
+
+       -ESRCH
+           One of sd_bus_emit_interfaces_added(),
+           sd_bus_emit_interfaces_removed(), sd_bus_emit_object_added() or
+           sd_bus_emit_object_removed() was called on an object without an
+           object manager registered on its own object path or one of its
+           parent object paths.
+
+       See the man pages of sd_bus_message_new_signal(3),
+       sd_bus_message_append(3) and sd_bus_send(3) for more possible errors.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       sd-bus(3), busctl(1), sd_bus_message_new_signal(3),
+       sd_bus_message_append(3), sd_bus_send(3), sd_bus_call_method(3)
+
+systemd 253                                              SD_BUS_EMIT_SIGNAL(3)

@@ -1,0 +1,226 @@
+lockf(3)                                                                                 Library Functions Manual                                                                                 lockf(3)
+
+NAME
+       lockf - apply, test or remove a POSIX lock on an open file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int lockf(int fd, int cmd, off_t len);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       lockf():
+           _XOPEN_SOURCE >= 500
+               || /* glibc >= 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       Apply,  test,  or remove a POSIX lock on a section of an open file.  The file is specified by fd, a file descriptor open for writing, the action by cmd, and the section consists of byte positions
+       pos..pos+len-1 if len is positive, and pos-len..pos-1 if len is negative, where pos is the current file position, and if len is zero, the section extends from the current file position to  infin‐
+       ity, encompassing the present and future end-of-file positions.  In all cases, the section may extend past current end-of-file.
+
+       On  Linux,  lockf()  is just an interface on top of fcntl(2) locking.  Many other systems implement lockf() in this way, but note that POSIX.1 leaves the relationship between lockf() and fcntl(2)
+       locks unspecified.  A portable application should probably avoid mixing calls to these interfaces.
+
+       Valid operations are given below:
+
+       F_LOCK Set an exclusive lock on the specified section of the file.  If (part of) this section is already locked, the call blocks until the previous lock is released.  If this section overlaps  an
+              earlier locked section, both are merged.  File locks are released as soon as the process holding the locks closes some file descriptor for the file.  A child process does not inherit these
+              locks.
+
+       F_TLOCK
+              Same as F_LOCK but the call never blocks and returns an error instead if the file is already locked.
+
+       F_ULOCK
+              Unlock the indicated section of the file.  This may cause a locked section to be split into two locked sections.
+
+       F_TEST Test the lock: return 0 if the specified section is unlocked or locked by this process; return -1, set errno to EAGAIN (EACCES on some other systems), if another process holds a lock.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EACCES or EAGAIN
+              The file is locked and F_TLOCK or F_TEST was specified, or the operation is prohibited because the file has been memory-mapped by another process.
+
+       EBADF  fd is not an open file descriptor; or cmd is F_LOCK or F_TLOCK and fd is not a writable file descriptor.
+
+       EDEADLK
+              The command was F_LOCK and this lock operation would cause a deadlock.
+
+       EINTR  While waiting to acquire a lock, the call was interrupted by delivery of a signal caught by a handler; see signal(7).
+
+       EINVAL An invalid operation was specified in cmd.
+
+       ENOLCK Too many segment locks open, lock table is full.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │lockf()                                                                                                                                                                 │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4.
+
+SEE ALSO
+       fcntl(2), flock(2)
+
+       locks.txt and mandatory-locking.txt in the Linux kernel source directory Documentation/filesystems (on older kernels, these files are directly under  the  Documentation  directory,  and  mandato‐
+       ry-locking.txt is called mandatory.txt)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        lockf(3)
+LOCKF(3P)                                                                                POSIX Programmer's Manual                                                                               LOCKF(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       lockf — record locking on files
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int lockf(int fildes, int function, off_t size);
+
+DESCRIPTION
+       The lockf() function shall lock sections of a file with advisory-mode locks. Calls to lockf() from threads in other processes which attempt to lock the locked file section shall either return  an
+       error  value or block until the section becomes unlocked. All the locks for a process are removed when the process terminates. Record locking with lockf() shall be supported for regular files and
+       may be supported for other files.
+
+       The fildes argument is an open file descriptor. To establish a lock with this function, the file descriptor shall be opened with write-only permission (O_WRONLY)  or  with  read/write  permission
+       (O_RDWR).
+
+       The function argument is a control value which specifies the action to be taken. The permissible values for function are defined in <unistd.h> as follows:
+
+                                                                            ┌─────────┬──────────────────────────────────────────────┐
+                                                                            │Function │                 Description                  │
+                                                                            ├─────────┼──────────────────────────────────────────────┤
+                                                                            │F_ULOCK  │ Unlock locked sections.                      │
+                                                                            │F_LOCK   │ Lock a section for exclusive use.            │
+                                                                            │F_TLOCK  │ Test and lock a section for exclusive use.   │
+                                                                            │F_TEST   │ Test a section for locks by other processes. │
+                                                                            └─────────┴──────────────────────────────────────────────┘
+       F_TEST shall detect if a lock by another process is present on the specified section.
+
+       F_LOCK and F_TLOCK shall both lock a section of a file if the section is available.
+
+       F_ULOCK shall remove locks from a section of the file.
+
+       The  size  argument  is  the number of contiguous bytes to be locked or unlocked.  The section to be locked or unlocked starts at the current offset in the file and extends forward for a positive
+       size or backward for a negative size (the preceding bytes up to but not including the current offset). If size is 0, the section from the current offset through the largest possible  file  offset
+       shall  be  locked (that is, from the current offset through the present or any future end-of-file). An area need not be allocated to the file to be locked because locks may exist past the end-of-
+       file.
+
+       The sections locked with F_LOCK or F_TLOCK may, in whole or in part, contain or be contained by a previously locked section for the same process. When this occurs, or if adjacent locked  sections
+       would occur, the sections shall be combined into a single locked section. If the request would cause the number of locks to exceed a system-imposed limit, the request shall fail.
+
+       F_LOCK and F_TLOCK requests differ only by the action taken if the section is not available. F_LOCK shall block the calling thread until the section is available. F_TLOCK shall cause the function
+       to fail if the section is already locked by another process.
+
+       File locks shall be released on first close by the locking process of any file descriptor for the file.
+
+       F_ULOCK requests may release (wholly or in part) one or more locked sections controlled by the process. Locked sections shall be unlocked starting at the current file offset through size bytes or
+       to  the  end-of-file if size is (off_t)0. When all of a locked section is not released (that is, when the beginning or end of the area to be unlocked falls within a locked section), the remaining
+       portions of that section shall remain locked by the process. Releasing the center portion of a locked section shall cause the remaining locked beginning and end portions to  become  two  separate
+       locked sections. If the request would cause the number of locks in the system to exceed a system-imposed limit, the request shall fail.
+
+       A  potential  for  deadlock occurs if the threads of a process controlling a locked section are blocked by accessing a locked section of another process. If the system detects that deadlock would
+       occur, lockf() shall fail with an [EDEADLK] error.
+
+       The interaction between fcntl() and lockf() locks is unspecified.
+
+       Blocking on a section shall be interrupted by any signal.
+
+       An F_ULOCK request in which size is non-zero and the offset of the last byte of the requested section is the maximum value for an object of type off_t, when the process has an  existing  lock  in
+       which  size  is  0 and which includes the last byte of the requested section, shall be treated as a request to unlock from the start of the requested section with a size equal to 0. Otherwise, an
+       F_ULOCK request shall attempt to unlock only the requested section.
+
+       Attempting to lock a section of a file that is associated with a buffered stream produces unspecified results.
+
+RETURN VALUE
+       Upon successful completion, lockf() shall return 0. Otherwise, it shall return -1, set errno to indicate an error, and existing locks shall not be changed.
+
+ERRORS
+       The lockf() function shall fail if:
+
+       EBADF  The fildes argument is not a valid open file descriptor; or function is F_LOCK or F_TLOCK and fildes is not a valid file descriptor open for writing.
+
+       EACCES or EAGAIN
+              The function argument is F_TLOCK or F_TEST and the section is already locked by another process.
+
+       EDEADLK
+              The function argument is F_LOCK and a deadlock is detected.
+
+       EINTR  A signal was caught during execution of the function.
+
+       EINVAL The function argument is not one of F_LOCK, F_TLOCK, F_TEST, or F_ULOCK; or size plus the current file offset is less than 0.
+
+       EOVERFLOW
+              The offset of the first, or if size is not 0 then the last, byte in the requested section cannot be represented correctly in an object of type off_t.
+
+       The lockf() function may fail if:
+
+       EAGAIN The function argument is F_LOCK or F_TLOCK and the file is mapped with mmap().
+
+       EDEADLK or ENOLCK
+              The function argument is F_LOCK, F_TLOCK, or F_ULOCK, and the request would cause the number of locks to exceed a system-imposed limit.
+
+       EOPNOTSUPP or EINVAL
+              The implementation does not support the locking of files of the type indicated by the fildes argument.
+
+       The following sections are informative.
+
+EXAMPLES
+   Locking a Portion of a File
+       In the following example, a file named /home/cnd/mod1 is being modified. Other processes that use locking are prevented from changing it during this  process.  Only  the  first  10000  bytes  are
+       locked, and the lock call fails if another process has any part of this area locked already.
+
+           #include <fcntl.h>
+           #include <unistd.h>
+
+           int fildes;
+           int status;
+           ...
+           fildes = open("/home/cnd/mod1", O_RDWR);
+           status = lockf(fildes, F_TLOCK, (off_t)10000);
+
+APPLICATION USAGE
+       Record-locking  should  not  be  used in combination with the fopen(), fread(), fwrite(), and other stdio functions. Instead, the more primitive, non-buffered functions (such as open()) should be
+       used. Unexpected results may occur in processes that do buffering in the user address space. The process may later read/write data which is/was locked. The stdio functions  are  the  most  common
+       source of unexpected buffering.
+
+       The alarm() function may be used to provide a timeout facility in applications requiring it.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       alarm(), chmod(), close(), creat(), fcntl(), fopen(), mmap(), open(), read(), write()
+
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          LOCKF(3P)

@@ -1,0 +1,60 @@
+SD_BUS_MESSAGE_READ_ARRAY(3sd_bus_message_read_arrSD_BUS_MESSAGE_READ_ARRAY(3)
+
+NAME
+       sd_bus_message_read_array - Access an array of elements in a message
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_message_read_array(sd_bus_message *m, char type,
+                                     const void **ptr, size_t *size);
+
+DESCRIPTION
+       sd_bus_message_read_array() provides access to an array elements in the
+       bus message m. The "read pointer" in the message must be right before
+       an array of type type. As a special case, type may be NUL, in which
+       case any trivial type is acceptable. A pointer to the array data is
+       returned in the parameter ptr and the size of array data (in bytes) is
+       returned in the parameter size. If the returned size parameter is 0, a
+       valid non-null pointer will be returned as ptr, but it may not be
+       dereferenced. The data is aligned as appropriate for the data type. The
+       data is part of the message — it may not be modified and is valid only
+       as long as the message is referenced. After this function returns, the
+       "read pointer" points at the next element after the array.
+
+       Note that this function only supports arrays of trivial types, i.e.
+       arrays of booleans, the various integer types, as well as floating
+       point numbers. In particular it may not be used for arrays of strings,
+       structures or similar.
+
+RETURN VALUE
+       On success and when an array was read, sd_bus_message_read_array()
+       returns an integer greater than zero. If invoked while inside a
+       container element (such as an array, e.g. when operating on an array of
+       arrays) and the final element of the outer container has been read
+       already and the read pointer is thus behind the last element of the
+       outer container this call returns 0 (and the returned pointer will be
+       NULL and the size will be 0). On failure, it returns a negative
+       errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           Specified type is invalid or not a trivial type (see above), or the
+           message parameter or one of the output parameters are NULL.
+
+       -EOPNOTSUPP
+           The byte order in the message is different than native byte order.
+
+       -EPERM
+           The message is not sealed.
+
+       -EBADMSG
+           The message cannot be parsed.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_message_read(3),
+       sd_bus_message_read_strv(3)
+
+systemd 253                                       SD_BUS_MESSAGE_READ_ARRAY(3)

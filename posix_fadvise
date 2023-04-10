@@ -1,0 +1,265 @@
+POSIX_FADVISE(3P)          POSIX Programmer's Manual         POSIX_FADVISE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       posix_fadvise — file advisory information (ADVANCED REALTIME)
+
+SYNOPSIS
+       #include <fcntl.h>
+
+       int posix_fadvise(int fd, off_t offset, off_t len, int advice);
+
+DESCRIPTION
+       The posix_fadvise() function shall advise the implementation on the ex‐
+       pected behavior of the application with respect to the data in the file
+       associated with the open file descriptor, fd, starting  at  offset  and
+       continuing  for len bytes. The specified range need not currently exist
+       in the file. If len is zero, all data following  offset  is  specified.
+       The implementation may use this information to optimize handling of the
+       specified data. The posix_fadvise() function shall have  no  effect  on
+       the  semantics  of  other operations on the specified data, although it
+       may affect the performance of other operations.
+
+       The advice to be applied to the data is specified by the advice parame‐
+       ter and may be one of the following values:
+
+       POSIX_FADV_NORMAL
+             Specifies  that  the application has no advice to give on its be‐
+             havior with respect to the specified  data.  It  is  the  default
+             characteristic if no advice is given for an open file.
+
+       POSIX_FADV_SEQUENTIAL
+             Specifies  that  the  application expects to access the specified
+             data sequentially from lower offsets to higher offsets.
+
+       POSIX_FADV_RANDOM
+             Specifies that the application expects to  access  the  specified
+             data in a random order.
+
+       POSIX_FADV_WILLNEED
+             Specifies  that  the  application expects to access the specified
+             data in the near future.
+
+       POSIX_FADV_DONTNEED
+             Specifies that the application expects that it  will  not  access
+             the specified data in the near future.
+
+       POSIX_FADV_NOREUSE
+             Specifies  that  the  application expects to access the specified
+             data once and then not reuse it thereafter.
+
+       These values are defined in <fcntl.h>.
+
+RETURN VALUE
+       Upon successful completion, posix_fadvise() shall return  zero;  other‐
+       wise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The posix_fadvise() function shall fail if:
+
+       EBADF  The fd argument is not a valid file descriptor.
+
+       EINVAL The value of advice is invalid, or the value of len is less than
+              zero.
+
+       ESPIPE The fd argument is associated with a pipe or FIFO.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The posix_fadvise() function is part of the Advisory Information option
+       and need not be provided on all implementations.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       posix_madvise()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                    POSIX_FADVISE(3P)
+posix_fadvise(2)              System Calls Manual             posix_fadvise(2)
+
+NAME
+       posix_fadvise - predeclare an access pattern for file data
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <fcntl.h>
+
+       int posix_fadvise(int fd, off_t offset, off_t len, int advice);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       posix_fadvise():
+           _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       Programs can use posix_fadvise() to announce an intention to access
+       file data in a specific pattern in the future, thus allowing the kernel
+       to perform appropriate optimizations.
+
+       The advice applies to a (not necessarily existent) region starting at
+       offset and extending for len bytes (or until the end of the file if len
+       is 0) within the file referred to by fd.  The advice is not binding; it
+       merely constitutes an expectation on behalf of the application.
+
+       Permissible values for advice include:
+
+       POSIX_FADV_NORMAL
+              Indicates that the application has no advice to give about its
+              access pattern for the specified data.  If no advice is given
+              for an open file, this is the default assumption.
+
+       POSIX_FADV_SEQUENTIAL
+              The application expects to access the specified data sequen‐
+              tially (with lower offsets read before higher ones).
+
+       POSIX_FADV_RANDOM
+              The specified data will be accessed in random order.
+
+       POSIX_FADV_NOREUSE
+              The specified data will be accessed only once.
+
+              Before Linux 2.6.18, POSIX_FADV_NOREUSE had the same semantics
+              as POSIX_FADV_WILLNEED.  This was probably a bug; since Linux
+              2.6.18, this flag is a no-op.
+
+       POSIX_FADV_WILLNEED
+              The specified data will be accessed in the near future.
+
+              POSIX_FADV_WILLNEED initiates a nonblocking read of the speci‐
+              fied region into the page cache.  The amount of data read may be
+              decreased by the kernel depending on virtual memory load.  (A
+              few megabytes will usually be fully satisfied, and more is
+              rarely useful.)
+
+       POSIX_FADV_DONTNEED
+              The specified data will not be accessed in the near future.
+
+              POSIX_FADV_DONTNEED attempts to free cached pages associated
+              with the specified region.  This is useful, for example, while
+              streaming large files.  A program may periodically request the
+              kernel to free cached data that has already been used, so that
+              more useful cached pages are not discarded instead.
+
+              Requests to discard partial pages are ignored.  It is preferable
+              to preserve needed data than discard unneeded data.  If the ap‐
+              plication requires that data be considered for discarding, then
+              offset and len must be page-aligned.
+
+              The implementation may attempt to write back dirty pages in the
+              specified region, but this is not guaranteed.  Any unwritten
+              dirty pages will not be freed.  If the application wishes to en‐
+              sure that dirty pages will be released, it should call fsync(2)
+              or fdatasync(2) first.
+
+RETURN VALUE
+       On success, zero is returned.  On error, an error number is returned.
+
+ERRORS
+       EBADF  The fd argument was not a valid file descriptor.
+
+       EINVAL An invalid value was specified for advice.
+
+       ESPIPE The specified file descriptor refers to a pipe or FIFO.  (ESPIPE
+              is the error specified by POSIX, but before Linux 2.6.16, Linux
+              returned EINVAL in this case.)
+
+VERSIONS
+       Under Linux, POSIX_FADV_NORMAL sets the readahead window to the default
+       size for the backing device; POSIX_FADV_SEQUENTIAL doubles this size,
+       and POSIX_FADV_RANDOM disables file readahead entirely.  These changes
+       affect the entire file, not just the specified region (but other open
+       file handles to the same file are unaffected).
+
+   C library/kernel differences
+       The name of the wrapper function in the C library is posix_fadvise().
+       The underlying system call is called fadvise64() (or, on some architec‐
+       tures, fadvise64_64()); the difference between the two is that the for‐
+       mer system call assumes that the type of the len argument is size_t,
+       while the latter expects loff_t there.
+
+   Architecture-specific variants
+       Some architectures require 64-bit arguments to be aligned in a suitable
+       pair of registers (see syscall(2) for further detail).  On such archi‐
+       tectures, the call signature of posix_fadvise() shown in the SYNOPSIS
+       would force a register to be wasted as padding between the fd and off‐
+       set arguments.  Therefore, these architectures define a version of the
+       system call that orders the arguments suitably, but is otherwise ex‐
+       actly the same as posix_fadvise().
+
+       For example, since Linux 2.6.14, ARM has the following system call:
+
+           long arm_fadvise64_64(int fd, int advice,
+                                 loff_t offset, loff_t len);
+
+       These architecture-specific details are generally hidden from applica‐
+       tions by the glibc posix_fadvise() wrapper function, which invokes the
+       appropriate architecture-specific system call.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+       Kernel support first appeared in Linux 2.5.60; the underlying system
+       call is called fadvise64().  Library support has been provided since
+       glibc 2.2, via the wrapper function posix_fadvise().
+
+       Since Linux 3.18, support for the underlying system call is optional,
+       depending on the setting of the CONFIG_ADVISE_SYSCALLS configuration
+       option.
+
+       The type of the len argument was changed from size_t to off_t in
+       POSIX.1-2001 TC1.
+
+NOTES
+       The contents of the kernel buffer cache can be cleared via the
+       /proc/sys/vm/drop_caches interface described in proc(5).
+
+       One can obtain a snapshot of which pages of a file are resident in the
+       buffer cache by opening a file, mapping it with mmap(2), and then ap‐
+       plying mincore(2) to the mapping.
+
+BUGS
+       Before Linux 2.6.6, if len was specified as 0, then this was inter‐
+       preted literally as "zero bytes", rather than as meaning "all bytes
+       through to the end of the file".
+
+SEE ALSO
+       fincore(1), mincore(2), readahead(2), sync_file_range(2), posix_fallo‐
+       cate(3), posix_madvise(3)
+
+Linux man-pages 6.04              2023-03-30                  posix_fadvise(2)

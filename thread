@@ -1,0 +1,673 @@
+thread(n)                                                                                                                                                                                        thread(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       thread - Extension for script access to Tcl threading
+
+SYNOPSIS
+       package require Tcl  8.4
+
+       package require Thread  ?2.8?
+
+       thread::create ?-joinable? ?-preserved? ?script?
+
+       thread::preserve ?id?
+
+       thread::release ?-wait? ?id?
+
+       thread::id
+
+       thread::errorproc ?procname?
+
+       thread::cancel ?-unwind? id ?result?
+
+       thread::unwind
+
+       thread::exit ?status?
+
+       thread::names
+
+       thread::exists id
+
+       thread::send ?-async? ?-head? id script ?varname?
+
+       thread::broadcast script
+
+       thread::wait
+
+       thread::eval ?-lock mutex? arg ?arg ...?
+
+       thread::join id
+
+       thread::configure id ?option? ?value? ?...?
+
+       thread::transfer id channel
+
+       thread::detach channel
+
+       thread::attach channel
+
+       thread::mutex
+
+       thread::mutex create ?-recursive?
+
+       thread::mutex destroy mutex
+
+       thread::mutex lock mutex
+
+       thread::mutex unlock mutex
+
+       thread::rwmutex
+
+       thread::rwmutex create
+
+       thread::rwmutex destroy mutex
+
+       thread::rwmutex rlock mutex
+
+       thread::rwmutex wlock mutex
+
+       thread::rwmutex unlock mutex
+
+       thread::cond
+
+       thread::cond create
+
+       thread::cond destroy cond
+
+       thread::cond notify cond
+
+       thread::cond wait cond mutex ?ms?
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       The  thread  extension  creates threads that contain Tcl interpreters, and it lets you send scripts to those threads for evaluation.  Additionally, it provides script-level access to basic thread
+       synchronization primitives, like mutexes and condition variables.
+
+COMMANDS
+       This section describes commands for creating and destroying threads and sending scripts to threads for evaluation.
+
+       thread::create ?-joinable? ?-preserved? ?script?
+              This command creates a thread that contains a Tcl interpreter.  The Tcl interpreter either evaluates the optional script, if specified, or it waits in the event loop for scripts  that  ar‐
+              rive  via the thread::send command. Both of them would take place simultaneously with the return of command thread::create to the caller thread.  Neither the caller is waiting for the fin‐
+              ishing of optional script, nor the result, if any, of the script is returned to the caller.  The result of thread::create is the ID of the thread. This is the opaque handle  which  identi‐
+              fies  the  newly created thread for all other package commands. The handle of the thread goes out of scope automatically when thread is marked for exit (see the thread::release command be‐
+              low).
+
+              If the optional script argument contains the thread::wait command the thread will enter into the event loop. If such command is not found  in the script the thread will run the  script  to
+              the end and exit. In that case, the handle may be safely ignored since it refers to a thread which does not exists any more at the time when the command returns.
+
+              Using flag -joinable it is possible to create a joinable thread, i.e. one upon whose exit can be waited upon by using thread::join command.  Note that failure to join a thread created with
+              -joinable flag results in resource and memory leaks.
+
+              Threads created by the thread::create cannot be destroyed forcefully. Consequently, there is no corresponding thread destroy command. A thread may only be released  using  the  thread::re‐
+              lease  and  if its internal reference count drops to zero, the thread is marked for exit. This kicks the thread out of the event loop servicing and the thread continues to execute commands
+              passed in the script argument, following the thread::wait command. If this was the last command in the script, as usually the case, the thread will exit.
+
+              It is possible to create a situation in which it may be impossible to terminate the thread, for example by putting some endless loop after the thread::wait or entering the event loop again
+              by  doing an vwait-type of command. In such cases, the thread may never exit. This is considered to be a bad practice and should be avoided if possible. This is best illustrated by the ex‐
+              ample below:
+
+                  # You should never do ...
+                  set tid [thread::create {
+                      package require Http
+                      thread::wait
+                      vwait forever ; # <-- this!
+                  }]
+
+              The thread created in the above example will never be able to exit.  After it has been released with the last matching thread::release call, the thread will jump out  of  the  thread::wait
+              and continue to execute commands following. It will enter vwait command and wait endlessly for events. There is no way one can terminate such thread, so you wouldn't want to do this!
+
+              Each  newly  created  has  its  internal  reference counter set to 0 (zero), i.e. it is unreserved. This counter gets incremented by a call to thread::preserve and decremented by a call to
+              thread::release command. These two commands implement simple but effective thread reservation system and offer predictable and controllable thread termination capabilities. It  is  however
+              possible  to  create initially preserved threads by using flag -preserved of the thread::create command. Threads created with this flag have the initial value of the reference counter of 1
+              (one), and are thus initially marked reserved.
+
+       thread::preserve ?id?
+              This command increments the thread reference counter. Each call to this command increments the reference counter by one (1).  Command returns the value of the reference counter  after  the
+              increment.  If called with the optional thread id, the command preserves the given thread. Otherwise the current thread is preserved.
+
+              With reference counting, one can implement controlled access to a shared Tcl thread. By incrementing the reference counter, the caller signalizes that he/she wishes to use the thread for a
+              longer period of time. By decrementing the counter, caller signalizes that he/she has finished using the thread.
+
+       thread::release ?-wait? ?id?
+              This command decrements the thread reference counter. Each call to this command decrements the reference counter by one (1).  If called with the optional thread id,  the  command  releases
+              the given thread. Otherwise, the current thread is released.  Command returns the value of the reference counter after the decrement.  When the reference counter reaches zero (0), the tar‐
+              get thread is marked for termination. You should not reference the thread after the thread::release command returns zero or negative integer.  The handle of the thread goes  out  of  scope
+              and should not be used any more. Any following reference to the same thread handle will result in Tcl error.
+
+              Optional flag -wait instructs the caller thread to wait for the target thread to exit, if the effect of the command would result in termination of the target thread, i.e. if the return re‐
+              sult would be zero (0). Without the flag, the caller thread does not wait for the target thread to exit. Care must be taken when using the -wait, since this may block the caller thread in‐
+              definitely.   This option has been implemented for some special uses of the extension and is deprecated for regular use. Regular users should create joinable threads by using the -joinable
+              option of the thread::create command and the thread::join to wait for thread to exit.
+
+       thread::id
+              This command returns the ID of the current thread.
+
+       thread::errorproc ?procname?
+              This command sets a handler for errors that occur in scripts sent asynchronously, using the -async flag of the thread::send command, to other threads. If no handler is specified, the  cur‐
+              rent  handler is returned. The empty string resets the handler to default (unspecified) value.  An uncaught error in a thread causes an error message to be sent to the standard error chan‐
+              nel. This default reporting scheme can be changed by registering a procedure which is called to report the error. The procname is called in the interpreter that invoked the  thread::error‐
+              proc command. The procname is called like this:
+
+                  myerrorproc thread_id errorInfo
+
+       thread::cancel ?-unwind? id ?result?
+              This command requires Tcl version 8.6 or higher.
+
+              Cancels  the script being evaluated in the thread given by the id parameter. Without the -unwind switch the evaluation stack for the interpreter is unwound until an enclosing catch command
+              is found or there are no further invocations of the interpreter left on the call stack. With the -unwind switch the evaluation stack for the interpreter is unwound without  regard  to  any
+              intervening  catch command until there are no further invocations of the interpreter left on the call stack. If result is present, it will be used as the error message string; otherwise, a
+              default error message string will be used.
+
+       thread::unwind
+              Use of this command is deprecated in favour of more advanced thread reservation system implemented with thread::preserve and thread::release commands. Support  for  thread::unwind  command
+              will disappear in some future major release of the extension.
+
+              This command stops a prior thread::wait command. Execution of the script passed to newly created thread will continue from the thread::wait command. If thread::wait was the last command in
+              the script, the thread will exit. The command returns empty result but may trigger Tcl error with the message "target thread died" in some situations.
+
+       thread::exit ?status?
+              Use of this command is deprecated in favour of more advanced thread reservation system implemented with thread::preserve and thread::release commands. Support for thread::exit command will
+              disappear in some future major release of the extension.
+
+              This  command  forces  a thread stuck in the thread::wait command to unconditionally exit. The thread's exit status defaults to 666 and can be specified using the optional status argument.
+              The execution of thread::exit command is guaranteed to leave the program memory in the inconsistent state, produce memory leaks and otherwise affect other subsystem(s) of the Tcl  applica‐
+              tion in an unpredictable manner. The command returns empty result but may trigger Tcl error with the message "target thread died" in some situations.
+
+       thread::names
+              This command returns a list of thread IDs. These are only for threads that have been created via thread::create command.  If your application creates other threads at the C level, they are
+              not reported by this command.
+
+       thread::exists id
+              Returns true (1) if thread given by the id parameter exists, false (0) otherwise. This applies only for threads that have been created via thread::create command.
+
+       thread::send ?-async? ?-head? id script ?varname?
+              This command passes a script to another thread and, optionally, waits for the result. If the -async flag is specified, the command does not wait for the result and it returns empty string.
+              The  target thread must enter it's event loop in order to receive scripts sent via this command. This is done by default for threads created without a startup script. Threads can enter the
+              event loop explicitly by calling thread::wait or any other relevant Tcl/Tk command, like update, vwait, etc.
+
+              Optional varname specifies name of the variable to store the result of the script. Without the -async flag, the command returns the evaluation code, similarly to  the  standard  Tcl  catch
+              command. If, however, the -async flag is specified, the command returns immediately and caller can later vwait on ?varname? to get the result of the passed script
+
+                  set t1 [thread::create]
+                  set t2 [thread::create]
+                  thread::send -async $t1 "set a 1" result
+                  thread::send -async $t2 "set b 2" result
+                  for {set i 0} {$i < 2} {incr i} {
+                      vwait result
+                  }
+
+              In  the above example, two threads were fed work and both of them were instructed to signalize the same variable "result" in the calling thread.  The caller entered the event loop twice to
+              get both results. Note, however, that the order of the received results may vary, depending on the current system load, type of work done, etc, etc.
+
+              Many threads can simultaneously send scripts to the target thread for execution. All of them are entered into the event queue of the target thread and executed on the FIFO basis, intermin‐
+              gled  with  optional other events pending in the event queue of the target thread.  Using the optional ?-head? switch, scripts posted to the thread's event queue can be placed on the head,
+              instead on the tail of the queue, thus being executed in the LIFO fashion.
+
+       thread::broadcast script
+              This command passes a script to all threads created by the package for execution. It does not wait for response from any of the threads.
+
+       thread::wait
+              This enters the event loop so a thread can receive messages from the thread::send command. This command should only be used within the script passed to the thread::create. It should be the
+              very  last  command  in the script. If this is not the case, the exiting thread will continue executing the script lines past the thread::wait which is usually not what you want and/or ex‐
+              pect.
+
+                  set t1 [thread::create {
+                      #
+                      # Do some initialization work here
+                      #
+                      thread::wait ; # Enter the event loop
+                  }]
+
+       thread::eval ?-lock mutex? arg ?arg ...?
+              This command concatenates passed arguments and evaluates the resulting script under the mutex protection. If no mutex is specified by using the ?-lock mutex? optional argument, the  inter‐
+              nal static mutex is used.
+
+       thread::join id
+              This  command  waits for the thread with ID id to exit and then returns it's exit code. Errors will be returned for threads which are not joinable or already waited upon by another thread.
+              Upon the join the handle of the thread has gone out of scope and should not be used any more.
+
+       thread::configure id ?option? ?value? ?...?
+              This command configures various low-level aspects of the thread with ID id in the similar way as the standard Tcl command fconfigure configures some Tcl channel options. Options  currently
+              supported are: -eventmark and -unwindonerror.
+
+              When  -eventmark  is provided with a value greater than 0 (zero), that value is the maximum number of asynchronously posted scripts that may be pending for the thread.  thread::send -async
+              blocks until the number of pending scripts in the event loop drops below the -eventmark value.
+
+              When -unwindonerror is provided with a value of true, an error result in a script causes the thread to unwind, making it unavailable to evaluate additional scripts.
+
+       thread::transfer id channel
+              This moves the specified channel from the current thread and interpreter to the main interpreter of the thread with the given id. After the move the current interpreter has  no  access  to
+              the  channel  any more, but the main interpreter of the target thread will be able to use it from now on.  The command waits until the other thread has incorporated the channel. Because of
+              this it is possible to deadlock the participating threads by commanding the other through a synchronous thread::send to transfer a channel to us.  This easily extends into longer loops  of
+              threads  waiting  for  each other. Other restrictions: the channel in question must not be shared among multiple interpreters running in the sending thread. This automatically excludes the
+              special channels for standard input, output and error.
+
+              Due to the internal Tcl core implementation and the restriction on transferring shared channels, one has to take extra measures when transferring socket channels created by  accepting  the
+              connection out of the socket commands callback procedures:
+
+                  socket -server _Accept 2200
+                  proc _Accept {s ipaddr port} {
+                      after idle [list Accept $s $ipaddr $port]
+                  }
+                  proc Accept {s ipaddr port} {
+                      set tid [thread::create]
+                      thread::transfer $tid $s
+                  }
+
+       thread::detach channel
+              This  detaches  the specified channel from the current thread and interpreter. After that, the current interpreter has no access to the channel any more. The channel is in the parked state
+              until some other (or the same) thread attaches the channel again with thread::attach.  Restrictions: same as for transferring shared channels with the thread::transfer command.
+
+       thread::attach channel
+              This attaches the previously detached channel in the current thread/interpreter. For already existing channels, the command does nothing, i.e. it is not an error to attach the same channel
+              more  than  once.  The  first operation will actually perform the operation, while all subsequent operation will just do nothing. Command throws error if the channel cannot be found in the
+              list of detached channels and/or in the current interpreter.
+
+       thread::mutex
+              Mutexes are most common thread synchronization primitives.  They are used to synchronize access from two or more threads to one or more shared resources. This command provides script-level
+              access  to  exclusive  and/or recursive mutexes. Exclusive mutexes can be locked only once by one thread, while recursive mutexes can be locked many times by the same thread. For recursive
+              mutexes, number of lock and unlock operations must match, otherwise, the mutex will never be released, which would lead to various deadlock situations.
+
+              Care has to be taken when using mutexes in an multithreading program.  Improper use of mutexes may lead to various deadlock situations, especially when using exclusive mutexes.
+
+              The thread::mutex command supports following subcommands and options:
+
+              thread::mutex create ?-recursive?
+                     Creates the mutex and returns it's opaque handle. This handle should be used for any future reference to the newly created mutex.  If no optional ?-recursive?  argument  was  speci‐
+                     fied, the command creates the exclusive mutex. With the ?-recursive? argument, the command creates a recursive mutex.
+
+              thread::mutex destroy mutex
+                     Destroys the mutex. Mutex should be in unlocked state before the destroy attempt. If the mutex is locked, the command will throw Tcl error.
+
+              thread::mutex lock mutex
+                     Locks  the  mutex. Locking the exclusive mutex may throw Tcl error if on attempt to lock the same mutex twice from the same thread. If your program logic forces you to lock the same
+                     mutex twice or more from the same thread (this may happen in recursive procedure invocations) you should consider using the recursive mutexes.
+
+              thread::mutex unlock mutex
+                     Unlocks the mutex so some other thread may lock it again.  Attempt to unlock the already unlocked mutex will throw Tcl error.
+
+       thread::rwmutex
+              This command creates many-readers/single-writer mutexes. Reader/writer mutexes allow you to serialize access to a shared resource more optimally.  In situations  where  a  shared  resource
+              gets mostly read and seldom modified, you might gain some performance by using reader/writer mutexes instead of exclusive or recursive mutexes.
+
+              For  reading  the  resource,  thread  should obtain a read lock on the resource.  Read lock is non-exclusive, meaning that more than one thread can obtain a read lock to the same resource,
+              without waiting on other readers.  For changing the resource, however, a thread must obtain a exclusive write lock. This lock effectively blocks all  threads  from  gaining  the  read-lock
+              while the resource is been modified by the writer thread.  Only after the write lock has been released, the resource may be read-locked again.
+
+              The thread::rwmutex command supports following subcommands and options:
+
+              thread::rwmutex create
+                     Creates the reader/writer mutex and returns it's opaque handle.  This handle should be used for any future reference to the newly created mutex.
+
+              thread::rwmutex destroy mutex
+                     Destroys the reader/writer mutex. If the mutex is already locked, attempt to destroy it will throw Tcl error.
+
+              thread::rwmutex rlock mutex
+                     Locks the mutex for reading. More than one thread may read-lock the same mutex at the same time.
+
+              thread::rwmutex wlock mutex
+                     Locks the mutex for writing. Only one thread may write-lock the same mutex at the same time. Attempt to write-lock same mutex twice from the same thread will throw Tcl error.
+
+              thread::rwmutex unlock mutex
+                     Unlocks the mutex so some other thread may lock it again.  Attempt to unlock already unlocked mutex will throw Tcl error.
+
+       thread::cond
+              This  command  provides  script-level  access to condition variables.  A condition variable creates a safe environment for the program to test some condition, sleep on it when false and be
+              awakened when it might have become true. A condition variable is always used in the conjunction with an exclusive mutex. If you attempt to use other type of mutex in conjunction  with  the
+              condition variable, a Tcl error will be thrown.
+
+              The command supports following subcommands and options:
+
+              thread::cond create
+                     Creates the condition variable and returns it's opaque handle.  This handle should be used for any future reference to newly created condition variable.
+
+              thread::cond destroy cond
+                     Destroys condition variable cond. Extreme care has to be taken that nobody is using (i.e. waiting on) the condition variable, otherwise unexpected errors may happen.
+
+              thread::cond notify cond
+                     Wakes up all threads waiting on the condition variable cond.
+
+              thread::cond wait cond mutex ?ms?
+                     This  command is used to suspend program execution until the condition variable cond has been signalled or the optional timer has expired.  The exclusive mutex must be locked by the
+                     calling thread on entrance to this command. If the mutex is not locked, Tcl error is thrown.  While waiting on the cond, the command releases mutex.  Before returning to the calling
+                     thread, the command re-acquires the mutex again. Unlocking the mutex and waiting on the condition variable cond is done atomically.
+
+                     The ms command option, if given, must be an integer specifying time interval in milliseconds the command waits to be signalled.  Otherwise the command waits on condition notify for‐
+                     ever.
+
+                     In multithreading programs, there are many situations where a thread has to wait for some event to happen until it is allowed to proceed.  This is usually accomplished by repeatedly
+                     testing a condition under the mutex protection and waiting on the condition variable until the condition evaluates to true:
+
+                         set mutex [thread::mutex create]
+                         set cond  [thread::cond  create]
+
+                         thread::mutex lock $mutex
+                         while {<some_condition_is_true>} {
+                             thread::cond wait $cond $mutex
+                         }
+                         # Do some work under mutex protection
+                         thread::mutex unlock $mutex
+
+                     Repeated testing of the condition is needed since the condition variable may get signalled without the condition being actually changed (spurious thread wake-ups, for example).
+
+DISCUSSION
+       The  fundamental  threading model in Tcl is that there can be one or more Tcl interpreters per thread, but each Tcl interpreter should only be used by a single thread which created it.  A "shared
+       memory" abstraction is awkward to provide in Tcl because Tcl makes assumptions about variable and data ownership. Therefore this extension supports a simple  form  of  threading  where  the  main
+       thread can manage several background, or "worker" threads.  For example, an event-driven server can pass requests to worker threads, and then await responses from worker threads or new client re‐
+       quests. Everything goes through the common Tcl event loop, so message passing between threads works naturally with event-driven I/O, vwait on variables, and so forth. For the transfer of bulk in‐
+       formation it is possible to move channels between the threads.
+
+       For advanced multithreading scripts, script-level access to two basic synchronization primitives, mutex and condition variables, is also supported.
+
+SEE ALSO
+       http://www.tcl.tk/doc/howto/thread_model.html, tpool, tsv, ttrace
+
+KEYWORDS
+       events, message passing, mutex, synchronization, thread
+
+Tcl Threading                                                                                       2.8                                                                                          thread(n)
+Threads(3)                                                                                Tcl Library Procedures                                                                                Threads(3)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       Tcl_ConditionNotify, Tcl_ConditionWait, Tcl_ConditionFinalize, Tcl_GetThreadData, Tcl_MutexLock, Tcl_MutexUnlock, Tcl_MutexFinalize, Tcl_CreateThread, Tcl_JoinThread - Tcl thread support
+
+SYNOPSIS
+       #include <tcl.h>
+
+       void
+       Tcl_ConditionNotify(condPtr)
+
+       void
+       Tcl_ConditionWait(condPtr, mutexPtr, timePtr)
+
+       void
+       Tcl_ConditionFinalize(condPtr)
+
+       Void *
+       Tcl_GetThreadData(keyPtr, size)
+
+       void
+       Tcl_MutexLock(mutexPtr)
+
+       void
+       Tcl_MutexUnlock(mutexPtr)
+
+       void
+       Tcl_MutexFinalize(mutexPtr)
+
+       int
+       Tcl_CreateThread(idPtr, proc, clientData, stackSize, flags)
+
+       int
+       Tcl_JoinThread(id, result)
+
+ARGUMENTS
+       Tcl_Condition *condPtr (in)             A condition variable, which must be associated with a mutex lock.
+
+       Tcl_Mutex *mutexPtr (in)                A mutex lock.
+
+       const Tcl_Time *timePtr (in)            A time limit on the condition wait.  NULL to wait forever.  Note that a polling value of 0 seconds does not make much sense.
+
+       Tcl_ThreadDataKey *keyPtr (in)          This  identifies  a block of thread local storage.  The key should be static and process-wide, yet each thread will end up associating a different block of
+                                               storage with this key.
+
+       int *size (in)                          The size of the thread local storage block.  This amount of data is allocated and initialized to zero the first time each thread calls Tcl_GetThreadData.
+
+       Tcl_ThreadId *idPtr (out)               The referred storage will contain the id of the newly created thread as returned by the operating system.
+
+       Tcl_ThreadId id (in)                    Id of the thread waited upon.
+
+       Tcl_ThreadCreateProc *proc (in)         This procedure will act as the main() of the newly created thread. The specified clientData will be its sole argument.
+
+       ClientData clientData (in)              Arbitrary information. Passed as sole argument to the proc.
+
+       int stackSize (in)                      The size of the stack given to the new thread.
+
+       int flags (in)                          Bitmask containing flags allowing the caller to modify behavior of the new thread.
+
+       int *result (out)                       The referred storage is used to place the exit code of the thread waited upon into it.
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+INTRODUCTION
+       Beginning with the 8.1 release, the Tcl core is thread safe, which allows you to incorporate Tcl into multithreaded applications without customizing the Tcl core.  Starting with the 8.6  release,
+       Tcl multithreading support is on by default. To disable Tcl multithreading support, you must include the --disable-threads option to configure when you configure and compile your Tcl core.
+
+       An  important  constraint  of  the Tcl threads implementation is that only the thread that created a Tcl interpreter can use that interpreter.  In other words, multiple threads can not access the
+       same Tcl interpreter.  (However, a single thread can safely create and use multiple interpreters.)
+
+DESCRIPTION
+       Tcl provides Tcl_CreateThread for creating threads. The caller can determine the size of the stack given to the new  thread  and  modify  the  behavior  through  the  supplied  flags.  The  value
+       TCL_THREAD_STACK_DEFAULT  for  the  stackSize  indicates  that  the default size as specified by the operating system is to be used for the new thread. As for the flags, currently only the values
+       TCL_THREAD_NOFLAGS and TCL_THREAD_JOINABLE are defined. The first of them invokes the default behavior with no special settings.  Using the second value marks the new  thread  as  joinable.  This
+       means that another thread can wait for the such marked thread to exit and join it.
+
+       Restrictions:  On  some  UNIX systems the pthread-library does not contain the functionality to specify the stack size of a thread. The specified value for the stack size is ignored on these sys‐
+       tems.  Windows currently does not support joinable threads. This flag value is therefore ignored on this platform.
+
+       Tcl provides the Tcl_ExitThread and Tcl_FinalizeThread functions for terminating threads and invoking optional per-thread exit handlers.  See the Tcl_Exit page for more information on these  pro‐
+       cedures.
+
+       The  Tcl_JoinThread function is provided to allow threads to wait upon the exit of another thread, which must have been marked as joinable through usage of the TCL_THREAD_JOINABLE-flag during its
+       creation via Tcl_CreateThread.
+
+       Trying to wait for the exit of a non-joinable thread or a thread which is already waited upon will result in an error. Waiting for a joinable thread which already exited is possible,  the  system
+       will retain the necessary information until after the call to Tcl_JoinThread.  This means that not calling Tcl_JoinThread for a joinable thread will cause a memory leak.
+
+       The Tcl_GetThreadData call returns a pointer to a block of thread-private data.  Its argument is a key that is shared by all threads and a size for the block of storage.  The storage is automati‐
+       cally allocated and initialized to all zeros the first time each thread asks for it.  The storage is automatically deallocated by Tcl_FinalizeThread.
+
+   SYNCHRONIZATION AND COMMUNICATION
+       Tcl provides Tcl_ThreadQueueEvent and Tcl_ThreadAlert for handling event queuing in multithreaded applications.  See the Notifier manual page for more information on these procedures.
+
+       A mutex is a lock that is used to serialize all threads through a piece of code by calling Tcl_MutexLock and Tcl_MutexUnlock.  If one thread holds a mutex, any other thread calling  Tcl_MutexLock
+       will  block until Tcl_MutexUnlock is called.  A mutex can be destroyed after its use by calling Tcl_MutexFinalize.  The result of locking a mutex twice from the same thread is undefined.  On some
+       platforms it will result in a deadlock.  The Tcl_MutexLock, Tcl_MutexUnlock and Tcl_MutexFinalize procedures are defined as empty macros if not compiling with threads enabled.  For declaration of
+       mutexes the TCL_DECLARE_MUTEX macro should be used.  This macro assures correct mutex handling even when the core is compiled without threads enabled.
+
+       A  condition variable is used as a signaling mechanism: a thread can lock a mutex and then wait on a condition variable with Tcl_ConditionWait.  This atomically releases the mutex lock and blocks
+       the waiting thread until another thread calls Tcl_ConditionNotify.  The caller of Tcl_ConditionNotify should have the associated mutex held by previously calling Tcl_MutexLock, but  this  is  not
+       enforced.   Notifying  the condition variable unblocks all threads waiting on the condition variable, but they do not proceed until the mutex is released with Tcl_MutexUnlock.  The implementation
+       of Tcl_ConditionWait automatically locks the mutex before returning.
+
+       The caller of Tcl_ConditionWait should be prepared for spurious notifications by calling Tcl_ConditionWait within a while loop that tests some invariant.
+
+       A condition variable can be destroyed after its use by calling Tcl_ConditionFinalize.
+
+       The Tcl_ConditionNotify, Tcl_ConditionWait and Tcl_ConditionFinalize procedures are defined as empty macros if not compiling with threads enabled.
+
+   INITIALIZATION
+       All of these synchronization objects are self-initializing.  They are implemented as opaque pointers that should be NULL upon first use.  The mutexes and condition variables are either cleaned up
+       by process exit handlers (if living that long) or explicitly by calls to Tcl_MutexFinalize or Tcl_ConditionFinalize.  Thread local storage is reclaimed during Tcl_FinalizeThread.
+
+SCRIPT-LEVEL ACCESS TO THREADS
+       Tcl  provides  no built-in commands for scripts to use to create, manage, or join threads, nor any script-level access to mutex or condition variables.  It provides such facilities only via C in‐
+       terfaces, and leaves it up to packages to expose these matters to the script level.  One such package is the Thread package.
+
+EXAMPLE
+       To create a thread with portable code, its implementation function should be declared as follows:
+
+              static Tcl_ThreadCreateProc MyThreadImplFunc;
+
+       It should then be defined like this example, which just counts up to a given value and then finishes.
+
+              static Tcl_ThreadCreateType
+              MyThreadImplFunc(
+                  ClientData clientData)
+              {
+                  int i, limit = (int) clientData;
+                  for (i=0 ; i<limit ; i++) {
+                      /* doing nothing at all here */
+                  }
+                  TCL_THREAD_CREATE_RETURN;
+              }
+
+       To create the above thread, make it execute, and wait for it to finish, we would do this:
+
+              int limit = 1000000000;
+              ClientData limitData = (void*)((intptr_t) limit);
+              Tcl_ThreadId id;    /* holds identity of thread created */
+              int result;
+
+              if (Tcl_CreateThread(&id, MyThreadImplFunc, limitData,
+                      TCL_THREAD_STACK_DEFAULT,
+                      TCL_THREAD_JOINABLE) != TCL_OK) {
+                  /* Thread did not create correctly */
+                  return;
+              }
+              /* Do something else for a while here */
+              if (Tcl_JoinThread(id, &result) != TCL_OK) {
+                  /* Thread did not finish properly */
+                  return;
+              }
+              /* All cleaned up nicely */
+
+SEE ALSO
+       Tcl_GetCurrentThread(3), Tcl_ThreadQueueEvent(3), Tcl_ThreadAlert(3), Tcl_ExitThread(3), Tcl_FinalizeThread(3), Tcl_CreateThreadExitHandler(3), Tcl_DeleteThreadExitHandler(3), Thread
+
+KEYWORDS
+       thread, mutex, condition variable, thread local storage
+
+Tcl                                                                                                 8.1                                                                                         Threads(3)
+Thread(3perl)                                                                        Perl Programmers Reference Guide                                                                        Thread(3perl)
+
+NAME
+       Thread - Manipulate threads in Perl (for old code only)
+
+DEPRECATED
+       The "Thread" module served as the frontend to the old-style thread model, called 5005threads, that was introduced in release 5.005.  That model was deprecated, and has been removed in version
+       5.10.
+
+       For old code and interim backwards compatibility, the "Thread" module has been reworked to function as a frontend for the new interpreter threads (ithreads) model.  However, some previous
+       functionality is not available.  Further, the data sharing models between the two thread models are completely different, and anything to do with data sharing has to be thought differently.  With
+       ithreads, you must explicitly "share()" variables between the threads.
+
+       You are strongly encouraged to migrate any existing threaded code to the new model (i.e., use the "threads" and "threads::shared" modules) as soon as possible.
+
+HISTORY
+       In Perl 5.005, the thread model was that all data is implicitly shared, and shared access to data has to be explicitly synchronized.  This model is called 5005threads.
+
+       In Perl 5.6, a new model was introduced in which all is was thread local and shared access to data has to be explicitly declared.  This model is called ithreads, for "interpreter threads".
+
+       In Perl 5.6, the ithreads model was not available as a public API; only as an internal API that was available for extension writers, and to implement fork() emulation on Win32 platforms.
+
+       In Perl 5.8, the ithreads model became available through the "threads" module, and the 5005threads model was deprecated.
+
+       In Perl 5.10, the 5005threads model was removed from the Perl interpreter.
+
+SYNOPSIS
+           use Thread qw(:DEFAULT async yield);
+
+           my $t = Thread->new(\&start_sub, @start_args);
+
+           $result = $t->join;
+           $t->detach;
+
+           if ($t->done) {
+               $t->join;
+           }
+
+           if($t->equal($another_thread)) {
+               # ...
+           }
+
+           yield();
+
+           my $tid = Thread->self->tid;
+
+           lock($scalar);
+           lock(@array);
+           lock(%hash);
+
+           my @list = Thread->list;
+
+DESCRIPTION
+       The "Thread" module provides multithreading support for Perl.
+
+FUNCTIONS
+       $thread = Thread->new(\&start_sub)
+       $thread = Thread->new(\&start_sub, LIST)
+               "new" starts a new thread of execution in the referenced subroutine. The optional list is passed as parameters to the subroutine. Execution continues in both the subroutine and the code
+               after the "new" call.
+
+               "Thread->new" returns a thread object representing the newly created thread.
+
+       lock VARIABLE
+               "lock" places a lock on a variable until the lock goes out of scope.
+
+               If the variable is locked by another thread, the "lock" call will block until it's available.  "lock" is recursive, so multiple calls to "lock" are safe--the variable will remain locked
+               until the outermost lock on the variable goes out of scope.
+
+               Locks on variables only affect "lock" calls--they do not affect normal access to a variable. (Locks on subs are different, and covered in a bit.)  If you really, really want locks to
+               block access, then go ahead and tie them to something and manage this yourself.  This is done on purpose.  While managing access to variables is a good thing, Perl doesn't force you out
+               of its living room...
+
+               If a container object, such as a hash or array, is locked, all the elements of that container are not locked. For example, if a thread does a "lock @a", any other thread doing a
+               "lock($a[12])" won't block.
+
+               Finally, "lock" will traverse up references exactly one level.  "lock(\$a)" is equivalent to "lock($a)", while "lock(\\$a)" is not.
+
+       async BLOCK;
+               "async" creates a thread to execute the block immediately following it.  This block is treated as an anonymous sub, and so must have a semi-colon after the closing brace. Like
+               "Thread->new", "async" returns a thread object.
+
+       Thread->self
+               The "Thread->self" function returns a thread object that represents the thread making the "Thread->self" call.
+
+       Thread->list
+               Returns a list of all non-joined, non-detached Thread objects.
+
+       cond_wait VARIABLE
+               The "cond_wait" function takes a locked variable as a parameter, unlocks the variable, and blocks until another thread does a "cond_signal" or "cond_broadcast" for that same locked
+               variable. The variable that "cond_wait" blocked on is relocked after the "cond_wait" is satisfied.  If there are multiple threads "cond_wait"ing on the same variable, all but one will
+               reblock waiting to re-acquire the lock on the variable.  (So if you're only using "cond_wait" for synchronization, give up the lock as soon as possible.)
+
+       cond_signal VARIABLE
+               The "cond_signal" function takes a locked variable as a parameter and unblocks one thread that's "cond_wait"ing on that variable. If more than one thread is blocked in a "cond_wait" on
+               that variable, only one (and which one is indeterminate) will be unblocked.
+
+               If there are no threads blocked in a "cond_wait" on the variable, the signal is discarded.
+
+       cond_broadcast VARIABLE
+               The "cond_broadcast" function works similarly to "cond_signal".  "cond_broadcast", though, will unblock all the threads that are blocked in a "cond_wait" on the locked variable, rather
+               than only one.
+
+       yield   The "yield" function allows another thread to take control of the CPU. The exact results are implementation-dependent.
+
+METHODS
+       join    "join" waits for a thread to end and returns any values the thread exited with.  "join" will block until the thread has ended, though it won't block if the thread has already terminated.
+
+               If the thread being "join"ed "die"d, the error it died with will be returned at this time. If you don't want the thread performing the "join" to die as well, you should either wrap the
+               "join" in an "eval" or use the "eval" thread method instead of "join".
+
+       detach  "detach" tells a thread that it is never going to be joined i.e.  that all traces of its existence can be removed once it stops running.  Errors in detached threads will not be visible
+               anywhere - if you want to catch them, you should use $SIG{__DIE__} or something like that.
+
+       equal   "equal" tests whether two thread objects represent the same thread and returns true if they do.
+
+       tid     The "tid" method returns the tid of a thread. The tid is a monotonically increasing integer assigned when a thread is created. The main thread of a program will have a tid of zero, while
+               subsequent threads will have tids assigned starting with one.
+
+       done    The "done" method returns true if the thread you're checking has finished, and false otherwise.
+
+DEFUNCT
+       The following were implemented with 5005threads, but are no longer available with ithreads.
+
+       lock(\&sub)
+               With 5005threads, you could also "lock" a sub such that any calls to that sub from another thread would block until the lock was released.
+
+               Also, subroutines could be declared with the ":locked" attribute which would serialize access to the subroutine, but allowed different threads non-simultaneous access.
+
+       eval    The "eval" method wrapped an "eval" around a "join", and so waited for a thread to exit, passing along any values the thread might have returned and placing any errors into $@.
+
+       flags   The "flags" method returned the flags for the thread - an integer value corresponding to the internal flags for the thread.
+
+SEE ALSO
+       threads, threads::shared, Thread::Queue, Thread::Semaphore
+
+perl v5.36.0                                                                                    2022-12-12                                                                                   Thread(3perl)

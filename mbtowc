@@ -1,0 +1,129 @@
+mbtowc(3)                                                                                Library Functions Manual                                                                                mbtowc(3)
+
+NAME
+       mbtowc - convert a multibyte sequence to a wide character
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       int mbtowc(wchar_t *restrict pwc, const char s[restrict .n], size_t n);
+
+DESCRIPTION
+       The  main  case for this function is when s is not NULL and pwc is not NULL.  In this case, the mbtowc() function inspects at most n bytes of the multibyte string starting at s, extracts the next
+       complete multibyte character, converts it to a wide character and stores it at *pwc.  It updates an internal shift state known only to the mbtowc() function.  If s does not point to a  null  byte
+       ('\0'), it returns the number of bytes that were consumed from s, otherwise it returns 0.
+
+       If the n bytes starting at s do not contain a complete multibyte character, or if they contain an invalid multibyte sequence, mbtowc() returns -1.  This can happen even if n >= MB_CUR_MAX, if the
+       multibyte string contains redundant shift sequences.
+
+       A different case is when s is not NULL but pwc is NULL.  In this case, the mbtowc() function behaves as above, except that it does not store the converted wide character in memory.
+
+       A third case is when s is NULL.  In this case, pwc and n are ignored.  The mbtowc() function resets the shift state, only known to this function, to the initial state, and returns nonzero if  the
+       encoding has nontrivial shift state, or zero if the encoding is stateless.
+
+RETURN VALUE
+       If s is not NULL, the mbtowc() function returns the number of consumed bytes starting at s, or 0 if s points to a null byte, or -1 upon failure.
+
+       If s is NULL, the mbtowc() function returns nonzero if the encoding has nontrivial shift state, or zero if the encoding is stateless.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                                                                                                                                                        │ Attribute     │ Value          │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────┤
+       │mbtowc()                                                                                                                                                         │ Thread safety │ MT-Unsafe race │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────┘
+
+VERSIONS
+       This function is not multithread safe.  The function mbrtowc(3) provides a better interface to the same functionality.
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, C99.
+
+NOTES
+       The behavior of mbtowc() depends on the LC_CTYPE category of the current locale.
+
+SEE ALSO
+       MB_CUR_MAX(3), mblen(3), mbrtowc(3), mbstowcs(3), wcstombs(3), wctomb(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       mbtowc(3)
+MBTOWC(3P)                                                                               POSIX Programmer's Manual                                                                              MBTOWC(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       mbtowc — convert a character to a wide-character code
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       int mbtowc(wchar_t *restrict pwc, const char *restrict s, size_t n);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       If  s  is  not  a  null pointer, mbtowc() shall determine the number of bytes that constitute the character pointed to by s.  It shall then determine the wide-character code for the value of type
+       wchar_t that corresponds to that character. (The value of the wide-character code corresponding to the null byte is 0.) If the character is valid and pwc is not a  null  pointer,  mbtowc()  shall
+       store the wide-character code in the object pointed to by pwc.
+
+       The  behavior  of  this function is affected by the LC_CTYPE category of the current locale. For a state-dependent encoding, this function is placed into its initial state by a call for which its
+       character pointer argument, s, is a null pointer. Subsequent calls with s as other than a null pointer shall cause the internal state of the function to be altered as necessary. A call with s  as
+       a  null  pointer  shall  cause this function to return a non-zero value if encodings have state dependency, and 0 otherwise. If the implementation employs special bytes to change the shift state,
+       these bytes shall not produce separate wide-character codes, but shall be grouped with an adjacent character. Changing the LC_CTYPE category causes the shift state of this function to be unspeci‐
+       fied. At most n bytes of the array pointed to by s shall be examined.
+
+       The implementation shall behave as if no function defined in this volume of POSIX.1‐2017 calls mbtowc().
+
+       The mbtowc() function need not be thread-safe.
+
+RETURN VALUE
+       If  s is a null pointer, mbtowc() shall return a non-zero or 0 value, if character encodings, respectively, do or do not have state-dependent encodings. If s is not a null pointer, mbtowc() shall
+       either return 0 (if s points to the null byte), or return the number of bytes that constitute the converted character (if the next n or fewer bytes form a valid character), or return -1 and shall
+       set errno to indicate the error (if they do not form a valid character).
+
+       In no case shall the value returned be greater than n or the value of the {MB_CUR_MAX} macro.
+
+ERRORS
+       The mbtowc() function shall fail if:
+
+       EILSEQ An invalid character sequence is detected. In the POSIX locale an [EILSEQ] error cannot occur since all byte values are valid characters.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       mblen(), mbstowcs(), wctomb(), wcstombs()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdlib.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         MBTOWC(3P)

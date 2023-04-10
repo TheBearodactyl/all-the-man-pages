@@ -1,0 +1,97 @@
+native::Delta(3)      User Contributed Perl Documentation     native::Delta(3)
+
+NAME
+       SVN::Delta - Subversion delta functions
+
+SYNOPSIS
+           require SVN::Core;
+           require SVN::Repos;
+           require SVN::Delta;
+
+           # driving an editor
+           my $editor = SVN::Delta::Editor->
+               new(SVN::Repos::get_commit_editor($repos, "file://$repospath",
+                                                 '/', 'root', 'FOO', \&committed));
+
+           my $rootbaton = $editor->open_root(0);
+
+           my $fbaton = $editor->add_file('filea', $rootbaton,
+                                          undef, -1);
+
+           my $ret = $editor->apply_textdelta($fbaton, undef);
+           SVN::TxDelta::send_string("FILEA CONTENT", @$ret);
+
+           # implement an editor in perl
+           SVN::Repos::dir_delta($root1, $path, undef,
+                                 $root2, $path,
+                                 SVN::Delta::Editor->new(_debug=>1),
+                                 1, 1, 0, 1
+
+DESCRIPTION
+       SVN::Delta wraps delta related function in subversion. The most
+       important one is SVN::Delta::Editor, the interface for describing tree
+       deltas. by default SVN::Delta::Editor relays method calls to its
+       internal member "_editor", which could either be an editor in C (such
+       as the one you get from get_commit_editor), or another
+       SVN::Delta::Editor object.
+
+SVN::Delta::Editor
+   Driving Editors
+       If you want to drive a native editor (such as commit_editor obtained by
+       SVN::Repos::get_commit_editor), create a SVN::Delta::Editor object with
+       the native editor/baton pair. The object will then be ready to use and
+       its method calls will be relayed to the native editor.
+
+   Implementing Editors
+       If you want to implement an editor, subclass SVN::Delta::Editor and
+       implement the editors callbacks. see the METHODS section below.
+
+   CONSTRUCTOR - new(...)
+       new($editor, $editor_baton)
+           Link to the native editor
+
+       You can also pass a hash array to new:
+
+       _debug
+           Turn on debug.
+
+       _editor
+           An arrayref of the editor/baton pair or another SVN::Delta::Editor
+           object to link with.
+
+   METHODS
+       Please consult the svn_delta.h section in the Subversion API. Member
+       functions of svn_delta_editor_t could be called as methods of
+       SVN::Delta::Editor objects, with the edit_baton omitted. The pool is
+       also optional.
+
+       If you are subclassing, the methods take exactly the same arguments as
+       the member functions (note that void ** are returned data though as
+       throughout the perl bindings), with the edit_baton omitted.
+
+BUGS
+       Functions returning editor/baton pair should really be typemapped to a
+       SVN::Delta::Editor object.
+
+AUTHORS
+       Chia-liang Kao <clkao@clkao.org>
+
+COPYRIGHT
+           Licensed to the Apache Software Foundation (ASF) under one
+           or more contributor license agreements.  See the NOTICE file
+           distributed with this work for additional information
+           regarding copyright ownership.  The ASF licenses this file
+           to you under the Apache License, Version 2.0 (the
+           "License"); you may not use this file except in compliance
+           with the License.  You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+           Unless required by applicable law or agreed to in writing,
+           software distributed under the License is distributed on an
+           "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+           KIND, either express or implied.  See the License for the
+           specific language governing permissions and limitations
+           under the License.
+
+perl v5.36.0                      2022-12-23                  native::Delta(3)

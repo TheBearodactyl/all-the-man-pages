@@ -1,0 +1,54 @@
+SD_BUS_WAIT(3)                    sd_bus_wait                   SD_BUS_WAIT(3)
+
+NAME
+       sd_bus_wait - Wait for I/O on a bus connection
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_wait(sd_bus *bus, uint64_t timeout_usec);
+
+DESCRIPTION
+       sd_bus_wait() synchronously waits for I/O on the specified bus
+       connection object. This function is supposed to be called whenever
+       sd_bus_process(3) returns zero, indicating that no work is pending on
+       the connection. Internally, this call invokes ppoll(2), to wait for I/O
+       on the bus connection. If the timeout_usec parameter is specified, the
+       call will block at most for the specified amount of time in µs. Pass
+       UINT64_MAX to permit it to sleep indefinitely.
+
+       After each invocation of sd_bus_wait() the sd_bus_process() call should
+       be invoked in order to process any now pending I/O work.
+
+       Note that sd_bus_wait() is suitable only for simple programs as it does
+       not permit waiting for other I/O events. For more complex programs
+       either connect the bus connection object to an external event loop
+       using sd_bus_get_fd(3) or to an sd-event(3) event loop using
+       sd_bus_attach_event(3).
+
+RETURN VALUE
+       If any I/O was seen, a positive value is returned, zero otherwise. If
+       an error occurs, a negative errno-style error code is returned.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           An invalid bus object was passed.
+
+       -ECHILD
+           The bus connection was allocated in a parent process and is being
+           reused in a child process after fork().
+
+       -ENOTCONN
+           The bus connection has been terminated already.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_process(3), sd_bus_get_fd(3), sd-
+       event(3), sd_bus_attach_event(3)
+
+systemd 253                                                     SD_BUS_WAIT(3)

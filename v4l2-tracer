@@ -1,0 +1,83 @@
+V4L2-TRACER(1)                                                                                 User Commands                                                                                V4L2-TRACER(1)
+
+NAME
+       v4l2-tracer - An application to trace and replay stateless video decoding.
+
+SYNOPSIS
+       v4l2-tracer [options] trace <tracee>
+       v4l2-tracer [options] retrace  <trace_file>.json
+       v4l2-tracer clean  <file>.json
+
+DESCRIPTION
+       The v4l2-tracer utility traces, records and replays userspace applications that implement the v4l2 memory-to-memory stateless video decoder interface.
+
+   Trace
+       Trace  system  calls  and video frame data passed by userspace application <tracee> to kernel driver.  All stateless codec controls in user-space API can be traced. Outputs a JSON-formatted trace
+       file.
+
+   Retrace
+       Read the JSON-formatted <trace_file>.json. Replay the same system calls and pass the same video frame data to kernel driver.  Outputs a JSON-formatted retrace file.
+
+   Clean
+       Remove lines with irrelevant differences (e.g. file descriptors and memory addresses) from JSON files.  Outputs a clean copy, not necessarily still in JSON-format.
+
+OPTIONS
+   Common Options
+       -c, --compact
+              Write minimal whitespace in JSON file.
+
+       -g, --debug
+              Turn on verbose reporting plus additional debug info.
+
+       -h, --help
+              Display this message.
+
+       -r, --raw
+              Write decoded video frame data to JSON file.
+
+       -v, --verbose
+              Turn on verbose reporting.
+
+       -y, --yuv
+              Write decoded video frame data to yuv file.
+
+   Retrace Options
+       -d, --device <dev>
+              Use a different video device than specified in the trace file.
+              <dev> must be a digit corresponding to an existing /dev/video<dev>
+
+       -m, --media <dev>
+              Use a different media device than specified in the trace file.
+              <dev> must be a digit corresponding to an existing /dev/media<dev>
+
+EXIT STATUS
+       On success, it returns 0. Otherwise, it will return 1 or an error code.
+
+EXAMPLE
+       Trace an application decoding VP8 video:
+              v4l2-tracer trace gst-launch-1.0 -- filesrc location=test-25fps.vp8 ! parsebin ! v4l2slvp8dec ! videocodectestsink
+
+       A trace file is generated:
+              71827_trace.json
+
+       Retrace the trace file:
+              v4l2-tracer retrace 71827_trace.json
+
+       Specify device nodes if retracing on a different driver:
+              v4l2-tracer -d0 -m0 retrace 71827_trace.json
+
+       A retrace file is generated:
+              71827_trace_retrace.json
+
+       Remove file descriptors and addresses (optional):
+              v4l2-tracer clean 71827_trace.json
+              v4l2-tracer clean 71827_trace_retrace.json
+
+       Clean files are generated for comparison:
+              clean_71827_trace.json
+              clean_71827_trace_retrace.json
+
+BUGS
+       Bug reports or questions about this utility should be sent to the linux-media@vger.kernel.org mailinglist.
+
+v4l-utils 1.24.1                                                                               November 2022                                                                                V4L2-TRACER(1)

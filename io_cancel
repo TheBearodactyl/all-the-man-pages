@@ -1,0 +1,99 @@
+io_cancel(3)                                                                                     Linux AIO                                                                                    io_cancel(3)
+
+NAME
+       io_cancel - Cancel io requests
+
+SYNOPSIS
+       #include <errno.h>
+
+       #include <libaio.h>
+
+       int io_cancel(io_context_t ctx, struct iocb *iocb);
+
+       struct iocb {
+            void      *data; /* Return in the io completion event */
+            unsigned  key; /* For use in identifying io requests */
+            short          aio_lio_opcode;
+            short          aio_reqprio;   /* Not used */
+            int       aio_fildes;
+       };
+
+DESCRIPTION
+       Attempts  to cancel an iocb previously passed to io_submit(3).  If the operation is successfully cancelled, the resulting event is copied into the memory pointed to by result without being placed
+       into the completion queue.
+
+       When one or more requests are asynchronously processed, it might be useful in some situations to cancel a selected operation, e.g., if it becomes obvious that the written data is no longer  accu‐
+       rate  and would have to be overwritten soon.  As an example, assume an application, which writes data in files in a situation where new incoming data would have to be written in a file which will
+       be updated by an enqueued request.
+
+RETURN VALUES
+       0 is returned on success, otherwise returns errno.
+
+ERRORS
+       EFAULT If any of the data structures pointed to are invalid.
+
+       EINVAL If aio_context specified by ctx is invalid.
+
+       EAGAIN If the iocb specified was not cancelled.
+
+       ENOSYS If not implemented.
+
+SEE ALSO
+       io(3), io_fsync(3), io_getevents(3), io_prep_fsync(3), io_prep_pread(3), io_prep_pwrite(3), io_queue_init(3), io_queue_release(3), io_queue_run(3), io_queue_wait(3),  io_set_callback(3),  io_sub‐
+       mit(3), errno(3).
+
+Linux                                                                                           2019-07-23                                                                                    io_cancel(3)
+io_cancel(2)                                                                                System Calls Manual                                                                               io_cancel(2)
+
+NAME
+       io_cancel - cancel an outstanding asynchronous I/O operation
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+       Alternatively, Asynchronous I/O library (libaio, -laio); see VERSIONS.
+
+SYNOPSIS
+       #include <linux/aio_abi.h>    /* Definition of needed types */
+       #include <sys/syscall.h>      /* Definition of SYS_* constants */
+       #include <unistd.h>
+
+       int syscall(SYS_io_cancel, aio_context_t ctx_id, struct iocb *iocb,
+                   struct io_event *result);
+
+DESCRIPTION
+       Note: this page describes the raw Linux system call interface.  The wrapper function provided by libaio uses a different type for the ctx_id argument.  See VERSIONS.
+
+       The io_cancel() system call attempts to cancel an asynchronous I/O operation previously submitted with io_submit(2).  The iocb argument describes the operation to be canceled and the ctx_id argu‐
+       ment is the AIO context to which the operation was submitted.  If the operation is successfully canceled, the event will be copied into the memory pointed to by result without being  placed  into
+       the completion queue.
+
+RETURN VALUE
+       On success, io_cancel() returns 0.  For the failure return, see VERSIONS.
+
+ERRORS
+       EAGAIN The iocb specified was not canceled.
+
+       EFAULT One of the data structures points to invalid data.
+
+       EINVAL The AIO context specified by ctx_id is invalid.
+
+       ENOSYS io_cancel() is not implemented on this architecture.
+
+VERSIONS
+       You probably want to use the io_cancel() wrapper function provided by libaio.
+
+       Note that the libaio wrapper function uses a different type (io_context_t) for the ctx_id argument.  Note also that the libaio wrapper does not follow the usual C library conventions for indicat‐
+       ing errors: on error it returns a negated error number (the negative of one of the values listed in ERRORS).  If the system call is invoked via syscall(2), then the return value follows the usual
+       conventions for indicating an error: -1, with errno set to a (positive) value that indicates the error.
+
+STANDARDS
+       Linux.
+
+HISTORY
+       Linux 2.5.
+
+SEE ALSO
+       io_destroy(2), io_getevents(2), io_setup(2), io_submit(2), aio(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                    io_cancel(2)

@@ -1,0 +1,595 @@
+strptime(3)                Library Functions Manual                strptime(3)
+
+NAME
+       strptime  - convert a string representation of time to a time tm struc‐
+       ture
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #define _XOPEN_SOURCE       /* See feature_test_macros(7) */
+       #include <time.h>
+
+       char *strptime(const char *restrict s, const char *restrict format,
+                      struct tm *restrict tm);
+
+DESCRIPTION
+       The strptime() function is the converse of strftime(3); it converts the
+       character  string  pointed  to  by  s to values which are stored in the
+       "broken-down time" structure pointed to by tm, using the format  speci‐
+       fied by format.
+
+       The broken-down time structure tm is described in tm(3type).
+
+       The  format  argument  is a character string that consists of field de‐
+       scriptors and text characters, reminiscent of scanf(3).  Each field de‐
+       scriptor  consists  of a % character followed by another character that
+       specifies the replacement for the field descriptor.  All other  charac‐
+       ters  in  the format string must have a matching character in the input
+       string, except for whitespace, which matches zero  or  more  whitespace
+       characters  in  the  input string.  There should be whitespace or other
+       alphanumeric characters between any two field descriptors.
+
+       The strptime() function processes the input string from left to  right.
+       Each of the three possible input elements (whitespace, literal, or for‐
+       mat) are handled one after the other.  If the input cannot  be  matched
+       to  the format string, the function stops.  The remainder of the format
+       and input strings are not processed.
+
+       The supported input field descriptors are listed below.  In case a text
+       string (such as the name of a day of the week or a month name) is to be
+       matched, the comparison is case insensitive.  In case a number is to be
+       matched, leading zeros are permitted but not required.
+
+       %%     The % character.
+
+       %a or %A
+              The name of the day of the week according to the current locale,
+              in abbreviated form or the full name.
+
+       %b or %B or %h
+              The month name according to the current locale,  in  abbreviated
+              form or the full name.
+
+       %c     The date and time representation for the current locale.
+
+       %C     The century number (0–99).
+
+       %d or %e
+              The day of month (1–31).
+
+       %D     Equivalent  to %m/%d/%y.  (This is the American style date, very
+              confusing to non-Americans, especially since %d/%m/%y is  widely
+              used in Europe.  The ISO 8601 standard format is %Y-%m-%d.)
+
+       %H     The hour (0–23).
+
+       %I     The hour on a 12-hour clock (1–12).
+
+       %j     The day number in the year (1–366).
+
+       %m     The month number (1–12).
+
+       %M     The minute (0–59).
+
+       %n     Arbitrary whitespace.
+
+       %p     The locale's equivalent of AM or PM.  (Note: there may be none.)
+
+       %r     The  12-hour  clock  time (using the locale's AM or PM).  In the
+              POSIX locale equivalent to %I:%M:%S %p.  If t_fmt_ampm is  empty
+              in  the LC_TIME part of the current locale, then the behavior is
+              undefined.
+
+       %R     Equivalent to %H:%M.
+
+       %S     The second (0–60; 60 may occur for leap seconds; earlier also 61
+              was allowed).
+
+       %t     Arbitrary whitespace.
+
+       %T     Equivalent to %H:%M:%S.
+
+       %U     The  week  number  with Sunday the first day of the week (0–53).
+              The first Sunday of January is the first day of week 1.
+
+       %w     The ordinal number of the day of the week (0–6), with  Sunday  =
+              0.
+
+       %W     The  week  number  with Monday the first day of the week (0–53).
+              The first Monday of January is the first day of week 1.
+
+       %x     The date, using the locale's date format.
+
+       %X     The time, using the locale's time format.
+
+       %y     The year within century (0–99).  When a century is not otherwise
+              specified, values in the range 69–99 refer to years in the twen‐
+              tieth century (1969–1999); values in the range  00–68  refer  to
+              years in the twenty-first century (2000–2068).
+
+       %Y     The year, including century (for example, 1991).
+
+       Some  field  descriptors can be modified by the E or O modifier charac‐
+       ters to indicate that an alternative format or specification should  be
+       used.  If the alternative format or specification does not exist in the
+       current locale, the unmodified field descriptor is used.
+
+       The E modifier specifies that the input string may contain  alternative
+       locale-dependent versions of the date and time representation:
+
+       %Ec    The locale's alternative date and time representation.
+
+       %EC    The  name  of the base year (period) in the locale's alternative
+              representation.
+
+       %Ex    The locale's alternative date representation.
+
+       %EX    The locale's alternative time representation.
+
+       %Ey    The offset from %EC (year only) in the locale's alternative rep‐
+              resentation.
+
+       %EY    The full alternative year representation.
+
+       The O modifier specifies that the numerical input may be in an alterna‐
+       tive locale-dependent format:
+
+       %Od or %Oe
+              The day of the month using the locale's alternative numeric sym‐
+              bols; leading zeros are permitted but not required.
+
+       %OH    The  hour (24-hour clock) using the locale's alternative numeric
+              symbols.
+
+       %OI    The hour (12-hour clock) using the locale's alternative  numeric
+              symbols.
+
+       %Om    The month using the locale's alternative numeric symbols.
+
+       %OM    The minutes using the locale's alternative numeric symbols.
+
+       %OS    The seconds using the locale's alternative numeric symbols.
+
+       %OU    The  week  number  of  the  year (Sunday as the first day of the
+              week) using the locale's alternative numeric symbols.
+
+       %Ow    The ordinal number of the day of the week (Sunday=0), using  the
+              locale's alternative numeric symbols.
+
+       %OW    The  week  number  of  the  year (Monday as the first day of the
+              week) using the locale's alternative numeric symbols.
+
+       %Oy    The year (offset from %C) using the locale's alternative numeric
+              symbols.
+
+RETURN VALUE
+       The  return  value  of the function is a pointer to the first character
+       not processed in this function call.  In case the input string contains
+       more  characters  than  required by the format string, the return value
+       points right after the last consumed  input  character.   In  case  the
+       whole  input  string  is  consumed, the return value points to the null
+       byte at the end of the string.  If strptime() fails to match all of the
+       format  string  and  therefore  an error occurred, the function returns
+       NULL.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌─────────────────────────────────┬───────────────┬────────────────────┐
+       │Interface                        │ Attribute     │ Value              │
+       ├─────────────────────────────────┼───────────────┼────────────────────┤
+       │strptime()                       │ Thread safety │ MT-Safe env locale │
+       └─────────────────────────────────┴───────────────┴────────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SUSv2.
+
+NOTES
+       In  principle, this function does not initialize tm but stores only the
+       values specified.  This means that tm should be initialized before  the
+       call.   Details differ a bit between different UNIX systems.  The glibc
+       implementation does not touch those fields  which  are  not  explicitly
+       specified,  except  that it recomputes the tm_wday and tm_yday field if
+       any of the year, month, or day elements changed.
+
+       The 'y' (year in century) specification is taken to specify a  year  in
+       the  range  1950–2049  by  glibc  2.0.   It  is  taken  to be a year in
+       1969–2068 since glibc 2.1.
+
+   glibc notes
+       For reasons of symmetry, glibc tries to support for strptime() the same
+       format  characters as for strftime(3).  (In most cases, the correspond‐
+       ing fields are parsed, but no field in tm is changed.)  This leads to
+
+       %F     Equivalent to %Y-%m-%d, the ISO 8601 date format.
+
+       %g     The year corresponding to the ISO week number, but  without  the
+              century (0–99).
+
+       %G     The  year  corresponding  to the ISO week number.  (For example,
+              1991.)
+
+       %u     The day of the week as a decimal number (1–7, where Monday = 1).
+
+       %V     The ISO 8601:1988 week number as a decimal  number  (1–53).   If
+              the  week  (starting on Monday) containing 1 January has four or
+              more days in the new year, then it is considered week 1.  Other‐
+              wise,  it  is  the  last week of the previous year, and the next
+              week is week 1.
+
+       %z     An RFC-822/ISO 8601 standard timezone specification.
+
+       %Z     The timezone name.
+
+       Similarly, because of GNU extensions to strftime(3), %k is accepted  as
+       a synonym for %H, and %l should be accepted as a synonym for %I, and %P
+       is accepted as a synonym for %p.  Finally
+
+       %s     The number of seconds since the Epoch, 1970-01-01 00:00:00 +0000
+              (UTC).   Leap seconds are not counted unless leap second support
+              is available.
+
+       The glibc implementation does not require whitespace between two  field
+       descriptors.
+
+EXAMPLES
+       The  following  example  demonstrates  the  use of strptime() and strf‐
+       time(3).
+
+       #define _XOPEN_SOURCE
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+       #include <time.h>
+
+       int
+       main(void)
+       {
+           struct tm tm;
+           char buf[255];
+
+           memset(&tm, 0, sizeof(tm));
+           strptime("2001-11-12 18:31:01", "%Y-%m-%d %H:%M:%S", &tm);
+           strftime(buf, sizeof(buf), "%d %b %Y %H:%M", &tm);
+           puts(buf);
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       time(2), getdate(3), scanf(3), setlocale(3), strftime(3)
+
+Linux man-pages 6.04              2023-03-30                       strptime(3)
+STRPTIME(3P)               POSIX Programmer's Manual              STRPTIME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       strptime — date and time conversion
+
+SYNOPSIS
+       #include <time.h>
+
+       char *strptime(const char *restrict buf, const char *restrict format,
+           struct tm *restrict tm);
+
+DESCRIPTION
+       The strptime() function shall convert the character string  pointed  to
+       by buf to values which are stored in the tm structure pointed to by tm,
+       using the format specified by format.
+
+       The format is composed of zero or more directives.  Each  directive  is
+       composed  of  one  of the following: one or more white-space characters
+       (as specified by isspace()); an ordinary character (neither '%'  nor  a
+       white-space character); or a conversion specification.
+
+       Each  conversion specification is introduced by the '%' character after
+       which the following appear in sequence:
+
+        *  An optional flag, the zero character ('0') or the <plus-sign> char‐
+           acter ('+'), which is ignored.
+
+        *  An optional field width. If a field width is specified, it shall be
+           interpreted as a string of decimal digits that will  determine  the
+           maximum  number  of  bytes converted for the conversion rather than
+           the number of bytes specified below in the description of the  con‐
+           version specifiers.
+
+        *  An optional E or O modifier.
+
+        *  A  terminating  conversion  specifier  character that indicates the
+           type of conversion to be applied.
+
+       The conversions are determined using the LC_TIME category of  the  cur‐
+       rent  locale. The application shall ensure that there is white-space or
+       other non-alphanumeric characters between any two conversion specifica‐
+       tions  unless  all  of the adjacent conversion specifications convert a
+       known, fixed number of characters. In the following list,  the  maximum
+       number  of  characters scanned (excluding the one matching the next di‐
+       rective) is as follows:
+
+        *  If a maximum field width is specified, then that number
+
+        *  Otherwise, the pattern "{x}" indicates that the maximum is x
+
+        *  Otherwise, the pattern "[x,y]" indicates that the value shall  fall
+           within the range given (both bounds being inclusive), and the maxi‐
+           mum number of characters scanned shall be the maximum  required  to
+           represent  any value in the range without leading zeros and without
+           a leading <plus-sign>
+
+       The following conversion specifiers are supported.
+
+       The results are unspecified if a modifier is specified with a  flag  or
+       with  a  minimum  field width, or if a field width is specified for any
+       conversion specifier other than C or Y.
+
+       a       The day of the week, using the locale's weekday  names;  either
+               the abbreviated or full name may be specified.
+
+       A       Equivalent to %a.
+
+       b       The  month, using the locale's month names; either the abbrevi‐
+               ated or full name may be specified.
+
+       B       Equivalent to %b.
+
+       c       Replaced by the locale's appropriate date and time  representa‐
+               tion.
+
+       C       All  but  the  last  two  digits of the year {2}; leading zeros
+               shall be permitted but shall not be required. A leading '+'  or
+               '-'  character  shall be permitted before any leading zeros but
+               shall not be required.
+
+       d       The day of the month [01,31]; leading zeros shall be  permitted
+               but shall not be required.
+
+       D       The date as %m/%d/%y.
+
+       e       Equivalent to %d.
+
+       h       Equivalent to %b.
+
+       H       The  hour  (24-hour clock) [00,23]; leading zeros shall be per‐
+               mitted but shall not be required.
+
+       I       The hour (12-hour clock) [01,12]; leading zeros shall  be  per‐
+               mitted but shall not be required.
+
+       j       The  day  number  of the year [001,366]; leading zeros shall be
+               permitted but shall not be required.
+
+       m       The month number [01,12]; leading zeros shall be permitted  but
+               shall not be required.
+
+       M       The  minute [00,59]; leading zeros shall be permitted but shall
+               not be required.
+
+       n       Any white space.
+
+       p       The locale's equivalent of a.m. or p.m.
+
+       r       12-hour clock time using the AM/PM notation  if  t_fmt_ampm  is
+               not  an  empty string in the LC_TIME portion of the current lo‐
+               cale; in the POSIX locale, this shall be equivalent to %I:%M:%S
+               %p.
+
+       R       The time as %H:%M.
+
+       S       The seconds [00,60]; leading zeros shall be permitted but shall
+               not be required.
+
+       t       Any white space.
+
+       T       The time as %H:%M:%S.
+
+       U       The week number of the year (Sunday as the  first  day  of  the
+               week)  as a decimal number [00,53]; leading zeros shall be per‐
+               mitted but shall not be required.
+
+       w       The weekday as a decimal number [0,6], with 0 representing Sun‐
+               day.
+
+       W       The  week  number  of  the year (Monday as the first day of the
+               week) as a decimal number [00,53]; leading zeros shall be  per‐
+               mitted but shall not be required.
+
+       x       The date, using the locale's date format.
+
+       X       The time, using the locale's time format.
+
+       y       The last two digits of the year. When format contains neither a
+               C conversion specifier nor a Y conversion specifier, values  in
+               the  range  [69,99] shall refer to years 1969 to 1999 inclusive
+               and values in the range [00,68] shall refer to  years  2000  to
+               2068  inclusive; leading zeros shall be permitted but shall not
+               be required. A leading '+' or '-' character shall be  permitted
+               before any leading zeros but shall not be required.
+
+               Note:     It is expected that in a future version of this stan‐
+                         dard the default century inferred from a 2-digit year
+                         will  change.  (This  would apply to all commands ac‐
+                         cepting a 2-digit year as input.)
+
+       Y       The full year {4}; leading zeros shall be permitted  but  shall
+               not  be  required. A leading '+' or '-' character shall be per‐
+               mitted before any leading zeros but shall not be required.
+
+       %       Replaced by %.
+
+   Modified Conversion Specifiers
+       Some conversion specifiers can be modified by  the  E  and  O  modifier
+       characters  to  indicate  that  an  alternative format or specification
+       should be used rather than the one normally used by the unmodified con‐
+       version  specifier. If the alternative format or specification does not
+       exist in the current locale, the behavior shall be as if the unmodified
+       conversion specification were used.
+
+       %Ec     The  locale's alternative appropriate date and time representa‐
+               tion.
+
+       %EC     The name of the base year (period) in the locale's  alternative
+               representation.
+
+       %Ex     The locale's alternative date representation.
+
+       %EX     The locale's alternative time representation.
+
+       %Ey     The  offset  from  %EC  (year only) in the locale's alternative
+               representation.
+
+       %EY     The full alternative year representation.
+
+       %Od     The day of the month using  the  locale's  alternative  numeric
+               symbols;  leading zeros shall be permitted but shall not be re‐
+               quired.
+
+       %Oe     Equivalent to %Od.
+
+       %OH     The hour (24-hour clock) using the locale's alternative numeric
+               symbols.
+
+       %OI     The hour (12-hour clock) using the locale's alternative numeric
+               symbols.
+
+       %Om     The month using the locale's alternative numeric symbols.
+
+       %OM     The minutes using the locale's alternative numeric symbols.
+
+       %OS     The seconds using the locale's alternative numeric symbols.
+
+       %OU     The week number of the year (Sunday as the  first  day  of  the
+               week) using the locale's alternative numeric symbols.
+
+       %Ow     The  number of the weekday (Sunday=0) using the locale's alter‐
+               native numeric symbols.
+
+       %OW     The week number of the year (Monday as the  first  day  of  the
+               week) using the locale's alternative numeric symbols.
+
+       %Oy     The  year  (offset  from %C) using the locale's alternative nu‐
+               meric symbols.
+
+       A conversion specification composed of white-space characters  is  exe‐
+       cuted  by  scanning  input up to the first character that is not white-
+       space (which remains unscanned), or until no  more  characters  can  be
+       scanned.
+
+       A conversion specification that is an ordinary character is executed by
+       scanning the next character from the buffer. If the  character  scanned
+       from  the buffer differs from the one comprising the directive, the di‐
+       rective fails, and the differing and subsequent characters  remain  un‐
+       scanned.
+
+       A  series  of conversion specifications composed of %n, %t, white-space
+       characters, or any combination is executed by scanning up to the  first
+       character  that  is not white space (which remains unscanned), or until
+       no more characters can be scanned.
+
+       Any other conversion specification is executed by  scanning  characters
+       until  a  character matching the next directive is scanned, or until no
+       more characters can be scanned. These characters, except the one match‐
+       ing  the next directive, are then compared to the locale values associ‐
+       ated with the conversion specifier. If a match is found, values for the
+       appropriate tm structure members are set to values corresponding to the
+       locale information. Case is ignored when matching items in buf such  as
+       month  or  weekday names. If no match is found, strptime() fails and no
+       more characters are scanned.
+
+RETURN VALUE
+       Upon successful completion, strptime() shall return a  pointer  to  the
+       character  following  the  last  character  parsed.  Otherwise,  a null
+       pointer shall be returned.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+   Convert a Date-Plus-Time String to Broken-Down Time and Then into Seconds
+       The following example demonstrates the use of strptime() to  convert  a
+       string  into  broken-down  time. The broken-down time is then converted
+       into seconds since the Epoch using mktime().
+
+           #include <time.h>
+           ...
+
+           struct tm tm;
+           time_t t;
+
+           if (strptime("6 Dec 2001 12:33:45", "%d %b %Y %H:%M:%S", &tm) == NULL)
+               /* Handle error */;
+
+           printf("year: %d; month: %d; day: %d;\n",
+                   tm.tm_year, tm.tm_mon, tm.tm_mday);
+           printf("hour: %d; minute: %d; second: %d\n",
+                   tm.tm_hour, tm.tm_min, tm.tm_sec);
+           printf("week day: %d; year day: %d\n", tm.tm_wday, tm.tm_yday);
+
+           tm.tm_isdst = -1;      /* Not set by strptime(); tells mktime()
+                                     to determine whether daylight saving time
+                                     is in effect */
+           t = mktime(&tm);
+           if (t == -1)
+               /* Handle error */;
+           printf("seconds since the Epoch: %ld\n", (long) t);"
+
+APPLICATION USAGE
+       Several ``equivalent to'' formats and the special processing of  white-
+       space  characters  are  provided  in order to ease the use of identical
+       format strings for strftime() and strptime().
+
+       It should be noted that dates constructed by  the  strftime()  function
+       with  the  %Y or %C%y conversion specifiers may have values larger than
+       9999. If the strptime() function is used to read such values using %C%y
+       or  %Y,  the year values will be truncated to four digits. Applications
+       should use %+w%y or %+xY with w and x set large enough to  contain  the
+       full value of any years that will be printed or scanned.
+
+       See also the APPLICATION USAGE section in strftime().
+
+       It  is  unspecified whether multiple calls to strptime() using the same
+       tm structure will update the current contents of the structure or over‐
+       write  all  contents  of  the structure. Conforming applications should
+       make a single call to strptime() with a format and all data  needed  to
+       completely specify the date and time being converted.
+
+RATIONALE
+       See the RATIONALE section for strftime().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fprintf(), fscanf(), strftime(), time()
+
+       The Base Definitions volume of POSIX.1‐2017, <time.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                         STRPTIME(3P)

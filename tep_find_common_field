@@ -1,0 +1,100 @@
+LIBTRACEEVENT(3)                                                                           libtraceevent Manual                                                                           LIBTRACEEVENT(3)
+
+NAME
+       tep_find_common_field, tep_find_field, tep_find_any_field - Search for a field in an event.
+
+SYNOPSIS
+       #include <event-parse.h>
+
+       struct tep_format_field *tep_find_common_field(struct tep_event *event, const char *name);
+       struct tep_format_field *tep_find_field(struct tep_event_ormat *event, const char *name);
+       struct tep_format_field *tep_find_any_field(struct tep_event *event, const char *name);
+
+DESCRIPTION
+       These functions search for a field with given name in an event. The field returned can be used to find the field content from within a data record.
+
+       The tep_find_common_field() function searches for a common field with name in the event.
+
+       The tep_find_field() function searches for an event specific field with name in the event.
+
+       The tep_find_any_field() function searches for any field with name in the event.
+
+RETURN VALUE
+       The tep_find_common_field(), tep_find_field() and _tep_find_any_field() functions return a pointer to the found field, or NULL in case there is no field with the requested name.
+
+EXAMPLE
+           #include <event-parse.h>
+           ...
+           void get_htimer_info(struct tep_handle *tep, struct tep_record *record)
+           {
+                   struct tep_format_field *field;
+                   struct tep_event *event;
+                   long long softexpires;
+                   int mode;
+                   int pid;
+
+                   event = tep_find_event_by_name(tep, "timer", "hrtimer_start");
+
+                   field = tep_find_common_field(event, "common_pid");
+                   if (field == NULL) {
+                           /* Cannot find "common_pid" field in the event */
+                   } else {
+                           /* Get pid from the data record */
+                           pid = tep_read_number(tep, record->data + field->offset,
+                                                 field->size);
+                   }
+
+                   field = tep_find_field(event, "softexpires");
+                   if (field == NULL) {
+                           /* Cannot find "softexpires" event specific field in the event */
+                   } else {
+                           /* Get softexpires parameter from the data record */
+                           softexpires = tep_read_number(tep, record->data + field->offset,
+                                                         field->size);
+                   }
+
+                   field = tep_find_any_field(event, "mode");
+                   if (field == NULL) {
+                           /* Cannot find "mode" field in the event */
+                   } else
+                   {
+                           /* Get mode parameter from the data record */
+                           mode = tep_read_number(tep, record->data + field->offset,
+                                                  field->size);
+                   }
+           }
+           ...
+
+FILES
+           event-parse.h
+                   Header file to include in order to have access to the library APIs.
+           -ltraceevent
+                   Linker switch to add when building a program that uses the library.
+
+SEE ALSO
+       libtraceevent(3), trace-cmd(1)
+
+AUTHOR
+           Steven Rostedt <rostedt@goodmis.org[1]>, author of libtraceevent.
+           Tzvetomir Stoyanov <tz.stoyanov@gmail.com[2]>, author of this man page.
+
+REPORTING BUGS
+       Report bugs to <linux-trace-devel@vger.kernel.org[3]>
+
+LICENSE
+       libtraceevent is Free Software licensed under the GNU LGPL 2.1
+
+RESOURCES
+       https://git.kernel.org/pub/scm/libs/libtrace/libtraceevent.git/
+
+NOTES
+        1. rostedt@goodmis.org
+           mailto:rostedt@goodmis.org
+
+        2. tz.stoyanov@gmail.com
+           mailto:tz.stoyanov@gmail.com
+
+        3. linux-trace-devel@vger.kernel.org
+           mailto:linux-trace-devel@vger.kernel.org
+
+libtraceevent                                                                                   03/28/2023                                                                                LIBTRACEEVENT(3)

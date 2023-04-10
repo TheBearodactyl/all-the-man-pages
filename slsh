@@ -1,0 +1,260 @@
+SLSH(1)                                                                SLSH(1)
+
+NAME
+       slsh - Interpreter for S-Lang scripts
+
+SYNOPSIS
+       slsh  [  --help  ]  [ --version ] [ -g ] [ -n ] [ --init file ] [ --no-
+       readline ] [ -e string ] [ -i ] [ -q, --quiet  ]  [  -t  ]  [  -v  ]  [
+       -|script-file args... ]
+
+DESCRIPTION
+       slsh  is a simple program for interpreting S-Lang scripts.  It supports
+       dynamic loading of S-Lang modules and includes a readline interface for
+       interactive use.
+
+OPTIONS
+       --help Show a summary of options
+
+       --version
+              Show slsh version information
+
+       -g     Compile with debugging code, tracebacks, etc
+
+       -n     Don't load the personal initialization file
+
+       --init file
+              Use this file instead of ~/.slshrc
+
+       --no-readline
+              Do not use a readline interface for the interactive mode
+
+       -e string
+              Execute ``string'' as S-Lang code.
+
+       -i     Force  interactive mode.  Normally slsh will go into interactive
+              mode if both stdin and stdout are attached to a terminal.
+
+       -q, --quiet
+              Startup quietly by not printing the version and copyright infor‐
+              mation.
+
+       -t     Normally,  slsh  will call slsh_main if it is defined.  This op‐
+              tion prevents that from happening making it useful for  checking
+              for syntax error.
+
+       -v     Show  verbose  loading messages.  This is useful for seeing what
+              files are being loaded.
+
+INITIALIZATION
+       Upon startup, the program will try to load slsh.rc as follows.  If  ei‐
+       ther  SLSH_CONF_DIR  or  SLSH_LIB_DIR environment variables exist, then
+       slsh will look look in the corresponding directories for slsh.rc.  Oth‐
+       erwise it will look in:
+
+       $(prefix)/etc/   (as specified in the Makefile)
+
+       /usr/local/etc/
+
+       /usr/local/etc/slsh/
+
+       /etc/
+
+       /etc/slsh/
+
+       The  slsh.rc file may load other files from slsh's library directory in
+       the manner described below.
+
+       Once slsh.rc has been loaded, slsh will load $HOME/.slshrc if  present.
+       Finally, it will load the script specified on the command line.  If the
+       name of the script is -, then it will  be  read  from  stdin.   If  the
+       script  name  is  not present, or a string to execute was not specified
+       using the -e option, then slsh will go into interactive mode  and  read
+       input  from the terminal.  If the script is present and defines a func‐
+       tion called slsh_main, that function will be called.
+
+LOADING FILES
+       When a script loads a file via the built-in evalfile  function  or  the
+       require  function  (autoloaded  by  slsh.rc),  the file is searched for
+       along the SLSH_PATH as specified in the Makefile.   An  alternate  path
+       may be specified by the SLSH_PATH environment variable.
+
+       The  search  path  may  be  queried  and  set  during  run time via the
+       get_slang_load_path and set_slang_load_path functions, e.g.,
+
+          set_slang_load_path ("/home/bill/lib/slsh:/usr/share/slsh");
+
+INTERACTIVE MODE
+       When slsh is invoked without a script or is given the -i  command  line
+       argument,  it  will  go  into into interactive mode.  In this mode, the
+       user will be prompted for input.  The program will leave this mode  and
+       exit  if  it sees an EOF (Ctrl-D) or the user exits by issuing the quit
+       command.
+
+       If an uncaught exception occurs during execution of a command, the  er‐
+       ror message will be shown and the user will be prompted for more input.
+
+       Any  objects  left on the stack after a command will be printed and the
+       stack cleared.  This makes interactive mode  useful  as  a  calculator,
+       e.g.,
+
+            slsh> 3*10;
+            30
+            slsh> x = [1:20];
+            slsh> sum (sin(x)-cos(x));
+            0.458613
+            slsh> quit;
+       Note that in this mode, variables are automatically declared.
+
+       The interactive mode also supports command logging.  Logging is enabled
+       by the start_log function.  The stop_log function will  turn  off  log‐
+       ging.   The  default  file where logging information will be written is
+       slsh.log.  An alternative may be specified as an optional  argument  to
+       the start_log function:
+
+            slsh> start_log;
+            Logging input to slsh.log
+               .
+               .
+            slsh> stop_log;
+            slsh> start_log("foo.log");
+            Logging input to foo.log
+               .
+               .
+            slsh> stop_log;
+            slsh> start_log;
+            Logging input to foo.log
+
+       Similarly, the save_input function may be used to save the previous in‐
+       put to a specified file:
+
+            slsh> save_input;
+            Input saved to slsh.log
+            slsh> save_input ("foo.log");
+            Input saved to foo.log
+
+       As the above examples indicate, lines must end in a semicolon.  This is
+       a  basic  feature of the language and permits commands to span multiple
+       lines, e.g.,
+
+            slsh> x = [
+                   1,2,3,
+                   4,5,6];
+            slsh> sum(x);
+       For convenience some users prefer that commands be automatically termi‐
+       nated  with  a semicolon.  To have a semicolon silently appended to the
+       end of an input line, put the following in $HOME/.slshrc file:
+
+           #ifdef __INTERACTIVE__
+           slsh_append_semicolon (1);
+           #endif
+
+       The interactive mode also supports shell escapes.  To pass a command to
+       the shell, prefix it with !, e.g.,
+
+           slsh> !pwd
+           /grandpa/d1/src/slang2/slsh
+           slsh> !cd doc/tm
+           slsh> !pwd
+           /grandpa/d1/src/slang2/slsh/doc/tm
+
+       Finally, the interactive mode supports a help and apropos function:
+
+           slsh> apropos list
+           apropos list ==>
+           List_Type
+           list_append
+           list_delete
+              .
+              .
+           slsh> help list_append
+           list_append
+
+            SYNOPSIS
+              Append an object to a list
+
+            USAGE
+              list_append (List_Type, object, Int_Type nth)
+              .
+              .
+       For convenience, the help and apropos functions do not require the syn‐
+       tactic constraints of the other functions.
+
+READLINE HISTORY MECHANISM
+       By default, slsh is built to use the S-Lang readline  interface,  which
+       includes  a  customizable  command  completion and a history mechanism.
+       When slsh (or any S-Lang application that makes use  of  this  feature)
+       starts  in interactive mode, it will look for a file in the user's home
+       directory called .slrlinerc and load it if present.  This  file  allows
+       the  user to customize the readline interface and enable the history to
+       be saved between sessions.  As an example, here is a version of the au‐
+       thor's .slrlinerc file:
+
+            % Load some basic functions that implement the history mechanism
+            () = evalfile ("rline/slrline.rc");
+            % The name of the history file -- expands to .slsh_hist for slsh
+            RLine_History_File = "$HOME/.${name}_hist";
+
+            % Some addition keybindings.  Some of these functions are defined
+            % in rline/editfuns.sl, loaded by rline/slrline.rc
+            rline_unsetkey ("^K");
+            rline_setkey ("bol",   "^B");
+            rline_setkey ("eol",   "^E");
+            rline_setkey (&rline_kill_eol,  "^L");
+            rline_setkey (&rline_set_mark,  "^K^B");
+            rline_setkey (&rline_copy_region, "^Kk");
+            rline_setkey (&rline_kill_region, "^K^V");
+            rline_setkey (&rline_yank,  "^K^P");
+            rline_setkey ("redraw",   "^R");
+
+            #ifexists rline_up_hist_search
+            % Map the up/down arrow to the history search mechanism
+            rline_setkey (&rline_up_hist_search, "\e[A");
+            rline_setkey (&rline_down_hist_search, "\e[B");
+            #endif
+
+            #ifexists rline_edit_history
+            rline_setkey (&rline_edit_history, "^Kj");
+            #endif
+
+            % Add a new function
+            private define double_line ()
+            {
+               variable p = rline_get_point ();
+               variable line = rline_get_line ();
+               rline_eol ();
+               variable pend = rline_get_point ();
+               rline_ins (line);
+               rline_set_point (pend + p);
+            }
+           rline_setkey (&double_line,  "^K^L");
+
+MISCELLANEOUS SCRIPTS
+       Several    useful    example    scripts    are    located    in   $pre‐
+       fix/share/slsh/scripts/, where $prefix represents the slsh installation
+       prefix (/usr, /usr/local,...).  These scripts include:
+
+       sldb   A script that runs the S-Lang debugger.
+
+       jpegsize
+              Reports the size of a jpeg file.
+
+       svnsh  A shell for browsing an SVN repository.
+
+AUTHOR
+       The  principal  author of slsh is John E. Davis <www.jedsoft.org>.  The
+       interactive mode was provided by Mike Noble.  The S-Lang  library  upon
+       which  slsh  is  based is primarily the work of John E. Davis with help
+       from many others.
+
+       This manual page was originally written by Rafael Laboissiere  for  the
+       Debian system (but may be used by others).
+
+       Permission  is  granted to copy, distribute and/or modify this document
+       under the terms of the GNU General Public License, Version 2 any  later
+       version published by the Free Software Foundation.
+
+       On  Debian systems, the complete text of the GNU General Public License
+       can be found in /usr/share/common-licenses/GPL
+
+                               19 February 2021                        SLSH(1)

@@ -1,0 +1,225 @@
+dup(2)                                                                                      System Calls Manual                                                                                     dup(2)
+
+NAME
+       dup, dup2, dup3 - duplicate a file descriptor
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int dup(int oldfd);
+       int dup2(int oldfd, int newfd);
+
+       #define _GNU_SOURCE             /* See feature_test_macros(7) */
+       #include <fcntl.h>              /* Definition of O_* constants */
+       #include <unistd.h>
+
+       int dup3(int oldfd, int newfd, int flags);
+
+DESCRIPTION
+       The dup() system call allocates a new file descriptor that refers to the same open file description as the descriptor oldfd.  (For an explanation of open file descriptions, see open(2).)  The new
+       file descriptor number is guaranteed to be the lowest-numbered file descriptor that was unused in the calling process.
+
+       After a successful return, the old and new file descriptors may be used interchangeably.  Since the two file descriptors refer to the same open file description, they share file offset  and  file
+       status flags; for example, if the file offset is modified by using lseek(2) on one of the file descriptors, the offset is also changed for the other file descriptor.
+
+       The two file descriptors do not share file descriptor flags (the close-on-exec flag).  The close-on-exec flag (FD_CLOEXEC; see fcntl(2)) for the duplicate descriptor is off.
+
+   dup2()
+       The  dup2()  system  call performs the same task as dup(), but instead of using the lowest-numbered unused file descriptor, it uses the file descriptor number specified in newfd.  In other words,
+       the file descriptor newfd is adjusted so that it now refers to the same open file description as oldfd.
+
+       If the file descriptor newfd was previously open, it is closed before being reused; the close is performed silently (i.e., any errors during the close are not reported by dup2()).
+
+       The steps of closing and reusing the file descriptor newfd are performed atomically.  This is important, because trying to implement equivalent functionality using close(2)  and  dup()  would  be
+       subject  to  race  conditions,  whereby newfd might be reused between the two steps.  Such reuse could happen because the main program is interrupted by a signal handler that allocates a file de‐
+       scriptor, or because a parallel thread allocates a file descriptor.
+
+       Note the following points:
+
+       •  If oldfd is not a valid file descriptor, then the call fails, and newfd is not closed.
+
+       •  If oldfd is a valid file descriptor, and newfd has the same value as oldfd, then dup2() does nothing, and returns newfd.
+
+   dup3()
+       dup3() is the same as dup2(), except that:
+
+       •  The caller can force the close-on-exec flag to be set for the new file descriptor by specifying O_CLOEXEC in flags.  See the description of the same flag in open(2) for reasons why this may be
+          useful.
+
+       •  If oldfd equals newfd, then dup3() fails with the error EINVAL.
+
+RETURN VALUE
+       On success, these system calls return the new file descriptor.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EBADF  oldfd isn't an open file descriptor.
+
+       EBADF  newfd is out of the allowed range for file descriptors (see the discussion of RLIMIT_NOFILE in getrlimit(2)).
+
+       EBUSY  (Linux only) This may be returned by dup2() or dup3() during a race condition with open(2) and dup().
+
+       EINTR  The dup2() or dup3() call was interrupted by a signal; see signal(7).
+
+       EINVAL (dup3()) flags contain an invalid value.
+
+       EINVAL (dup3()) oldfd was equal to newfd.
+
+       EMFILE The per-process limit on the number of open file descriptors has been reached (see the discussion of RLIMIT_NOFILE in getrlimit(2)).
+
+STANDARDS
+       dup()
+       dup2() POSIX.1-2008.
+
+       dup3() Linux.
+
+HISTORY
+       dup()
+       dup2() POSIX.1-2001, SVr4, 4.3BSD.
+
+       dup3() Linux 2.6.27, glibc 2.9.
+
+NOTES
+       The error returned by dup2() is different from that returned by fcntl(..., F_DUPFD, ...)  when newfd is out of range.  On some systems, dup2() also sometimes returns EINVAL like F_DUPFD.
+
+       If newfd was open, any errors that would have been reported at close(2) time are lost.  If this is of concern, then—unless the program is single-threaded and does not allocate file descriptors in
+       signal handlers—the correct approach is not to close newfd before calling dup2(), because of the race condition described above.  Instead, code something like the following could be used:
+
+           /* Obtain a duplicate of 'newfd' that can subsequently
+              be used to check for close() errors; an EBADF error
+              means that 'newfd' was not open. */
+
+           tmpfd = dup(newfd);
+           if (tmpfd == -1 && errno != EBADF) {
+               /* Handle unexpected dup() error. */
+           }
+
+           /* Atomically duplicate 'oldfd' on 'newfd'. */
+
+           if (dup2(oldfd, newfd) == -1) {
+               /* Handle dup2() error. */
+           }
+
+           /* Now check for close() errors on the file originally
+              referred to by 'newfd'. */
+
+           if (tmpfd != -1) {
+               if (close(tmpfd) == -1) {
+                   /* Handle errors from close. */
+               }
+           }
+
+SEE ALSO
+       close(2), fcntl(2), open(2), pidfd_getfd(2)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                          dup(2)
+DUP(3P)                                                                                  POSIX Programmer's Manual                                                                                 DUP(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       dup, dup2 — duplicate an open file descriptor
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int dup(int fildes);
+       int dup2(int fildes, int fildes2);
+
+DESCRIPTION
+       The dup() function provides an alternative interface to the service provided by fcntl() using the F_DUPFD command. The call dup(fildes) shall be equivalent to:
+
+           fcntl(fildes, F_DUPFD, 0);
+
+       The dup2() function shall cause the file descriptor fildes2 to refer to the same open file description as the file descriptor fildes and to share any locks, and shall return fildes2.  If  fildes2
+       is  already a valid open file descriptor, it shall be closed first, unless fildes is equal to fildes2 in which case dup2() shall return fildes2 without closing it. If the close operation fails to
+       close fildes2, dup2() shall return -1 without changing the open file description to which fildes2 refers. If fildes is not a valid file descriptor, dup2() shall return  -1  and  shall  not  close
+       fildes2.  If fildes2 is less than 0 or greater than or equal to {OPEN_MAX}, dup2() shall return -1 with errno set to [EBADF].
+
+       Upon  successful  completion,  if  fildes is not equal to fildes2, the FD_CLOEXEC flag associated with fildes2 shall be cleared. If fildes is equal to fildes2, the FD_CLOEXEC flag associated with
+       fildes2 shall not be changed.
+
+       If fildes refers to a typed memory object, the result of the dup2() function is unspecified.
+
+RETURN VALUE
+       Upon successful completion a non-negative integer, namely the file descriptor, shall be returned; otherwise, -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The dup() function shall fail if:
+
+       EBADF  The fildes argument is not a valid open file descriptor.
+
+       EMFILE All file descriptors available to the process are currently open.
+
+       The dup2() function shall fail if:
+
+       EBADF  The fildes argument is not a valid open file descriptor or the argument fildes2 is negative or greater than or equal to {OPEN_MAX}.
+
+       EINTR  The dup2() function was interrupted by a signal.
+
+       The dup2() function may fail if:
+
+       EIO    An I/O error occurred while attempting to close fildes2.
+
+       The following sections are informative.
+
+EXAMPLES
+   Redirecting Standard Output to a File S
+       The following example closes standard output for the current processes, re-assigns standard output to go to the file referenced by pfd, and closes the original file descriptor to clean up.
+
+           #include <unistd.h>
+           ...
+           int pfd;
+           ...
+           close(1);
+           dup(pfd);
+           close(pfd);
+           ...
+
+   Redirecting Error Messages
+       The following example redirects messages from stderr to stdout.
+
+           #include <unistd.h>
+           ...
+           dup2(1, 2);
+           ...
+
+APPLICATION USAGE
+       Implementations may use file descriptors that must be inherited into child processes for the child process to remain conforming, such as for message catalog or tracing purposes. Therefore, an ap‐
+       plication  that calls dup2() with an arbitrary integer for fildes2 risks non-conforming behavior, and dup2() can only portably be used to overwrite file descriptor values that the application has
+       obtained through explicit actions, or for the three file descriptors corresponding to the standard file streams. In order to avoid a race condition of leaking an unintended file descriptor into a
+       child process, an application should consider opening all file descriptors with the FD_CLOEXEC bit set unless the file descriptor is intended to be inherited across exec.
+
+RATIONALE
+       The  dup() function is redundant. Its services are also provided by the fcntl() function. It has been included in this volume of POSIX.1‐2017 primarily for historical reasons, since many existing
+       applications use it. On the other hand, the dup2() function provides unique services, as no other interface is able to atomically replace an existing file descriptor.
+
+       The dup2() function is not marked obsolescent because it presents a type-safe version of functionality provided in a type-unsafe version by fcntl().  It is used in the POSIX Ada binding.
+
+       The dup2() function is not intended for use in critical regions as a synchronization mechanism.
+
+       In the description of [EBADF], the case of fildes being out of range is covered by the given case of fildes not being valid. The descriptions for fildes and fildes2 are different because the only
+       kind of invalidity that is relevant for fildes2 is whether it is out of range; that is, it does not matter whether fildes2 refers to an open file when the dup2() call is made.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       close(), fcntl(), open()
+
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                            DUP(3P)

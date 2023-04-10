@@ -1,0 +1,359 @@
+bigint(3perl)                                                                        Perl Programmers Reference Guide                                                                        bigint(3perl)
+
+NAME
+       bigint - transparent big integer support for Perl
+
+SYNOPSIS
+           use bigint;
+
+           $x = 2 + 4.5;                       # Math::BigInt 6
+           print 2 ** 512;                     # Math::BigInt 134...096
+           print inf + 42;                     # Math::BigInt inf
+           print NaN * 7;                      # Math::BigInt NaN
+           print hex("0x1234567890123490");    # Perl v5.10.0 or later
+
+           {
+               no bigint;
+               print 2 ** 256;                 # a normal Perl scalar now
+           }
+
+           # for older Perls, import into current package:
+           use bigint qw/hex oct/;
+           print hex("0x1234567890123490");
+           print oct("01234567890123490");
+
+DESCRIPTION
+       All numeric literal in the given scope are converted to Math::BigInt objects.  Numeric literal that represent non-integers are truncated to an integer. All results of expressions are also
+       truncated to integer.
+
+       All operators (including basic math operations) except the range operator ".."  are overloaded.
+
+       Unlike the integer pragma, the "bigint" pragma creates integers that are only limited in their size by the available memory.
+
+       So, the following:
+
+           use bigint;
+           $x = 1234;
+
+       creates a Math::BigInt and stores a reference to in $x. This happens transparently and behind your back, so to speak.
+
+       You can see this with the following:
+
+           perl -Mbigint -le 'print ref(1234)'
+
+       Since numbers are actually objects, you can call all the usual methods from Math::BigFloat on them. This even works to some extent on expressions:
+
+           perl -Mbigint -le '$x = 1234; print $x->bdec()'
+           perl -Mbigint -le 'print 1234->copy()->binc();'
+           perl -Mbigint -le 'print 1234->copy()->binc->badd(6);'
+           perl -Mbigint -le 'print +(1234)->copy()->binc()'
+
+       (Note that print doesn't do what you expect if the expression starts with '(' hence the "+")
+
+       You can even chain the operations together as usual:
+
+           perl -Mbigint -le 'print 1234->copy()->binc->badd(6);'
+           1241
+
+       Please note the following does not work as expected (prints nothing), since overloading of '..' is not yet possible in Perl (as of v5.8.0):
+
+           perl -Mbigint -le 'for (1..2) { print ref($_); }'
+
+   use integer vs. use bigint
+       There are some difference between "use integer" and "use bigint".
+
+       Whereas "use integer" is limited to what can be handled as a Perl scalar, "use bigint" can handle arbitrarily large integers.
+
+       Also, "use integer" does affect assignments to variables and the return value of some functions. "use bigint" truncates these results to integer:
+
+           # perl -Minteger -wle 'print 3.2'
+           3.2
+           # perl -Minteger -wle 'print 3.2 + 0'
+           3
+           # perl -Mbigint -wle 'print 3.2'
+           3
+           # perl -Mbigint -wle 'print 3.2 + 0'
+           3
+
+           # perl -Mbigint -wle 'print exp(1) + 0'
+           2
+           # perl -Mbigint -wle 'print exp(1)'
+           2
+           # perl -Minteger -wle 'print exp(1)'
+           2.71828182845905
+           # perl -Minteger -wle 'print exp(1) + 0'
+           2
+
+       In practice this seldom makes a difference for small integers as parts and results of expressions are truncated anyway, but this can, for instance, affect the return value of subroutines:
+
+           sub three_integer { use integer; return 3.2; }
+           sub three_bigint { use bigint; return 3.2; }
+
+           print three_integer(), " ", three_bigint(),"\n";    # prints "3.2 3"
+
+   Options
+       "bigint" recognizes some options that can be passed while loading it via "use". The following options exist:
+
+       a or accuracy
+           This sets the accuracy for all math operations. The argument must be greater than or equal to zero. See Math::BigInt's bround() method for details.
+
+               perl -Mbigint=a,2 -le 'print 12345+1'
+
+           Note that setting precision and accuracy at the same time is not possible.
+
+       p or precision
+           This sets the precision for all math operations. The argument can be any integer. Negative values mean a fixed number of digits after the dot, and are ignored since all operations happen in
+           integer space. A positive value rounds to this digit left from the dot. 0 means round to integer. See Math::BigInt's bfround() method for details.
+
+               perl -mbigint=p,5 -le 'print 123456789+123'
+
+           Note that setting precision and accuracy at the same time is not possible.
+
+       t or trace
+           This enables a trace mode and is primarily for debugging.
+
+       l, lib, try, or only
+           Load a different math lib, see "Math Library".
+
+               perl -Mbigint=l,GMP -e 'print 2 ** 512'
+               perl -Mbigint=lib,GMP -e 'print 2 ** 512'
+               perl -Mbigint=try,GMP -e 'print 2 ** 512'
+               perl -Mbigint=only,GMP -e 'print 2 ** 512'
+
+       hex Override the built-in hex() method with a version that can handle big numbers.  This overrides it by exporting it to the current package. Under Perl v5.10.0 and higher, this is not so
+           necessary, as hex() is lexically overridden in the current scope whenever the "bigint" pragma is active.
+
+       oct Override the built-in oct() method with a version that can handle big numbers.  This overrides it by exporting it to the current package. Under Perl v5.10.0 and higher, this is not so
+           necessary, as oct() is lexically overridden in the current scope whenever the "bigint" pragma is active.
+
+       v or version
+           this prints out the name and version of the modules and then exits.
+
+               perl -Mbigint=v
+
+   Math Library
+       Math with the numbers is done (by default) by a backend library module called Math::BigInt::Calc. The default is equivalent to saying:
+
+           use bigint lib => 'Calc';
+
+       you can change this by using:
+
+           use bigint lib => 'GMP';
+
+       The following would first try to find Math::BigInt::Foo, then Math::BigInt::Bar, and if this also fails, revert to Math::BigInt::Calc:
+
+           use bigint lib => 'Foo,Math::BigInt::Bar';
+
+       Using c<lib> warns if none of the specified libraries can be found and Math::BigInt fell back to one of the default libraries. To suppress this warning, use c<try> instead:
+
+           use bigint try => 'GMP';
+
+       If you want the code to die instead of falling back, use "only" instead:
+
+           use bigint only => 'GMP';
+
+       Please see the respective module documentation for further details.
+
+   Method calls
+       Since all numbers are now objects, you can use all methods that are part of the Math::BigInt API.
+
+       But a warning is in order. When using the following to make a copy of a number, only a shallow copy will be made.
+
+           $x = 9; $y = $x;
+           $x = $y = 7;
+
+       Using the copy or the original with overloaded math is okay, e.g., the following work:
+
+           $x = 9; $y = $x;
+           print $x + 1, " ", $y,"\n";     # prints 10 9
+
+       but calling any method that modifies the number directly will result in both the original and the copy being destroyed:
+
+           $x = 9; $y = $x;
+           print $x->badd(1), " ", $y,"\n";        # prints 10 10
+
+           $x = 9; $y = $x;
+           print $x->binc(1), " ", $y,"\n";        # prints 10 10
+
+           $x = 9; $y = $x;
+           print $x->bmul(2), " ", $y,"\n";        # prints 18 18
+
+       Using methods that do not modify, but test that the contents works:
+
+           $x = 9; $y = $x;
+           $z = 9 if $x->is_zero();                # works fine
+
+       See the documentation about the copy constructor and "=" in overload, as well as the documentation in Math::BigInt for further details.
+
+   Methods
+       inf()
+           A shortcut to return Math::BigInt->binf(). Useful because Perl does not always handle bareword "inf" properly.
+
+       NaN()
+           A shortcut to return Math::BigInt->bnan(). Useful because Perl does not always handle bareword "NaN" properly.
+
+       e
+               # perl -Mbigint=e -wle 'print e'
+
+           Returns Euler's number "e", aka exp(1). Note that under "bigint", this is truncated to an integer, i.e., 2.
+
+       PI
+               # perl -Mbigint=PI -wle 'print PI'
+
+           Returns PI. Note that under "bigint", this is truncated to an integer, i.e., 3.
+
+       bexp()
+               bexp($power, $accuracy);
+
+           Returns Euler's number "e" raised to the appropriate power, to the wanted accuracy.
+
+           Note that under "bigint", the result is truncated to an integer.
+
+           Example:
+
+               # perl -Mbigint=bexp -wle 'print bexp(1,80)'
+
+       bpi()
+               bpi($accuracy);
+
+           Returns PI to the wanted accuracy. Note that under "bigint", this is truncated to an integer, i.e., 3.
+
+           Example:
+
+               # perl -Mbigint=bpi -wle 'print bpi(80)'
+
+       accuracy()
+           Set or get the accuracy.
+
+       precision()
+           Set or get the precision.
+
+       round_mode()
+           Set or get the rounding mode.
+
+       div_scale()
+           Set or get the division scale.
+
+       in_effect()
+               use bigint;
+
+               print "in effect\n" if bigint::in_effect;       # true
+               {
+                   no bigint;
+                   print "in effect\n" if bigint::in_effect;   # false
+               }
+
+           Returns true or false if "bigint" is in effect in the current scope.
+
+           This method only works on Perl v5.9.4 or later.
+
+CAVEATS
+       Hexadecimal, octal, and binary floating point literals
+           Perl (and this module) accepts hexadecimal, octal, and binary floating point literals, but use them with care with Perl versions before v5.32.0, because some versions of Perl silently give
+           the wrong result.
+
+       Operator vs literal overloading
+           "bigint" works by overloading handling of integer and floating point literals, converting them to Math::BigInt objects.
+
+           This means that arithmetic involving only string values or string literals are performed using Perl's built-in operators.
+
+           For example:
+
+               use bigint;
+               my $x = "900000000000000009";
+               my $y = "900000000000000007";
+               print $x - $y;
+
+           outputs 0 on default 32-bit builds, since "bigint" never sees the string literals. To ensure the expression is all treated as "Math::BigInt" objects, use a literal number in the expression:
+
+               print +(0+$x) - $y;
+
+       Ranges
+           Perl does not allow overloading of ranges, so you can neither safely use ranges with "bigint" endpoints, nor is the iterator variable a "Math::BigInt".
+
+               use 5.010;
+               for my $i (12..13) {
+                 for my $j (20..21) {
+                   say $i ** $j;  # produces a floating-point number,
+                                  # not an object
+                 }
+               }
+
+       in_effect()
+           This method only works on Perl v5.9.4 or later.
+
+       hex()/oct()
+           "bigint" overrides these routines with versions that can also handle big integer values. Under Perl prior to version v5.9.4, however, this will not happen unless you specifically ask for it
+           with the two import tags "hex" and "oct" - and then it will be global and cannot be disabled inside a scope with "no bigint":
+
+               use bigint qw/hex oct/;
+
+               print hex("0x1234567890123456");
+               {
+                   no bigint;
+                   print hex("0x1234567890123456");
+               }
+
+           The second call to hex() will warn about a non-portable constant.
+
+           Compare this to:
+
+               use bigint;
+
+               # will warn only under Perl older than v5.9.4
+               print hex("0x1234567890123456");
+
+EXAMPLES
+       Some cool command line examples to impress the Python crowd ;) You might want to compare them to the results under -Mbigfloat or -Mbigrat:
+
+           perl -Mbigint -le 'print sqrt(33)'
+           perl -Mbigint -le 'print 2*255'
+           perl -Mbigint -le 'print 4.5+2*255'
+           perl -Mbigint -le 'print 123->is_odd()'
+           perl -Mbigint=l,GMP -le 'print 7 ** 7777'
+
+BUGS
+       Please report any bugs or feature requests to "bug-bignum at rt.cpan.org", or through the web interface at <https://rt.cpan.org/Ticket/Create.html?Queue=bignum> (requires login).  We will be
+       notified, and then you'll automatically be notified of progress on your bug as I make changes.
+
+SUPPORT
+       You can find documentation for this module with the perldoc command.
+
+           perldoc bigint
+
+       You can also look for information at:
+
+       •   GitHub
+
+           <https://github.com/pjacklam/p5-bignum>
+
+       •   RT: CPAN's request tracker
+
+           <https://rt.cpan.org/Dist/Display.html?Name=bignum>
+
+       •   MetaCPAN
+
+           <https://metacpan.org/release/bignum>
+
+       •   CPAN Testers Matrix
+
+           <http://matrix.cpantesters.org/?dist=bignum>
+
+       •   CPAN Ratings
+
+           <https://cpanratings.perl.org/dist/bignum>
+
+LICENSE
+       This program is free software; you may redistribute it and/or modify it under the same terms as Perl itself.
+
+SEE ALSO
+       bignum and bigrat.
+
+       Math::BigInt, Math::BigFloat, Math::BigRat and Math::Big as well as Math::BigInt::FastCalc, Math::BigInt::Pari and Math::BigInt::GMP.
+
+AUTHORS
+       •   (C) by Tels <http://bloodgate.com/> in early 2002 - 2007.
+
+       •   Maintained by Peter John Acklam <pjacklam@gmail.com>, 2014-.
+
+perl v5.36.0                                                                                    2022-12-12                                                                                   bigint(3perl)

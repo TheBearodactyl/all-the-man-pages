@@ -1,0 +1,163 @@
+FSYNC(3P)                                                                                POSIX Programmer's Manual                                                                               FSYNC(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       fsync — synchronize changes to a file
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int fsync(int fildes);
+
+DESCRIPTION
+       The fsync() function shall request that all data for the open file descriptor named by fildes is to be transferred to the storage device associated with the file described by fildes.  The  nature
+       of the transfer is implementation-defined. The fsync() function shall not return until the system has completed that action or until an error is detected.
+
+       If  _POSIX_SYNCHRONIZED_IO  is  defined,  the fsync() function shall force all currently queued I/O operations associated with the file indicated by file descriptor fildes to the synchronized I/O
+       completion state. All I/O operations shall be completed as defined for synchronized I/O file integrity completion.
+
+RETURN VALUE
+       Upon successful completion, fsync() shall return 0. Otherwise, -1 shall be returned and errno set to indicate the error. If the fsync() function fails, outstanding I/O operations are not  guaran‐
+       teed to have been completed.
+
+ERRORS
+       The fsync() function shall fail if:
+
+       EBADF  The fildes argument is not a valid descriptor.
+
+       EINTR  The fsync() function was interrupted by a signal.
+
+       EINVAL The fildes argument does not refer to a file on which this operation is possible.
+
+       EIO    An I/O error occurred while reading from or writing to the file system.
+
+       In the event that any of the queued I/O operations fail, fsync() shall return the error conditions defined for read() and write().
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The  fsync() function should be used by programs which require modifications to a file to be completed before continuing; for example, a program which contains a simple transaction facility might
+       use it to ensure that all modifications to a file or files caused by a transaction are recorded.
+
+RATIONALE
+       The fsync() function is intended to force a physical write of data from the buffer cache, and to assure that after a system crash or other failure that all data up to the time of the fsync() call
+       is recorded on the disk. Since the concepts of ``buffer cache'', ``system crash'', ``physical write'', and ``non-volatile storage'' are not defined here, the wording has to be more abstract.
+
+       If  _POSIX_SYNCHRONIZED_IO  is not defined, the wording relies heavily on the conformance document to tell the user what can be expected from the system. It is explicitly intended that a null im‐
+       plementation is permitted. This could be valid in the case where the system cannot assure non-volatile storage under any circumstances or when the system is highly fault-tolerant  and  the  func‐
+       tionality  is  not required. In the middle ground between these extremes, fsync() might or might not actually cause data to be written where it is safe from a power failure. The conformance docu‐
+       ment should identify at least that one configuration exists (and how to obtain that configuration) where this can be assured for at least some files that the user can select to use  for  critical
+       data. It is not intended that an exhaustive list is required, but rather sufficient information is provided so that if critical data needs to be saved, the user can determine how the system is to
+       be configured to allow the data to be written to non-volatile storage.
+
+       It is reasonable to assert that the key aspects of fsync() are unreasonable to test in a test suite. That does not make the function any less valuable, just more difficult to test. A formal  con‐
+       formance  test  should  probably force a system crash (power shutdown) during the test for this condition, but it needs to be done in such a way that automated testing does not require this to be
+       done except when a formal record of the results is being made. It would also not be unreasonable to omit testing for fsync(), allowing it to be treated as a quality-of-implementation issue.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       sync()
+
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          FSYNC(3P)
+fsync(2)                                                                                    System Calls Manual                                                                                   fsync(2)
+
+NAME
+       fsync, fdatasync - synchronize a file's in-core state with storage device
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int fsync(int fd);
+
+       int fdatasync(int fd);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       fsync():
+           glibc 2.16 and later:
+               No feature test macros need be defined
+           glibc up to and including 2.15:
+               _BSD_SOURCE || _XOPEN_SOURCE
+                   || /* Since glibc 2.8: */ _POSIX_C_SOURCE >= 200112L
+
+       fdatasync():
+           _POSIX_C_SOURCE >= 199309L || _XOPEN_SOURCE >= 500
+
+DESCRIPTION
+       fsync()  transfers  ("flushes")  all modified in-core data of (i.e., modified buffer cache pages for) the file referred to by the file descriptor fd to the disk device (or other permanent storage
+       device) so that all changed information can be retrieved even if the system crashes or is rebooted.  This includes writing through or flushing a disk cache if present.  The call blocks until  the
+       device reports that the transfer has completed.
+
+       As well as flushing the file data, fsync() also flushes the metadata information associated with the file (see inode(7)).
+
+       Calling fsync() does not necessarily ensure that the entry in the directory containing the file has also reached disk.  For that an explicit fsync() on a file descriptor for the directory is also
+       needed.
+
+       fdatasync() is similar to fsync(), but does not flush modified metadata unless that metadata is needed in order to allow a subsequent data retrieval to be correctly handled.  For example, changes
+       to  st_atime  or  st_mtime  (respectively, time of last access and time of last modification; see inode(7)) do not require flushing because they are not necessary for a subsequent data read to be
+       handled correctly.  On the other hand, a change to the file size (st_size, as made by say ftruncate(2)), would require a metadata flush.
+
+       The aim of fdatasync() is to reduce disk activity for applications that do not require all metadata to be synchronized with the disk.
+
+RETURN VALUE
+       On success, these system calls return zero.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EBADF  fd is not a valid open file descriptor.
+
+       EINTR  The function was interrupted by a signal; see signal(7).
+
+       EIO    An error occurred during synchronization.  This error may relate to data written to some other file descriptor on the same file.  Since Linux 4.13, errors from write-back will be  reported
+              to  all  file  descriptors  that might have written the data which triggered the error.  Some filesystems (e.g., NFS) keep close track of which data came through which file descriptor, and
+              give more precise reporting.  Other filesystems (e.g., most local filesystems) will report errors to all file descriptors that were open on the file when the error was recorded.
+
+       ENOSPC Disk space was exhausted while synchronizing.
+
+       EROFS, EINVAL
+              fd is bound to a special file (e.g., a pipe, FIFO, or socket) which does not support synchronization.
+
+       ENOSPC, EDQUOT
+              fd is bound to a file on NFS or another filesystem which does not allocate space at the time of a write(2) system call, and some previous write failed due to insufficient storage space.
+
+VERSIONS
+       On POSIX systems on which fdatasync() is available, _POSIX_SYNCHRONIZED_IO is defined in <unistd.h> to a value greater than 0.  (See also sysconf(3).)
+
+       On some UNIX systems (but not Linux), fd must be a writable file descriptor.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, 4.3BSD.
+
+       In Linux 2.2 and earlier, fdatasync() is equivalent to fsync(), and so has no performance advantage.
+
+       The fsync() implementations in older kernels and lesser used filesystems do not know how to flush disk caches.  In these cases disk caches need to be disabled  using  hdparm(8)  or  sdparm(8)  to
+       guarantee safe operation.
+
+SEE ALSO
+       sync(1), bdflush(2), open(2), posix_fadvise(2), pwritev(2), sync(2), sync_file_range(2), fflush(3), fileno(3), hdparm(8), mount(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        fsync(2)

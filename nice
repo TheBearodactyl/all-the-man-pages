@@ -1,0 +1,343 @@
+NICE(1)                                                                                        User Commands                                                                                       NICE(1)
+
+NAME
+       nice - run a program with modified scheduling priority
+
+SYNOPSIS
+       nice [OPTION] [COMMAND [ARG]...]
+
+DESCRIPTION
+       Run COMMAND with an adjusted niceness, which affects process scheduling.  With no COMMAND, print the current niceness.  Niceness values range from -20 (most favorable to the process) to 19 (least
+       favorable to the process).
+
+       Mandatory arguments to long options are mandatory for short options too.
+
+       -n, --adjustment=N
+              add integer N to the niceness (default 10)
+
+       --help display this help and exit
+
+       --version
+              output version information and exit
+
+       NOTE: your shell may have its own version of nice, which usually supersedes the version described here.  Please refer to your shell's documentation for details about the options it supports.
+
+   Exit status:
+       125    if the nice command itself fails
+
+       126    if COMMAND is found but cannot be invoked
+
+       127    if COMMAND cannot be found
+
+       -      the exit status of COMMAND otherwise
+
+AUTHOR
+       Written by David MacKenzie.
+
+REPORTING BUGS
+       GNU coreutils online help: <https://www.gnu.org/software/coreutils/>
+       Report any translation bugs to <https://translationproject.org/team/>
+
+COPYRIGHT
+       Copyright © 2023 Free Software Foundation, Inc.  License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+       This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       nice(2), renice(1)
+
+       Full documentation <https://www.gnu.org/software/coreutils/nice>
+       or available locally via: info '(coreutils) nice invocation'
+
+GNU coreutils 9.2                                                                               April 2023                                                                                         NICE(1)
+NICE(1P)                                                                                 POSIX Programmer's Manual                                                                                NICE(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       nice — invoke a utility with an altered nice value
+
+SYNOPSIS
+       nice [-n increment] utility [argument...]
+
+DESCRIPTION
+       The nice utility shall invoke a utility, requesting that it be run with a different nice value (see the Base Definitions volume of POSIX.1‐2017, Section 3.244, Nice Value).  With no options,  the
+       executed  utility  shall be run with a nice value that is some implementation-defined quantity greater than or equal to the nice value of the current process. If the user lacks appropriate privi‐
+       leges to affect the nice value in the requested manner, the nice utility shall not affect the nice value; in this case, a warning message may be written to standard error, but this shall not pre‐
+       vent the invocation of utility or affect the exit status.
+
+OPTIONS
+       The nice utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following option is supported:
+
+       -n increment
+                 A  positive  or  negative decimal integer which shall have the same effect on the execution of the utility as if the utility had called the nice() function with the numeric value of the
+                 increment option-argument.
+
+OPERANDS
+       The following operands shall be supported:
+
+       utility   The name of a utility that is to be invoked. If the utility operand names any of the special built-in utilities in Section 2.14, Special Built-In Utilities, the results are undefined.
+
+       argument  Any string to be supplied as an argument when invoking the utility named by the utility operand.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of nice:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+       PATH      Determine the search path used to locate the utility to be invoked.  See the Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       If utility is invoked, the exit status of nice shall be the exit status of utility; otherwise, the nice utility shall exit with one of the following values:
+
+       1‐125   An error occurred in the nice utility.
+
+         126   The utility specified by utility was found but could not be invoked.
+
+         127   The utility specified by utility could not be found.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The only guaranteed portable uses of this utility are:
+
+       nice utility
+             Run utility with the default higher or equal nice value.
+
+       nice -n <positive integer> utility
+             Run utility with a higher nice value.
+
+       On some implementations they have no discernible effect on the invoked utility and on some others they are exactly equivalent.
+
+       Historical  systems have frequently supported the <positive integer> up to 20. Since there is no error penalty associated with guessing a number that is too high, users without access to the sys‐
+       tem conformance document (to see what limits are actually in place) could use the historical 1 to 20 range or attempt to use very large numbers if the job should be truly low priority.
+
+       The nice value of a process can be displayed using the command:
+
+           ps -o nice
+
+       The command, env, nice, nohup, time, and xargs utilities have been specified to use exit code 127 if an error occurs so that applications can distinguish ``failure to find a utility'' from  ``in‐
+       voked  utility  exited with an error indication''. The value 127 was chosen because it is not commonly used for other meanings; most utilities use small values for ``normal error conditions'' and
+       the values above 128 can be confused with termination due to receipt of a signal. The value 126 was chosen in a similar manner to indicate that the utility could be found, but not  invoked.  Some
+       scripts  produce  meaningful error messages differentiating the 126 and 127 cases. The distinction between exit codes 126 and 127 is based on KornShell practice that uses 127 when all attempts to
+       exec the utility fail with [ENOENT], and uses 126 when any attempt to exec the utility fails for any other reason.
+
+EXAMPLES
+       None.
+
+RATIONALE
+       The 4.3 BSD version of nice does not check whether increment is a valid decimal integer. The command nice -x utility, for example, would be treated the same as the command nice --1  utility.   If
+       the user does not have appropriate privileges, this results in a ``permission denied'' error.  This is considered a bug.
+
+       When  a  user without appropriate privileges gives a negative increment, System V treats it like the command nice -0 utility, while 4.3 BSD writes a ``permission denied'' message and does not run
+       the utility. The standard specifies the System V behavior together with an optional BSD-style ``permission denied'' message.
+
+       The C shell has a built-in version of nice that has a different interface from the one described in this volume of POSIX.1‐2017.
+
+       The term ``utility'' is used, rather than ``command'', to highlight the fact that shell compound commands, pipelines, and so on, cannot be used. Special built-ins also cannot be  used.   However,
+       ``utility'' includes user application programs and shell scripts, not just utilities defined in this volume of POSIX.1‐2017.
+
+       Historical  implementations  of  nice provide a nice value range of 40 or 41 discrete steps, with the default nice value being the midpoint of that range. By default, they raise the nice value of
+       the executed utility by 10.
+
+       Some historical documentation states that the increment value must be within a fixed range. This is misleading; the valid increment values on any invocation are determined by the current  process
+       nice value, which is not always the default.
+
+       The  definition  of  nice  value is not intended to suggest that all processes in a system have priorities that are comparable. Scheduling policy extensions such as the realtime priorities in the
+       System Interfaces volume of POSIX.1‐2017 make the notion of a single underlying priority for all scheduling policies problematic. Some implementations may implement the nice-related  features  to
+       affect  all  processes on the system, others to affect just the general time-sharing activities implied by this volume of POSIX.1‐2017, and others may have no effect at all. Because of the use of
+       ``implementation-defined'' in nice and renice, a wide range of implementation strategies are possible.
+
+       Earlier versions of this standard allowed a -increment option. This form is no longer specified by POSIX.1‐2008 but may be present in some implementations.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Chapter 2, Shell Command Language, renice
+
+       The Base Definitions volume of POSIX.1‐2017, Section 3.244, Nice Value, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+       The System Interfaces volume of POSIX.1‐2017, nice()
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           NICE(1P)
+NICE(3P)                                                                                 POSIX Programmer's Manual                                                                                NICE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       nice — change the nice value of a process
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int nice(int incr);
+
+DESCRIPTION
+       The nice() function shall add the value of incr to the nice value of the calling process. A nice value of a process is a non-negative number for which a more positive value shall result  in  less
+       favorable scheduling.
+
+       A  maximum  nice value of 2*{NZERO}-1 and a minimum nice value of 0 shall be imposed by the system. Requests for values above or below these limits shall result in the nice value being set to the
+       corresponding limit. Only a process with appropriate privileges can lower the nice value.
+
+       Calling the nice() function has no effect on the priority of processes or threads with policy SCHED_FIFO or SCHED_RR.  The effect on processes or threads with other scheduling policies is  imple‐
+       mentation-defined.
+
+       The nice value set with nice() shall be applied to the process. If the process is multi-threaded, the nice value shall affect all system scope threads in the process.
+
+       As  -1  is  a  permissible return value in a successful situation, an application wishing to check for error situations should set errno to 0, then call nice(), and if it returns -1, check to see
+       whether errno is non-zero.
+
+RETURN VALUE
+       Upon successful completion, nice() shall return the new nice value -{NZERO}.  Otherwise, -1 shall be returned, the nice value of the process shall not be changed, and errno shall be set to  indi‐
+       cate the error.
+
+ERRORS
+       The nice() function shall fail if:
+
+       EPERM  The incr argument is negative and the calling process does not have appropriate privileges.
+
+       The following sections are informative.
+
+EXAMPLES
+   Changing the Nice Value
+       The following example adds the value of the incr argument, -20, to the nice value of the calling process.
+
+           #include <unistd.h>
+           ...
+           int incr = -20;
+           int ret;
+
+           ret = nice(incr);
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exec, getpriority()
+
+       The Base Definitions volume of POSIX.1‐2017, <limits.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           NICE(3P)
+nice(2)                                                                                     System Calls Manual                                                                                    nice(2)
+
+NAME
+       nice - change process priority
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int nice(int inc);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       nice():
+           _XOPEN_SOURCE
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       nice() adds inc to the nice value for the calling thread.  (A higher nice value means a lower priority.)
+
+       The range of the nice value is +19 (low priority) to -20 (high priority).  Attempts to set a nice value outside the range are clamped to the range.
+
+       Traditionally,  only  a  privileged process could lower the nice value (i.e., set a higher priority).  However, since Linux 2.6.12, an unprivileged process can decrease the nice value of a target
+       process that has a suitable RLIMIT_NICE soft limit; see getrlimit(2) for details.
+
+RETURN VALUE
+       On success, the new nice value is returned (but see NOTES below).  On error, -1 is returned, and errno is set to indicate the error.
+
+       A successful call can legitimately return -1.  To detect an error, set errno to 0 before the call, and check whether it is nonzero after nice() returns -1.
+
+ERRORS
+       EPERM  The calling process attempted to increase its priority by supplying a negative inc but has insufficient privileges.  Under Linux, the CAP_SYS_NICE capability is  required.   (But  see  the
+              discussion of the RLIMIT_NICE resource limit in setrlimit(2).)
+
+VERSIONS
+   C library/kernel differences
+       POSIX.1  specifies  that nice() should return the new nice value.  However, the raw Linux system call returns 0 on success.  Likewise, the nice() wrapper function provided in glibc 2.2.3 and ear‐
+       lier returns 0 on success.
+
+       Since glibc 2.2.4, the nice() wrapper function provided by glibc provides conformance to POSIX.1 by calling getpriority(2) to obtain the new nice value, which is then returned to the caller.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+NOTES
+       For further details on the nice value, see sched(7).
+
+       Note: the addition of the "autogroup" feature in Linux 2.6.38 means that the nice value no longer has its traditional effect in many circumstances.  For details, see sched(7).
+
+SEE ALSO
+       nice(1), renice(1), fork(2), getpriority(2), getrlimit(2), setpriority(2), capabilities(7), sched(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         nice(2)

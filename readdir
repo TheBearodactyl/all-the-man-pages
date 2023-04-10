@@ -1,0 +1,559 @@
+readdir(3)                 Library Functions Manual                 readdir(3)
+
+NAME
+       readdir - read a directory
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <dirent.h>
+
+       struct dirent *readdir(DIR *dirp);
+
+DESCRIPTION
+       The  readdir()  function returns a pointer to a dirent structure repre‐
+       senting the next directory entry in the directory stream pointed to  by
+       dirp.   It  returns NULL on reaching the end of the directory stream or
+       if an error occurred.
+
+       In the glibc implementation, the dirent structure is  defined  as  fol‐
+       lows:
+
+           struct dirent {
+               ino_t          d_ino;       /* Inode number */
+               off_t          d_off;       /* Not an offset; see below */
+               unsigned short d_reclen;    /* Length of this record */
+               unsigned char  d_type;      /* Type of file; not supported
+                                              by all filesystem types */
+               char           d_name[256]; /* Null-terminated filename */
+           };
+
+       The  only  fields  in the dirent structure that are mandated by POSIX.1
+       are d_name and d_ino.  The other fields  are  unstandardized,  and  not
+       present on all systems; see NOTES below for some further details.
+
+       The fields of the dirent structure are as follows:
+
+       d_ino  This is the inode number of the file.
+
+       d_off  The  value returned in d_off is the same as would be returned by
+              calling telldir(3) at the  current  position  in  the  directory
+              stream.   Be  aware  that  despite  its type and name, the d_off
+              field is seldom any kind of directory offset on modern  filesys‐
+              tems.   Applications should treat this field as an opaque value,
+              making no assumptions about its contents; see also telldir(3).
+
+       d_reclen
+              This is the size (in bytes) of the returned  record.   This  may
+              not  match the size of the structure definition shown above; see
+              NOTES.
+
+       d_type This field contains a value indicating the file type, making  it
+              possible to avoid the expense of calling lstat(2) if further ac‐
+              tions depend on the type of the file.
+
+              When a suitable feature test macro is  defined  (_DEFAULT_SOURCE
+              since  glibc  2.19,  or  _BSD_SOURCE on glibc 2.19 and earlier),
+              glibc defines the following macro constants for  the  value  re‐
+              turned in d_type:
+
+              DT_BLK      This is a block device.
+
+              DT_CHR      This is a character device.
+
+              DT_DIR      This is a directory.
+
+              DT_FIFO     This is a named pipe (FIFO).
+
+              DT_LNK      This is a symbolic link.
+
+              DT_REG      This is a regular file.
+
+              DT_SOCK     This is a UNIX domain socket.
+
+              DT_UNKNOWN  The file type could not be determined.
+
+              Currently, only some filesystems (among them: Btrfs, ext2, ext3,
+              and ext4) have full support  for  returning  the  file  type  in
+              d_type.   All  applications  must  properly  handle  a return of
+              DT_UNKNOWN.
+
+       d_name This field contains the null terminated filename.  See NOTES.
+
+       The data returned by readdir() may be overwritten by  subsequent  calls
+       to readdir() for the same directory stream.
+
+RETURN VALUE
+       On  success,  readdir() returns a pointer to a dirent structure.  (This
+       structure may be statically allocated; do not attempt to free(3) it.)
+
+       If the end of the directory stream is reached, NULL is returned and er‐
+       rno  is not changed.  If an error occurs, NULL is returned and errno is
+       set to indicate the error.  To distinguish end of stream from an error,
+       set  errno to zero before calling readdir() and then check the value of
+       errno if NULL is returned.
+
+ERRORS
+       EBADF  Invalid directory stream descriptor dirp.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌───────────────────────────┬───────────────┬──────────────────────────┐
+       │Interface                  │ Attribute     │ Value                    │
+       ├───────────────────────────┼───────────────┼──────────────────────────┤
+       │readdir()                  │ Thread safety │ MT-Unsafe race:dirstream │
+       └───────────────────────────┴───────────────┴──────────────────────────┘
+
+       In  the  current POSIX.1 specification (POSIX.1-2008), readdir() is not
+       required to be thread-safe.  However, in  modern  implementations  (in‐
+       cluding  the  glibc implementation), concurrent calls to readdir() that
+       specify different directory streams are thread-safe.   In  cases  where
+       multiple  threads must read from the same directory stream, using read‐
+       dir() with external synchronization is still preferable to the  use  of
+       the  deprecated  readdir_r(3)  function.   It is expected that a future
+       version of POSIX.1 will require that readdir() be thread-safe when con‐
+       currently employed on different directory streams.
+
+VERSIONS
+       Only the fields d_name and (as an XSI extension) d_ino are specified in
+       POSIX.1.  Other than Linux, the d_type field is available  mainly  only
+       on  BSD  systems.   The remaining fields are available on many, but not
+       all systems.  Under glibc, programs can check for the  availability  of
+       the  fields  not  defined in POSIX.1 by testing whether the macros _DI‐
+       RENT_HAVE_D_NAMLEN, _DIRENT_HAVE_D_RECLEN, _DIRENT_HAVE_D_OFF, or  _DI‐
+       RENT_HAVE_D_TYPE are defined.
+
+   The d_name field
+       The  dirent  structure  definition  shown above is taken from the glibc
+       headers, and shows the d_name field with a fixed size.
+
+       Warning: applications should avoid any dependence on the  size  of  the
+       d_name  field.  POSIX defines it as char d_name[], a character array of
+       unspecified size, with at most NAME_MAX characters preceding the termi‐
+       nating null byte ('\0').
+
+       POSIX.1 explicitly notes that this field should not be used as an lval‐
+       ue.  The standard also notes that the use of sizeof(d_name)  is  incor‐
+       rect;  use strlen(d_name) instead.  (On some systems, this field is de‐
+       fined as char d_name[1]!)  By implication, the  use  sizeof(struct  di‐
+       rent) to capture the size of the record including the size of d_name is
+       also incorrect.
+
+       Note that while the call
+
+           fpathconf(fd, _PC_NAME_MAX)
+
+       returns the value 255 for most filesystems, on some filesystems  (e.g.,
+       CIFS,  Windows SMB servers), the null-terminated filename that is (cor‐
+       rectly) returned in d_name can actually  exceed  this  size.   In  such
+       cases, the d_reclen field will contain a value that exceeds the size of
+       the glibc dirent structure shown above.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+NOTES
+       A directory stream is opened using opendir(3).
+
+       The order in which filenames are read by successive calls to  readdir()
+       depends on the filesystem implementation; it is unlikely that the names
+       will be sorted in any fashion.
+
+SEE ALSO
+       getdents(2),  read(2),  closedir(3),  dirfd(3),  ftw(3),   offsetof(3),
+       opendir(3),   readdir_r(3),   rewinddir(3),   scandir(3),   seekdir(3),
+       telldir(3)
+
+Linux man-pages 6.04              2023-03-30                        readdir(3)
+READDIR(3am)               GNU Awk Extension Modules              READDIR(3am)
+
+NAME
+       readdir - directory input parser for gawk
+
+SYNOPSIS
+       @load "readdir"
+
+DESCRIPTION
+       The readdir extension adds an input parser for directories.
+
+       When this extension is in use, instead of skipping directories named on
+       the command line (or with getline), they are read, with each entry  re‐
+       turned as a record.
+
+       The record consists of three fields. The first two are the inode number
+       and the filename, separated by a forward slash character.   On  systems
+       where  the  directory  entry  contains  the file type, the record has a
+       third field which is a single letter indicating the type of the file: f
+       for  file, d for directory, b for a block device, c for a character de‐
+       vice, p for a FIFO, l for a symbolic link, s for a socket.
+
+       On systems without the file type information, the extension falls  back
+       to  calling  stat(2),  in  order  to provide the information.  Thus the
+       third field should never be u.
+
+       By default, if a directory cannot be opened (due  to  permission  prob‐
+       lems, for example), gawk will exit.  As with regular files, this situa‐
+       tion can be handled using a BEGINFILE rule that checks ERRNO and prints
+       an error or otherwise handles the problem.
+
+EXAMPLE
+       @load "readdir"
+       ...
+       BEGIN { FS = "/" }
+       { print "file name is", $2 }
+
+SEE ALSO
+       GAWK:   Effective   AWK   Programming,   filefuncs(3am),  fnmatch(3am),
+       fork(3am), inplace(3am),  ordchr(3am),  readfile(3am),  revoutput(3am),
+       rwarray(3am), time(3am).
+
+       opendir(3), readdir(3), stat(2).
+
+AUTHOR
+       Arnold Robbins, arnold@skeeve.com.
+
+COPYING PERMISSIONS
+       Copyright © 2012, 2013, 2018, 2019 Free Software Foundation, Inc.
+
+       Permission  is  granted  to make and distribute verbatim copies of this
+       manual page provided the copyright notice and  this  permission  notice
+       are preserved on all copies.
+
+       Permission  is granted to copy and distribute modified versions of this
+       manual page under the conditions for verbatim  copying,  provided  that
+       the  entire  resulting derived work is distributed under the terms of a
+       permission notice identical to this one.
+
+       Permission is granted to copy and distribute translations of this  man‐
+       ual page into another language, under the above conditions for modified
+       versions, except that this permission notice may be stated in a  trans‐
+       lation approved by the Foundation.
+
+Free Software Foundation          Oct 30 2019                     READDIR(3am)
+READDIR(3P)                POSIX Programmer's Manual               READDIR(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       readdir, readdir_r — read a directory
+
+SYNOPSIS
+       #include <dirent.h>
+
+       struct dirent *readdir(DIR *dirp);
+       int readdir_r(DIR *restrict dirp, struct dirent *restrict entry,
+           struct dirent **restrict result);
+
+DESCRIPTION
+       The type DIR, which is defined in the <dirent.h> header,  represents  a
+       directory stream, which is an ordered sequence of all the directory en‐
+       tries in a particular directory.  Directory  entries  represent  files;
+       files  may  be  removed  from a directory or added to a directory asyn‐
+       chronously to the operation of readdir().
+
+       The readdir() function shall return a pointer to a structure represent‐
+       ing the directory entry at the current position in the directory stream
+       specified by the argument dirp, and position the  directory  stream  at
+       the next entry. It shall return a null pointer upon reaching the end of
+       the directory stream. The structure dirent defined  in  the  <dirent.h>
+       header  describes a directory entry. The value of the structure's d_ino
+       member shall be set to the file serial number of the file named by  the
+       d_name member. If the d_name member names a symbolic link, the value of
+       the d_ino member shall be set to the file serial number of the symbolic
+       link itself.
+
+       The  readdir()  function  shall not return directory entries containing
+       empty names. If entries for dot or dot-dot exist, one  entry  shall  be
+       returned  for  dot  and one entry shall be returned for dot-dot; other‐
+       wise, they shall not be returned.
+
+       The application shall not modify the  structure  to  which  the  return
+       value of readdir() points, nor any storage areas pointed to by pointers
+       within the structure. The returned pointer,  and  pointers  within  the
+       structure,  might  be invalidated or the structure or the storage areas
+       might be overwritten by a subsequent call to readdir() on the same  di‐
+       rectory  stream. They shall not be affected by a call to readdir() on a
+       different directory stream. The returned pointer, and  pointers  within
+       the  structure, might also be invalidated if the calling thread is ter‐
+       minated.
+
+       If a file is removed from or added to the directory after the most  re‐
+       cent  call  to  opendir()  or rewinddir(), whether a subsequent call to
+       readdir() returns an entry for that file is unspecified.
+
+       The readdir() function may buffer several directory entries per  actual
+       read  operation;  readdir()  shall mark for update the last data access
+       timestamp of the directory each time the directory is actually read.
+
+       After a call to fork(), either the parent or child (but not  both)  may
+       continue  processing the directory stream using readdir(), rewinddir(),
+       or seekdir().  If both the parent and child processes use  these  func‐
+       tions, the result is undefined.
+
+       The readdir() function need not be thread-safe.
+
+       Applications  wishing to check for error situations should set errno to
+       0 before calling readdir().  If errno is set to non-zero on return,  an
+       error occurred.
+
+       The  readdir_r()  function shall initialize the dirent structure refer‐
+       enced by entry to represent the directory entry at the current position
+       in  the  directory  stream referred to by dirp, store a pointer to this
+       structure at the location referenced by result, and position the direc‐
+       tory stream at the next entry.
+
+       The storage pointed to by entry shall be large enough for a dirent with
+       an array of char d_name members containing at least  {NAME_MAX}+1  ele‐
+       ments.
+
+       Upon  successful return, the pointer returned at *result shall have the
+       same value as the argument entry.  Upon reaching the end of the  direc‐
+       tory stream, this pointer shall have the value NULL.
+
+       The  readdir_r() function shall not return directory entries containing
+       empty names.
+
+       If a file is removed from or added to the directory after the most  re‐
+       cent  call  to  opendir()  or rewinddir(), whether a subsequent call to
+       readdir_r() returns an entry for that file is unspecified.
+
+       The readdir_r() function may buffer several directory entries  per  ac‐
+       tual  read  operation;  readdir_r() shall mark for update the last data
+       access timestamp of the directory each time the directory  is  actually
+       read.
+
+RETURN VALUE
+       Upon  successful completion, readdir() shall return a pointer to an ob‐
+       ject of type struct dirent.  When  an  error  is  encountered,  a  null
+       pointer shall be returned and errno shall be set to indicate the error.
+       When the end of the directory is encountered, a null pointer  shall  be
+       returned and errno is not changed.
+
+       If  successful,  the readdir_r() function shall return zero; otherwise,
+       an error number shall be returned to indicate the error.
+
+ERRORS
+       These functions shall fail if:
+
+       EOVERFLOW
+              One of the values in the structure to be returned cannot be rep‐
+              resented correctly.
+
+       These functions may fail if:
+
+       EBADF  The dirp argument does not refer to an open directory stream.
+
+       ENOENT The current position of the directory stream is invalid.
+
+       The following sections are informative.
+
+EXAMPLES
+       The following sample program searches the current directory for each of
+       the arguments supplied on the command line.
+
+           #include <dirent.h>
+           #include <errno.h>
+           #include <stdio.h>
+           #include <string.h>
+
+           static void lookup(const char *arg)
+           {
+               DIR *dirp;
+               struct dirent *dp;
+
+               if ((dirp = opendir(".")) == NULL) {
+                   perror("couldn't open '.'");
+                   return;
+               }
+
+               do {
+                   errno = 0;
+                   if ((dp = readdir(dirp)) != NULL) {
+                       if (strcmp(dp->d_name, arg) != 0)
+                           continue;
+
+                       (void) printf("found %s\n", arg);
+                       (void) closedir(dirp);
+                           return;
+
+                   }
+               } while (dp != NULL);
+
+               if (errno != 0)
+                   perror("error reading directory");
+               else
+                   (void) printf("failed to find %s\n", arg);
+               (void) closedir(dirp);
+               return;
+           }
+
+           int main(int argc, char *argv[])
+           {
+               int i;
+               for (i = 1; i < argc; i++)
+                   lookup(argv[i]);
+               return (0);
+           }
+
+APPLICATION USAGE
+       The readdir() function should be used in  conjunction  with  opendir(),
+       closedir(), and rewinddir() to examine the contents of the directory.
+
+       The  readdir_r()  function  is thread-safe and shall return values in a
+       user-supplied buffer instead of possibly using a static data area  that
+       may be overwritten by each call.
+
+RATIONALE
+       The returned value of readdir() merely represents a directory entry. No
+       equivalence should be inferred.
+
+       Historical implementations of readdir() obtain multiple  directory  en‐
+       tries  on  a  single read operation, which permits subsequent readdir()
+       operations to operate from the buffered information. Any  wording  that
+       required each successful readdir() operation to mark the directory last
+       data access timestamp for update would disallow such historical perfor‐
+       mance-oriented implementations.
+
+       When returning a directory entry for the root of a mounted file system,
+       some historical implementations of readdir() returned the  file  serial
+       number  of  the  underlying mount point, rather than of the root of the
+       mounted file system. This behavior is considered to be a bug, since the
+       underlying file serial number has no significance to applications.
+
+       Since  readdir() returns NULL when it detects an error and when the end
+       of the directory is encountered, an application that needs to tell  the
+       difference  must set errno to zero before the call and check it if NULL
+       is returned.  Since the function must not change errno  in  the  second
+       case  and must set it to a non-zero value in the first case, a zero er‐
+       rno after a call returning NULL indicates end-of-directory;  otherwise,
+       an error.
+
+       Routines to deal with this problem more directly were proposed:
+
+           int derror (dirp)
+           DIR *dirp;
+
+           void clearderr (dirp)
+           DIR *dirp;
+
+       The  first would indicate whether an error had occurred, and the second
+       would clear the error indication. The simpler  method  involving  errno
+       was  adopted  instead by requiring that readdir() not change errno when
+       end-of-directory is encountered.
+
+       An error or signal indicating that a directory has changed  while  open
+       was considered but rejected.
+
+       The  thread-safe version of the directory reading function returns val‐
+       ues in a user-supplied buffer instead of possibly using a  static  data
+       area  that  may be overwritten by each call. Either the {NAME_MAX} com‐
+       pile-time constant or the corresponding pathconf() option can  be  used
+       to determine the maximum sizes of returned pathnames.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       closedir(),  dirfd(),  exec,  fdopendir(), fstatat(), rewinddir(), sym‐
+       link()
+
+       The Base Definitions volume of POSIX.1‐2017, <dirent.h>, <sys_types.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                          READDIR(3P)
+readdir(2)                    System Calls Manual                   readdir(2)
+
+NAME
+       readdir - read directory entry
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/syscall.h>      /* Definition of SYS_* constants */
+       #include <unistd.h>
+
+       int syscall(SYS_readdir, unsigned int fd,
+                   struct old_linux_dirent *dirp, unsigned int count);
+
+       Note: There is no definition of struct old_linux_dirent; see NOTES.
+
+DESCRIPTION
+       This is not the function you are interested in.  Look at readdir(3) for
+       the POSIX conforming C library interface.  This page documents the bare
+       kernel system call interface, which is superseded by getdents(2).
+
+       readdir()  reads  one old_linux_dirent structure from the directory re‐
+       ferred to by the file descriptor fd into the buffer pointed to by dirp.
+       The  argument  count is ignored; at most one old_linux_dirent structure
+       is read.
+
+       The old_linux_dirent structure is declared (privately in  Linux  kernel
+       file fs/readdir.c) as follows:
+
+           struct old_linux_dirent {
+               unsigned long d_ino;     /* inode number */
+               unsigned long d_offset;  /* offset to this old_linux_dirent */
+               unsigned short d_namlen; /* length of this d_name */
+               char  d_name[1];         /* filename (null-terminated) */
+           }
+
+       d_ino  is  an inode number.  d_offset is the distance from the start of
+       the directory to  this  old_linux_dirent.   d_reclen  is  the  size  of
+       d_name,  not  counting  the  terminating null byte ('\0').  d_name is a
+       null-terminated filename.
+
+RETURN VALUE
+       On success, 1 is returned.  On end of directory, 0 is returned.  On er‐
+       ror, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EBADF  Invalid file descriptor fd.
+
+       EFAULT Argument points outside the calling process's address space.
+
+       EINVAL Result buffer is too small.
+
+       ENOENT No such directory.
+
+       ENOTDIR
+              File descriptor does not refer to a directory.
+
+VERSIONS
+       You  will need to define the old_linux_dirent structure yourself.  How‐
+       ever, probably you should use readdir(3) instead.
+
+       This system call does not exist on x86-64.
+
+STANDARDS
+       Linux.
+
+SEE ALSO
+       getdents(2), readdir(3)
+
+Linux man-pages 6.04              2023-03-30                        readdir(2)

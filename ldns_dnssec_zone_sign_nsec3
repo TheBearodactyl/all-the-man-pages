@@ -1,0 +1,102 @@
+ldns(3)                                                                                  Library Functions Manual                                                                                  ldns(3)
+
+NAME
+       ldns_dnssec_zone_sign, ldns_dnssec_zone_sign_nsec3, ldns_dnssec_zone_mark_glue, ldns_dnssec_name_node_next_nonglue, ldns_dnssec_zone_create_nsecs, ldns_dnssec_remove_signatures,
+       ldns_dnssec_zone_create_rrsigs - sign ldns_dnssec_zone
+
+SYNOPSIS
+       #include <stdint.h>
+       #include <stdbool.h>
+
+       #include <ldns/ldns.h>
+
+       ldns_status ldns_dnssec_zone_sign(ldns_dnssec_zone *zone, ldns_rr_list *new_rrs, ldns_key_list *key_list, int (*func)(ldns_rr *, void *), void *arg);
+
+       ldns_status ldns_dnssec_zone_sign_nsec3(ldns_dnssec_zone *zone, ldns_rr_list *new_rrs, ldns_key_list *key_list, int (*func)(ldns_rr *, void *), void *arg, uint8_t algorithm, uint8_t flags,
+       uint16_t iterations, uint8_t salt_length, uint8_t *salt);
+
+        ldns_dnssec_zone_mark_glue();
+
+       ldns_rbnode_t* ldns_dnssec_name_node_next_nonglue(ldns_rbnode_t *node);
+
+       ldns_status ldns_dnssec_zone_create_nsecs(ldns_dnssec_zone *zone, ldns_rr_list *new_rrs);
+
+       ldns_dnssec_rrs* ldns_dnssec_remove_signatures(ldns_dnssec_rrs *signatures, ldns_key_list *key_list, int (*func)(ldns_rr *, void *), void *arg);
+
+       ldns_status ldns_dnssec_zone_create_rrsigs(ldns_dnssec_zone *zone, ldns_rr_list *new_rrs, ldns_key_list *key_list, int (*func)(ldns_rr *, void*), void *arg);
+
+DESCRIPTION
+       ldns_dnssec_zone_sign() signs the given zone with the given keys
+
+              zone: the zone to sign
+              key_list: the list of keys to sign the zone with
+              new_rrs: newly created resource records are added to this list, to free them later
+              func: callback function that decides what to do with old signatures This function takes an ldns_rr* and an optional void *arg argument, and returns one of four values:
+              LDNS_SIGNATURE_LEAVE_ADD_NEW: leave the signature and add a new one for the corresponding key LDNS_SIGNATURE_REMOVE_ADD_NEW: remove the signature and replace is with a new one from the
+              same key LDNS_SIGNATURE_LEAVE_NO_ADD: leave the signature and do not add a new one with the corresponding key LDNS_SIGNATURE_REMOVE_NO_ADD: remove the signature and do not replace
+
+              arg: optional argument for the callback function
+              Returns LDNS_STATUS_OK on success, an error code otherwise
+
+       ldns_dnssec_zone_sign_nsec3() signs the given zone with the given new zone, with NSEC3
+
+              zone: the zone to sign
+              key_list: the list of keys to sign the zone with
+              new_rrs: newly created resource records are added to this list, to free them later
+              func: callback function that decides what to do with old signatures
+              arg: optional argument for the callback function
+              algorithm: the NSEC3 hashing algorithm to use
+              flags: NSEC3 flags
+              iterations: the number of NSEC3 hash iterations to use
+              salt_length: the length (in octets) of the NSEC3 salt
+              salt: the NSEC3 salt data
+              Returns LDNS_STATUS_OK on success, an error code otherwise
+
+       ldns_dnssec_zone_mark_glue()
+
+       ldns_dnssec_name_node_next_nonglue() Finds the first dnssec_name node in the rbtree that is not occluded.  It *does* return names that are partially occluded.
+
+              node: the first node to check
+              Returns the first node that has not been marked as glue, or NULL if not found (TODO: make that LDNS_RBTREE_NULL?)
+
+       ldns_dnssec_zone_create_nsecs() Adds NSEC records to the given dnssec_zone
+
+              zone: the zone to add the records to
+              new_rrs: ldns_rr's created by this function are added to this rr list, so the caller can free them later
+              Returns LDNS_STATUS_OK on success, an error code otherwise
+
+       ldns_dnssec_remove_signatures() remove signatures if callback function tells to
+
+              signatures: list of signatures to check, and possibly remove, depending on the value of the callback
+              key_list: these are marked to be used or not, on the return value of the callback
+              func: this function is called to specify what to do with each signature (and corresponding key)
+              arg: Optional argument for the callback function
+              Returns s pointer to the new signatures rrs (the original passed to this function may have been removed)
+
+       ldns_dnssec_zone_create_rrsigs() Adds signatures to the zone
+
+              zone: the zone to add RRSIG Resource Records to
+              new_rrs: the RRSIG RRs that are created are also added to this list, so the caller can free them later
+              key_list: list of keys to sign with.
+              func: Callback function to decide what keys to use and what to do with old signatures
+              arg: Optional argument for the callback function
+              Returns LDNS_STATUS_OK on success, error otherwise
+
+AUTHOR
+       The ldns team at NLnet Labs.
+
+REPORTING BUGS
+       Please report bugs to ldns-team@nlnetlabs.nl or in our bugzilla at http://www.nlnetlabs.nl/bugs/index.html
+
+COPYRIGHT
+       Copyright (c) 2004 - 2006 NLnet Labs.
+
+       Licensed under the BSD License. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+SEE ALSO
+       ldns_dnssec_zone.  And perldoc Net::DNS, RFC1034, RFC1035, RFC4033, RFC4034  and RFC4035.
+
+REMARKS
+       This manpage was automatically generated from the ldns source code.
+
+                                                                                                30 May 2006                                                                                        ldns(3)

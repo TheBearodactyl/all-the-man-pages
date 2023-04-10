@@ -1,0 +1,204 @@
+BREAK(1P)                                                                                POSIX Programmer's Manual                                                                               BREAK(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       break — exit from for, while, or until loop
+
+SYNOPSIS
+       break [n]
+
+DESCRIPTION
+       If n is specified, the break utility shall exit from the nth enclosing for, while, or until loop. If n is not specified, break shall behave as if n was specified as 1.  Execution  shall  continue
+       with the command immediately following the exited loop. The value of n is a positive decimal integer. If n is greater than the number of enclosing loops, the outermost enclosing loop shall be ex‐
+       ited. If there is no enclosing loop, the behavior is unspecified.
+
+       A loop shall enclose a break or continue command if the loop lexically encloses the command. A loop lexically encloses a break or continue command if the command is:
+
+        *  Executing in the same execution environment (see Section 2.12, Shell Execution Environment) as the compound-list of the loop's do-group (see Section 2.10.2, Shell Grammar Rules), and
+
+        *  Contained in a compound-list associated with the loop (either in the compound-list of the loop's do-group or, if the loop is a while or until loop, in the compound-list following the while or
+           until reserved word), and
+
+        *  Not in the body of a function whose function definition command (see Section 2.9.5, Function Definition Command) is contained in a compound-list associated with the loop.
+
+       If  n is greater than the number of lexically enclosing loops and there is a non-lexically enclosing loop in progress in the same execution environment as the break or continue command, it is un‐
+       specified whether that loop encloses the command.
+
+OPTIONS
+       None.
+
+OPERANDS
+       See the DESCRIPTION.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       None.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+        0    Successful completion.
+
+       >0    The n value was not an unsigned decimal integer greater than or equal to 1.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       None.
+
+EXAMPLES
+       for i in *
+       do
+           if test -d "$i"
+           then break
+           fi
+       done
+
+       The results of running the following example are unspecified: there are two loops in progress when the break command is executed, and they are in the same execution environment, but neither  loop
+       is lexically enclosing the break command. (There are no loops lexically enclosing the continue commands, either.)
+
+       foo() {
+           for j in 1 2; do
+               echo 'break 2' >/tmp/do_break
+               echo "  sourcing /tmp/do_break ($j)..."
+               # the behavior of the break from running the following command
+               # results in unspecified behavior:
+               . /tmp/do_break
+
+               do_continue() { continue 2; }
+               echo "  running do_continue ($j)..."
+               # the behavior of the continue in the following function call
+               # results in unspecified behavior (if execution reaches this
+               # point):
+               do_continue
+
+               trap 'continue 2' USR1
+               echo "  sending SIGUSR1 to self ($j)..."
+               # the behavior of the continue in the trap invoked from the
+               # following signal results in unspecified behavior (if
+               # execution reaches this point):
+               kill -s USR1 $$
+               sleep 1
+           done
+       }
+       for i in 1 2; do
+           echo "running foo ($i)..."
+           foo
+       done
+
+RATIONALE
+       In  early  proposals,  consideration  was given to expanding the syntax of break and continue to refer to a label associated with the appropriate loop as a preferable alternative to the n method.
+       However, this volume of POSIX.1‐2017 does reserve the name space of command names ending with a <colon>.  It is anticipated that a future implementation could take advantage of this  and  provide
+       something like:
+
+           outofloop: for i in a b c d e
+           do
+               for j in 0 1 2 3 4 5 6 7 8 9
+               do
+                   if test -r "${i}${j}"
+                   then break outofloop
+                   fi
+               done
+           done
+
+       and that this might be standardized after implementation experience is achieved.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.14, Special Built-In Utilities
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          BREAK(1P)
+break(n)                                                                                   Tcl Built-In Commands                                                                                  break(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       break - Abort looping command
+
+SYNOPSIS
+       break
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       This  command is typically invoked inside the body of a looping command such as for or foreach or while.  It returns a 3 (TCL_BREAK) result code, which causes a break exception to occur.  The ex‐
+       ception causes the current script to be aborted out to the innermost containing loop command, which then aborts its execution and returns normally.  Break exceptions are also  handled  in  a  few
+       other situations, such as the catch command, Tk event bindings, and the outermost scripts of procedure bodies.
+
+EXAMPLE
+       Print a line for each of the integers from 0 to 5:
+
+              for {set x 0} {$x<10} {incr x} {
+                  if {$x > 5} {
+                      break
+                  }
+                  puts "x is $x"
+              }
+
+SEE ALSO
+       catch(n), continue(n), for(n), foreach(n), return(n), while(n)
+
+KEYWORDS
+       abort, break, loop
+
+Tcl                                                                                                                                                                                               break(n)
+UNIMPLEMENTED(2)                                                                            System Calls Manual                                                                           UNIMPLEMENTED(2)
+
+NAME
+       afs_syscall,  break, fattach, fdetach, ftime, getmsg, getpmsg, gtty, isastream, lock, madvise1, mpx, prof, profil, putmsg, putpmsg, security, stty, tuxcall, ulimit, vserver - unimplemented system
+       calls
+
+SYNOPSIS
+       Unimplemented system calls.
+
+DESCRIPTION
+       These system calls are not implemented in the Linux kernel.
+
+RETURN VALUE
+       These system calls always return -1 and set errno to ENOSYS.
+
+NOTES
+       Note that ftime(3), profil(3), and ulimit(3) are implemented as library functions.
+
+       Some system calls, like alloc_hugepages(2), free_hugepages(2), ioperm(2), iopl(2), and vm86(2) exist only on certain architectures.
+
+       Some system calls, like ipc(2), create_module(2), init_module(2), and delete_module(2) exist only when the Linux kernel was built with support for them.
+
+SEE ALSO
+       syscalls(2)
+
+Linux man-pages 6.04                                                                            2022-10-09                                                                                UNIMPLEMENTED(2)

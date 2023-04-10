@@ -1,0 +1,45 @@
+ISASET(8)                                                                                 System Manager's Manual                                                                                ISASET(8)
+
+NAME
+       isaset - set ISA registers
+
+SYNOPSIS
+       isaset [-y] [-W|-L] addrreg datareg address value [mask] #for I2C-like access
+       isaset -f [-y] [-W|-L] address value [mask] #for flat address space
+
+DESCRIPTION
+       isaset is a small helper program to set registers visible through the ISA bus.
+
+OPTIONS
+       -f     Enable flat address space mode.
+
+       -y     Disable  interactive  mode.  By  default, isaset will wait for a confirmation from the user before messing with the ISA bus. When this flag is used, it will perform the operation directly.
+              This is mainly meant to be used in scripts.
+
+       -W     Perform a 16-bit write.
+
+       -L     Perform a 32-bit write.
+
+OPTIONS (I2C-like access mode)
+       Four options must be provided to isaset. addrreg contains the ISA address of the address register for the chip to probe; datareg contains the address of the data register. Both addresses are  in‐
+       tegers  between  0x0000  and 0x3FFF. Usually, if the chip's base address is 0x0nn0, the address register is at 0x0nn5 and the data register is at 0x0nn6. The most common base address for hardware
+       monitoring chips is 0x0290.  For Super-I/O chips, address register is typically at 0x2E with data register at 0x2F.  The address and value parameters are  two  integers  between  0x00  and  0xFF.
+       isaset will write value value to address address.  An optional mask can be provided as a fifth parameter, preserving unmasked bits at the written location.
+
+OPTIONS (flat address space mode)
+       In  flat  mode,  two  parameters must be provided. address contains the ISA address of the register to write to; it is an integer between 0x0000 and 0xFFFF. Basically, it is the sum of the chip's
+       base address and the chip register's address. isaset will write value value at this address.  An optional mask can be provided as a third parameter, preserving unmasked bits at the written  loca‐
+       tion.
+
+WARNING
+       Poking around in ISA data space is extremely dangerous.  Running isaset with random parameters can cause system crashes, data loss, and worse!  Be extremely careful when using this program.
+
+SEE ALSO
+       i2cset(8), isadump(8)
+
+AUTHOR
+       Mark D. Studebaker, and the lm_sensors group (https://hwmon.wiki.kernel.org/lm_sensors)
+
+       This manual page was shamelessly ripped from the i2cset and isadump manual pages by Jean Delvare.
+
+                                                                                                April 2011                                                                                       ISASET(8)

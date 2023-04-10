@@ -1,0 +1,52 @@
+CMS_COMPRESS(3ssl)                                                                                OpenSSL                                                                               CMS_COMPRESS(3ssl)
+
+NAME
+       CMS_compress - create a CMS CompressedData structure
+
+SYNOPSIS
+        #include <openssl/cms.h>
+
+        CMS_ContentInfo *CMS_compress(BIO *in, int comp_nid, unsigned int flags);
+
+DESCRIPTION
+       CMS_compress() creates and returns a CMS CompressedData structure. comp_nid is the compression algorithm to use or NID_undef to use the default algorithm (zlib compression). in is the content to
+       be compressed.  flags is an optional set of flags.
+
+       The only currently supported compression algorithm is zlib using the NID NID_zlib_compression.
+
+       If zlib support is not compiled into OpenSSL then CMS_compress() will return an error.
+
+       If the CMS_TEXT flag is set MIME headers for type text/plain are prepended to the data.
+
+       Normally the supplied content is translated into MIME canonical format (as required by the S/MIME specifications) if CMS_BINARY is set no translation occurs. This option should be used if the
+       supplied data is in binary format otherwise the translation will corrupt it. If CMS_BINARY is set then CMS_TEXT is ignored.
+
+       If the CMS_STREAM flag is set a partial CMS_ContentInfo structure is returned suitable for streaming I/O: no data is read from the BIO in.
+
+       The compressed data is included in the CMS_ContentInfo structure, unless CMS_DETACHED is set in which case it is omitted. This is rarely used in practice and is not supported by
+       SMIME_write_CMS().
+
+       If the flag CMS_STREAM is set the returned CMS_ContentInfo structure is not complete and outputting its contents via a function that does not properly finalize the CMS_ContentInfo structure will
+       give unpredictable results.
+
+       Several functions including SMIME_write_CMS(), i2d_CMS_bio_stream(), PEM_write_bio_CMS_stream() finalize the structure. Alternatively finalization can be performed by obtaining the streaming ASN1
+       BIO directly using BIO_new_CMS().
+
+       Additional compression parameters such as the zlib compression level cannot currently be set.
+
+RETURN VALUES
+       CMS_compress() returns either a CMS_ContentInfo structure or NULL if an error occurred. The error can be obtained from ERR_get_error(3).
+
+SEE ALSO
+       ERR_get_error(3), CMS_uncompress(3)
+
+HISTORY
+       The CMS_STREAM flag was added in OpenSSL 1.0.0.
+
+COPYRIGHT
+       Copyright 2008-2016 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use this file except in compliance with the License.  You can obtain a copy in the file LICENSE in the source distribution or
+       at <https://www.openssl.org/source/license.html>.
+
+3.0.8                                                                                           2023-02-07                                                                              CMS_COMPRESS(3ssl)

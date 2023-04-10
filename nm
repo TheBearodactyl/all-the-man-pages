@@ -1,0 +1,511 @@
+NM(1)                                                                                      GNU Development Tools                                                                                     NM(1)
+
+NAME
+       nm - list symbols from object files
+
+SYNOPSIS
+       nm [-A|-o|--print-file-name]
+          [-a|--debug-syms]
+          [-B|--format=bsd]
+          [-C|--demangle[=style]]
+          [-D|--dynamic]
+          [-fformat|--format=format]
+          [-g|--extern-only]
+          [-h|--help]
+          [--ifunc-chars=CHARS]
+          [-j|--format=just-symbols]
+          [-l|--line-numbers] [--inlines]
+          [-n|-v|--numeric-sort]
+          [-P|--portability]
+          [-p|--no-sort]
+          [-r|--reverse-sort]
+          [-S|--print-size]
+          [-s|--print-armap]
+          [-t radix|--radix=radix]
+          [-u|--undefined-only]
+          [-U|--defined-only]
+          [-V|--version]
+          [-W|--no-weak]
+          [-X 32_64]
+          [--no-demangle]
+          [--no-recurse-limit|--recurse-limit]]
+          [--plugin name]
+          [--size-sort]
+          [--special-syms]
+          [--synthetic]
+          [--target=bfdname]
+          [--unicode=method]
+          [--with-symbol-versions]
+          [--without-symbol-versions]
+          [objfile...]
+
+DESCRIPTION
+       GNU nm lists the symbols from object files objfile....  If no object files are listed as arguments, nm assumes the file a.out.
+
+       For each symbol, nm shows:
+
+       •   The symbol value, in the radix selected by options (see below), or hexadecimal by default.
+
+       •   The symbol type.  At least the following types are used; others are, as well, depending on the object file format.  If lowercase, the symbol is usually local; if uppercase, the symbol is
+           global (external).  There are however a few lowercase symbols that are shown for special global symbols ("u", "v" and "w").
+
+           "A" The symbol's value is absolute, and will not be changed by further linking.
+
+           "B"
+           "b" The symbol is in the BSS data section.  This section typically contains zero-initialized or uninitialized data, although the exact behavior is system dependent.
+
+           "C"
+           "c" The symbol is common.  Common symbols are uninitialized data.  When linking, multiple common symbols may appear with the same name.  If the symbol is defined anywhere, the common symbols
+               are treated as undefined references.  The lower case c character is used when the symbol is in a special section for small commons.
+
+           "D"
+           "d" The symbol is in the initialized data section.
+
+           "G"
+           "g" The symbol is in an initialized data section for small objects.  Some object file formats permit more efficient access to small data objects, such as a global int variable as opposed to a
+               large global array.
+
+           "i" For PE format files this indicates that the symbol is in a section specific to the implementation of DLLs.
+
+               For ELF format files this indicates that the symbol is an indirect function.  This is a GNU extension to the standard set of ELF symbol types.  It indicates a symbol which if referenced
+               by a relocation does not evaluate to its address, but instead must be invoked at runtime.  The runtime execution will then return the value to be used in the relocation.
+
+               Note - the actual symbols display for GNU indirect symbols is controlled by the --ifunc-chars command line option.  If this option has been provided then the first character in the string
+               will be used for global indirect function symbols.  If the string contains a second character then that will be used for local indirect function symbols.
+
+           "I" The symbol is an indirect reference to another symbol.
+
+           "N" The symbol is a debugging symbol.
+
+           "n" The symbol is in the read-only data section.
+
+           "p" The symbol is in a stack unwind section.
+
+           "R"
+           "r" The symbol is in a read only data section.
+
+           "S"
+           "s" The symbol is in an uninitialized or zero-initialized data section for small objects.
+
+           "T"
+           "t" The symbol is in the text (code) section.
+
+           "U" The symbol is undefined.
+
+           "u" The symbol is a unique global symbol.  This is a GNU extension to the standard set of ELF symbol bindings.  For such a symbol the dynamic linker will make sure that in the entire process
+               there is just one symbol with this name and type in use.
+
+           "V"
+           "v" The symbol is a weak object.  When a weak defined symbol is linked with a normal defined symbol, the normal defined symbol is used with no error.  When a weak undefined symbol is linked
+               and the symbol is not defined, the value of the weak symbol becomes zero with no error.  On some systems, uppercase indicates that a default value has been specified.
+
+           "W"
+           "w" The symbol is a weak symbol that has not been specifically tagged as a weak object symbol.  When a weak defined symbol is linked with a normal defined symbol, the normal defined symbol is
+               used with no error.  When a weak undefined symbol is linked and the symbol is not defined, the value of the symbol is determined in a system-specific manner without error.  On some
+               systems, uppercase indicates that a default value has been specified.
+
+           "-" The symbol is a stabs symbol in an a.out object file.  In this case, the next values printed are the stabs other field, the stabs desc field, and the stab type.  Stabs symbols are used to
+               hold debugging information.
+
+           "?" The symbol type is unknown, or object file format specific.
+
+       •   The symbol name.  If a symbol has version information associated with it, then the version information is displayed as well.  If the versioned symbol is undefined or hidden from linker, the
+           version string is displayed as a suffix to the symbol name, preceded by an @ character.  For example foo@VER_1.  If the version is the default version to be used when resolving unversioned
+           references to the symbol, then it is displayed as a suffix preceded by two @ characters.  For example foo@@VER_2.
+
+OPTIONS
+       The long and short forms of options, shown here as alternatives, are equivalent.
+
+       -A
+       -o
+       --print-file-name
+           Precede each symbol by the name of the input file (or archive member) in which it was found, rather than identifying the input file once only, before all of its symbols.
+
+       -a
+       --debug-syms
+           Display all symbols, even debugger-only symbols; normally these are not listed.
+
+       -B  The same as --format=bsd (for compatibility with the MIPS nm).
+
+       -C
+       --demangle[=style]
+           Decode (demangle) low-level symbol names into user-level names.  Besides removing any initial underscore prepended by the system, this makes C++ function names readable. Different compilers
+           have different mangling styles. The optional demangling style argument can be used to choose an appropriate demangling style for your compiler.
+
+       --no-demangle
+           Do not demangle low-level symbol names.  This is the default.
+
+       --recurse-limit
+       --no-recurse-limit
+       --recursion-limit
+       --no-recursion-limit
+           Enables or disables a limit on the amount of recursion performed whilst demangling strings.  Since the name mangling formats allow for an infinite level of recursion it is possible to create
+           strings whose decoding will exhaust the amount of stack space available on the host machine, triggering a memory fault.  The limit tries to prevent this from happening by restricting
+           recursion to 2048 levels of nesting.
+
+           The default is for this limit to be enabled, but disabling it may be necessary in order to demangle truly complicated names.  Note however that if the recursion limit is disabled then stack
+           exhaustion is possible and any bug reports about such an event will be rejected.
+
+       -D
+       --dynamic
+           Display the dynamic symbols rather than the normal symbols.  This is only meaningful for dynamic objects, such as certain types of shared libraries.
+
+       -f format
+       --format=format
+           Use the output format format, which can be "bsd", "sysv", "posix" or "just-symbols".  The default is "bsd".  Only the first character of format is significant; it can be either upper or lower
+           case.
+
+       -g
+       --extern-only
+           Display only external symbols.
+
+       -h
+       --help
+           Show a summary of the options to nm and exit.
+
+       --ifunc-chars=CHARS
+           When display GNU indirect function symbols nm will default to using the "i" character for both local indirect functions and global indirect functions.  The --ifunc-chars option allows the
+           user to specify a string containing one or two characters. The first character will be used for global indirect function symbols and the second character, if present, will be used for local
+           indirect function symbols.
+
+       j   The same as --format=just-symbols.
+
+       -l
+       --line-numbers
+           For each symbol, use debugging information to try to find a filename and line number.  For a defined symbol, look for the line number of the address of the symbol.  For an undefined symbol,
+           look for the line number of a relocation entry which refers to the symbol.  If line number information can be found, print it after the other symbol information.
+
+       --inlines
+           When option -l is active, if the address belongs to a function that was inlined, then this option causes the source information for all enclosing scopes back to the first non-inlined function
+           to be printed as well.  For example, if "main" inlines "callee1" which inlines "callee2", and address is from "callee2", the source information for "callee1" and "main" will also be printed.
+
+       -n
+       -v
+       --numeric-sort
+           Sort symbols numerically by their addresses, rather than alphabetically by their names.
+
+       -p
+       --no-sort
+           Do not bother to sort the symbols in any order; print them in the order encountered.
+
+       -P
+       --portability
+           Use the POSIX.2 standard output format instead of the default format.  Equivalent to -f posix.
+
+       -r
+       --reverse-sort
+           Reverse the order of the sort (whether numeric or alphabetic); let the last come first.
+
+       -S
+       --print-size
+           Print both value and size of defined symbols for the "bsd" output style.  This option has no effect for object formats that do not record symbol sizes, unless --size-sort is also used in
+           which case a calculated size is displayed.
+
+       -s
+       --print-armap
+           When listing symbols from archive members, include the index: a mapping (stored in the archive by ar or ranlib) of which modules contain definitions for which names.
+
+       -t radix
+       --radix=radix
+           Use radix as the radix for printing the symbol values.  It must be d for decimal, o for octal, or x for hexadecimal.
+
+       -u
+       --undefined-only
+           Display only undefined symbols (those external to each object file).  By default both defined and undefined symbols are displayed.
+
+       -U
+       --defined-only
+           Display only defined symbols for each object file.  By default both defined and undefined symbols are displayed.
+
+       -V
+       --version
+           Show the version number of nm and exit.
+
+       -X  This option is ignored for compatibility with the AIX version of nm.  It takes one parameter which must be the string 32_64.  The default mode of AIX nm corresponds to -X 32, which is not
+           supported by GNU nm.
+
+       --plugin name
+           Load the plugin called name to add support for extra target types.  This option is only available if the toolchain has been built with plugin support enabled.
+
+           If --plugin is not provided, but plugin support has been enabled then nm iterates over the files in ${libdir}/bfd-plugins in alphabetic order and the first plugin that claims the object in
+           question is used.
+
+           Please note that this plugin search directory is not the one used by ld's -plugin option.  In order to make nm use the  linker plugin it must be copied into the ${libdir}/bfd-plugins
+           directory.  For GCC based compilations the linker plugin is called liblto_plugin.so.0.0.0.  For Clang based compilations it is called LLVMgold.so.  The GCC plugin is always backwards
+           compatible with earlier versions, so it is sufficient to just copy the newest one.
+
+       --size-sort
+           Sort symbols by size.  For ELF objects symbol sizes are read from the ELF, for other object types the symbol sizes are computed as the difference between the value of the symbol and the value
+           of the symbol with the next higher value.  If the "bsd" output format is used the size of the symbol is printed, rather than the value, and -S must be used in order both size and value to be
+           printed.
+
+           Note - this option does not work if --undefined-only has been enabled as undefined symbols have no size.
+
+       --special-syms
+           Display symbols which have a target-specific special meaning.  These symbols are usually used by the target for some special processing and are not normally helpful when included in the
+           normal symbol lists.  For example for ARM targets this option would skip the mapping symbols used to mark transitions between ARM code, THUMB code and data.
+
+       --synthetic
+           Include synthetic symbols in the output.  These are special symbols created by the linker for various purposes.  They are not shown by default since they are not part of the binary's original
+           source code.
+
+       --unicode=[default|invalid|locale|escape|hex|highlight]
+           Controls the display of UTF-8 encoded multibyte characters in strings.  The default (--unicode=default) is to give them no special treatment.  The --unicode=locale option displays the
+           sequence in the current locale, which may or may not support them.  The options --unicode=hex and --unicode=invalid display them as hex byte sequences enclosed by either angle brackets or
+           curly braces.
+
+           The --unicode=escape option displays them as escape sequences (\uxxxx) and the --unicode=highlight option displays them as escape sequences highlighted in red (if supported by the output
+           device).  The colouring is intended to draw attention to the presence of unicode sequences where they might not be expected.
+
+       -W
+       --no-weak
+           Do not display weak symbols.
+
+       --with-symbol-versions
+       --without-symbol-versions
+           Enables or disables the display of symbol version information.  The version string is displayed as a suffix to the symbol name, preceded by an @ character.  For example foo@VER_1.  If the
+           version is the default version to be used when resolving unversioned references to the symbol then it is displayed as a suffix preceded by two @ characters.  For example foo@@VER_2.  By
+           default, symbol version information is displayed.
+
+       --target=bfdname
+           Specify an object code format other than your system's default format.
+
+       @file
+           Read command-line options from file.  The options read are inserted in place of the original @file option.  If file does not exist, or cannot be read, then the option will be treated
+           literally, and not removed.
+
+           Options in file are separated by whitespace.  A whitespace character may be included in an option by surrounding the entire option in either single or double quotes.  Any character (including
+           a backslash) may be included by prefixing the character to be included with a backslash.  The file may itself contain additional @file options; any such options will be processed recursively.
+
+SEE ALSO
+       ar(1), objdump(1), ranlib(1), and the Info entries for binutils.
+
+COPYRIGHT
+       Copyright (c) 1991-2023 Free Software Foundation, Inc.
+
+       Permission is granted to copy, distribute and/or modify this document under the terms of the GNU Free Documentation License, Version 1.3 or any later version published by the Free Software
+       Foundation; with no Invariant Sections, with no Front-Cover Texts, and with no Back-Cover Texts.  A copy of the license is included in the section entitled "GNU Free Documentation License".
+
+binutils-2.40                                                                                   2023-02-03                                                                                           NM(1)
+NM(1P)                                                                                   POSIX Programmer's Manual                                                                                  NM(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       nm — write the name list of an object file (DEVELOPMENT)
+
+SYNOPSIS
+       nm [-APv] [-g|-u] [-t format] file...
+       nm [-APv] [-efox] [-g|-u] [-t format] file...
+
+DESCRIPTION
+       The nm utility shall display symbolic information appearing in the object file, executable file, or object-file library named by file.  If no symbolic information is available for a  valid  input
+       file, the nm utility shall report that fact, but not consider it an error condition.
+
+       The default base used when numeric values are written is unspecified.  On XSI-conformant systems, it shall be decimal if the -P option is not specified.
+
+OPTIONS
+       The nm utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following options shall be supported:
+
+       -A        Write the full pathname or library name of an object on each line.
+
+       -e        Write only external (global) and static symbol information.
+
+       -f        Produce full output. Write redundant symbols (.text, .data, and .bss), normally suppressed.
+
+       -g        Write only external (global) symbol information.
+
+       -o        Write numeric values in octal (equivalent to -t o).
+
+       -P        Write information in a portable output format, as specified in the STDOUT section.
+
+       -t format Write each numeric value in the specified format. The format shall be dependent on the single character used as the format option-argument:
+
+                 d     decimal (default if -P is not specified).
+
+                 o     octal.
+
+                 x     hexadecimal (default if -P is specified).
+
+       -u        Write only undefined symbols.
+
+       -v        Sort output by value instead of by symbol name.
+
+       -x        Write numeric values in hexadecimal (equivalent to -t x).
+
+OPERANDS
+       The following operand shall be supported:
+
+       file      A pathname of an object file, executable file, or object-file library.
+
+STDIN
+       See the INPUT FILES section.
+
+INPUT FILES
+       The  input file shall be an object file, an object-file library whose format is the same as those produced by the ar utility for link editing, or an executable file. The nm utility may accept ad‐
+       ditional implementation-defined object library formats for the input file.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of nm:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_COLLATE
+                 Determine the locale for character collation information for the symbol-name and symbol-value collation sequences.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       If  symbolic  information  is present in the input files, then for each file or for each member of an archive, the nm utility shall write the following information to standard output. By default,
+       the format is unspecified, but the output shall be sorted by symbol name according to the collation sequence in the current locale.
+
+        *  Library or object name, if -A is specified
+
+        *  Symbol name
+
+        *  Symbol type, which shall either be one of the following single characters or an implementation-defined type represented by a single character:
+
+           A     Global absolute symbol.
+
+           a     Local absolute symbol.
+
+           B     Global ``bss'' (that is, uninitialized data space) symbol.
+
+           b     Local bss symbol.
+
+           D     Global data symbol.
+
+           d     Local data symbol.
+
+           T     Global text symbol.
+
+           t     Local text symbol.
+
+           U     Undefined symbol.
+
+        *  Value of the symbol
+
+        *  The size associated with the symbol, if applicable
+
+       This information may be supplemented by additional information specific to the implementation.
+
+       If the -P option is specified, the previous information shall be displayed using the following portable format. The three versions differ depending on whether -t d, -t o, or -t x  was  specified,
+       respectively:
+
+           "%s%s %s %d %d\n", <library/object name>, <name>, <type>,
+               <value>, <size>
+
+           "%s%s %s %o %o\n", <library/object name>, <name>, <type>,
+               <value>, <size>
+
+           "%s%s %s %x %x\n", <library/object name>, <name>, <type>,
+               <value>, <size>
+
+       where <library/object name> shall be formatted as follows:
+
+        *  If -A is not specified, <library/object name> shall be an empty string.
+
+        *  If -A is specified and the corresponding file operand does not name a library:
+
+               "%s: ", <file>
+
+        *  If -A is specified and the corresponding file operand names a library. In this case, <object file> shall name the object file in the library containing the symbol being described:
+
+               "%s[%s]: ", <file>, <object file>
+
+       If  -A  is  not specified, then if more than one file operand is specified or if only one file operand is specified and it names a library, nm shall write a line identifying the object containing
+       the following symbols before the lines containing those symbols, in the form:
+
+        *  If the corresponding file operand does not name a library:
+
+               "%s:\n", <file>
+
+        *  If the corresponding file operand names a library; in this case, <object file> shall be the name of the file in the library containing the following symbols:
+
+               "%s[%s]:\n", <file>, <object file>
+
+       If -P is specified, but -t is not, the format shall be as if -t x had been specified.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       Mechanisms for dynamic linking make this utility less meaningful when applied to an executable file because a dynamically linked executable may omit numerous library routines that would be  found
+       in a statically linked executable.
+
+EXAMPLES
+       None.
+
+RATIONALE
+       Historical  implementations of nm have used different bases for numeric output and supplied different default types of symbols that were reported. The -t format option, similar to that used in od
+       and strings, can be used to specify the numeric base; -g and -u can be used to restrict the amount of output or the types of symbols included in the output.
+
+       The compromise of using -t format versus using -d, -o, and other similar options was necessary because of differences in the meaning of -o between implementations. The -o option from BSD has been
+       provided here as -A to avoid confusion with the -o from System V (which has been provided here as -t and as -o on XSI-conformant systems).
+
+       The option list was significantly reduced from that provided by historical implementations.
+
+       The nm description is a subset of both the System V and BSD nm utilities with no specified default output.
+
+       It  was recognized that mechanisms for dynamic linking make this utility less meaningful when applied to an executable file (because a dynamically linked executable file may omit numerous library
+       routines that would be found in a statically linked executable file), but the value of nm during software development was judged to outweigh other limitations.
+
+       The default output format of nm is not specified because of differences in historical implementations.  The -P option was added to allow some type of portable output format. After a comparison of
+       the  different  formats used in SunOS, BSD, SVR3, and SVR4, it was decided to create one that did not match the current format of any of these four systems. The format devised is easy to parse by
+       humans, easy to parse in shell scripts, and does not need to vary depending on locale (because no English descriptions are included).  All of the systems currently have the information  available
+       to use this format.
+
+       The  format given in nm STDOUT uses <space> characters between the fields, which may be any number of <blank> characters required to align the columns. The single-character types were selected to
+       match historical practice, and the requirement that implementation additions also be single characters made parsing the information easier for shell scripts.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       ar, c99
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                             NM(1P)

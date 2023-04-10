@@ -1,0 +1,64 @@
+SD_BUS_ADD_OBJECT_MANAGER(3sd_bus_add_object_managSD_BUS_ADD_OBJECT_MANAGER(3)
+
+NAME
+       sd_bus_add_object_manager - Add a D-Bus object manager for a D-Bus
+       object sub-tree
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_add_object_manager(sd_bus *bus, sd_bus_slot **slot,
+                                     const char *path);
+
+DESCRIPTION
+       sd_bus_add_object_manager() installs a handler for the given path that
+       implements the GetManagedObjects() method of the
+       org.freedesktop.DBus.ObjectManager interface. See
+       org.freedesktop.DBus.ObjectManager[1] for more information.
+
+       To implement the InterfacesAdded and InterfacesRemoved signals of the
+       org.freedesktop.DBus.ObjectManager interface, call
+       sd_bus_emit_interfaces_added(3) and sd_bus_emit_interfaces_removed(3)
+       whenever interfaces are added or removed from the sub-tree,
+       respectively.
+
+       When sd_bus_add_object_manager() succeeds, a slot is created
+       internally. If the output parameter slot is NULL, a "floating" slot
+       object is created, see sd_bus_slot_set_floating(3). Otherwise, a
+       pointer to the slot object is returned. In that case, the reference to
+       the slot object should be dropped when the object manager is not needed
+       anymore, see sd_bus_slot_unref(3).
+
+RETURN VALUE
+       On success, sd_bus_add_object_manager() returns a non-negative integer.
+       On failure, it returns a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           One of the required parameters is NULL or path is not a valid
+           object path.
+
+       -ENOPKG
+           The bus cannot be resolved.
+
+       -ECHILD
+           The bus was created in a different process.
+
+       -ENOMEM
+           Memory allocation failed.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       sd-bus(3), busctl(1), sd_bus_add_object_vtable(3),
+       sd_bus_emit_interfaces_added(3), sd_bus_slot_unref(3)
+
+NOTES
+        1. org.freedesktop.DBus.ObjectManager
+           https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces-objectmanager
+
+systemd 253                                       SD_BUS_ADD_OBJECT_MANAGER(3)

@@ -1,0 +1,54 @@
+TIFFSETDIRECTORY(3tiff)                                                                           LibTIFF                                                                          TIFFSETDIRECTORY(3tiff)
+
+NAME
+       TIFFSetDirectory - set the current directory for an open TIFF file
+
+SYNOPSIS
+          #include <tiffio.h>
+
+       int TIFFSetDirectory(TIFF *tif, tdir_t dirnum)
+
+       int TIFFSetSubDirectory(TIFF *tif, uint64_t diroff)
+
+DESCRIPTION
+       TIFFSetDirectory() changes the current directory and reads its contents with TIFFReadDirectory().  The parameter dirnum specifies the subfile/directory as an integer number, with the first direc‐
+       tory numbered zero.
+
+       TIFFSetSubDirectory() acts like TIFFSetDirectory(), except the directory is specified as a file offset instead of an index; this is required for accessing subdirectories linked through  a  SubIFD
+       tag.
+
+       In the case of several SubIFDs of a main image, there are two possibilities that are not even mutually exclusive.
+
+       a. The SubIFD tag contains an array with all offsets of the SubIFDs.
+
+       b. The SubIFDs are concatenated with their NextIFD parameters to a SubIFD chain.
+
+       LibTiff  does support SubIFD chains partially. When a SubIFD tag is activated with TIFFSetSubDirectory(), TIFFReadDirectory() is able to parse through the SubIFD chain. The tif_curdir is just in‐
+       cremented from its current value and thus gets arbitrary values when parsing through SubIFD chains.  TIFFSetDirectory() only works with main-IFD chains  because  allways  starts  with  the  first
+       main-IFD and thus is able to reset the SubIFD reading chain to the main-IFD chain.
+
+       Directory  query  functions TIFFCurrentDirectory(), TIFFCurrentDirOffset(), TIFFLastDirectory() and TIFFNumberOfDirectories() retrieve information about directories in an open TIFF file. Be aware
+       that until a directory is not written to file AND read back, the query functions won’t retrieve the correct information!
+
+RETURN VALUES
+       On successful return 1 is returned. Otherwise, 0 is returned if dirnum or diroff specifies a non-existent directory, or if an error was encountered while reading the directory’s contents.
+
+DIAGNOSTICS
+       All error messages are directed to the TIFFErrorExtR() routine.
+
+       "%s: Error fetching directory count":
+          An error was encountered while reading the “directory count” field.
+
+       "%s: Error fetching directory link":
+          An error was encountered while reading the “link value” that points to the next directory in a file.
+
+SEE ALSO
+       TIFFquery (3tiff), TIFFOpen (3tiff), TIFFCreateDirectory (3tiff), TIFFCustomDirectory (3tiff), TIFFWriteDirectory (3tiff), TIFFReadDirectory (3tiff), libtiff (3tiff)
+
+AUTHOR
+       LibTIFF contributors
+
+COPYRIGHT
+       1988-2022, LibTIFF contributors
+
+4.5                                                                                            Dec 13, 2022                                                                        TIFFSETDIRECTORY(3tiff)

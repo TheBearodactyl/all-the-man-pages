@@ -1,0 +1,457 @@
+syslog(3)                  Library Functions Manual                  syslog(3)
+
+NAME
+       closelog, openlog, syslog, vsyslog - send messages to the system logger
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <syslog.h>
+
+       void openlog(const char *ident, int option, int facility);
+       void syslog(int priority, const char *format, ...);
+       void closelog(void);
+
+       void vsyslog(int priority, const char *format, va_list ap);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       vsyslog():
+           Since glibc 2.19:
+               _DEFAULT_SOURCE
+           glibc 2.19 and earlier:
+               _BSD_SOURCE
+
+DESCRIPTION
+   openlog()
+       openlog() opens a connection to the system logger for a program.
+
+       The  string  pointed  to by ident is prepended to every message, and is
+       typically set to the program name.  If ident is NULL, the program  name
+       is  used.   (POSIX.1-2008  does  not specify the behavior when ident is
+       NULL.)
+
+       The option argument specifies flags  which  control  the  operation  of
+       openlog()  and subsequent calls to syslog().  The facility argument es‐
+       tablishes a default to be used if none is specified in subsequent calls
+       to  syslog().  The values that may be specified for option and facility
+       are described below.
+
+       The use of openlog() is optional; it will automatically  be  called  by
+       syslog() if necessary, in which case ident will default to NULL.
+
+   syslog() and vsyslog()
+       syslog()  generates  a  log  message, which will be distributed by sys‐
+       logd(8).
+
+       The priority argument is formed by ORing together a facility value  and
+       a  level  value  (described  below).  If no facility value is ORed into
+       priority, then the default value set by openlog() is used, or, if there
+       was no preceding openlog() call, a default of LOG_USER is employed.
+
+       The  remaining  arguments  are a format, as in printf(3), and any argu‐
+       ments required by the format, except that the two-character sequence %m
+       will be replaced by the error message string strerror(errno).  The for‐
+       mat string need not include a terminating newline character.
+
+       The function vsyslog() performs the same task as syslog() with the dif‐
+       ference that it takes a set of arguments which have been obtained using
+       the stdarg(3) variable argument list macros.
+
+   closelog()
+       closelog() closes the file descriptor being used to write to the system
+       logger.  The use of closelog() is optional.
+
+   Values for option
+       The option argument to openlog() is a bit mask constructed by ORing to‐
+       gether any of the following values:
+
+       LOG_CONS       Write directly to the system console if there is an  er‐
+                      ror while sending to the system logger.
+
+       LOG_NDELAY     Open  the  connection immediately (normally, the connec‐
+                      tion is opened when the first message is logged).   This
+                      may  be  useful,  for example, if a subsequent chroot(2)
+                      would make the pathname used internally by  the  logging
+                      facility unreachable.
+
+       LOG_NOWAIT     Don't  wait  for child processes that may have been cre‐
+                      ated while logging the message.  (The GNU C library does
+                      not create a child process, so this option has no effect
+                      on Linux.)
+
+       LOG_ODELAY     The converse of LOG_NDELAY; opening of the connection is
+                      delayed until syslog() is called.  (This is the default,
+                      and need not be specified.)
+
+       LOG_PERROR     (Not in POSIX.1-2001 or  POSIX.1-2008.)   Also  log  the
+                      message to stderr.
+
+       LOG_PID        Include the caller's PID with each message.
+
+   Values for facility
+       The  facility  argument is used to specify what type of program is log‐
+       ging the message.  This lets the configuration file specify  that  mes‐
+       sages from different facilities will be handled differently.
+
+       LOG_AUTH       security/authorization messages
+
+       LOG_AUTHPRIV   security/authorization messages (private)
+
+       LOG_CRON       clock daemon (cron and at)
+
+       LOG_DAEMON     system daemons without separate facility value
+
+       LOG_FTP        ftp daemon
+
+       LOG_KERN       kernel messages (these can't be generated from user pro‐
+                      cesses)
+
+       LOG_LOCAL0 through LOG_LOCAL7
+                      reserved for local use
+
+       LOG_LPR        line printer subsystem
+
+       LOG_MAIL       mail subsystem
+
+       LOG_NEWS       USENET news subsystem
+
+       LOG_SYSLOG     messages generated internally by syslogd(8)
+
+       LOG_USER (default)
+                      generic user-level messages
+
+       LOG_UUCP       UUCP subsystem
+
+   Values for level
+       This determines the importance of the message.  The levels are, in  or‐
+       der of decreasing importance:
+
+       LOG_EMERG      system is unusable
+
+       LOG_ALERT      action must be taken immediately
+
+       LOG_CRIT       critical conditions
+
+       LOG_ERR        error conditions
+
+       LOG_WARNING    warning conditions
+
+       LOG_NOTICE     normal, but significant, condition
+
+       LOG_INFO       informational message
+
+       LOG_DEBUG      debug-level message
+
+       The function setlogmask(3) can be used to restrict logging to specified
+       levels only.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌─────────────────────────────────┬───────────────┬────────────────────┐
+       │Interface                        │ Attribute     │ Value              │
+       ├─────────────────────────────────┼───────────────┼────────────────────┤
+       │openlog(), closelog()            │ Thread safety │ MT-Safe            │
+       ├─────────────────────────────────┼───────────────┼────────────────────┤
+       │syslog(), vsyslog()              │ Thread safety │ MT-Safe env locale │
+       └─────────────────────────────────┴───────────────┴────────────────────┘
+
+STANDARDS
+       syslog()
+       openlog()
+       closelog()
+              POSIX.1-2008.
+
+       vsyslog()
+              None.
+
+HISTORY
+       syslog()
+              4.2BSD, SUSv2, POSIX.1-2001.
+
+       openlog()
+       closelog()
+              4.3BSD, SUSv2, POSIX.1-2001.
+
+       vsyslog()
+              4.3BSD-Reno.
+
+       POSIX.1-2001  specifies only the LOG_USER and LOG_LOCAL* values for fa‐
+       cility.  However, with the exception of LOG_AUTHPRIV and  LOG_FTP,  the
+       other facility values appear on most UNIX systems.
+
+       The  LOG_PERROR  value  for  option is not specified by POSIX.1-2001 or
+       POSIX.1-2008, but is available in most versions of UNIX.
+
+NOTES
+       The argument ident in the call of openlog() is probably  stored  as-is.
+       Thus,  if  the  string  it  points  to  is  changed, syslog() may start
+       prepending the changed string, and if the string it points to ceases to
+       exist,  the  results  are  undefined.  Most portable is to use a string
+       constant.
+
+       Never pass a string with user-supplied data as a format, use  the  fol‐
+       lowing instead:
+
+           syslog(priority, "%s", string);
+
+SEE ALSO
+       journalctl(1), logger(1), setlogmask(3), syslog.conf(5), syslogd(8)
+
+Linux man-pages 6.04              2023-03-30                         syslog(3)
+SYSLOG(3P)                 POSIX Programmer's Manual                SYSLOG(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       syslog — log a message
+
+SYNOPSIS
+       #include <syslog.h>
+
+       void syslog(int priority, const char *message, ... /* argument */);
+
+DESCRIPTION
+       Refer to closelog().
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SYSLOG(3P)
+syslog(2)                     System Calls Manual                    syslog(2)
+
+NAME
+       syslog,  klogctl  -  read  and/or clear kernel message ring buffer; set
+       console_loglevel
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/klog.h>        /* Definition of SYSLOG_* constants */
+       #include <sys/syscall.h>     /* Definition of SYS_* constants */
+       #include <unistd.h>
+
+       int syscall(SYS_syslog, int type, char *bufp, int len);
+
+       /* The glibc interface */
+       #include <sys/klog.h>
+
+       int klogctl(int type, char *bufp, int len);
+
+DESCRIPTION
+       Note: Probably, you are looking for the C  library  function  syslog(),
+       which talks to syslogd(8); see syslog(3) for details.
+
+       This  page  describes the kernel syslog() system call, which is used to
+       control the kernel printk() buffer; the glibc wrapper function for  the
+       system call is called klogctl().
+
+   The kernel log buffer
+       The  kernel has a cyclic buffer of length LOG_BUF_LEN in which messages
+       given as arguments to the kernel function printk() are stored  (regard‐
+       less  of their log level).  In early kernels, LOG_BUF_LEN had the value
+       4096; from Linux 1.3.54, it was 8192; from Linux 2.1.113, it was 16384;
+       since  Linux  2.4.23/2.6,  the  value  is a kernel configuration option
+       (CONFIG_LOG_BUF_SHIFT, default value dependent  on  the  architecture).
+       Since  Linux  2.6.6,  the size can be queried with command type 10 (see
+       below).
+
+   Commands
+       The type argument determines the action taken by  this  function.   The
+       list  below  specifies the values for type.  The symbolic names are de‐
+       fined in the kernel source, but are not exported  to  user  space;  you
+       will either need to use the numbers, or define the names yourself.
+
+       SYSLOG_ACTION_CLOSE (0)
+              Close the log.  Currently a NOP.
+
+       SYSLOG_ACTION_OPEN (1)
+              Open the log.  Currently a NOP.
+
+       SYSLOG_ACTION_READ (2)
+              Read  from  the log.  The call waits until the kernel log buffer
+              is nonempty, and then reads at most len bytes  into  the  buffer
+              pointed  to by bufp.  The call returns the number of bytes read.
+              Bytes read from the log disappear from the log buffer:  the  in‐
+              formation  can be read only once.  This is the function executed
+              by the kernel when a user program reads /proc/kmsg.
+
+       SYSLOG_ACTION_READ_ALL (3)
+              Read all messages remaining in the ring buffer, placing them  in
+              the  buffer  pointed  to  by  bufp.  The call reads the last len
+              bytes from the log buffer (nondestructively), but will not  read
+              more than was written into the buffer since the last "clear ring
+              buffer" command (see command 5 below)).  The  call  returns  the
+              number of bytes read.
+
+       SYSLOG_ACTION_READ_CLEAR (4)
+              Read  and  clear all messages remaining in the ring buffer.  The
+              call does precisely the same as for a type of 3, but  also  exe‐
+              cutes the "clear ring buffer" command.
+
+       SYSLOG_ACTION_CLEAR (5)
+              The  call  executes  just  the "clear ring buffer" command.  The
+              bufp and len arguments are ignored.
+
+              This command does not really clear the ring buffer.  Rather,  it
+              sets  a  kernel bookkeeping variable that determines the results
+              returned by commands  3  (SYSLOG_ACTION_READ_ALL)  and  4  (SYS‐
+              LOG_ACTION_READ_CLEAR).   This command has no effect on commands
+              2 (SYSLOG_ACTION_READ) and 9 (SYSLOG_ACTION_SIZE_UNREAD).
+
+       SYSLOG_ACTION_CONSOLE_OFF (6)
+              The command saves the current value of console_loglevel and then
+              sets  console_loglevel  to  minimum_console_loglevel, so that no
+              messages are printed to the console.  Before Linux  2.6.32,  the
+              command    simply    sets   console_loglevel   to   minimum_con‐
+              sole_loglevel.  See the discussion  of  /proc/sys/kernel/printk,
+              below.
+
+              The bufp and len arguments are ignored.
+
+       SYSLOG_ACTION_CONSOLE_ON (7)
+              If  a  previous  SYSLOG_ACTION_CONSOLE_OFF command has been per‐
+              formed, this command restores console_loglevel to the value that
+              was  saved  by  that command.  Before Linux 2.6.32, this command
+              simply sets console_loglevel to  default_console_loglevel.   See
+              the discussion of /proc/sys/kernel/printk, below.
+
+              The bufp and len arguments are ignored.
+
+       SYSLOG_ACTION_CONSOLE_LEVEL (8)
+              The  call sets console_loglevel to the value given in len, which
+              must be an integer between 1  and  8  (inclusive).   The  kernel
+              silently  enforces  a  minimum value of minimum_console_loglevel
+              for len.  See the log level section for details.  The bufp argu‐
+              ment is ignored.
+
+       SYSLOG_ACTION_SIZE_UNREAD (9) (since Linux 2.4.10)
+              The  call  returns the number of bytes currently available to be
+              read from the  kernel  log  buffer  via  command  2  (SYSLOG_AC‐
+              TION_READ).  The bufp and len arguments are ignored.
+
+       SYSLOG_ACTION_SIZE_BUFFER (10) (since Linux 2.6.6)
+              This  command  returns  the total size of the kernel log buffer.
+              The bufp and len arguments are ignored.
+
+       All commands except 3 and 10 require privilege.  In Linux  kernels  be‐
+       fore  Linux  2.6.37, command types 3 and 10 are allowed to unprivileged
+       processes; since Linux 2.6.37, these commands are allowed  to  unprivi‐
+       leged  processes  only if /proc/sys/kernel/dmesg_restrict has the value
+       0.  Before Linux 2.6.37, "privileged" means that  the  caller  has  the
+       CAP_SYS_ADMIN  capability.  Since Linux 2.6.37, "privileged" means that
+       the caller has either the CAP_SYS_ADMIN capability (now deprecated  for
+       this purpose) or the (new) CAP_SYSLOG capability.
+
+   /proc/sys/kernel/printk
+       /proc/sys/kernel/printk is a writable file containing four integer val‐
+       ues that influence kernel printk() behavior when  printing  or  logging
+       error messages.  The four values are:
+
+       console_loglevel
+              Only  messages  with  a  log level lower than this value will be
+              printed to the console.  The default value for this field is DE‐
+              FAULT_CONSOLE_LOGLEVEL  (7),  but  it  is set to 4 if the kernel
+              command line contains the word "quiet", 10 if the kernel command
+              line  contains  the  word "debug", and to 15 in case of a kernel
+              fault (the 10 and 15 are just silly, and equivalent to 8).   The
+              value  of  console_loglevel  can be set (to a value in the range
+              1–8) by a syslog() call with a type of 8.
+
+       default_message_loglevel
+              This value will be used as the log level for  printk()  messages
+              that  do  not have an explicit level.  Up to and including Linux
+              2.6.38, the hard-coded  default  value  for  this  field  was  4
+              (KERN_WARNING); since Linux 2.6.39, the default value is defined
+              by   the   kernel   configuration   option   CONFIG_DEFAULT_MES‐
+              SAGE_LOGLEVEL, which defaults to 4.
+
+       minimum_console_loglevel
+              The  value  in  this  field  is  the minimum value to which con‐
+              sole_loglevel can be set.
+
+       default_console_loglevel
+              This is the default value for console_loglevel.
+
+   The log level
+       Every printk() message has its own log level.  If the log level is  not
+       explicitly  specified  as  part  of  the  message,  it  defaults to de‐
+       fault_message_loglevel.  The conventional meaning of the log  level  is
+       as follows:
+
+       Kernel constant   Level value   Meaning
+       KERN_EMERG             0        System is unusable
+       KERN_ALERT             1        Action must be taken
+                                       immediately
+       KERN_CRIT              2        Critical conditions
+       KERN_ERR               3        Error conditions
+       KERN_WARNING           4        Warning conditions
+       KERN_NOTICE            5        Normal but  signifi‐
+                                       cant condition
+       KERN_INFO              6        Informational
+       KERN_DEBUG             7        Debug-level messages
+
+       The kernel printk() routine will print a message on the console only if
+       it has a log level less than the value of console_loglevel.
+
+RETURN VALUE
+       For type equal to 2, 3, or 4, a successful call to syslog() returns the
+       number of bytes read.  For type 9, syslog() returns the number of bytes
+       currently available to be read on the kernel log buffer.  For type  10,
+       syslog()  returns  the  total size of the kernel log buffer.  For other
+       values of type, 0 is returned on success.
+
+       In case of error, -1 is returned, and errno is set to indicate the  er‐
+       ror.
+
+ERRORS
+       EINVAL Bad  arguments  (e.g.,  bad type; or for type 2, 3, or 4, buf is
+              NULL, or len is less than zero; or for type 8, the level is out‐
+              side the range 1 to 8).
+
+       ENOSYS This  syslog()  system call is not available, because the kernel
+              was compiled with the CONFIG_PRINTK kernel-configuration  option
+              disabled.
+
+       EPERM  An attempt was made to change console_loglevel or clear the ker‐
+              nel message ring buffer by a process without  sufficient  privi‐
+              lege  (more  precisely:  without the CAP_SYS_ADMIN or CAP_SYSLOG
+              capability).
+
+       ERESTARTSYS
+              System call was interrupted  by  a  signal;  nothing  was  read.
+              (This can be seen only during a trace.)
+
+STANDARDS
+       Linux.
+
+HISTORY
+       From  the very start, people noted that it is unfortunate that a system
+       call and a library routine of the same name are entirely different ani‐
+       mals.
+
+SEE ALSO
+       dmesg(1), syslog(3), capabilities(7)
+
+Linux man-pages 6.04              2023-03-30                         syslog(2)

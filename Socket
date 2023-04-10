@@ -1,0 +1,1246 @@
+Socket(3perl)                                                                        Perl Programmers Reference Guide                                                                        Socket(3perl)
+
+NAME
+       "Socket" - networking constants and support functions
+
+SYNOPSIS
+       "Socket" a low-level module used by, among other things, the IO::Socket family of modules. The following examples demonstrate some low-level uses but a practical program would likely use the
+       higher-level API provided by "IO::Socket" or similar instead.
+
+        use Socket qw(PF_INET SOCK_STREAM pack_sockaddr_in inet_aton);
+
+        socket(my $socket, PF_INET, SOCK_STREAM, 0)
+            or die "socket: $!";
+
+        my $port = getservbyname "echo", "tcp";
+        connect($socket, pack_sockaddr_in($port, inet_aton("localhost")))
+            or die "connect: $!";
+
+        print $socket "Hello, world!\n";
+        print <$socket>;
+
+       See also the "EXAMPLES" section.
+
+DESCRIPTION
+       This module provides a variety of constants, structure manipulators and other functions related to socket-based networking. The values and functions provided are useful when used in conjunction
+       with Perl core functions such as socket(), setsockopt() and bind(). It also provides several other support functions, mostly for dealing with conversions of network addresses between human-
+       readable and native binary forms, and for hostname resolver operations.
+
+       Some constants and functions are exported by default by this module; but for backward-compatibility any recently-added symbols are not exported by default and must be requested explicitly. When
+       an import list is provided to the "use Socket" line, the default exports are not automatically imported. It is therefore best practice to always to explicitly list all the symbols required.
+
+       Also, some common socket "newline" constants are provided: the constants "CR", "LF", and "CRLF", as well as $CR, $LF, and $CRLF, which map to "\015", "\012", and "\015\012". If you do not want to
+       use the literal characters in your programs, then use the constants provided here. They are not exported by default, but can be imported individually, and with the ":crlf" export tag:
+
+        use Socket qw(:DEFAULT :crlf);
+
+        $sock->print("GET / HTTP/1.0$CRLF");
+
+       The entire getaddrinfo() subsystem can be exported using the tag ":addrinfo"; this exports the getaddrinfo() and getnameinfo() functions, and all the "AI_*", "NI_*", "NIx_*" and "EAI_*"
+       constants.
+
+CONSTANTS
+       In each of the following groups, there may be many more constants provided than just the ones given as examples in the section heading. If the heading ends "..." then this means there are likely
+       more; the exact constants provided will depend on the OS and headers found at compile-time.
+
+   PF_INET, PF_INET6, PF_UNIX, ...
+       Protocol family constants to use as the first argument to socket() or the value of the "SO_DOMAIN" or "SO_FAMILY" socket option.
+
+   AF_INET, AF_INET6, AF_UNIX, ...
+       Address family constants used by the socket address structures, to pass to such functions as inet_pton() or getaddrinfo(), or are returned by such functions as sockaddr_family().
+
+   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, ...
+       Socket type constants to use as the second argument to socket(), or the value of the "SO_TYPE" socket option.
+
+   SOCK_NONBLOCK. SOCK_CLOEXEC
+       Linux-specific shortcuts to specify the "O_NONBLOCK" and "FD_CLOEXEC" flags during a socket(2) call.
+
+        socket( my $sockh, PF_INET, SOCK_DGRAM|SOCK_NONBLOCK, 0 )
+
+   SOL_SOCKET
+       Socket option level constant for setsockopt() and getsockopt().
+
+   SO_ACCEPTCONN, SO_BROADCAST, SO_ERROR, ...
+       Socket option name constants for setsockopt() and getsockopt() at the "SOL_SOCKET" level.
+
+   IP_OPTIONS, IP_TOS, IP_TTL, ...
+       Socket option name constants for IPv4 socket options at the "IPPROTO_IP" level.
+
+   IP_PMTUDISC_WANT, IP_PMTUDISC_DONT, ...
+       Socket option value constants for "IP_MTU_DISCOVER" socket option.
+
+   IPTOS_LOWDELAY, IPTOS_THROUGHPUT, IPTOS_RELIABILITY, ...
+       Socket option value constants for "IP_TOS" socket option.
+
+   MSG_BCAST, MSG_OOB, MSG_TRUNC, ...
+       Message flag constants for send() and recv().
+
+   SHUT_RD, SHUT_RDWR, SHUT_WR
+       Direction constants for shutdown().
+
+   INADDR_ANY, INADDR_BROADCAST, INADDR_LOOPBACK, INADDR_NONE
+       Constants giving the special "AF_INET" addresses for wildcard, broadcast, local loopback, and invalid addresses.
+
+       Normally equivalent to inet_aton('0.0.0.0'), inet_aton('255.255.255.255'), inet_aton('localhost') and inet_aton('255.255.255.255') respectively.
+
+   IPPROTO_IP, IPPROTO_IPV6, IPPROTO_TCP, ...
+       IP protocol constants to use as the third argument to socket(), the level argument to getsockopt() or setsockopt(), or the value of the "SO_PROTOCOL" socket option.
+
+   TCP_CORK, TCP_KEEPALIVE, TCP_NODELAY, ...
+       Socket option name constants for TCP socket options at the "IPPROTO_TCP" level.
+
+   IN6ADDR_ANY, IN6ADDR_LOOPBACK
+       Constants giving the special "AF_INET6" addresses for wildcard and local loopback.
+
+       Normally equivalent to inet_pton(AF_INET6, "::") and inet_pton(AF_INET6, "::1") respectively.
+
+   IPV6_ADD_MEMBERSHIP, IPV6_MTU, IPV6_V6ONLY, ...
+       Socket option name constants for IPv6 socket options at the "IPPROTO_IPV6" level.
+
+STRUCTURE MANIPULATORS
+       The following functions convert between lists of Perl values and packed binary strings representing structures.
+
+   $family = sockaddr_family $sockaddr
+       Takes a packed socket address (as returned by pack_sockaddr_in(), pack_sockaddr_un() or the perl builtin functions getsockname() and getpeername()). Returns the address family tag. This will be
+       one of the "AF_*" constants, such as "AF_INET" for a "sockaddr_in" addresses or "AF_UNIX" for a "sockaddr_un". It can be used to figure out what unpack to use for a sockaddr of unknown type.
+
+   $sockaddr = pack_sockaddr_in $port, $ip_address
+       Takes two arguments, a port number and an opaque string (as returned by inet_aton(), or a v-string). Returns the "sockaddr_in" structure with those arguments packed in and "AF_INET" filled in.
+       For Internet domain sockets, this structure is normally what you need for the arguments in bind(), connect(), and send().
+
+       An undefined $port argument is taken as zero; an undefined $ip_address is considered a fatal error.
+
+   ($port, $ip_address) = unpack_sockaddr_in $sockaddr
+       Takes a "sockaddr_in" structure (as returned by pack_sockaddr_in(), getpeername() or recv()). Returns a list of two elements: the port and an opaque string representing the IP address (you can
+       use inet_ntoa() to convert the address to the four-dotted numeric format). Will croak if the structure does not represent an "AF_INET" address.
+
+       In scalar context will return just the IP address.
+
+   $sockaddr = sockaddr_in $port, $ip_address
+   ($port, $ip_address) = sockaddr_in $sockaddr
+       A wrapper of pack_sockaddr_in() or unpack_sockaddr_in(). In list context, unpacks its argument and returns a list consisting of the port and IP address.  In scalar context, packs its port and IP
+       address arguments as a "sockaddr_in" and returns it.
+
+       Provided largely for legacy compatibility; it is better to use pack_sockaddr_in() or unpack_sockaddr_in() explicitly.
+
+   $sockaddr = pack_sockaddr_in6 $port, $ip6_address, [$scope_id, [$flowinfo]]
+       Takes two to four arguments, a port number, an opaque string (as returned by inet_pton()), optionally a scope ID number, and optionally a flow label number. Returns the "sockaddr_in6" structure
+       with those arguments packed in and "AF_INET6" filled in. IPv6 equivalent of pack_sockaddr_in().
+
+       An undefined $port argument is taken as zero; an undefined $ip6_address is considered a fatal error.
+
+   ($port, $ip6_address, $scope_id, $flowinfo) = unpack_sockaddr_in6 $sockaddr
+       Takes a "sockaddr_in6" structure. Returns a list of four elements: the port number, an opaque string representing the IPv6 address, the scope ID, and the flow label. (You can use inet_ntop() to
+       convert the address to the usual string format). Will croak if the structure does not represent an "AF_INET6" address.
+
+       In scalar context will return just the IP address.
+
+   $sockaddr = sockaddr_in6 $port, $ip6_address, [$scope_id, [$flowinfo]]
+   ($port, $ip6_address, $scope_id, $flowinfo) = sockaddr_in6 $sockaddr
+       A wrapper of pack_sockaddr_in6() or unpack_sockaddr_in6(). In list context, unpacks its argument according to unpack_sockaddr_in6(). In scalar context, packs its arguments according to
+       pack_sockaddr_in6().
+
+       Provided largely for legacy compatibility; it is better to use pack_sockaddr_in6() or unpack_sockaddr_in6() explicitly.
+
+   $sockaddr = pack_sockaddr_un $path
+       Takes one argument, a pathname. Returns the "sockaddr_un" structure with that path packed in with "AF_UNIX" filled in. For "PF_UNIX" sockets, this structure is normally what you need for the
+       arguments in bind(), connect(), and send().
+
+   ($path) = unpack_sockaddr_un $sockaddr
+       Takes a "sockaddr_un" structure (as returned by pack_sockaddr_un(), getpeername() or recv()). Returns a list of one element: the pathname. Will croak if the structure does not represent an
+       "AF_UNIX" address.
+
+   $sockaddr = sockaddr_un $path
+   ($path) = sockaddr_un $sockaddr
+       A wrapper of pack_sockaddr_un() or unpack_sockaddr_un(). In a list context, unpacks its argument and returns a list consisting of the pathname. In a scalar context, packs its pathname as a
+       "sockaddr_un" and returns it.
+
+       Provided largely for legacy compatibility; it is better to use pack_sockaddr_un() or unpack_sockaddr_un() explicitly.
+
+       These are only supported if your system has <sys/un.h>.
+
+   $ip_mreq = pack_ip_mreq $multiaddr, $interface
+       Takes an IPv4 multicast address and optionally an interface address (or "INADDR_ANY"). Returns the "ip_mreq" structure with those arguments packed in. Suitable for use with the
+       "IP_ADD_MEMBERSHIP" and "IP_DROP_MEMBERSHIP" sockopts.
+
+   ($multiaddr, $interface) = unpack_ip_mreq $ip_mreq
+       Takes an "ip_mreq" structure. Returns a list of two elements; the IPv4 multicast address and interface address.
+
+   $ip_mreq_source = pack_ip_mreq_source $multiaddr, $source, $interface
+       Takes an IPv4 multicast address, source address, and optionally an interface address (or "INADDR_ANY"). Returns the "ip_mreq_source" structure with those arguments packed in. Suitable for use
+       with the "IP_ADD_SOURCE_MEMBERSHIP" and "IP_DROP_SOURCE_MEMBERSHIP" sockopts.
+
+   ($multiaddr, $source, $interface) = unpack_ip_mreq_source $ip_mreq
+       Takes an "ip_mreq_source" structure. Returns a list of three elements; the IPv4 multicast address, source address and interface address.
+
+   $ipv6_mreq = pack_ipv6_mreq $multiaddr6, $ifindex
+       Takes an IPv6 multicast address and an interface number. Returns the "ipv6_mreq" structure with those arguments packed in. Suitable for use with the "IPV6_ADD_MEMBERSHIP" and
+       "IPV6_DROP_MEMBERSHIP" sockopts.
+
+   ($multiaddr6, $ifindex) = unpack_ipv6_mreq $ipv6_mreq
+       Takes an "ipv6_mreq" structure. Returns a list of two elements; the IPv6 address and an interface number.
+
+FUNCTIONS
+   $ip_address = inet_aton $string
+       Takes a string giving the name of a host, or a textual representation of an IP address and translates that to an packed binary address structure suitable to pass to pack_sockaddr_in(). If passed
+       a hostname that cannot be resolved, returns "undef". For multi-homed hosts (hosts with more than one address), the first address found is returned.
+
+       For portability do not assume that the result of inet_aton() is 32 bits wide, in other words, that it would contain only the IPv4 address in network order.
+
+       This IPv4-only function is provided largely for legacy reasons. Newly-written code should use getaddrinfo() or inet_pton() instead for IPv6 support.
+
+   $string = inet_ntoa $ip_address
+       Takes a packed binary address structure such as returned by unpack_sockaddr_in() (or a v-string representing the four octets of the IPv4 address in network order) and translates it into a string
+       of the form "d.d.d.d" where the "d"s are numbers less than 256 (the normal human-readable four dotted number notation for Internet addresses).
+
+       This IPv4-only function is provided largely for legacy reasons. Newly-written code should use getnameinfo() or inet_ntop() instead for IPv6 support.
+
+   $address = inet_pton $family, $string
+       Takes an address family (such as "AF_INET" or "AF_INET6") and a string containing a textual representation of an address in that family and translates that to an packed binary address structure.
+
+       See also getaddrinfo() for a more powerful and flexible function to look up socket addresses given hostnames or textual addresses.
+
+   $string = inet_ntop $family, $address
+       Takes an address family and a packed binary address structure and translates it into a human-readable textual representation of the address; typically in "d.d.d.d" form for "AF_INET" or
+       "hhhh:hhhh::hhhh" form for "AF_INET6".
+
+       See also getnameinfo() for a more powerful and flexible function to turn socket addresses into human-readable textual representations.
+
+   ($err, @result) = getaddrinfo $host, $service, [$hints]
+       Given both a hostname and service name, this function attempts to resolve the host name into a list of network addresses, and the service name into a protocol and port number, and then returns a
+       list of address structures suitable to connect() to it.
+
+       Given just a host name, this function attempts to resolve it to a list of network addresses, and then returns a list of address structures giving these addresses.
+
+       Given just a service name, this function attempts to resolve it to a protocol and port number, and then returns a list of address structures that represent it suitable to bind() to. This use
+       should be combined with the "AI_PASSIVE" flag; see below.
+
+       Given neither name, it generates an error.
+
+       If present, $hints should be a reference to a hash, where the following keys are recognised:
+
+       flags => INT
+           A bitfield containing "AI_*" constants; see below.
+
+       family => INT
+           Restrict to only generating addresses in this address family
+
+       socktype => INT
+           Restrict to only generating addresses of this socket type
+
+       protocol => INT
+           Restrict to only generating addresses for this protocol
+
+       The return value will be a list; the first value being an error indication, followed by a list of address structures (if no error occurred).
+
+       The error value will be a dualvar; comparable to the "EAI_*" error constants, or printable as a human-readable error message string. If no error occurred it will be zero numerically and an empty
+       string.
+
+       Each value in the results list will be a hash reference containing the following fields:
+
+       family => INT
+           The address family (e.g. "AF_INET")
+
+       socktype => INT
+           The socket type (e.g. "SOCK_STREAM")
+
+       protocol => INT
+           The protocol (e.g. "IPPROTO_TCP")
+
+       addr => STRING
+           The address in a packed string (such as would be returned by pack_sockaddr_in())
+
+       canonname => STRING
+           The canonical name for the host if the "AI_CANONNAME" flag was provided, or "undef" otherwise. This field will only be present on the first returned address.
+
+       The following flag constants are recognised in the $hints hash. Other flag constants may exist as provided by the OS.
+
+       AI_PASSIVE
+           Indicates that this resolution is for a local bind() for a passive (i.e.  listening) socket, rather than an active (i.e. connecting) socket.
+
+       AI_CANONNAME
+           Indicates that the caller wishes the canonical hostname ("canonname") field of the result to be filled in.
+
+       AI_NUMERICHOST
+           Indicates that the caller will pass a numeric address, rather than a hostname, and that getaddrinfo() must not perform a resolve operation on this name. This flag will prevent a possibly-slow
+           network lookup operation, and instead return an error if a hostname is passed.
+
+   ($err, $hostname, $servicename) = getnameinfo $sockaddr, [$flags, [$xflags]]
+       Given a packed socket address (such as from getsockname(), getpeername(), or returned by getaddrinfo() in a "addr" field), returns the hostname and symbolic service name it represents. $flags may
+       be a bitmask of "NI_*" constants, or defaults to 0 if unspecified.
+
+       The return value will be a list; the first value being an error condition, followed by the hostname and service name.
+
+       The error value will be a dualvar; comparable to the "EAI_*" error constants, or printable as a human-readable error message string. The host and service names will be plain strings.
+
+       The following flag constants are recognised as $flags. Other flag constants may exist as provided by the OS.
+
+       NI_NUMERICHOST
+           Requests that a human-readable string representation of the numeric address be returned directly, rather than performing a name resolve operation that may convert it into a hostname. This
+           will also avoid potentially-blocking network IO.
+
+       NI_NUMERICSERV
+           Requests that the port number be returned directly as a number representation rather than performing a name resolve operation that may convert it into a service name.
+
+       NI_NAMEREQD
+           If a name resolve operation fails to provide a name, then this flag will cause getnameinfo() to indicate an error, rather than returning the numeric representation as a human-readable string.
+
+       NI_DGRAM
+           Indicates that the socket address relates to a "SOCK_DGRAM" socket, for the services whose name differs between TCP and UDP protocols.
+
+       The following constants may be supplied as $xflags.
+
+       NIx_NOHOST
+           Indicates that the caller is not interested in the hostname of the result, so it does not have to be converted. "undef" will be returned as the hostname.
+
+       NIx_NOSERV
+           Indicates that the caller is not interested in the service name of the result, so it does not have to be converted. "undef" will be returned as the service name.
+
+getaddrinfo() / getnameinfo() ERROR CONSTANTS
+       The following constants may be returned by getaddrinfo() or getnameinfo().  Others may be provided by the OS.
+
+       EAI_AGAIN
+           A temporary failure occurred during name resolution. The operation may be successful if it is retried later.
+
+       EAI_BADFLAGS
+           The value of the "flags" hint to getaddrinfo(), or the $flags parameter to getnameinfo() contains unrecognised flags.
+
+       EAI_FAMILY
+           The "family" hint to getaddrinfo(), or the family of the socket address passed to getnameinfo() is not supported.
+
+       EAI_NODATA
+           The host name supplied to getaddrinfo() did not provide any usable address data.
+
+       EAI_NONAME
+           The host name supplied to getaddrinfo() does not exist, or the address supplied to getnameinfo() is not associated with a host name and the "NI_NAMEREQD" flag was supplied.
+
+       EAI_SERVICE
+           The service name supplied to getaddrinfo() is not available for the socket type given in the $hints.
+
+EXAMPLES
+   Lookup for connect()
+       The getaddrinfo() function converts a hostname and a service name into a list of structures, each containing a potential way to connect() to the named service on the named host.
+
+        use IO::Socket;
+        use Socket qw(SOCK_STREAM getaddrinfo);
+
+        my %hints = (socktype => SOCK_STREAM);
+        my ($err, @res) = getaddrinfo("localhost", "echo", \%hints);
+        die "Cannot getaddrinfo - $err" if $err;
+
+        my $sock;
+
+        foreach my $ai (@res) {
+            my $candidate = IO::Socket->new();
+
+            $candidate->socket($ai->{family}, $ai->{socktype}, $ai->{protocol})
+                or next;
+
+            $candidate->connect($ai->{addr})
+                or next;
+
+            $sock = $candidate;
+            last;
+        }
+
+        die "Cannot connect to localhost:echo" unless $sock;
+
+        $sock->print("Hello, world!\n");
+        print <$sock>;
+
+       Because a list of potential candidates is returned, the "while" loop tries each in turn until it finds one that succeeds both the socket() and connect() calls.
+
+       This function performs the work of the legacy functions gethostbyname(), getservbyname(), inet_aton() and pack_sockaddr_in().
+
+       In practice this logic is better performed by IO::Socket::IP.
+
+   Making a human-readable string out of an address
+       The getnameinfo() function converts a socket address, such as returned by getsockname() or getpeername(), into a pair of human-readable strings representing the address and service name.
+
+        use IO::Socket::IP;
+        use Socket qw(getnameinfo);
+
+        my $server = IO::Socket::IP->new(LocalPort => 12345, Listen => 1) or
+            die "Cannot listen - $@";
+
+        my $socket = $server->accept or die "accept: $!";
+
+        my ($err, $hostname, $servicename) = getnameinfo($socket->peername);
+        die "Cannot getnameinfo - $err" if $err;
+
+        print "The peer is connected from $hostname\n";
+
+       Since in this example only the hostname was used, the redundant conversion of the port number into a service name may be omitted by passing the "NIx_NOSERV" flag.
+
+        use Socket qw(getnameinfo NIx_NOSERV);
+
+        my ($err, $hostname) = getnameinfo($socket->peername, 0, NIx_NOSERV);
+
+       This function performs the work of the legacy functions unpack_sockaddr_in(), inet_ntoa(), gethostbyaddr() and getservbyport().
+
+       In practice this logic is better performed by IO::Socket::IP.
+
+   Resolving hostnames into IP addresses
+       To turn a hostname into a human-readable plain IP address use getaddrinfo() to turn the hostname into a list of socket structures, then getnameinfo() on each one to make it a readable IP address
+       again.
+
+        use Socket qw(:addrinfo SOCK_RAW);
+
+        my ($err, @res) = getaddrinfo($hostname, "", {socktype => SOCK_RAW});
+        die "Cannot getaddrinfo - $err" if $err;
+
+        while( my $ai = shift @res ) {
+            my ($err, $ipaddr) = getnameinfo($ai->{addr}, NI_NUMERICHOST, NIx_NOSERV);
+            die "Cannot getnameinfo - $err" if $err;
+
+            print "$ipaddr\n";
+        }
+
+       The "socktype" hint to getaddrinfo() filters the results to only include one socket type and protocol. Without this most OSes return three combinations, for "SOCK_STREAM", "SOCK_DGRAM" and
+       "SOCK_RAW", resulting in triplicate output of addresses. The "NI_NUMERICHOST" flag to getnameinfo() causes it to return a string-formatted plain IP address, rather than reverse resolving it back
+       into a hostname.
+
+       This combination performs the work of the legacy functions gethostbyname() and inet_ntoa().
+
+   Accessing socket options
+       The many "SO_*" and other constants provide the socket option names for getsockopt() and setsockopt().
+
+        use IO::Socket::INET;
+        use Socket qw(SOL_SOCKET SO_RCVBUF IPPROTO_IP IP_TTL);
+
+        my $socket = IO::Socket::INET->new(LocalPort => 0, Proto => 'udp')
+            or die "Cannot create socket: $@";
+
+        $socket->setsockopt(SOL_SOCKET, SO_RCVBUF, 64*1024) or
+            die "setsockopt: $!";
+
+        print "Receive buffer is ", $socket->getsockopt(SOL_SOCKET, SO_RCVBUF),
+            " bytes\n";
+
+        print "IP TTL is ", $socket->getsockopt(IPPROTO_IP, IP_TTL), "\n";
+
+       As a convenience, IO::Socket's setsockopt() method will convert a number into a packed byte buffer, and getsockopt() will unpack a byte buffer of the correct size back into a number.
+
+AUTHOR
+       This module was originally maintained in Perl core by the Perl 5 Porters.
+
+       It was extracted to dual-life on CPAN at version 1.95 by Paul Evans <leonerd@leonerd.org.uk>
+
+perl v5.36.0                                                                                    2022-12-12                                                                                   Socket(3perl)
+socket(n)                                                                                  Tcl Built-In Commands                                                                                 socket(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       socket - Open a TCP network connection
+
+SYNOPSIS
+       socket ?options? host port
+
+       socket -server command ?options? port
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       This  command  opens  a  network socket and returns a channel identifier that may be used in future invocations of commands like read, puts and flush.  At present only the TCP network protocol is
+       supported over IPv4 and IPv6; future releases may include support for additional protocols.  The socket command may be used to open either the client or server side of a connection, depending  on
+       whether the -server switch is specified.
+
+       Note that the default encoding for all sockets is the system encoding, as returned by encoding system.  Most of the time, you will need to use chan configure to alter this to something else, such
+       as utf-8 (ideal for communicating with other Tcl processes) or iso8859-1 (useful for many network protocols, especially the older ones).
+
+CLIENT SOCKETS
+       If the -server option is not specified, then the client side of a connection is opened and the command returns a channel identifier that can be used for both reading and writing.  Port  and  host
+       specify  a  port  to connect to;  there must be a server accepting connections on this port.  Port is an integer port number (or service name, where supported and understood by the host operating
+       system) and host is either a domain-style name such as www.tcl.tk or a numerical IPv4 or IPv6 address such as 127.0.0.1 or 2001:DB8::1.  Use localhost to refer to the host on which the command is
+       invoked.
+
+       The following options may also be present before host to specify additional information about the connection:
+
+       -myaddr addr
+              Addr  gives the domain-style name or numerical IP address of the client-side network interface to use for the connection.  This option may be useful if the client machine has multiple net‐
+              work interfaces.  If the option is omitted then the client-side interface will be chosen by the system software.
+
+       -myport port
+              Port specifies an integer port number (or service name, where supported and understood by the host operating system) to use for the client's side of the  connection.   If  this  option  is
+              omitted, the client's port number will be chosen at random by the system software.
+
+       -async This option will cause the client socket to be connected asynchronously. This means that the socket will be created immediately but may not yet be connected to the server, when the call to
+              socket returns.
+
+              When a gets or flush is done on the socket before the connection attempt succeeds or fails, if the socket is in blocking mode, the operation will wait until the connection is completed  or
+              fails. If the socket is in nonblocking mode and a gets or flush is done on the socket before the connection attempt succeeds or fails, the operation returns immediately and fblocked on the
+              socket returns 1. Synchronous client sockets may be switched (after they have connected) to operating in asynchronous mode using:
+
+                     chan configure chan -blocking 0
+
+              See the chan configure command for more details.
+
+              The Tcl event loop should be running while an asynchronous connection is in progress, because it may have to do several connection attempts in the background. Running the event  loop  also
+              allows  you  to set up a writable channel event on the socket to get notified when the asynchronous connection has succeeded or failed. See the vwait and the chan commands for more details
+              on the event loop and channel events.
+
+              The chan configure option -connecting may be used to check if the connect is still running. To verify a successful connect, the option -error may be checked when -connecting returned 0.
+
+              Operation without the event queue requires at the moment calls to chan configure to advance the internal state machine.
+
+SERVER SOCKETS
+       If the -server option is specified then the new socket will be a server that listens on the given port (either an integer or a service name, where supported and understood by the  host  operating
+       system;  if  port  is zero, the operating system will allocate a free port to the server socket which may be discovered by using chan configure to read the -sockname option). If the host supports
+       both, IPv4 and IPv6, the socket will listen on both address families. Tcl will automatically accept connections to the given port.  For each connection Tcl will create a new channel that  may  be
+       used  to communicate with the client.  Tcl then invokes command (properly a command prefix list, see the EXAMPLES below) with three additional arguments: the name of the new channel, the address,
+       in network address notation, of the client's host, and the client's port number.
+
+       The following additional option may also be specified before port:
+
+       -myaddr addr
+              Addr gives the domain-style name or numerical IP address of the server-side network interface to use for the connection.  This option may be useful if the server machine has multiple  net‐
+              work  interfaces.   If the option is omitted then the server socket is bound to the wildcard address so that it can accept connections from any interface. If addr is a domain name that re‐
+              solves to multiple IP addresses that are available on the local machine, the socket will listen on all of them.
+
+       Server channels cannot be used for input or output; their sole use is to accept new client connections. The channels created for each incoming client connection are opened for input  and  output.
+       Closing the server channel shuts down the server so that no new connections will be accepted;  however, existing connections will be unaffected.
+
+       Server sockets depend on the Tcl event mechanism to find out when new connections are opened.  If the application does not enter the event loop, for example by invoking the vwait command or call‐
+       ing the C procedure Tcl_DoOneEvent, then no connections will be accepted.
+
+       If port is specified as zero, the operating system will allocate an unused port for use as a server socket.  The port number actually allocated may be retrieved from the created server socket us‐
+       ing the chan configure command to retrieve the -sockname option as described below.
+
+CONFIGURATION OPTIONS
+       The chan configure command can be used to query several readonly configuration options for socket channels:
+
+       -error This  option gets the current error status of the given socket.  This is useful when you need to determine if an asynchronous connect operation succeeded.  If there was an error, the error
+              message is returned.  If there was no error, an empty string is returned.
+
+              Note that the error status is reset by the read operation; this mimics the underlying getsockopt(SO_ERROR) call.
+
+       -sockname
+              For client sockets (including the channels that get created when a client connects to a server socket) this option returns a list of three elements, the address, the host name and the port
+              number for the socket. If the host name cannot be computed, the second element is identical to the address, the first element of the list.
+
+              For  server  sockets this option returns a list of a multiple of three elements each group of which have the same meaning as described above. The list contains more than one group when the
+              server socket was created without -myaddr or with the argument to -myaddr being a domain name that resolves multiple IP addresses that are local to the invoking host.
+
+       -peername
+              This option is not supported by server sockets. For client and accepted sockets, this option returns a list of three elements; these are the address, the host name and the  port  to  which
+              the peer socket is connected or bound. If the host name cannot be computed, the second element of the list is identical to the address, its first element.
+
+       -connecting
+              This option is not supported by server sockets. For client sockets, this option returns 1 if an asyncroneous connect is still in progress, 0 otherwise.
+
+EXAMPLES
+       Here is a very simple time server:
+
+              proc Server {startTime channel clientaddr clientport} {
+                  puts "Connection from $clientaddr registered"
+                  set now [clock seconds]
+                  puts $channel [clock format $now]
+                  puts $channel "[expr {$now - $startTime}] since start"
+                  close $channel
+              }
+
+              socket -server [list Server [clock seconds]] 9900
+              vwait forever
+
+       And here is the corresponding client to talk to the server and extract some information:
+
+              set server localhost
+              set sockChan [socket $server 9900]
+              gets $sockChan line1
+              gets $sockChan line2
+              close $sockChan
+              puts "The time on $server is $line1"
+              puts "That is [lindex $line2 0]s since the server started"
+
+HISTORY
+       Support for IPv6 was added in Tcl 8.6.
+
+SEE ALSO
+       chan(n), flush(n), open(n), read(n)
+
+KEYWORDS
+       asynchronous I/O, bind, channel, connection, domain name, host, network address, socket, tcp
+
+Tcl                                                                                                 8.6                                                                                          socket(n)
+SOCKET(3P)                                                                               POSIX Programmer's Manual                                                                              SOCKET(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       socket — create an endpoint for communication
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int socket(int domain, int type, int protocol);
+
+DESCRIPTION
+       The socket() function shall create an unbound socket in a communications domain, and return a file descriptor that can be used in later function calls that operate on sockets. The file descriptor
+       shall be allocated as described in Section 2.14, File Descriptor Allocation.
+
+       The socket() function takes the following arguments:
+
+       domain      Specifies the communications domain in which a socket is to be created.
+
+       type        Specifies the type of socket to be created.
+
+       protocol    Specifies  a  particular  protocol  to  be used with the socket. Specifying a protocol of 0 causes socket() to use an unspecified default protocol appropriate for the requested socket
+                   type.
+
+       The domain argument specifies the address family used in the communications domain. The address families supported by the system are implementation-defined.
+
+       Symbolic constants that can be used for the domain argument are defined in the <sys/socket.h> header.
+
+       The type argument specifies the socket type, which determines the semantics of communication over the socket. The following socket types are defined; implementations may specify additional socket
+       types:
+
+       SOCK_STREAM Provides sequenced, reliable, bidirectional, connection-mode byte streams, and may provide a transmission mechanism for out-of-band data.
+
+       SOCK_DGRAM  Provides datagrams, which are connectionless-mode, unreliable messages of fixed maximum length.
+
+       SOCK_SEQPACKET
+                   Provides  sequenced,  reliable,  bidirectional, connection-mode transmission paths for records. A record can be sent using one or more output operations and received using one or more
+                   input operations, but a single operation never transfers part of more than one record. Record boundaries are visible to the receiver via the MSG_EOR flag.
+
+       If the protocol argument is non-zero, it shall specify a protocol that is supported by the address family. If the protocol argument is zero, the default protocol for this address family and  type
+       shall be used. The protocols supported by the system are implementation-defined.
+
+       The process may need to have appropriate privileges to use the socket() function or to create some sockets.
+
+RETURN VALUE
+       Upon successful completion, socket() shall return a non-negative integer, the socket file descriptor.  Otherwise, a value of -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The socket() function shall fail if:
+
+       EAFNOSUPPORT
+              The implementation does not support the specified address family.
+
+       EMFILE All file descriptors available to the process are currently open.
+
+       ENFILE No more file descriptors are available for the system.
+
+       EPROTONOSUPPORT
+              The protocol is not supported by the address family, or the protocol is not supported by the implementation.
+
+       EPROTOTYPE
+              The socket type is not supported by the protocol.
+
+       The socket() function may fail if:
+
+       EACCES The process does not have appropriate privileges.
+
+       ENOBUFS
+              Insufficient resources were available in the system to perform the operation.
+
+       ENOMEM Insufficient memory was available to fulfill the request.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The  documentation  for  specific address families specifies which protocols each address family supports. The documentation for specific protocols specifies which socket types each protocol sup‐
+       ports.
+
+       The application can determine whether an address family is supported by trying to create a socket with domain set to the protocol in question.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.14, File Descriptor Allocation, accept(), bind(), connect(), getsockname(), getsockopt(), listen(), recv(), recvfrom(), recvmsg(), send(), sendmsg(), setsockopt(),  shutdown(),  socket‐
+       pair()
+
+       The Base Definitions volume of POSIX.1‐2017, <netinet_in.h>, <sys_socket.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         SOCKET(3P)
+socket(2)                                                                                   System Calls Manual                                                                                  socket(2)
+
+NAME
+       socket - create an endpoint for communication
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int socket(int domain, int type, int protocol);
+
+DESCRIPTION
+       socket()  creates an endpoint for communication and returns a file descriptor that refers to that endpoint.  The file descriptor returned by a successful call will be the lowest-numbered file de‐
+       scriptor not currently open for the process.
+
+       The domain argument specifies a communication domain; this selects the protocol family which will be used for communication.  These families are defined in <sys/socket.h>.  The formats  currently
+       understood by the Linux kernel include:
+
+       Name         Purpose                                    Man page
+       AF_UNIX      Local communication                        unix(7)
+       AF_LOCAL     Synonym for AF_UNIX
+       AF_INET      IPv4 Internet protocols                    ip(7)
+       AF_AX25      Amateur radio AX.25 protocol               ax25(4)
+       AF_IPX       IPX - Novell protocols
+       AF_APPLETALK AppleTalk                                  ddp(7)
+       AF_X25       ITU-T X.25 / ISO-8208 protocol             x25(7)
+       AF_INET6     IPv6 Internet protocols                    ipv6(7)
+       AF_DECnet    DECet protocol sockets
+       AF_KEY       Key  management protocol, originally de‐
+                    veloped for usage with IPsec
+       AF_NETLINK   Kernel user interface device               netlink(7)
+       AF_PACKET    Low-level packet interface                 packet(7)
+       AF_RDS       Reliable Datagram Sockets (RDS) protocol   rds(7)
+                                                               rds-rdma(7)
+       AF_PPPOX     Generic PPP transport layer, for setting
+                    up L2 tunnels (L2TP and PPPoE)
+       AF_LLC       Logical  link  control  (IEEE 802.2 LLC)
+                    protocol
+       AF_IB        InfiniBand native addressing
+       AF_MPLS      Multiprotocol Label Switching
+       AF_CAN       Controller Area Network  automotive  bus
+                    protocol
+       AF_TIPC      TIPC, "cluster domain sockets" protocol
+       AF_BLUETOOTH Bluetooth low-level socket protocol
+       AF_ALG       Interface to kernel crypto API
+       AF_VSOCK     VSOCK   (originally  "VMWare  VSockets")   vsock(7)
+                    protocol for hypervisor-guest communica‐
+                    tion
+       AF_KCM       KCM  (kernel connection multiplexer) in‐
+                    terface
+       AF_XDP       XDP (express data path) interface
+
+       Further details of the above address families, as well as information on several other address families, can be found in address_families(7).
+
+       The socket has the indicated type, which specifies the communication semantics.  Currently defined types are:
+
+       SOCK_STREAM     Provides sequenced, reliable, two-way, connection-based byte streams.  An out-of-band data transmission mechanism may be supported.
+
+       SOCK_DGRAM      Supports datagrams (connectionless, unreliable messages of a fixed maximum length).
+
+       SOCK_SEQPACKET  Provides a sequenced, reliable, two-way connection-based data transmission path for datagrams of fixed maximum length; a consumer is required to read an entire  packet  with  each
+                       input system call.
+
+       SOCK_RAW        Provides raw network protocol access.
+
+       SOCK_RDM        Provides a reliable datagram layer that does not guarantee ordering.
+
+       SOCK_PACKET     Obsolete and should not be used in new programs; see packet(7).
+
+       Some socket types may not be implemented by all protocol families.
+
+       Since  Linux  2.6.27,  the  type argument serves a second purpose: in addition to specifying a socket type, it may include the bitwise OR of any of the following values, to modify the behavior of
+       socket():
+
+       SOCK_NONBLOCK   Set the O_NONBLOCK file status flag on the open file description (see open(2)) referred to by the new file descriptor.  Using this flag saves extra calls to  fcntl(2)  to  achieve
+                       the same result.
+
+       SOCK_CLOEXEC    Set the close-on-exec (FD_CLOEXEC) flag on the new file descriptor.  See the description of the O_CLOEXEC flag in open(2) for reasons why this may be useful.
+
+       The  protocol specifies a particular protocol to be used with the socket.  Normally only a single protocol exists to support a particular socket type within a given protocol family, in which case
+       protocol can be specified as 0.  However, it is possible that many protocols may exist, in which case a particular protocol must be specified in this manner.  The protocol number to use  is  spe‐
+       cific to the “communication domain” in which communication is to take place; see protocols(5).  See getprotoent(3) on how to map protocol name strings to protocol numbers.
+
+       Sockets  of type SOCK_STREAM are full-duplex byte streams.  They do not preserve record boundaries.  A stream socket must be in a connected state before any data may be sent or received on it.  A
+       connection to another socket is created with a connect(2) call.  Once connected, data may be transferred using read(2) and write(2) calls or some variant of the send(2) and recv(2) calls.  When a
+       session has been completed a close(2) may be performed.  Out-of-band data may also be transmitted as described in send(2) and received as described in recv(2).
+
+       The  communications  protocols  which  implement  a SOCK_STREAM ensure that data is not lost or duplicated.  If a piece of data for which the peer protocol has buffer space cannot be successfully
+       transmitted within a reasonable length of time, then the connection is considered to be dead.  When SO_KEEPALIVE is enabled on the socket the protocol checks in a protocol-specific manner if  the
+       other  end  is  still  alive.   A SIGPIPE signal is raised if a process sends or receives on a broken stream; this causes naive processes, which do not handle the signal, to exit.  SOCK_SEQPACKET
+       sockets employ the same system calls as SOCK_STREAM sockets.  The only difference is that read(2) calls will return only the amount of data requested, and  any  data  remaining  in  the  arriving
+       packet will be discarded.  Also all message boundaries in incoming datagrams are preserved.
+
+       SOCK_DGRAM  and  SOCK_RAW  sockets allow sending of datagrams to correspondents named in sendto(2) calls.  Datagrams are generally received with recvfrom(2), which returns the next datagram along
+       with the address of its sender.
+
+       SOCK_PACKET is an obsolete socket type to receive raw packets directly from the device driver.  Use packet(7) instead.
+
+       An fcntl(2) F_SETOWN operation can be used to specify a process or process group to receive a SIGURG signal when the out-of-band data arrives or  SIGPIPE  signal  when  a  SOCK_STREAM  connection
+       breaks  unexpectedly.   This operation may also be used to set the process or process group that receives the I/O and asynchronous notification of I/O events via SIGIO.  Using F_SETOWN is equiva‐
+       lent to an ioctl(2) call with the FIOSETOWN or SIOCSPGRP argument.
+
+       When the network signals an error condition to the protocol module (e.g., using an ICMP message for IP) the pending error flag is set for the socket.  The next operation on this socket  will  re‐
+       turn the error code of the pending error.  For some protocols it is possible to enable a per-socket error queue to retrieve detailed information about the error; see IP_RECVERR in ip(7).
+
+       The operation of sockets is controlled by socket level options.  These options are defined in <sys/socket.h>.  The functions setsockopt(2) and getsockopt(2) are used to set and get options.
+
+RETURN VALUE
+       On success, a file descriptor for the new socket is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EACCES Permission to create a socket of the specified type and/or protocol is denied.
+
+       EAFNOSUPPORT
+              The implementation does not support the specified address family.
+
+       EINVAL Unknown protocol, or protocol family not available.
+
+       EINVAL Invalid flags in type.
+
+       EMFILE The per-process limit on the number of open file descriptors has been reached.
+
+       ENFILE The system-wide limit on the total number of open files has been reached.
+
+       ENOBUFS or ENOMEM
+              Insufficient memory is available.  The socket cannot be created until sufficient resources are freed.
+
+       EPROTONOSUPPORT
+              The protocol type or the specified protocol is not supported within this domain.
+
+       Other errors may be generated by the underlying protocol modules.
+
+STANDARDS
+       POSIX.1-2008.
+
+       SOCK_NONBLOCK and SOCK_CLOEXEC are Linux-specific.
+
+HISTORY
+       POSIX.1-2001, 4.4BSD.
+
+       socket() appeared in 4.2BSD.  It is generally portable to/from non-BSD systems supporting clones of the BSD socket layer (including System V variants).
+
+       The  manifest  constants  used  under 4.x BSD for protocol families are PF_UNIX, PF_INET, and so on, while AF_UNIX, AF_INET, and so on are used for address families.  However, already the BSD man
+       page promises: "The protocol family generally is the same as the address family", and subsequent standards use AF_* everywhere.
+
+EXAMPLES
+       An example of the use of socket() is shown in getaddrinfo(3).
+
+SEE ALSO
+       accept(2), bind(2), close(2), connect(2), fcntl(2), getpeername(2), getsockname(2), getsockopt(2), ioctl(2), listen(2), read(2), recv(2), select(2), send(2), shutdown(2), socketpair(2), write(2),
+       getprotoent(3), address_families(7), ip(7), socket(7), tcp(7), udp(7), unix(7)
+
+       “An Introductory 4.3BSD Interprocess Communication Tutorial” and “BSD Interprocess Communication Tutorial”, reprinted in UNIX Programmer's Supplementary Documents Volume 1.
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       socket(2)
+socket(7)                                                                            Miscellaneous Information Manual                                                                            socket(7)
+
+NAME
+       socket - Linux socket interface
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       sockfd = socket(int socket_family, int socket_type, int protocol);
+
+DESCRIPTION
+       This  manual page describes the Linux networking socket layer user interface.  The BSD compatible sockets are the uniform interface between the user process and the network protocol stacks in the
+       kernel.  The protocol modules are grouped into protocol families such as AF_INET, AF_IPX, and AF_PACKET, and socket types such as SOCK_STREAM or SOCK_DGRAM.  See socket(2) for more information on
+       families and types.
+
+   Socket-layer functions
+       These functions are used by the user process to send or receive packets and to do other socket operations.  For more information, see their respective manual pages.
+
+       socket(2) creates a socket, connect(2) connects a socket to a remote socket address, the bind(2) function binds a socket to a local socket address, listen(2) tells the socket that new connections
+       shall be accepted, and accept(2) is used to get a new socket with a new incoming connection.  socketpair(2) returns two connected anonymous sockets (implemented only for a few local families like
+       AF_UNIX)
+
+       send(2),  sendto(2),  and sendmsg(2) send data over a socket, and recv(2), recvfrom(2), recvmsg(2) receive data from a socket.  poll(2) and select(2) wait for arriving data or a readiness to send
+       data.  In addition, the standard I/O operations like write(2), writev(2), sendfile(2), read(2), and readv(2) can be used to read and write data.
+
+       getsockname(2) returns the local socket address and getpeername(2) returns the remote socket address.  getsockopt(2) and setsockopt(2) are used to set or get socket  layer  or  protocol  options.
+       ioctl(2) can be used to set or read some other options.
+
+       close(2) is used to close a socket.  shutdown(2) closes parts of a full-duplex socket connection.
+
+       Seeking, or calling pread(2) or pwrite(2) with a nonzero position is not supported on sockets.
+
+       It  is possible to do nonblocking I/O on sockets by setting the O_NONBLOCK flag on a socket file descriptor using fcntl(2).  Then all operations that would block will (usually) return with EAGAIN
+       (operation should be retried later); connect(2) will return EINPROGRESS error.  The user can then wait for various events via poll(2) or select(2).
+
+       ┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │                                                                                           I/O events                                                                                             │
+       ├───────────┬───────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Event      │ Poll flag │ Occurrence                                                                                                                                                               │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read       │ POLLIN    │ New data arrived.                                                                                                                                                        │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read       │ POLLIN    │ A connection setup has been completed (for connection-oriented sockets)                                                                                                  │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read       │ POLLHUP   │ A disconnection request has been initiated by the other end.                                                                                                             │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read       │ POLLHUP   │ A connection is broken (only for connection-oriented protocols).  When the socket is written SIGPIPE is also sent.                                                       │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Write      │ POLLOUT   │ Socket has enough send buffer space for writing new data.                                                                                                                │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read/Write │ POLLIN |  │ An outgoing connect(2) finished.                                                                                                                                         │
+       │           │ POLLOUT   │                                                                                                                                                                          │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read/Write │ POLLERR   │ An asynchronous error occurred.                                                                                                                                          │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Read/Write │ POLLHUP   │ The other end has shut down one direction.                                                                                                                               │
+       ├───────────┼───────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │Exception  │ POLLPRI   │ Urgent data arrived.  SIGURG is sent then.                                                                                                                               │
+       └───────────┴───────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+       An alternative to poll(2) and select(2) is to let the kernel inform the application about events via a SIGIO signal.  For that the O_ASYNC flag must be set on a socket  file  descriptor  via  fc‐
+       ntl(2) and a valid signal handler for SIGIO must be installed via sigaction(2).  See the Signals discussion below.
+
+   Socket address structures
+       Each  socket  domain has its own format for socket addresses, with a domain-specific address structure.  Each of these structures begins with an integer "family" field (typed as sa_family_t) that
+       indicates the type of the address structure.  This allows the various system calls (e.g., connect(2), bind(2), accept(2), getsockname(2), getpeername(2)), which are generic to all socket domains,
+       to determine the domain of a particular socket address.
+
+       To  allow  any  type  of socket address to be passed to interfaces in the sockets API, the type struct sockaddr is defined.  The purpose of this type is purely to allow casting of domain-specific
+       socket address types to a "generic" type, so as to avoid compiler warnings about type mismatches in calls to the sockets API.
+
+       In addition, the sockets API provides the data type struct sockaddr_storage.  This type is suitable to accommodate all supported domain-specific socket address structures; it is large enough  and
+       is  aligned properly.  (In particular, it is large enough to hold IPv6 socket addresses.)  The structure includes the following field, which can be used to identify the type of socket address ac‐
+       tually stored in the structure:
+
+               sa_family_t ss_family;
+
+       The sockaddr_storage structure is useful in programs that must handle socket addresses in a generic way (e.g., programs that must deal with both IPv4 and IPv6 socket addresses).
+
+   Socket options
+       The socket options listed below can be set by using setsockopt(2) and read with getsockopt(2) with the socket level set to SOL_SOCKET for all sockets.  Unless otherwise noted, optval is a pointer
+       to an int.
+
+       SO_ACCEPTCONN
+              Returns  a  value  indicating whether or not this socket has been marked to accept connections with listen(2).  The value 0 indicates that this is not a listening socket, the value 1 indi‐
+              cates that this is a listening socket.  This socket option is read-only.
+
+       SO_ATTACH_FILTER (since Linux 2.2), SO_ATTACH_BPF (since Linux 3.19)
+              Attach a classic BPF (SO_ATTACH_FILTER) or an extended BPF (SO_ATTACH_BPF) program to the socket for use as a filter of incoming packets.  A packet will be dropped if  the  filter  program
+              returns zero.  If the filter program returns a nonzero value which is less than the packet's data length, the packet will be truncated to the length returned.  If the value returned by the
+              filter is greater than or equal to the packet's data length, the packet is allowed to proceed unmodified.
+
+              The argument for SO_ATTACH_FILTER is a sock_fprog structure, defined in <linux/filter.h>:
+
+                  struct sock_fprog {
+                      unsigned short      len;
+                      struct sock_filter *filter;
+                  };
+
+              The argument for SO_ATTACH_BPF is a file descriptor returned by the bpf(2) system call and must refer to a program of type BPF_PROG_TYPE_SOCKET_FILTER.
+
+              These options may be set multiple times for a given socket, each time replacing the previous filter program.  The classic and extended versions may be called on the same  socket,  but  the
+              previous filter will always be replaced such that a socket never has more than one filter defined.
+
+              Both classic and extended BPF are explained in the kernel source file Documentation/networking/filter.txt
+
+       SO_ATTACH_REUSEPORT_CBPF, SO_ATTACH_REUSEPORT_EBPF
+              For  use  with the SO_REUSEPORT option, these options allow the user to set a classic BPF (SO_ATTACH_REUSEPORT_CBPF) or an extended BPF (SO_ATTACH_REUSEPORT_EBPF) program which defines how
+              packets are assigned to the sockets in the reuseport group (that is, all sockets which have SO_REUSEPORT set and are using the same local address to receive packets).
+
+              The BPF program must return an index between 0 and N-1 representing the socket which should receive the packet (where N is the number of sockets in the group).  If the BPF program  returns
+              an invalid index, socket selection will fall back to the plain SO_REUSEPORT mechanism.
+
+              Sockets  are  numbered in the order in which they are added to the group (that is, the order of bind(2) calls for UDP sockets or the order of listen(2) calls for TCP sockets).  New sockets
+              added to a reuseport group will inherit the BPF program.  When a socket is removed from a reuseport group (via close(2)), the last socket in  the  group  will  be  moved  into  the  closed
+              socket's position.
+
+              These options may be set repeatedly at any time on any socket in the group to replace the current BPF program used by all sockets in the group.
+
+              SO_ATTACH_REUSEPORT_CBPF takes the same argument type as SO_ATTACH_FILTER and SO_ATTACH_REUSEPORT_EBPF takes the same argument type as SO_ATTACH_BPF.
+
+              UDP support for this feature is available since Linux 4.5; TCP support is available since Linux 4.6.
+
+       SO_BINDTODEVICE
+              Bind  this  socket to a particular device like “eth0”, as specified in the passed interface name.  If the name is an empty string or the option length is zero, the socket device binding is
+              removed.  The passed option is a variable-length null-terminated interface name string with the maximum size of IFNAMSIZ.  If a socket is bound to an interface, only packets received  from
+              that  particular  interface are processed by the socket.  Note that this works only for some socket types, particularly AF_INET sockets.  It is not supported for packet sockets (use normal
+              bind(2) there).
+
+              Before Linux 3.8, this socket option could be set, but could not retrieved with getsockopt(2).  Since Linux 3.8, it is readable.  The optlen argument should contain the buffer size  avail‐
+              able to receive the device name and is recommended to be IFNAMSIZ bytes.  The real device name length is reported back in the optlen argument.
+
+       SO_BROADCAST
+              Set or get the broadcast flag.  When enabled, datagram sockets are allowed to send packets to a broadcast address.  This option has no effect on stream-oriented sockets.
+
+       SO_BSDCOMPAT
+              Enable  BSD  bug-to-bug compatibility.  This is used by the UDP protocol module in Linux 2.0 and 2.2.  If enabled, ICMP errors received for a UDP socket will not be passed to the user pro‐
+              gram.  In later kernel versions, support for this option has been phased out: Linux 2.4 silently ignores it, and Linux 2.6 generates a kernel warning (printk()) if a program uses this  op‐
+              tion.   Linux 2.0 also enabled BSD bug-to-bug compatibility options (random header changing, skipping of the broadcast flag) for raw sockets with this option, but that was removed in Linux
+              2.2.
+
+       SO_DEBUG
+              Enable socket debugging.  Allowed only for processes with the CAP_NET_ADMIN capability or an effective user ID of 0.
+
+       SO_DETACH_FILTER (since Linux 2.2), SO_DETACH_BPF (since Linux 3.19)
+              These two options, which are synonyms, may be used to remove the classic or extended BPF program attached to a socket with either SO_ATTACH_FILTER or SO_ATTACH_BPF.  The  option  value  is
+              ignored.
+
+       SO_DOMAIN (since Linux 2.6.32)
+              Retrieves the socket domain as an integer, returning a value such as AF_INET6.  See socket(2) for details.  This socket option is read-only.
+
+       SO_ERROR
+              Get and clear the pending socket error.  This socket option is read-only.  Expects an integer.
+
+       SO_DONTROUTE
+              Don't send via a gateway, send only to directly connected hosts.  The same effect can be achieved by setting the MSG_DONTROUTE flag on a socket send(2) operation.  Expects an integer bool‐
+              ean flag.
+
+       SO_INCOMING_CPU (gettable since Linux 3.19, settable since Linux 4.4)
+              Sets or gets the CPU affinity of a socket.  Expects an integer flag.
+
+                  int cpu = 1;
+                  setsockopt(fd, SOL_SOCKET, SO_INCOMING_CPU, &cpu,
+                             sizeof(cpu));
+
+              Because all of the packets for a single stream (i.e., all packets for the same 4-tuple) arrive on the single RX queue that is associated with a particular CPU, the typical use case  is  to
+              employ  one listening process per RX queue, with the incoming flow being handled by a listener on the same CPU that is handling the RX queue.  This provides optimal NUMA behavior and keeps
+              CPU caches hot.
+
+       SO_INCOMING_NAPI_ID (gettable since Linux 4.12)
+              Returns a system-level unique ID called NAPI ID that is associated with a RX queue on which the last packet associated with that socket is received.
+
+              This can be used by an application to split the incoming flows among worker threads based on the RX queue on which the packets associated with the  flows  are  received.   It  allows  each
+              worker  thread to be associated with a NIC HW receive queue and service all the connection requests received on that RX queue.  This mapping between a app thread and a HW NIC queue stream‐
+              lines the flow of data from the NIC to the application.
+
+       SO_KEEPALIVE
+              Enable sending of keep-alive messages on connection-oriented sockets.  Expects an integer boolean flag.
+
+       SO_LINGER
+              Sets or gets the SO_LINGER option.  The argument is a linger structure.
+
+                  struct linger {
+                      int l_onoff;    /* linger active */
+                      int l_linger;   /* how many seconds to linger for */
+                  };
+
+              When enabled, a close(2) or shutdown(2) will not return until all queued messages for the socket have been successfully sent or the linger timeout has been reached.   Otherwise,  the  call
+              returns immediately and the closing is done in the background.  When the socket is closed as part of exit(2), it always lingers in the background.
+
+       SO_LOCK_FILTER
+              When  set,  this  option  will  prevent  changing  the  filters  associated with the socket.  These filters include any set using the socket options SO_ATTACH_FILTER, SO_ATTACH_BPF, SO_AT‐
+              TACH_REUSEPORT_CBPF, and SO_ATTACH_REUSEPORT_EBPF.
+
+              The typical use case is for a privileged process to set up a raw socket (an operation that requires the CAP_NET_RAW capability), apply a restrictive filter, set the SO_LOCK_FILTER  option,
+              and then either drop its privileges or pass the socket file descriptor to an unprivileged process via a UNIX domain socket.
+
+              Once the SO_LOCK_FILTER option has been enabled, attempts to change or remove the filter attached to a socket, or to disable the SO_LOCK_FILTER option will fail with the error EPERM.
+
+       SO_MARK (since Linux 2.6.25)
+              Set  the  mark  for each packet sent through this socket (similar to the netfilter MARK target but socket-based).  Changing the mark can be used for mark-based routing without netfilter or
+              for packet filtering.  Setting this option requires the CAP_NET_ADMIN capability.
+
+       SO_OOBINLINE
+              If this option is enabled, out-of-band data is directly placed into the receive data stream.  Otherwise, out-of-band data is passed only when the MSG_OOB flag is set during receiving.
+
+       SO_PASSCRED
+              Enable or disable the receiving of the SCM_CREDENTIALS control message.  For more information, see unix(7).
+
+       SO_PASSSEC
+              Enable or disable the receiving of the SCM_SECURITY control message.  For more information, see unix(7).
+
+       SO_PEEK_OFF (since Linux 3.4)
+              This option, which is currently supported only for unix(7) sockets, sets the value of the "peek offset" for the recv(2) system call when used with MSG_PEEK flag.
+
+              When this option is set to a negative value (it is set to -1 for all new sockets), traditional behavior is provided: recv(2) with the MSG_PEEK flag will peek data from  the  front  of  the
+              queue.
+
+              When  the  option is set to a value greater than or equal to zero, then the next peek at data queued in the socket will occur at the byte offset specified by the option value.  At the same
+              time, the "peek offset" will be incremented by the number of bytes that were peeked from the queue, so that a subsequent peek will return the next data in the queue.
+
+              If data is removed from the front of the queue via a call to recv(2) (or similar) without the MSG_PEEK flag, the "peek offset" will be decreased by the number of bytes removed.   In  other
+              words, receiving data without the MSG_PEEK flag will cause the "peek offset" to be adjusted to maintain the correct relative position in the queued data, so that a subsequent peek will re‐
+              trieve the data that would have been retrieved had the data not been removed.
+
+              For datagram sockets, if the "peek offset" points to the middle of a packet, the data returned will be marked with the MSG_TRUNC flag.
+
+              The following example serves to illustrate the use of SO_PEEK_OFF.  Suppose a stream socket has the following queued input data:
+
+                  aabbccddeeff
+
+              The following sequence of recv(2) calls would have the effect noted in the comments:
+
+                  int ov = 4;                  // Set peek offset to 4
+                  setsockopt(fd, SOL_SOCKET, SO_PEEK_OFF, &ov, sizeof(ov));
+
+                  recv(fd, buf, 2, MSG_PEEK);  // Peeks "cc"; offset set to 6
+                  recv(fd, buf, 2, MSG_PEEK);  // Peeks "dd"; offset set to 8
+                  recv(fd, buf, 2, 0);         // Reads "aa"; offset set to 6
+                  recv(fd, buf, 2, MSG_PEEK);  // Peeks "ee"; offset set to 8
+
+       SO_PEERCRED
+              Return the credentials of the peer process connected to this socket.  For further details, see unix(7).
+
+       SO_PEERSEC (since Linux 2.6.2)
+              Return the security context of the peer socket connected to this socket.  For further details, see unix(7) and ip(7).
+
+       SO_PRIORITY
+              Set the protocol-defined priority for all packets to be sent on this socket.  Linux uses this value to order the networking queues: packets with a higher priority may  be  processed  first
+              depending on the selected device queueing discipline.  Setting a priority outside the range 0 to 6 requires the CAP_NET_ADMIN capability.
+
+       SO_PROTOCOL (since Linux 2.6.32)
+              Retrieves the socket protocol as an integer, returning a value such as IPPROTO_SCTP.  See socket(2) for details.  This socket option is read-only.
+
+       SO_RCVBUF
+              Sets or gets the maximum socket receive buffer in bytes.  The kernel doubles this value (to allow space for bookkeeping overhead) when it is set using setsockopt(2), and this doubled value
+              is returned by getsockopt(2).  The default value is set by the /proc/sys/net/core/rmem_default file, and the maximum allowed value is set by the /proc/sys/net/core/rmem_max file.  The min‐
+              imum (doubled) value for this option is 256.
+
+       SO_RCVBUFFORCE (since Linux 2.6.14)
+              Using this socket option, a privileged (CAP_NET_ADMIN) process can perform the same task as SO_RCVBUF, but the rmem_max limit can be overridden.
+
+       SO_RCVLOWAT and SO_SNDLOWAT
+              Specify the minimum number of bytes in the buffer until the socket layer will pass the data to the protocol (SO_SNDLOWAT) or the user on receiving (SO_RCVLOWAT).  These two values are ini‐
+              tialized to 1.  SO_SNDLOWAT is not changeable on Linux (setsockopt(2) fails with the error ENOPROTOOPT).  SO_RCVLOWAT is changeable only since Linux 2.4.
+
+              Before Linux 2.6.28 select(2), poll(2), and epoll(7) did not respect the SO_RCVLOWAT setting on Linux, and indicated a socket as readable when even a single byte of data was available.   A
+              subsequent read from the socket would then block until SO_RCVLOWAT bytes are available.  Since Linux 2.6.28, select(2), poll(2), and epoll(7) indicate a socket as readable only if at least
+              SO_RCVLOWAT bytes are available.
+
+       SO_RCVTIMEO and SO_SNDTIMEO
+              Specify the receiving or sending timeouts until reporting an error.  The argument is a struct timeval.  If an input or output function blocks for this period of time,  and  data  has  been
+              sent or received, the return value of that function will be the amount of data transferred; if no data has been transferred and the timeout has been reached, then -1 is returned with errno
+              set to EAGAIN or EWOULDBLOCK, or EINPROGRESS (for connect(2)) just as if the socket was specified to be nonblocking.  If the timeout is set to zero (the default), then the  operation  will
+              never  timeout.  Timeouts only have effect for system calls that perform socket I/O (e.g., accept(2), connect(2), read(2), recvmsg(2), send(2), sendmsg(2)); timeouts have no effect for se‐
+              lect(2), poll(2), epoll_wait(2), and so on.
+
+       SO_REUSEADDR
+              Indicates that the rules used in validating addresses supplied in a bind(2) call should allow reuse of local addresses.  For AF_INET sockets this means that a socket may bind, except  when
+              there  is an active listening socket bound to the address.  When the listening socket is bound to INADDR_ANY with a specific port then it is not possible to bind to this port for any local
+              address.  Argument is an integer boolean flag.
+
+       SO_REUSEPORT (since Linux 3.9)
+              Permits multiple AF_INET or AF_INET6 sockets to be bound to an identical socket address.  This option must be set on each socket (including the first socket) prior to  calling  bind(2)  on
+              the socket.  To prevent port hijacking, all of the processes binding to the same address must have the same effective UID.  This option can be employed with both TCP and UDP sockets.
+
+              For  TCP sockets, this option allows accept(2) load distribution in a multi-threaded server to be improved by using a distinct listener socket for each thread.  This provides improved load
+              distribution as compared to traditional techniques such using a single accept(2)ing thread that distributes connections, or having multiple threads that compete to accept(2) from the  same
+              socket.
+
+              For UDP sockets, the use of this option can provide better distribution of incoming datagrams to multiple processes (or threads) as compared to the traditional technique of having multiple
+              processes compete to receive datagrams on the same socket.
+
+       SO_RXQ_OVFL (since Linux 2.6.33)
+              Indicates that an unsigned 32-bit value ancillary message (cmsg) should be attached to received skbs indicating the number of packets dropped by the socket since its creation.
+
+       SO_SELECT_ERR_QUEUE (since Linux 3.10)
+              When this option is set on a socket, an error condition on a socket causes notification not only via the exceptfds set of select(2).  Similarly, poll(2) also returns a POLLPRI whenever  an
+              POLLERR event is returned.
+
+              Background:  this  option  was  added when waking up on an error condition occurred only via the readfds and writefds sets of select(2).  The option was added to allow monitoring for error
+              conditions via the exceptfds argument without simultaneously having to receive notifications (via readfds) for regular data that can be read from the socket.  After changes in Linux  4.16,
+              the use of this flag to achieve the desired notifications is no longer necessary.  This option is nevertheless retained for backwards compatibility.
+
+       SO_SNDBUF
+              Sets or gets the maximum socket send buffer in bytes.  The kernel doubles this value (to allow space for bookkeeping overhead) when it is set using setsockopt(2), and this doubled value is
+              returned by getsockopt(2).  The default value is set by the /proc/sys/net/core/wmem_default file and the maximum allowed value is set by the /proc/sys/net/core/wmem_max file.  The  minimum
+              (doubled) value for this option is 2048.
+
+       SO_SNDBUFFORCE (since Linux 2.6.14)
+              Using this socket option, a privileged (CAP_NET_ADMIN) process can perform the same task as SO_SNDBUF, but the wmem_max limit can be overridden.
+
+       SO_TIMESTAMP
+              Enable  or disable the receiving of the SO_TIMESTAMP control message.  The timestamp control message is sent with level SOL_SOCKET and a cmsg_type of SCM_TIMESTAMP.  The cmsg_data field is
+              a struct timeval indicating the reception time of the last packet passed to the user in this call.  See cmsg(3) for details on control messages.
+
+       SO_TIMESTAMPNS (since Linux 2.6.22)
+              Enable or disable the receiving of the SO_TIMESTAMPNS control message.  The timestamp control message is sent with level SOL_SOCKET and a cmsg_type of SCM_TIMESTAMPNS.  The cmsg_data field
+              is a struct timespec indicating the reception time of the last packet passed to the user in this call.  The clock used for the timestamp is CLOCK_REALTIME.  See cmsg(3) for details on con‐
+              trol messages.
+
+              A socket cannot mix SO_TIMESTAMP and SO_TIMESTAMPNS: the two modes are mutually exclusive.
+
+       SO_TYPE
+              Gets the socket type as an integer (e.g., SOCK_STREAM).  This socket option is read-only.
+
+       SO_BUSY_POLL (since Linux 3.11)
+              Sets the approximate time in microseconds to busy poll on a blocking receive when there is no data.  Increasing this value requires CAP_NET_ADMIN.  The default  for  this  option  is  con‐
+              trolled by the /proc/sys/net/core/busy_read file.
+
+              The  value  in the /proc/sys/net/core/busy_poll file determines how long select(2) and poll(2) will busy poll when they operate on sockets with SO_BUSY_POLL set and no events to report are
+              found.
+
+              In both cases, busy polling will only be done when the socket last received data from a network device that supports this option.
+
+              While busy polling may improve latency of some applications, care must be taken when using it since this will increase both CPU utilization and power usage.
+
+   Signals
+       When writing onto a connection-oriented socket that has been shut down (by the local or the remote end) SIGPIPE is sent to the writing process and EPIPE is returned.  The signal is not sent  when
+       the write call specified the MSG_NOSIGNAL flag.
+
+       When  requested  with  the  FIOSETOWN  fcntl(2)  or SIOCSPGRP ioctl(2), SIGIO is sent when an I/O event occurs.  It is possible to use poll(2) or select(2) in the signal handler to find out which
+       socket the event occurred on.  An alternative (in Linux 2.2) is to set a real-time signal using the F_SETSIG fcntl(2); the handler of the real time signal will be called with the file  descriptor
+       in the si_fd field of its siginfo_t.  See fcntl(2) for more information.
+
+       Under  some  circumstances  (e.g.,  multiple processes accessing a single socket), the condition that caused the SIGIO may have already disappeared when the process reacts to the signal.  If this
+       happens, the process should wait again because Linux will resend the signal later.
+
+   /proc interfaces
+       The core socket networking parameters can be accessed via files in the directory /proc/sys/net/core/.
+
+       rmem_default
+              contains the default setting in bytes of the socket receive buffer.
+
+       rmem_max
+              contains the maximum socket receive buffer size in bytes which a user may set by using the SO_RCVBUF socket option.
+
+       wmem_default
+              contains the default setting in bytes of the socket send buffer.
+
+       wmem_max
+              contains the maximum socket send buffer size in bytes which a user may set by using the SO_SNDBUF socket option.
+
+       message_cost and message_burst
+              configure the token bucket filter used to load limit warning messages caused by external network events.
+
+       netdev_max_backlog
+              Maximum number of packets in the global input queue.
+
+       optmem_max
+              Maximum length of ancillary data and user control data like the iovecs per socket.
+
+   Ioctls
+       These operations can be accessed using ioctl(2):
+
+           error = ioctl(ip_socket, ioctl_type, &value_result);
+
+       SIOCGSTAMP
+              Return a struct timeval with the receive timestamp of the last packet passed to the user.  This is useful for accurate round trip time measurements.  See setitimer(2) for a description  of
+              struct  timeval.   This  ioctl  should be used only if the socket options SO_TIMESTAMP and SO_TIMESTAMPNS are not set on the socket.  Otherwise, it returns the timestamp of the last packet
+              that was received while SO_TIMESTAMP and SO_TIMESTAMPNS were not set, or it fails if no such packet has been received, (i.e., ioctl(2) returns -1 with errno set to ENOENT).
+
+       SIOCSPGRP
+              Set the process or process group that is to receive SIGIO or SIGURG signals when I/O becomes possible or urgent data is available.  The argument is a pointer to a pid_t.  For  further  de‐
+              tails, see the description of F_SETOWN in fcntl(2).
+
+       FIOASYNC
+              Change  the  O_ASYNC  flag to enable or disable asynchronous I/O mode of the socket.  Asynchronous I/O mode means that the SIGIO signal or the signal set with F_SETSIG is raised when a new
+              I/O event occurs.
+
+              Argument is an integer boolean flag.  (This operation is synonymous with the use of fcntl(2) to set the O_ASYNC flag.)
+
+       SIOCGPGRP
+              Get the current process or process group that receives SIGIO or SIGURG signals, or 0 when none is set.
+
+       Valid fcntl(2) operations:
+
+       FIOGETOWN
+              The same as the SIOCGPGRP ioctl(2).
+
+       FIOSETOWN
+              The same as the SIOCSPGRP ioctl(2).
+
+VERSIONS
+       SO_BINDTODEVICE was introduced in Linux 2.0.30.  SO_PASSCRED is new in Linux 2.2.  The /proc interfaces were introduced in Linux 2.2.   SO_RCVTIMEO  and  SO_SNDTIMEO  are  supported  since  Linux
+       2.3.41.  Earlier, timeouts were fixed to a protocol-specific setting, and could not be read or written.
+
+NOTES
+       Linux assumes that half of the send/receive buffer is used for internal kernel structures; thus the values in the corresponding /proc files are twice what can be observed on the wire.
+
+       Linux will allow port reuse only with the SO_REUSEADDR option when this option was set both in the previous program that performed a bind(2) to the port and in the program that wants to reuse the
+       port.  This differs from some implementations (e.g., FreeBSD) where only the later program needs to set the SO_REUSEADDR option.  Typically this difference is invisible,  since,  for  example,  a
+       server program is designed to always set this option.
+
+SEE ALSO
+       wireshark(1), bpf(2), connect(2), getsockopt(2), setsockopt(2), socket(2), pcap(3), address_families(7), capabilities(7), ddp(7), ip(7), ipv6(7), packet(7), tcp(7), udp(7), unix(7), tcpdump(8)
+
+Linux man-pages 6.04                                                                            2023-02-05                                                                                       socket(7)

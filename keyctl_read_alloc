@@ -1,0 +1,61 @@
+KEYCTL_READ(3)                                                                          Linux Key Management Calls                                                                          KEYCTL_READ(3)
+
+NAME
+       keyctl_read - read a key
+
+SYNOPSIS
+       #include <keyutils.h>
+
+       long keyctl_read(key_serial_t key, char *buffer, size_t buflen);
+
+       long keyctl_read_alloc(key_serial_t key, void **_buffer);
+
+DESCRIPTION
+       keyctl_read() reads the payload of a key if the key type supports it.
+
+       The caller must have read permission on a key to be able to read it.
+
+       buffer  and  buflen  specify the buffer into which the payload data will be placed.  If the buffer is too small, then the full size of the payload will be returned, and the contents of the buffer
+       may be overwritten in some undefined way.
+
+       keyctl_read_alloc() is similar to keyctl_read() except that it allocates a buffer big enough to hold the payload data and places the data in it.  If successful, a pointer to the buffer is  placed
+       in *_buffer.  The caller must free the buffer.
+
+       keyctl_read_alloc() adds a NUL character after the data it retrieves, though this is not counted in the size value it returns.
+
+READING KEYRINGS
+       This  call  can  be  used to list the contents of a keyring.  The data is presented to the user as an array of key_serial_t values, each of which corresponds to a key to which the keyring holds a
+       link.
+
+       The size of the keyring will be sizeof(key_serial_t) multiplied by the number of keys.  The size of key_serial_t is invariant across different word sizes, though the byte-ordering is as appropri‐
+       ate for the kernel.
+
+RETURN VALUE
+       On  success  keyctl_read()  returns  the amount of data placed into the buffer.  If the buffer was too small, then the size of buffer required will be returned, and the contents of the buffer may
+       have been overwritten in some undefined way.
+
+       On success keyctl_read_alloc() returns the amount of data in the buffer.
+
+       On error, both functions set errno to an appropriate code and return the value -1.
+
+ERRORS
+       ENOKEY The key specified is invalid.
+
+       EKEYEXPIRED
+              The key specified has expired.
+
+       EKEYREVOKED
+              The key specified had been revoked.
+
+       EACCES The key exists, but is not readable by the calling process.
+
+       EOPNOTSUPP
+              The key type does not support reading of the payload data.
+
+LINKING
+       This is a library function that can be found in libkeyutils.  When linking, -lkeyutils should be specified to the linker.
+
+SEE ALSO
+       keyctl(1), add_key(2), keyctl(2), request_key(2), keyctl(3), keyrings(7), keyutils(7)
+
+Linux                                                                                           21 Feb 2014                                                                                 KEYCTL_READ(3)

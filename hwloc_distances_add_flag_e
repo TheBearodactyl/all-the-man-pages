@@ -1,0 +1,101 @@
+hwlocality_distances_add(3)                                                              Hardware Locality (hwloc)                                                             hwlocality_distances_add(3)
+
+NAME
+       hwlocality_distances_add - Add distances between objects
+
+SYNOPSIS
+   Typedefs
+       typedef void * hwloc_distances_add_handle_t
+
+   Enumerations
+       enum hwloc_distances_add_flag_e { HWLOC_DISTANCES_ADD_FLAG_GROUP, HWLOC_DISTANCES_ADD_FLAG_GROUP_INACCURATE }
+
+   Functions
+       hwloc_distances_add_handle_t hwloc_distances_add_create (hwloc_topology_t topology, const char *name, unsigned long kind, unsigned long flags)
+       int hwloc_distances_add_values (hwloc_topology_t topology, hwloc_distances_add_handle_t handle, unsigned nbobjs, hwloc_obj_t *objs, hwloc_uint64_t *values, unsigned long flags)
+       int hwloc_distances_add_commit (hwloc_topology_t topology, hwloc_distances_add_handle_t handle, unsigned long flags)
+
+Detailed Description
+       The usual way to add distances is:
+
+       hwloc_distances_add_handle_t handle;
+       int err = -1;
+       handle = hwloc_distances_add_create(topology, "name", kind, 0);
+       if (handle) {
+         err = hwloc_distances_add_values(topology, handle, nbobjs, objs, values, 0);
+         if (!err)
+           err = hwloc_distances_add_commit(topology, handle, flags);
+       }
+
+        If err is 0 at the end, then addition was successful.
+
+Typedef Documentation
+   typedef void* hwloc_distances_add_handle_t
+       Handle to a new distances structure during its addition to the topology.
+
+Enumeration Type Documentation
+   enum hwloc_distances_add_flag_e
+       Flags for adding a new distances to a topology.
+
+       Enumerator
+
+       HWLOC_DISTANCES_ADD_FLAG_GROUP
+              Try to group objects based on the newly provided distance information. This is ignored for distances between objects of different types.
+
+       HWLOC_DISTANCES_ADD_FLAG_GROUP_INACCURATE
+              If grouping, consider the distance values as inaccurate and relax the comparisons during the grouping algorithms. The actual accuracy may be modified through the HWLOC_GROUPING_ACCURACY
+              environment variable (see Environment Variables).
+
+Function Documentation
+   int hwloc_distances_add_commit (hwloc_topology_t topology, hwloc_distances_add_handle_t handle, unsigned long flags)
+       Commit a new distances structure. This function finalizes the distances structure and inserts in it the topology.
+
+       Parameter handle was previously returned by hwloc_distances_add_create(). Then objects and values were specified with hwloc_distances_add_values().
+
+       flags configures the behavior of the function using an optional OR'ed set of hwloc_distances_add_flag_e. It may be used to request the grouping of existing objects based on distances.
+
+       On error, the temporary distances structure and its content are destroyed.
+
+       Returns
+           0 on success.
+
+           -1 on error.
+
+   hwloc_distances_add_handle_t hwloc_distances_add_create (hwloc_topology_t topology, const char * name, unsigned long kind, unsigned long flags)
+       Create a new empty distances structure. Create an empty distances structure to be filled with hwloc_distances_add_values() and then committed with hwloc_distances_add_commit().
+
+       Parameter name is optional, it may be NULL. Otherwise, it will be copied internally and may later be freed by the caller.
+
+       kind specifies the kind of distance as a OR'ed set of hwloc_distances_kind_e. Kind HWLOC_DISTANCES_KIND_HETEROGENEOUS_TYPES will be automatically set according to objects having different types
+       in hwloc_distances_add_values().
+
+       flags must be 0 for now.
+
+       Returns
+           A hwloc_distances_add_handle_t that should then be passed to hwloc_distances_add_values() and hwloc_distances_add_commit().
+
+           NULL on error.
+
+   int hwloc_distances_add_values (hwloc_topology_t topology, hwloc_distances_add_handle_t handle, unsigned nbobjs, hwloc_obj_t * objs, hwloc_uint64_t * values, unsigned long flags)
+       Specify the objects and values in a new empty distances structure. Specify the objects and values for a new distances structure that was returned as a handle by hwloc_distances_add_create(). The
+       structure must then be committed with hwloc_distances_add_commit().
+
+       The number of objects is nbobjs and the array of objects is objs. Distance values are stored as a one-dimension array in values. The distance from object i to object j is in slot i*nbobjs+j.
+
+       nbobjs must be at least 2.
+
+       Arrays objs and values will be copied internally, they may later be freed by the caller.
+
+       On error, the temporary distances structure and its content are destroyed.
+
+       flags must be 0 for now.
+
+       Returns
+           0 on success.
+
+           -1 on error.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                  hwlocality_distances_add(3)

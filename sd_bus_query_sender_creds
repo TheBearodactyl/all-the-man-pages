@@ -1,0 +1,72 @@
+SD_BUS_QUERY_SENDER_CREDS(3sd_bus_query_sender_creSD_BUS_QUERY_SENDER_CREDS(3)
+
+NAME
+       sd_bus_query_sender_creds, sd_bus_query_sender_privilege - Query bus
+       message sender credentials/privileges
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_query_sender_creds(sd_bus_message *m, uint64_t mask,
+                                     sd_bus_creds **creds);
+
+       sd_bus_error* sd_bus_query_sender_privilege(sd_bus_message *m,
+                                                   int capability);
+
+DESCRIPTION
+       sd_bus_query_sender_creds() returns the credentials of the message m.
+       The mask parameter is a combo of SD_BUS_CREDS_* flags that indicate
+       which credential info the caller is interested in. See
+       sd_bus_creds_new_from_pid(3) for a list of possible flags. First, this
+       message checks if the requested credentials are attached to the message
+       itself. If not, but the message contains the pid of the sender and the
+       caller specified the SD_BUS_CREDS_AUGMENT flag, this function tries to
+       figure out the missing credentials via other means (starting from the
+       pid). If the pid isn't available but the message has a sender, this
+       function calls sd_bus_get_name_creds(3) to get the requested
+       credentials. If the message has no sender (when a direct connection is
+       used), this function calls sd_bus_get_owner_creds(3) to get the
+       requested credentials. On success, the requested credentials are stored
+       in creds. Ownership of the credentials object in creds is transferred
+       to the caller and should be freed by calling sd_bus_creds_unref(3).
+
+       sd_bus_query_sender_privilege() checks if the message m has the
+       requested privileges. If capability is a non-negative integer, this
+       function checks if the message has the capability with the same value.
+       See capabilities(7) for a list of capabilities. If capability is a
+       negative integer, this function returns whether the sender of the
+       message runs as the same user as the receiver of the message, or if the
+       sender of the message runs as root and the receiver of the message does
+       not run as root. On success and if the message has the requested
+       privileges, this function returns a positive integer. If the message
+       does not have the requested privileges, this function returns zero.
+
+RETURN VALUE
+       On success, these functions return a non-negative integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           The message m or an output parameter is NULL.
+
+       -ENOTCONN
+           The bus of m is not connected.
+
+       -ECHILD
+           The bus of m was created in a different process.
+
+       -EPERM
+           The message m is not sealed.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_creds_new_from_pid(3),
+       sd_bus_get_name_creds(3), sd_bus_get_owner_creds(3),
+       sd_bus_creds_unref(3), capabilities(7)
+
+systemd 253                                       SD_BUS_QUERY_SENDER_CREDS(3)

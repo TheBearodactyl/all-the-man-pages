@@ -1,0 +1,68 @@
+hwlocality_opencl(3)                                                                     Hardware Locality (hwloc)                                                                    hwlocality_opencl(3)
+
+NAME
+       hwlocality_opencl - Interoperability with OpenCL
+
+SYNOPSIS
+   Functions
+       static int hwloc_opencl_get_device_pci_busid (cl_device_id device, unsigned *domain, unsigned *bus, unsigned *dev, unsigned *func)
+       static int hwloc_opencl_get_device_cpuset (hwloc_topology_t topology, cl_device_id device, hwloc_cpuset_t set)
+       static hwloc_obj_t hwloc_opencl_get_device_osdev_by_index (hwloc_topology_t topology, unsigned platform_index, unsigned device_index)
+       static hwloc_obj_t hwloc_opencl_get_device_osdev (hwloc_topology_t topology, cl_device_id device)
+
+Detailed Description
+       This interface offers ways to retrieve topology information about OpenCL devices.
+
+       Only AMD and NVIDIA OpenCL implementations currently offer useful locality information about their devices.
+
+Function Documentation
+   static int hwloc_opencl_get_device_cpuset (hwloc_topology_t topology, cl_device_id device, hwloc_cpuset_t set) [inline],  [static]
+       Get the CPU set of processors that are physically close to OpenCL device device. Store in set the CPU-set describing the locality of the OpenCL device device.
+
+       Topology topology and device device must match the local machine. I/O devices detection and the OpenCL component are not needed in the topology.
+
+       The function only returns the locality of the device. If more information about the device is needed, OS objects should be used instead, see hwloc_opencl_get_device_osdev() and
+       hwloc_opencl_get_device_osdev_by_index().
+
+       This function is currently only implemented in a meaningful way for Linux with the AMD or NVIDIA OpenCL implementation; other systems will simply get a full cpuset.
+
+   static hwloc_obj_t hwloc_opencl_get_device_osdev (hwloc_topology_t topology, cl_device_id device) [inline],  [static]
+       Get the hwloc OS device object corresponding to OpenCL device deviceX.
+
+       Returns
+           The hwloc OS device object corresponding to the given OpenCL device device.
+
+           NULL if none could be found, for instance if required OpenCL attributes are not available.
+
+       This function currently only works on AMD and NVIDIA OpenCL devices that support relevant OpenCL extensions. hwloc_opencl_get_device_osdev_by_index() should be preferred whenever possible, i.e.
+       when platform and device index are known.
+
+       Topology topology and device device must match the local machine. I/O devices detection and the OpenCL component must be enabled in the topology. If not, the locality of the object may still be
+       found using hwloc_opencl_get_device_cpuset().
+
+       Note
+           This function cannot work if PCI devices are filtered out.
+
+           The corresponding hwloc PCI device may be found by looking at the result parent pointer (unless PCI devices are filtered out).
+
+   static hwloc_obj_t hwloc_opencl_get_device_osdev_by_index (hwloc_topology_t topology, unsigned platform_index, unsigned device_index) [inline],  [static]
+       Get the hwloc OS device object corresponding to the OpenCL device for the given indexes.
+
+       Returns
+           The hwloc OS device object describing the OpenCL device whose platform index is platform_index, and whose device index within this platform if device_index.
+
+           NULL if there is none.
+
+       The topology topology does not necessarily have to match the current machine. For instance the topology may be an XML import of a remote host. I/O devices detection and the OpenCL component must
+       be enabled in the topology.
+
+       Note
+           The corresponding PCI device object can be obtained by looking at the OS device parent object (unless PCI devices are filtered out).
+
+   static int hwloc_opencl_get_device_pci_busid (cl_device_id device, unsigned * domain, unsigned * bus, unsigned * dev, unsigned * func) [inline],  [static]
+       Return the domain, bus and device IDs of the OpenCL device device. Device device must match the local machine.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                         hwlocality_opencl(3)

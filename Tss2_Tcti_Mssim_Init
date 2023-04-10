@@ -1,0 +1,82 @@
+Tss2_Tcti_Mssim_Init(3)                                                                  Library Functions Manual                                                                  Tss2_Tcti_Mssim_Init(3)
+
+NAME
+       Tss2_Tcti_Mssim_Init - Initialization function for the Microsoft TPM simulator TCTI library.
+
+SYNOPSIS
+       #include <tcti/tcti_mssim.h>
+
+       TSS2_RC Tss2_Tcti_Mssim_Init (TSS2_TCTI_CONTEXT *tctiContext, size_t *contextSize, const char *conf);
+
+       The Tss2_Tcti_Mssim_Init() function initializes a TCTI context used to communicate with the Microsoft TPM2 simulator.
+
+DESCRIPTION
+       Tss2_Tcti_Mssim_Init() attempts to initialize a caller allocated tcti_context of size size using caller provided configuration string conf . Since the tcti_context must be a caller allocated buf‐
+       fer, the caller needs to know the buffer size required by the TCTI library. The minimum size of this context can be discovered by providing NULL for the tcti_context and a non- NULL size  parame‐
+       ter.  The  initialization function will then populate the size parameter with the minimum size of the tcti_context buffer. The caller must then allocate a buffer of this size (or larger) and call
+       Tss2_Tcti_Mssim_Init () again providing the newly allocated tcti_context and the size of this context in the size parameter. This pattern is common to all TCTI initialization functions.  We  pro‐
+       vide an example of this pattern using the Tss2_Tcti_Mssim_Init() function in the section titled EXAMPLE.
+
+       The  conf  parameter  is a C string used to configure the TCTI context. This configuration string is a series of key / value pairs that specify the host and port used to connect to an instance of
+       the Microsoft TPM2 simulator. The keys and values are separated by the '=' character, while each key / value pair is separated by the ',' character.
+
+       The only keys supported in the conf string are host and port.  The host may be an IPv4 address, an IPv6 address, or a host name. The port must be a valid uint16_t in string form. If a  NULL  conf
+       string is provided by the caller then the default of "host=localhost,port=2321" is used. If either host or port are omitted then their respective default value will be used.
+
+       Once  initialized, the TCTI context returned exposes the Trusted Computing Group (TCG) defined API for the lowest level communication with the TPM.  Using this API the caller can exchange (send /
+       receive) TPM2 command and response buffers with the Microsoft TPM simulator. In nearly all cases however, the caller will initialize a context using this function before passing the context to  a
+       higher level API like the System API (SAPI), and then never touch it again.
+
+       For   a   more   thorough   discussion   of   the   TCTI   API   see   the   “TSS   System   Level   API   and  TPM  Command  Transmission  Interface  Specification”  as  published  by  the  TCG:
+       https://trustedcomputinggroup.org/tss-system-level-api-tpm-command-transmission-interface-specification/
+
+RETURN VALUE
+       A successful call to Tss2_Tcti_Mssim_Init() will return TSS2_RC_SUCCESS.  An unsuccessful call will produce a response code described in section ERRORS.
+
+ERRORS
+       TSS2_TCTI_RC_BAD_VALUE is returned if both the tcti_context and the size parameters are NULL, or if the config parameter is NULL.
+
+EXAMPLE
+       TCTI initialization fragment:
+
+       #include <inttypes.h>
+       #include <stdlib.h>
+       #include <stdio.h>
+       #include <tcti/tcti_mssim.h>
+
+       TSS2_RC rc;
+       TSS2_TCTI_CONTEXT *tcti_context;
+       size_t size;
+       const char *conf = "host=localhost,port=2321"
+
+       rc = Tss2_Tcti_Mssim_Init (NULL, &size, NULL);
+       if (rc != TSS2_RC_SUCCESS) {
+           fprintf (stderr, "Failed to get allocation size for mssim TCTI "
+                    " context: 0x%" PRIx32 "0, rc);
+           exit (EXIT_FAILURE);
+       }
+       tcti_context = calloc (1, size);
+       if (tcti_context == NULL) {
+           fprintf (stderr, "Allocation for TCTI context failed: %s0,
+                    strerror (errno));
+           exit (EXIT_FAILURE);
+       }
+       rc = Tss2_Tcti_Mssim_Init (&tcti_context, &size, conf);
+       if (rc != TSS2_RC_SUCCESS) {
+           fprintf (stderr, "Failed to initialize mssim TCTI context: "
+                    "0x%" PRIx32 "0, rc);
+           free (tcti_context);
+           exit (EXIT_FAILURE);
+       }
+
+AUTHOR
+       Philip Tricca <philip.b.tricca@intel.com>
+
+SEE ALSO
+       Tss2_Tcti_Device_Init(3), Tss2_Tcti_Socket_Init(3), Tss2_TctiLdr_Initialize(3), Tss2_TctiLdr_Finalize(3), tcti-device(7), tcti-socket(7), tcti-tabrmd(7), tpm2-abrmd(8)
+
+COLOPHON
+       This page is part of release 3.2.0 of Open Source implementation of the TCG TPM2 Software Stack (TSS2). A description of the project, information about reporting bugs, and the latest  version  of
+       this page can be found at https://github.com/tpm2-software/tpm2-tss/.
+
+TPM2 Software Stack                                                                              JUNE 2017                                                                         Tss2_Tcti_Mssim_Init(3)

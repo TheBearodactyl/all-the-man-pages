@@ -1,0 +1,51 @@
+X509_ADD_CERT(3ssl)                                                                               OpenSSL                                                                              X509_ADD_CERT(3ssl)
+
+NAME
+       X509_add_cert, X509_add_certs - X509 certificate list addition functions
+
+SYNOPSIS
+        #include <openssl/x509.h>
+
+        int X509_add_cert(STACK_OF(X509) *sk, X509 *cert, int flags);
+        int X509_add_certs(STACK_OF(X509) *sk, STACK_OF(X509) *certs, int flags);
+
+DESCRIPTION
+       X509_add_cert() adds a certificate cert to the given list sk.
+
+       X509_add_certs() adds a list of certificate certs to the given list sk.  The certs argument may be NULL, which implies no effect.  It does not modify the list certs but in case the
+       X509_ADD_FLAG_UP_REF flag (described below) is set the reference counters of those of its members added to sk are increased.
+
+       Both these functions have a flags parameter, which is used to control details of the operation.
+
+       The value X509_ADD_FLAG_DEFAULT, which equals 0, means no special semantics.
+
+       If X509_ADD_FLAG_UP_REF is set then the reference counts of those certificates added successfully are increased.
+
+       If X509_ADD_FLAG_PREPEND is set then the certifcates are prepended to sk.  By default they are appended to sk.  In both cases the original order of the added certificates is preserved.
+
+       If X509_ADD_FLAG_NO_DUP is set then certificates already contained in sk, which is determined using X509_cmp(3), are ignored.
+
+       If X509_ADD_FLAG_NO_SS is set then certificates that are marked self-signed, which is determined using X509_self_signed(3), are ignored.
+
+RETURN VALUES
+       Both functions return 1 for success and 0 for failure.
+
+NOTES
+       If X509_add_certs() is used with the flags X509_ADD_FLAG_NO_DUP or X509_ADD_FLAG_NO_SS it is advisable to use also X509_ADD_FLAG_UP_REF because otherwise likely not for all members of the certs
+       list the ownership is transferred to the list of certificates sk.
+
+       Care should also be taken in case the certs argument equals sk.
+
+SEE ALSO
+       X509_cmp(3) X509_self_signed(3)
+
+HISTORY
+       The functions X509_add_cert() and X509_add_certs() were added in OpenSSL 3.0.
+
+COPYRIGHT
+       Copyright 2019-2020 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use this file except in compliance with the License.  You can obtain a copy in the file LICENSE in the source distribution or
+       at <https://www.openssl.org/source/license.html>.
+
+3.0.8                                                                                           2023-02-07                                                                             X509_ADD_CERT(3ssl)

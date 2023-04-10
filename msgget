@@ -1,0 +1,165 @@
+MSGGET(3P)                                                                               POSIX Programmer's Manual                                                                              MSGGET(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       msgget — get the XSI message queue identifier
+
+SYNOPSIS
+       #include <sys/msg.h>
+
+       int msgget(key_t key, int msgflg);
+
+DESCRIPTION
+       The msgget() function operates on XSI message queues (see the Base Definitions volume of POSIX.1‐2017, Section 3.226, Message Queue).  It is unspecified whether this function  interoperates  with
+       the realtime interprocess communication facilities defined in Section 2.8, Realtime.
+
+       The msgget() function shall return the message queue identifier associated with the argument key.
+
+       A message queue identifier, associated message queue, and data structure (see <sys/msg.h>), shall be created for the argument key if one of the following is true:
+
+        *  The argument key is equal to IPC_PRIVATE.
+
+        *  The argument key does not already have a message queue identifier associated with it, and (msgflg & IPC_CREAT) is non-zero.
+
+       Upon creation, the data structure associated with the new message queue identifier shall be initialized as follows:
+
+        *  msg_perm.cuid, msg_perm.uid, msg_perm.cgid, and msg_perm.gid shall be set to the effective user ID and effective group ID, respectively, of the calling process.
+
+        *  The low-order 9 bits of msg_perm.mode shall be set to the low-order 9 bits of msgflg.
+
+        *  msg_qnum, msg_lspid, msg_lrpid, msg_stime, and msg_rtime shall be set to 0.
+
+        *  msg_ctime shall be set to the current time, as described in Section 2.7.1, IPC General Description.
+
+        *  msg_qbytes shall be set to the system limit.
+
+RETURN VALUE
+       Upon successful completion, msgget() shall return a non-negative integer, namely a message queue identifier.  Otherwise, it shall return -1 and set errno to indicate the error.
+
+ERRORS
+       The msgget() function shall fail if:
+
+       EACCES A message queue identifier exists for the argument key, but operation permission as specified by the low-order 9 bits of msgflg would not be granted; see Section 2.7, XSI Interprocess Com‐
+              munication.
+
+       EEXIST A message queue identifier exists for the argument key but ((msgflg & IPC_CREAT) && (msgflg & IPC_EXCL)) is non-zero.
+
+       ENOENT A message queue identifier does not exist for the argument key and (msgflg & IPC_CREAT) is 0.
+
+       ENOSPC A message queue identifier is to be created but the system-imposed limit on the maximum number of allowed message queue identifiers system-wide would be exceeded.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The POSIX Realtime Extension defines alternative interfaces for interprocess communication (IPC). Application developers who need to use IPC should design their applications so that modules using
+       the IPC routines described in Section 2.7, XSI Interprocess Communication can be easily modified to use the alternative interfaces.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section  2.7,  XSI  Interprocess  Communication, Section 2.8, Realtime, ftok(), mq_close(), mq_getattr(), mq_notify(), mq_open(), mq_receive(), mq_send(), mq_setattr(), mq_unlink(), msgctl(), ms‐
+       grcv(), msgsnd()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 3.226, Message Queue, <sys_msg.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         MSGGET(3P)
+msgget(2)                                                                                   System Calls Manual                                                                                  msgget(2)
+
+NAME
+       msgget - get a System V message queue identifier
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/msg.h>
+
+       int msgget(key_t key, int msgflg);
+
+DESCRIPTION
+       The  msgget() system call returns the System V message queue identifier associated with the value of the key argument.  It may be used either to obtain the identifier of a previously created mes‐
+       sage queue (when msgflg is zero and key does not have the value IPC_PRIVATE), or to create a new set.
+
+       A new message queue is created if key has the value IPC_PRIVATE or key isn't IPC_PRIVATE, no message queue with the given key key exists, and IPC_CREAT is specified in msgflg.
+
+       If msgflg specifies both IPC_CREAT and IPC_EXCL and a message queue already exists for key, then msgget() fails with errno set to EEXIST.  (This is analogous to  the  effect  of  the  combination
+       O_CREAT | O_EXCL for open(2).)
+
+       Upon  creation,  the least significant bits of the argument msgflg define the permissions of the message queue.  These permission bits have the same format and semantics as the permissions speci‐
+       fied for the mode argument of open(2).  (The execute permissions are not used.)
+
+       If a new message queue is created, then its associated data structure msqid_ds (see msgctl(2)) is initialized as follows:
+
+       •  msg_perm.cuid and msg_perm.uid are set to the effective user ID of the calling process.
+
+       •  msg_perm.cgid and msg_perm.gid are set to the effective group ID of the calling process.
+
+       •  The least significant 9 bits of msg_perm.mode are set to the least significant 9 bits of msgflg.
+
+       •  msg_qnum, msg_lspid, msg_lrpid, msg_stime, and msg_rtime are set to 0.
+
+       •  msg_ctime is set to the current time.
+
+       •  msg_qbytes is set to the system limit MSGMNB.
+
+       If the message queue already exists the permissions are verified, and a check is made to see if it is marked for destruction.
+
+RETURN VALUE
+       On success, msgget() returns the message queue identifier (a nonnegative integer).  On failure, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EACCES A message queue exists for key, but the calling process does not have permission to access the queue, and does not have the CAP_IPC_OWNER capability in the user namespace that governs  its
+              IPC namespace.
+
+       EEXIST IPC_CREAT and IPC_EXCL were specified in msgflg, but a message queue already exists for key.
+
+       ENOENT No message queue exists for key and msgflg did not specify IPC_CREAT.
+
+       ENOMEM A message queue has to be created but the system does not have enough memory for the new data structure.
+
+       ENOSPC A message queue has to be created but the system limit for the maximum number of message queues (MSGMNI) would be exceeded.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4.
+
+   Linux
+       Until Linux 2.3.20, Linux would return EIDRM for a msgget() on a message queue scheduled for deletion.
+
+NOTES
+       IPC_PRIVATE  isn't  a  flag field but a key_t type.  If this special value is used for key, the system call ignores everything but the least significant 9 bits of msgflg and creates a new message
+       queue (on success).
+
+       The following is a system limit on message queue resources affecting a msgget() call:
+
+       MSGMNI System-wide limit on the number of message queues.  Before Linux 3.19, the default value for this limit was calculated using a formula based on available system memory.  Since Linux  3.19,
+              the default value is 32,000.  On Linux, this limit can be read and modified via /proc/sys/kernel/msgmni.
+
+BUGS
+       The name choice IPC_PRIVATE was perhaps unfortunate, IPC_NEW would more clearly show its function.
+
+SEE ALSO
+       msgctl(2), msgrcv(2), msgsnd(2), ftok(3), capabilities(7), mq_overview(7), sysvipc(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       msgget(2)

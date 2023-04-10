@@ -1,0 +1,84 @@
+App::Prove::State::Result(3perl)                                                     Perl Programmers Reference Guide                                                     App::Prove::State::Result(3perl)
+
+NAME
+       App::Prove::State::Result - Individual test suite results.
+
+VERSION
+       Version 3.44
+
+DESCRIPTION
+       The "prove" command supports a "--state" option that instructs it to store persistent state across runs. This module encapsulates the results for a single test suite run.
+
+SYNOPSIS
+           # Re-run failed tests
+           $ prove --state=failed,save -rbv
+
+METHODS
+   Class Methods
+       "new"
+
+           my $result = App::Prove::State::Result->new({
+               generation => $generation,
+               tests      => \%tests,
+           });
+
+       Returns a new "App::Prove::State::Result" instance.
+
+   "state_version"
+       Returns the current version of state storage.
+
+   "test_class"
+       Returns the name of the class used for tracking individual tests.  This class should either subclass from "App::Prove::State::Result::Test" or provide an identical interface.
+
+       "generation"
+
+       Getter/setter for the "generation" of the test suite run. The first generation is 1 (one) and subsequent generations are 2, 3, etc.
+
+       "last_run_time"
+
+       Getter/setter for the time of the test suite run.
+
+       "tests"
+
+       Returns the tests for a given generation. This is a hashref or a hash, depending on context called. The keys to the hash are the individual test names and the value is a hashref with various
+       interesting values.  Each k/v pair might resemble something like this:
+
+        't/foo.t' => {
+           elapsed        => '0.0428488254547119',
+           gen            => '7',
+           last_pass_time => '1219328376.07815',
+           last_result    => '0',
+           last_run_time  => '1219328376.07815',
+           last_todo      => '0',
+           mtime          => '1191708862',
+           seq            => '192',
+           total_passes   => '6',
+         }
+
+       "test"
+
+        my $test = $result->test('t/customer/create.t');
+
+       Returns an individual "App::Prove::State::Result::Test" instance for the given test name (usually the filename).  Will return a new "App::Prove::State::Result::Test" instance if the name is not
+       found.
+
+       "test_names"
+
+       Returns an list of test names, sorted by run order.
+
+       "remove"
+
+        $result->remove($test_name);            # remove the test
+        my $test = $result->test($test_name);   # fatal error
+
+       Removes a given test from results.  This is a no-op if the test name is not found.
+
+       "num_tests"
+
+       Returns the number of tests for a given test suite result.
+
+       "raw"
+
+       Returns a hashref of raw results, suitable for serialization by YAML.
+
+perl v5.36.0                                                                                    2022-12-12                                                                App::Prove::State::Result(3perl)

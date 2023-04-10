@@ -1,0 +1,131 @@
+ESH(1)                                                                                                                                                                                              ESH(1)
+
+NAME
+       esh - simple template system based on shell
+
+SYNOPSIS
+       esh [-d] [-o output] [-s shell] [--] file [variable ...]
+
+       esh <-h | -V>
+
+DESCRIPTION
+       esh (embedded shell) is a templating engine for evaluating shell commands embedded in arbitrary templates. It’s like ERB (Embedded RuBy) for shell, intended to be used for templating
+       configuration files. Unlike ERB it provides support for including one ESH template into another (since version 0.2.0).
+
+       esh converts template file, or stdin if file is “-”, into a sequence of shell commands. Commands between <% and %> tags are passed as-is, everything else is escaped and prefixed with printf
+       command. These commands are eventually evaluated using shell (unless -d is specified).
+
+OPTIONS
+       -d
+           Don’t evaluate template, just dump a shell script.
+
+       -o file
+           Output file or “-” for STDOUT. Defaults to “-”.
+
+       -s shell
+           Command name or path of the shell to use for template evaluation. It must not contain spaces. Defaults to “/bin/sh”.
+
+       -h
+           Show help message and exit.
+
+       -V
+           Print version and exit.
+
+ENVIRONMENT
+       esh may be configured using the following environment variables:
+
+       ESH_AWK
+           Command name of path of the awk program to use. It must not contain spaces. Defaults to “awk”.
+
+       ESH_MAX_DEPTH
+           Maximum include depth. Defaults to 3.
+
+       ESH_SHELL
+           The same as -s shell.
+
+       The following extra environment variables are available inside the template and for the processes spawned by esh:
+
+       ESH
+           Path of the esh interpreter.
+
+EXIT STATUS
+       esh exits with the exit status of shell or awk unless some error has encountered before converting the template.
+
+       •   0  - Clean exit, no error has encountered.
+
+       •   1  - Generic error.
+
+       •   10 - Invalid usage.
+
+       •   11 - ESH syntax error.
+
+       •   12 - Include error: file not found.
+
+       •   13 - Include error: exceeded max include depth (ESH_MAX_DEPTH).
+
+TEMPLATE SYNTAX
+       ESH has two tags for shell code, a tag for include, comments, and a way to escape tag delimiters.
+
+       <% commands %>
+           Executes the commands and replaces this tag with its output on stdout.
+
+       <%= values %>
+           Executes printf '%s ' with the values as arguments and replaces this tag with the output (without trailing white space). values are not quoted or escaped, so all shell substitutions are
+           applied.
+
+       <%+ filename %>
+           Reads and converts ESH template from the filename and puts it in place of this tag. Includes are processed recursively, but the depth is limited by ESH_MAX_DEPTH.
+
+           If the filename is relative, it’s resolved against the directory of the template file in which this tag resides. If the template is read from stdin, the first level includes are resolved
+           against the current working directory. Please note that includes are processed during the conversion, not the evaluation phase, so the filename cannot be an expression or a variable!
+
+           Unlike the others, this tag must be closed on the same line, otherwise it’s a syntax error.
+
+       <%# comment %>
+           Removed from the final output.
+
+       -%>
+           May be used instead of %>. It trims the following line break if used at the end of line, otherwise has no trimming effect.
+
+       <%%
+           A literal <% when used outside of the above tags.
+
+       %%>
+           A literal %> when used inside of the above tags.
+
+       Opening and closing tag may not be at the same line.
+
+       Text outside a tag becomes literal text, but it is subject to any tagged shell code surrounding it. For example, text surrounded by a tagged if statement only appears in the output if the
+       condition is true.
+
+EXAMPLES
+       nginx.conf.esh
+
+           http {
+               access_log <%= $logs_dir/access.log %> main;
+
+               resolver <%= $(sed -En 's/^nameserver ([^#]+)/\1/p' /etc/resolv.conf) %>;
+
+               <% if nginx -V 2>&1 | grep -q lua-nginx-module; then -%>
+               lua_package_path '<%= $(pkg-config --variable=INSTALL_LMOD lua) %>/?.lua';
+               <% fi -%>
+
+               <%+ ./http-common.esh %>
+
+               <%# The rest of the config is omitted %>
+           }
+
+       To generate the resulting configuration file run:
+
+           esh -o nginx.conf nginx.conf.esh logs_dir=/var/log/nginx
+
+AUTHORS
+       esh's author is Jakub Jirutka.
+
+REPORTING BUGS
+       Report bugs to the project’s issue tracker at https://github.com/jirutka/esh/issues.
+
+SEE ALSO
+       sh(1)
+
+                                                                                                2022-04-10                                                                                          ESH(1)

@@ -1,0 +1,115 @@
+hwlocality_cpukinds(3)                                                                   Hardware Locality (hwloc)                                                                  hwlocality_cpukinds(3)
+
+NAME
+       hwlocality_cpukinds - Kinds of CPU cores
+
+SYNOPSIS
+   Functions
+       int hwloc_cpukinds_get_nr (hwloc_topology_t topology, unsigned long flags)
+       int hwloc_cpukinds_get_by_cpuset (hwloc_topology_t topology, hwloc_const_bitmap_t cpuset, unsigned long flags)
+       int hwloc_cpukinds_get_info (hwloc_topology_t topology, unsigned kind_index, hwloc_bitmap_t cpuset, int *efficiency, unsigned *nr_infos, struct hwloc_info_s **infos, unsigned long flags)
+       int hwloc_cpukinds_register (hwloc_topology_t topology, hwloc_bitmap_t cpuset, int forced_efficiency, unsigned nr_infos, struct hwloc_info_s *infos, unsigned long flags)
+
+Detailed Description
+       Platforms with heterogeneous CPUs may have some cores with different features or frequencies. This API exposes identical PUs in sets called CPU kinds. Each PU of the topology may only be in a
+       single kind.
+
+       The number of kinds may be obtained with hwloc_cpukinds_get_nr(). If the platform is homogeneous, there may be a single kind with all PUs. If the platform or operating system does not expose any
+       information about CPU cores, there may be no kind at all.
+
+       The index of the kind that describes a given CPU set (if any, and not partially) may be obtained with hwloc_cpukinds_get_by_cpuset().
+
+       From the index of a kind, it is possible to retrieve information with hwloc_cpukinds_get_info(): an abstracted efficiency value, and an array of info attributes (for instance the 'CoreType' and
+       'FrequencyMaxMHz', see CPU Kinds).
+
+       A higher efficiency value means greater intrinsic performance (and possibly less performance/power efficiency). Kinds with lower efficiency values are ranked first: Passing 0 as kind_index to
+       hwloc_cpukinds_get_info() will return information about the CPU kind with lower performance but higher energy-efficiency. Higher kind_index values would rather return information about power-
+       hungry high-performance cores.
+
+       When available, efficiency values are gathered from the operating system. If so, cpukind_efficiency is set in the struct hwloc_topology_discovery_support array. This is currently available on
+       Windows 10, Mac OS X (Darwin), and on some Linux platforms where core 'capacity' is exposed in sysfs.
+
+       If the operating system does not expose core efficiencies natively, hwloc tries to compute efficiencies by comparing CPU kinds using frequencies (on ARM), or core types and frequencies (on other
+       architectures). The environment variable HWLOC_CPUKINDS_RANKING may be used to change this heuristics, see Environment Variables.
+
+       If hwloc fails to rank any kind, for instance because the operating system does not expose efficiencies and core frequencies, all kinds will have an unknown efficiency (-1), and they are not
+       indexed/ordered in any specific way.
+
+Function Documentation
+   int hwloc_cpukinds_get_by_cpuset (hwloc_topology_t topology, hwloc_const_bitmap_t cpuset, unsigned long flags)
+       Get the index of the CPU kind that contains CPUs listed in cpuset. flags must be 0 for now.
+
+       Returns
+           The index of the CPU kind (positive integer or 0) on success.
+
+           -1 with errno set to EXDEV if cpuset is only partially included in the some kind.
+
+           -1 with errno set to ENOENT if cpuset is not included in any kind, even partially.
+
+           -1 with errno set to EINVAL if parameters are invalid.
+
+   int hwloc_cpukinds_get_info (hwloc_topology_t topology, unsigned kind_index, hwloc_bitmap_t cpuset, int * efficiency, unsigned * nr_infos, struct hwloc_info_s ** infos, unsigned long flags)
+       Get the CPU set and infos about a CPU kind in the topology. kind_index identifies one kind of CPU between 0 and the number of kinds returned by hwloc_cpukinds_get_nr() minus 1.
+
+       If not NULL, the bitmap cpuset will be filled with the set of PUs of this kind.
+
+       The integer pointed by efficiency, if not NULL will, be filled with the ranking of this kind of CPU in term of efficiency (see above). It ranges from 0 to the number of kinds (as reported by
+       hwloc_cpukinds_get_nr()) minus 1.
+
+       Kinds with lower efficiency are reported first.
+
+       If there is a single kind in the topology, its efficiency 0. If the efficiency of some kinds of cores is unknown, the efficiency of all kinds is set to -1, and kinds are reported in no specific
+       order.
+
+       The array of info attributes (for instance the 'CoreType', 'FrequencyMaxMHz' or 'FrequencyBaseMHz', see CPU Kinds) and its length are returned in infos or nr_infos. The array belongs to the
+       topology, it should not be freed or modified.
+
+       If nr_infos or infos is NULL, no info is returned.
+
+       flags must be 0 for now.
+
+       Returns
+           0 on success.
+
+           -1 with errno set to ENOENT if kind_index does not match any CPU kind.
+
+           -1 with errno set to EINVAL if parameters are invalid.
+
+   int hwloc_cpukinds_get_nr (hwloc_topology_t topology, unsigned long flags)
+       Get the number of different kinds of CPU cores in the topology. flags must be 0 for now.
+
+       Returns
+           The number of CPU kinds (positive integer) on success.
+
+           0 if no information about kinds was found.
+
+           -1 with errno set to EINVAL if flags is invalid.
+
+   int hwloc_cpukinds_register (hwloc_topology_t topology, hwloc_bitmap_t cpuset, int forced_efficiency, unsigned nr_infos, struct hwloc_info_s * infos, unsigned long flags)
+       Register a kind of CPU in the topology. Mark the PUs listed in cpuset as being of the same kind with respect to the given attributes.
+
+       forced_efficiency should be -1 if unknown. Otherwise it is an abstracted efficiency value to enforce the ranking of all kinds if all of them have valid (and different) efficiencies.
+
+       The array infos of size nr_infos may be used to provide info names and values describing this kind of PUs.
+
+       flags must be 0 for now.
+
+       Parameters cpuset and infos will be duplicated internally, the caller is responsible for freeing them.
+
+       If cpuset overlaps with some existing kinds, those might get modified or split. For instance if existing kind A contains PUs 0 and 1, and one registers another kind for PU 1 and 2, there will be
+       3 resulting kinds: existing kind A is restricted to only PU 0; new kind B contains only PU 1 and combines information from A and from the newly-registered kind; new kind C contains only PU 2 and
+       only gets information from the newly-registered kind.
+
+       Note
+           The efficiency forced_efficiency provided to this function may be different from the one reported later by hwloc_cpukinds_get_info() because hwloc will scale efficiency values down to between
+           0 and the number of kinds minus 1.
+
+       Returns
+           0 on success.
+
+           -1 with errno set to EINVAL if some parameters are invalid, for instance if cpuset is NULL or empty.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                       hwlocality_cpukinds(3)

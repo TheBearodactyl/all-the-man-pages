@@ -1,0 +1,391 @@
+attributes(3perl)                                                                    Perl Programmers Reference Guide                                                                    attributes(3perl)
+
+NAME
+       attributes - get/set subroutine or variable attributes
+
+SYNOPSIS
+         sub foo : method ;
+         my ($x,@y,%z) : Bent = 1;
+         my $s = sub : method { ... };
+
+         use attributes ();    # optional, to get subroutine declarations
+         my @attrlist = attributes::get(\&foo);
+
+         use attributes 'get'; # import the attributes::get subroutine
+         my @attrlist = get \&foo;
+
+DESCRIPTION
+       Subroutine declarations and definitions may optionally have attribute lists associated with them.  (Variable "my" declarations also may, but see the warning below.)  Perl handles these
+       declarations by passing some information about the call site and the thing being declared along with the attribute list to this module.  In particular, the first example above is equivalent to
+       the following:
+
+           use attributes __PACKAGE__, \&foo, 'method';
+
+       The second example in the synopsis does something equivalent to this:
+
+           use attributes ();
+           my ($x,@y,%z);
+           attributes::->import(__PACKAGE__, \$x, 'Bent');
+           attributes::->import(__PACKAGE__, \@y, 'Bent');
+           attributes::->import(__PACKAGE__, \%z, 'Bent');
+           ($x,@y,%z) = 1;
+
+       Yes, that's a lot of expansion.
+
+       WARNING: attribute declarations for variables are still evolving.  The semantics and interfaces of such declarations could change in future versions.  They are present for purposes of
+       experimentation with what the semantics ought to be.  Do not rely on the current implementation of this feature.
+
+       There are only a few attributes currently handled by Perl itself (or directly by this module, depending on how you look at it.)  However, package-specific attributes are allowed by an extension
+       mechanism.  (See "Package-specific Attribute Handling" below.)
+
+       The setting of subroutine attributes happens at compile time.  Variable attributes in "our" declarations are also applied at compile time.  However, "my" variables get their attributes applied at
+       run-time.  This means that you have to reach the run-time component of the "my" before those attributes will get applied.  For example:
+
+           my $x : Bent = 42 if 0;
+
+       will neither assign 42 to $x nor will it apply the "Bent" attribute to the variable.
+
+       An attempt to set an unrecognized attribute is a fatal error.  (The error is trappable, but it still stops the compilation within that "eval".)  Setting an attribute with a name that's all
+       lowercase letters that's not a built-in attribute (such as "foo") will result in a warning with -w or "use warnings 'reserved'".
+
+   What "import" does
+       In the description it is mentioned that
+
+         sub foo : method;
+
+       is equivalent to
+
+         use attributes __PACKAGE__, \&foo, 'method';
+
+       As you might know this calls the "import" function of "attributes" at compile time with these parameters: 'attributes', the caller's package name, the reference to the code and 'method'.
+
+         attributes->import( __PACKAGE__, \&foo, 'method' );
+
+       So you want to know what "import" actually does?
+
+       First of all "import" gets the type of the third parameter ('CODE' in this case).  "attributes.pm" checks if there is a subroutine called "MODIFY_<reftype>_ATTRIBUTES" in the caller's namespace
+       (here: 'main').  In this case a subroutine "MODIFY_CODE_ATTRIBUTES" is required.  Then this method is called to check if you have used a "bad attribute".  The subroutine call in this example
+       would look like
+
+         MODIFY_CODE_ATTRIBUTES( 'main', \&foo, 'method' );
+
+       "MODIFY_<reftype>_ATTRIBUTES" has to return a list of all "bad attributes".  If there are any bad attributes "import" croaks.
+
+       (See "Package-specific Attribute Handling" below.)
+
+   Built-in Attributes
+       The following are the built-in attributes for subroutines:
+
+       lvalue
+           Indicates that the referenced subroutine is a valid lvalue and can be assigned to.  The subroutine must return a modifiable value such as a scalar variable, as described in perlsub.
+
+           This module allows one to set this attribute on a subroutine that is already defined.  For Perl subroutines (XSUBs are fine), it may or may not do what you want, depending on the code inside
+           the subroutine, with details subject to change in future Perl versions.  You may run into problems with lvalue context not being propagated properly into the subroutine, or maybe even
+           assertion failures.  For this reason, a warning is emitted if warnings are enabled.  In other words, you should only do this if you really know what you are doing.  You have been warned.
+
+       method
+           Indicates that the referenced subroutine is a method.  A subroutine so marked will not trigger the "Ambiguous call resolved as CORE::%s" warning.
+
+       prototype(..)
+           The "prototype" attribute is an alternate means of specifying a prototype on a sub.  The desired prototype is within the parens.
+
+           The prototype from the attribute is assigned to the sub immediately after the prototype from the sub, which means that if both are declared at the same time, the traditionally defined
+           prototype is ignored.  In other words, "sub foo($$) : prototype(@) {}" is indistinguishable from "sub foo(@){}".
+
+           If illegalproto warnings are enabled, the prototype declared inside this attribute will be sanity checked at compile time.
+
+       const
+           This experimental attribute, introduced in Perl 5.22, only applies to anonymous subroutines.  It causes the subroutine to be called as soon as the "sub" expression is evaluated.  The return
+           value is captured and turned into a constant subroutine.
+
+       The following are the built-in attributes for variables:
+
+       shared
+           Indicates that the referenced variable can be shared across different threads when used in conjunction with the threads and threads::shared modules.
+
+   Available Subroutines
+       The following subroutines are available for general use once this module has been loaded:
+
+       get This routine expects a single parameter--a reference to a subroutine or variable.  It returns a list of attributes, which may be empty.  If passed invalid arguments, it uses die() (via
+           Carp::croak) to raise a fatal exception.  If it can find an appropriate package name for a class method lookup, it will include the results from a "FETCH_type_ATTRIBUTES" call in its return
+           list, as described in "Package-specific Attribute Handling" below.  Otherwise, only built-in attributes will be returned.
+
+       reftype
+           This routine expects a single parameter--a reference to a subroutine or variable.  It returns the built-in type of the referenced variable, ignoring any package into which it might have been
+           blessed.  This can be useful for determining the type value which forms part of the method names described in "Package-specific Attribute Handling" below.
+
+       Note that these routines are not exported by default.
+
+   Package-specific Attribute Handling
+       WARNING: the mechanisms described here are still experimental.  Do not rely on the current implementation.  In particular, there is no provision for applying package attributes to 'cloned' copies
+       of subroutines used as closures.  (See "Making References" in perlref for information on closures.)  Package-specific attribute handling may change incompatibly in a future release.
+
+       When an attribute list is present in a declaration, a check is made to see whether an attribute 'modify' handler is present in the appropriate package (or its @ISA inheritance tree).  Similarly,
+       when "attributes::get" is called on a valid reference, a check is made for an appropriate attribute 'fetch' handler.  See "EXAMPLES" to see how the "appropriate package" determination works.
+
+       The handler names are based on the underlying type of the variable being declared or of the reference passed.  Because these attributes are associated with subroutine or variable declarations,
+       this deliberately ignores any possibility of being blessed into some package.  Thus, a subroutine declaration uses "CODE" as its type, and even a blessed hash reference uses "HASH" as its type.
+
+       The class methods invoked for modifying and fetching are these:
+
+       FETCH_type_ATTRIBUTES
+           This method is called with two arguments:  the relevant package name, and a reference to a variable or subroutine for which package-defined attributes are desired.  The expected return value
+           is a list of associated attributes.  This list may be empty.
+
+       MODIFY_type_ATTRIBUTES
+           This method is called with two fixed arguments, followed by the list of attributes from the relevant declaration.  The two fixed arguments are the relevant package name and a reference to the
+           declared subroutine or variable.  The expected return value is a list of attributes which were not recognized by this handler.  Note that this allows for a derived class to delegate a call to
+           its base class, and then only examine the attributes which the base class didn't already handle for it.
+
+           The call to this method is currently made during the processing of the declaration.  In particular, this means that a subroutine reference will probably be for an undefined subroutine, even
+           if this declaration is actually part of the definition.
+
+       Calling "attributes::get()" from within the scope of a null package declaration "package ;" for an unblessed variable reference will not provide any starting package name for the 'fetch' method
+       lookup.  Thus, this circumstance will not result in a method call for package-defined attributes.  A named subroutine knows to which symbol table entry it belongs (or originally belonged), and it
+       will use the corresponding package.  An anonymous subroutine knows the package name into which it was compiled (unless it was also compiled with a null package declaration), and so it will use
+       that package name.
+
+   Syntax of Attribute Lists
+       An attribute list is a sequence of attribute specifications, separated by whitespace or a colon (with optional whitespace).  Each attribute specification is a simple name, optionally followed by
+       a parenthesised parameter list.  If such a parameter list is present, it is scanned past as for the rules for the "q()" operator.  (See "Quote and Quote-like Operators" in perlop.)  The parameter
+       list is passed as it was found, however, and not as per "q()".
+
+       Some examples of syntactically valid attribute lists:
+
+           switch(10,foo(7,3))  :  expensive
+           Ugly('\(") :Bad
+           _5x5
+           lvalue method
+
+       Some examples of syntactically invalid attribute lists (with annotation):
+
+           switch(10,foo()             # ()-string not balanced
+           Ugly('(')                   # ()-string not balanced
+           5x5                         # "5x5" not a valid identifier
+           Y2::north                   # "Y2::north" not a simple identifier
+           foo + bar                   # "+" neither a colon nor whitespace
+
+EXPORTS
+   Default exports
+       None.
+
+   Available exports
+       The routines "get" and "reftype" are exportable.
+
+   Export tags defined
+       The ":ALL" tag will get all of the above exports.
+
+EXAMPLES
+       Here are some samples of syntactically valid declarations, with annotation as to how they resolve internally into "use attributes" invocations by perl.  These examples are primarily useful to see
+       how the "appropriate package" is found for the possible method lookups for package-defined attributes.
+
+       1.  Code:
+
+               package Canine;
+               package Dog;
+               my Canine $spot : Watchful ;
+
+           Effect:
+
+               use attributes ();
+               attributes::->import(Canine => \$spot, "Watchful");
+
+       2.  Code:
+
+               package Felis;
+               my $cat : Nervous;
+
+           Effect:
+
+               use attributes ();
+               attributes::->import(Felis => \$cat, "Nervous");
+
+       3.  Code:
+
+               package X;
+               sub foo : lvalue ;
+
+           Effect:
+
+               use attributes X => \&foo, "lvalue";
+
+       4.  Code:
+
+               package X;
+               sub Y::x : lvalue { 1 }
+
+           Effect:
+
+               use attributes Y => \&Y::x, "lvalue";
+
+       5.  Code:
+
+               package X;
+               sub foo { 1 }
+
+               package Y;
+               BEGIN { *bar = \&X::foo; }
+
+               package Z;
+               sub Y::bar : lvalue ;
+
+           Effect:
+
+               use attributes X => \&X::foo, "lvalue";
+
+       This last example is purely for purposes of completeness.  You should not be trying to mess with the attributes of something in a package that's not your own.
+
+MORE EXAMPLES
+       1.
+               sub MODIFY_CODE_ATTRIBUTES {
+                  my ($class,$code,@attrs) = @_;
+
+                  my $allowed = 'MyAttribute';
+                  my @bad = grep { $_ ne $allowed } @attrs;
+
+                  return @bad;
+               }
+
+               sub foo : MyAttribute {
+                  print "foo\n";
+               }
+
+           This example runs.  At compile time "MODIFY_CODE_ATTRIBUTES" is called.  In that subroutine, we check if any attribute is disallowed and we return a list of these "bad attributes".
+
+           As we return an empty list, everything is fine.
+
+       2.
+             sub MODIFY_CODE_ATTRIBUTES {
+                my ($class,$code,@attrs) = @_;
+
+                my $allowed = 'MyAttribute';
+                my @bad = grep{ $_ ne $allowed }@attrs;
+
+                return @bad;
+             }
+
+             sub foo : MyAttribute Test {
+                print "foo\n";
+             }
+
+           This example is aborted at compile time as we use the attribute "Test" which isn't allowed.  "MODIFY_CODE_ATTRIBUTES" returns a list that contains a single element ('Test').
+
+SEE ALSO
+       "Private Variables via my()" in perlsub and "Subroutine Attributes" in perlsub for details on the basic declarations; "use" in perlfunc for details on the normal invocation mechanism.
+
+perl v5.36.0                                                                                    2022-12-12                                                                               attributes(3perl)
+attributes(7)                                                                        Miscellaneous Information Manual                                                                        attributes(7)
+
+NAME
+       attributes - POSIX safety concepts
+
+DESCRIPTION
+       Note:  the text of this man page is based on the material taken from the "POSIX Safety Concepts" section of the GNU C Library manual.  Further details on the topics described here can be found in
+       that manual.
+
+       Various function manual pages include a section ATTRIBUTES that describes the safety of calling the function in various contexts.  This section annotates functions with the following safety mark‐
+       ings:
+
+       MT-Safe
+              MT-Safe or Thread-Safe functions are safe to call in the presence of other threads.  MT, in MT-Safe, stands for Multi Thread.
+
+              Being MT-Safe does not imply a function is atomic, nor that it uses any of the memory synchronization mechanisms POSIX exposes to users.  It is even possible that calling MT-Safe functions
+              in sequence does not yield an MT-Safe combination.  For example, having a thread call two MT-Safe functions one right after the other does not guarantee behavior equivalent to atomic  exe‐
+              cution of a combination of both functions, since concurrent calls in other threads may interfere in a destructive way.
+
+              Whole-program  optimizations that could inline functions across library interfaces may expose unsafe reordering, and so performing inlining across the GNU C Library interface is not recom‐
+              mended.  The documented MT-Safety status is not guaranteed under whole-program optimization.  However, functions defined in user-visible headers are designed to be safe for inlining.
+
+       MT-Unsafe
+              MT-Unsafe functions are not safe to call in a multithreaded programs.
+
+       Other keywords that appear in safety notes are defined in subsequent sections.
+
+   Conditionally safe features
+       For some features that make functions unsafe to call in certain contexts, there are known ways to avoid the safety problem other than refraining from calling the function  altogether.   The  key‐
+       words  that  follow  refer  to such features, and each of their definitions indicates how the whole program needs to be constrained in order to remove the safety problem indicated by the keyword.
+       Only when all the reasons that make a function unsafe are observed and addressed, by applying the documented constraints, does the function become safe to call in a context.
+
+       init   Functions marked with init as an MT-Unsafe feature perform MT-Unsafe initialization when they are first called.
+
+              Calling such a function at least once in single-threaded mode removes this specific cause for the function to be regarded as MT-Unsafe.  If no other cause for that  remains,  the  function
+              can then be safely called after other threads are started.
+
+       race   Functions  annotated with race as an MT-Safety issue operate on objects in ways that may cause data races or similar forms of destructive interference out of concurrent execution.  In some
+              cases, the objects are passed to the functions by users; in others, they are used by the functions to return values to users; in others, they are not even exposed to users.
+
+       const  Functions marked with const as an MT-Safety issue non-atomically modify internal objects that are better regarded as constant, because a substantial portion of the GNU C  Library  accesses
+              them without synchronization.  Unlike race, which causes both readers and writers of internal objects to be regarded as MT-Unsafe, this mark is applied to writers only.  Writers remain MT-
+              Unsafe to call, but the then-mandatory constness of objects they modify enables readers to be regarded as MT-Safe (as long as no other reasons for them to be unsafe remain), since the lack
+              of synchronization is not a problem when the objects are effectively constant.
+
+              The identifier that follows the const mark will appear by itself as a safety note in readers.  Programs that wish to work around this safety issue, so as to call writers, may use a non-re‐
+              cursive read-write lock associated with the identifier, and guard all calls to functions marked with const followed by the identifier with a write lock, and all calls to  functions  marked
+              with the identifier by itself with a read lock.
+
+       sig    Functions marked with sig as a MT-Safety issue may temporarily install a signal handler for internal purposes, which may interfere with other uses of the signal, identified after a colon.
+
+              This  safety  problem can be worked around by ensuring that no other uses of the signal will take place for the duration of the call.  Holding a non-recursive mutex while calling all func‐
+              tions that use the same temporary signal; blocking that signal before the call and resetting its handler afterwards is recommended.
+
+       term   Functions marked with term as an MT-Safety issue may change the terminal settings in the recommended way, namely: call tcgetattr(3), modify some flags, and  then  call  tcsetattr(3),  this
+              creates a window in which changes made by other threads are lost.  Thus, functions marked with term are MT-Unsafe.
+
+              It  is  thus advisable for applications using the terminal to avoid concurrent and reentrant interactions with it, by not using it in signal handlers or blocking signals that might use it,
+              and holding a lock while calling these functions and interacting with the terminal.  This lock should also be used for mutual exclusion with functions marked with race:tcattr(fd), where fd
+              is a file descriptor for the controlling terminal.  The caller may use a single mutex for simplicity, or use one mutex per terminal, even if referenced by different file descriptors.
+
+   Other safety remarks
+       Additional keywords may be attached to functions, indicating features that do not make a function unsafe to call, but that may need to be taken into account in certain classes of programs:
+
+       locale Functions  annotated  with  locale  as  an MT-Safety issue read from the locale object without any form of synchronization.  Functions annotated with locale called concurrently with locale
+              changes may behave in ways that do not correspond to any of the locales active during their execution, but an unpredictable mix thereof.
+
+              We do not mark these functions as MT-Unsafe, however, because functions that modify the locale object are marked with const:locale and regarded as unsafe.  Being unsafe, the latter are not
+              to be called when multiple threads are running or asynchronous signals are enabled, and so the locale can be considered effectively constant in these contexts, which makes the former safe.
+
+       env    Functions marked with env as an MT-Safety issue access the environment with getenv(3) or similar, without any guards to ensure safety in the presence of concurrent modifications.
+
+              We  do not mark these functions as MT-Unsafe, however, because functions that modify the environment are all marked with const:env and regarded as unsafe.  Being unsafe, the latter are not
+              to be called when multiple threads are running or asynchronous signals are enabled, and so the environment can be considered effectively constant in these contexts, which makes the  former
+              safe.
+
+       hostid The function marked with hostid as an MT-Safety issue reads from the system-wide data structures that hold the "host ID" of the machine.  These data structures cannot generally be modified
+              atomically.  Since it is expected that the "host ID" will not normally change, the function that reads from it (gethostid(3)) is regarded as safe, whereas the  function  that  modifies  it
+              (sethostid(3)) is marked with const:hostid, indicating it may require special care if it is to be called.  In this specific case, the special care amounts to system-wide (not merely intra-
+              process) coordination.
+
+       sigintr
+              Functions marked with sigintr as an MT-Safety issue access the GNU C Library _sigintr internal data structure without any guards to ensure safety in the presence  of  concurrent  modifica‐
+              tions.
+
+              We  do not mark these functions as MT-Unsafe, however, because functions that modify this data structure are all marked with const:sigintr and regarded as unsafe.  Being unsafe, the latter
+              are not to be called when multiple threads are running or asynchronous signals are enabled, and so the data structure can be considered effectively constant in these contexts, which  makes
+              the former safe.
+
+       cwd    Functions marked with cwd as an MT-Safety issue may temporarily change the current working directory during their execution, which may cause relative pathnames to be resolved in unexpected
+              ways in other threads or within asynchronous signal or cancelation handlers.
+
+              This is not enough of a reason to mark so-marked functions as MT-Unsafe, but when this behavior is optional (e.g., nftw(3) with FTW_CHDIR), avoiding the option may be a good alternative to
+              using full pathnames or file descriptor-relative (e.g., openat(2)) system calls.
+
+       :identifier
+              Annotations  may  sometimes be followed by identifiers, intended to group several functions that, for example, access the data structures in an unsafe way, as in race and const, or to pro‐
+              vide more specific information, such as naming a signal in a function marked with sig.  It is envisioned that it may be applied to lock and corrupt as well in the future.
+
+              In most cases, the identifier will name a set of functions, but it may name global objects or function arguments, or identifiable properties or logical  components  associated  with  them,
+              with a notation such as, for example, :buf(arg) to denote a buffer associated with the argument arg, or :tcattr(fd) to denote the terminal attributes of a file descriptor fd.
+
+              The  most  common use for identifiers is to provide logical groups of functions and arguments that need to be protected by the same synchronization primitive in order to ensure safe opera‐
+              tion in a given context.
+
+       /condition
+              Some safety annotations may be conditional, in that they only apply if a boolean expression involving arguments, global variables or even the underlying kernel evaluates to true.  For  ex‐
+              ample, /!ps and /one_per_line indicate the preceding marker only applies when argument ps is NULL, or global variable one_per_line is nonzero.
+
+              When all marks that render a function unsafe are adorned with such conditions, and none of the named conditions hold, then the function can be regarded as safe.
+
+SEE ALSO
+       pthreads(7), signal-safety(7)
+
+Linux man-pages 6.04                                                                            2023-03-18                                                                                   attributes(7)

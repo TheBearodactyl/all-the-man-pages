@@ -1,0 +1,234 @@
+remainder(3)               Library Functions Manual               remainder(3)
+
+NAME
+       drem,  dremf, dreml, remainder, remainderf, remainderl - floating-point
+       remainder function
+
+LIBRARY
+       Math library (libm, -lm)
+
+SYNOPSIS
+       #include <math.h>
+
+       double remainder(double x, double y);
+       float remainderf(float x, float y);
+       long double remainderl(long double x, long double y);
+
+       /* Obsolete synonyms */
+       [[deprecated]] double drem(double x, double y);
+       [[deprecated]] float dremf(float x, float y);
+       [[deprecated]] long double dreml(long double x, long double y);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       remainder():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+               || _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       remainderf(), remainderl():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       drem(), dremf(), dreml():
+           /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       These functions compute the remainder of dividing x by y.   The  return
+       value  is x-n*y, where n is the value x / y, rounded to the nearest in‐
+       teger.  If the absolute value of x-n*y is 0.5, n is chosen to be even.
+
+       These functions are  unaffected  by  the  current  rounding  mode  (see
+       fenv(3)).
+
+       The drem() function does precisely the same thing.
+
+RETURN VALUE
+       On success, these functions return the floating-point remainder, x-n*y.
+       If the return value is 0, it has the sign of x.
+
+       If x or y is a NaN, a NaN is returned.
+
+       If x is an infinity, and y is not a NaN, a domain error occurs,  and  a
+       NaN is returned.
+
+       If  y  is zero, and x is not a NaN, a domain error occurs, and a NaN is
+       returned.
+
+ERRORS
+       See math_error(7) for information on how to determine whether an  error
+       has occurred when calling these functions.
+
+       The following errors can occur:
+
+       Domain error: x is an infinity and y is not a NaN
+              errno  is set to EDOM (but see BUGS).  An invalid floating-point
+              exception (FE_INVALID) is raised.
+
+              These functions do not set errno for this case.
+
+       Domain error: y is zero
+              errno is set  to  EDOM.   An  invalid  floating-point  exception
+              (FE_INVALID) is raised.
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │drem(), dremf(), dreml(), remainder(),      │ Thread safety │ MT-Safe │
+       │remainderf(), remainderl()                  │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       remainder()
+       remainderf()
+       remainderl()
+              C11, POSIX.1-2008.
+
+       drem()
+       dremf()
+       dreml()
+              None.
+
+HISTORY
+       remainder()
+       remainderf()
+       remainderl()
+              C99, POSIX.1-2001.
+
+       drem() 4.3BSD.
+
+       dremf()
+       dreml()
+              Tru64, glibc2.
+
+BUGS
+       Before glibc 2.15, the call
+
+           remainder(nan(""), 0);
+
+       returned  a NaN, as expected, but wrongly caused a domain error.  Since
+       glibc 2.15, a silent NaN (i.e., no domain error) is returned.
+
+       Before glibc 2.15, errno was not set to EDOM for the domain error  that
+       occurs when x is an infinity and y is not a NaN.
+
+EXAMPLES
+       The call "remainder(29.0, 3.0)" returns -1.
+
+SEE ALSO
+       div(3), fmod(3), remquo(3)
+
+Linux man-pages 6.04              2023-03-30                      remainder(3)
+REMAINDER(3P)              POSIX Programmer's Manual             REMAINDER(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       remainder, remainderf, remainderl — remainder function
+
+SYNOPSIS
+       #include <math.h>
+
+       double remainder(double x, double y);
+       float remainderf(float x, float y);
+       long double remainderl(long double x, long double y);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with  the
+       ISO C  standard.  Any  conflict between the requirements described here
+       and the ISO C standard is unintentional. This  volume  of  POSIX.1‐2017
+       defers to the ISO C standard.
+
+       These functions shall return the floating-point remainder r=x-ny when y
+       is non-zero. The value n is the integral value nearest the exact  value
+       x/y.  When |n-x/y|=½, the value n is chosen to be even.
+
+       The behavior of remainder() shall be independent of the rounding mode.
+
+RETURN VALUE
+       Upon  successful completion, these functions shall return the floating-
+       point remainder r=x-ny when y is non-zero.
+
+       On systems that do not support the IEC 60559 Floating-Point option,  if
+       y  is  zero, it is implementation-defined whether a domain error occurs
+       or zero is returned.
+
+       If x or y is NaN, a NaN shall be returned.
+
+       If x is infinite or y is 0 and the other is  non-NaN,  a  domain  error
+       shall occur, and a NaN shall be returned.
+
+ERRORS
+       These functions shall fail if:
+
+       Domain Error
+                   The  x  argument  is  ±Inf, or the y argument is ±0 and the
+                   other argument is non-NaN.
+
+                   If the integer expression (math_errhandling  &  MATH_ERRNO)
+                   is non-zero, then errno shall be set to [EDOM].  If the in‐
+                   teger expression  (math_errhandling  &  MATH_ERREXCEPT)  is
+                   non-zero,  then  the invalid floating-point exception shall
+                   be raised.
+
+       These functions may fail if:
+
+       Domain Error
+                   The y argument is zero.
+
+                   If the integer expression (math_errhandling  &  MATH_ERRNO)
+                   is non-zero, then errno shall be set to [EDOM].  If the in‐
+                   teger expression  (math_errhandling  &  MATH_ERREXCEPT)  is
+                   non-zero,  then  the invalid floating-point exception shall
+                   be raised.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       On error, the expressions (math_errhandling & MATH_ERRNO) and (math_er‐
+       rhandling & MATH_ERREXCEPT) are independent of each other, but at least
+       one of them must be non-zero.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       abs(), div(), feclearexcept(), fetestexcept(), ldiv()
+
+       The Base Definitions volume of POSIX.1‐2017, Section 4.20, Treatment of
+       Error Conditions for Mathematical Functions, <math.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                        REMAINDER(3P)

@@ -1,0 +1,185 @@
+acct(2)                                                                                     System Calls Manual                                                                                    acct(2)
+
+NAME
+       acct - switch process accounting on or off
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int acct(const char *_Nullable filename);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       acct():
+           Since glibc 2.21:
+               _DEFAULT_SOURCE
+           In glibc 2.19 and 2.20:
+               _DEFAULT_SOURCE || (_XOPEN_SOURCE && _XOPEN_SOURCE < 500)
+           Up to and including glibc 2.19:
+               _BSD_SOURCE || (_XOPEN_SOURCE && _XOPEN_SOURCE < 500)
+
+DESCRIPTION
+       The  acct() system call enables or disables process accounting.  If called with the name of an existing file as its argument, accounting is turned on, and records for each terminating process are
+       appended to filename as it terminates.  An argument of NULL causes accounting to be turned off.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EACCES Write permission is denied for the specified file, or search permission is denied for one of the directories in the path prefix of filename (see also path_resolution(7)),  or  filename  is
+              not a regular file.
+
+       EFAULT filename points outside your accessible address space.
+
+       EIO    Error writing to the file filename.
+
+       EISDIR filename is a directory.
+
+       ELOOP  Too many symbolic links were encountered in resolving filename.
+
+       ENAMETOOLONG
+              filename was too long.
+
+       ENFILE The system-wide limit on the total number of open files has been reached.
+
+       ENOENT The specified file does not exist.
+
+       ENOMEM Out of memory.
+
+       ENOSYS BSD process accounting has not been enabled when the operating system kernel was compiled.  The kernel configuration parameter controlling this feature is CONFIG_BSD_PROCESS_ACCT.
+
+       ENOTDIR
+              A component used as a directory in filename is not in fact a directory.
+
+       EPERM  The calling process has insufficient privilege to enable process accounting.  On Linux, the CAP_SYS_PACCT capability is required.
+
+       EROFS  filename refers to a file on a read-only filesystem.
+
+       EUSERS There are no more free file structures or we ran out of memory.
+
+STANDARDS
+       None.
+
+HISTORY
+       SVr4, 4.3BSD.
+
+NOTES
+       No accounting is produced for programs running when a system crash occurs.  In particular, nonterminating processes are never accounted for.
+
+       The structure of the records written to the accounting file is described in acct(5).
+
+SEE ALSO
+       acct(5)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         acct(2)
+acct(5)                                                                                     File Formats Manual                                                                                    acct(5)
+
+NAME
+       acct - process accounting file
+
+SYNOPSIS
+       #include <sys/acct.h>
+
+DESCRIPTION
+       If the kernel is built with the process accounting option enabled (CONFIG_BSD_PROCESS_ACCT), then calling acct(2) starts process accounting, for example:
+
+           acct("/var/log/pacct");
+
+       When process accounting is enabled, the kernel writes a record to the accounting file as each process on the system terminates.  This record contains information about the terminated process, and
+       is defined in <sys/acct.h> as follows:
+
+           #define ACCT_COMM 16
+
+           typedef u_int16_t comp_t;
+
+           struct acct {
+               char ac_flag;           /* Accounting flags */
+               u_int16_t ac_uid;       /* Accounting user ID */
+               u_int16_t ac_gid;       /* Accounting group ID */
+               u_int16_t ac_tty;       /* Controlling terminal */
+               u_int32_t ac_btime;     /* Process creation time
+                                          (seconds since the Epoch) */
+               comp_t    ac_utime;     /* User CPU time */
+               comp_t    ac_stime;     /* System CPU time */
+               comp_t    ac_etime;     /* Elapsed time */
+               comp_t    ac_mem;       /* Average memory usage (kB) */
+               comp_t    ac_io;        /* Characters transferred (unused) */
+               comp_t    ac_rw;        /* Blocks read or written (unused) */
+               comp_t    ac_minflt;    /* Minor page faults */
+               comp_t    ac_majflt;    /* Major page faults */
+               comp_t    ac_swaps;     /* Number of swaps (unused) */
+               u_int32_t ac_exitcode;  /* Process termination status
+                                          (see wait(2)) */
+               char      ac_comm[ACCT_COMM+1];
+                                       /* Command name (basename of last
+                                          executed command; null-terminated) */
+               char      ac_pad[X];    /* padding bytes */
+           };
+
+           enum {          /* Bits that may be set in ac_flag field */
+               AFORK = 0x01,           /* Has executed fork, but no exec */
+               ASU   = 0x02,           /* Used superuser privileges */
+               ACORE = 0x08,           /* Dumped core */
+               AXSIG = 0x10            /* Killed by a signal */
+           };
+
+       The comp_t data type is a floating-point value consisting of a 3-bit, base-8 exponent, and a 13-bit mantissa.  A value, c, of this type can be converted to a (long) integer as follows:
+
+           v = (c & 0x1fff) << (((c >> 13) & 0x7) * 3);
+
+       The ac_utime, ac_stime, and ac_etime fields measure time in "clock ticks"; divide these values by sysconf(_SC_CLK_TCK) to convert them to seconds.
+
+   Version 3 accounting file format
+       Since Linux 2.6.8, an optional alternative version of the accounting file can be produced if the CONFIG_BSD_PROCESS_ACCT_V3 option is set when building the kernel.  With this option is  set,  the
+       records  written to the accounting file contain additional fields, and the width of c_uid and ac_gid fields is widened from 16 to 32 bits (in line with the increased size of UID and GIDs in Linux
+       2.4 and later).  The records are defined as follows:
+
+           struct acct_v3 {
+               char      ac_flag;      /* Flags */
+               char      ac_version;   /* Always set to ACCT_VERSION (3) */
+               u_int16_t ac_tty;       /* Controlling terminal */
+               u_int32_t ac_exitcode;  /* Process termination status */
+               u_int32_t ac_uid;       /* Real user ID */
+               u_int32_t ac_gid;       /* Real group ID */
+               u_int32_t ac_pid;       /* Process ID */
+               u_int32_t ac_ppid;      /* Parent process ID */
+               u_int32_t ac_btime;     /* Process creation time */
+               float     ac_etime;     /* Elapsed time */
+               comp_t    ac_utime;     /* User CPU time */
+               comp_t    ac_stime;     /* System time */
+               comp_t    ac_mem;       /* Average memory usage (kB) */
+               comp_t    ac_io;        /* Characters transferred (unused) */
+               comp_t    ac_rw;        /* Blocks read or written
+                                          (unused) */
+               comp_t    ac_minflt;    /* Minor page faults */
+               comp_t    ac_majflt;    /* Major page faults */
+               comp_t    ac_swaps;     /* Number of swaps (unused) */
+               char      ac_comm[ACCT_COMM]; /* Command name */
+           };
+
+VERSIONS
+       Although it is present on most systems, it is not standardized, and the details vary somewhat between systems.
+
+STANDARDS
+       None.
+
+HISTORY
+       glibc 2.6.
+
+       Process accounting originated on BSD.
+
+NOTES
+       Records in the accounting file are ordered by termination time of the process.
+
+       Up to and including Linux 2.6.9, a separate accounting record is written for each thread created using the NPTL threading library; since Linux 2.6.10, a single accounting record  is  written  for
+       the entire process on termination of the last thread in the process.
+
+       The /proc/sys/kernel/acct file, described in proc(5), defines settings that control the behavior of process accounting when disk space runs low.
+
+SEE ALSO
+       lastcomm(1), acct(2), accton(8), sa(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         acct(5)

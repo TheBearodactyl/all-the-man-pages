@@ -1,0 +1,146 @@
+puts(3)                                                                                  Library Functions Manual                                                                                  puts(3)
+
+NAME
+       fputc, fputs, putc, putchar, puts - output of characters and strings
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int fputc(int c, FILE *stream);
+       int putc(int c, FILE *stream);
+       int putchar(int c);
+
+       int fputs(const char *restrict s, FILE *restrict stream);
+       int puts(const char *s);
+
+DESCRIPTION
+       fputc() writes the character c, cast to an unsigned char, to stream.
+
+       putc() is equivalent to fputc() except that it may be implemented as a macro which evaluates stream more than once.
+
+       putchar(c) is equivalent to putc(c, stdout).
+
+       fputs() writes the string s to stream, without its terminating null byte ('\0').
+
+       puts() writes the string s and a trailing newline to stdout.
+
+       Calls to the functions described here can be mixed with each other and with calls to other output functions from the stdio library for the same output stream.
+
+       For nonlocking counterparts, see unlocked_stdio(3).
+
+RETURN VALUE
+       fputc(), putc(), and putchar() return the character written as an unsigned char cast to an int or EOF on error.
+
+       puts() and fputs() return a nonnegative number on success, or EOF on error.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │fputc(), fputs(), putc(), putchar(), puts()                                                                                                                             │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, C89, C99.
+
+BUGS
+       It  is  not  advisable to mix calls to output functions from the stdio library with low-level calls to write(2) for the file descriptor associated with the same output stream; the results will be
+       undefined and very probably not what you want.
+
+SEE ALSO
+       write(2), ferror(3), fgets(3), fopen(3), fputwc(3), fputws(3), fseek(3), fwrite(3), putwchar(3), scanf(3), unlocked_stdio(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         puts(3)
+FPUTS(3P)                                                                                POSIX Programmer's Manual                                                                               FPUTS(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       fputs — put a string on a stream
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int fputs(const char *restrict s, FILE *restrict stream);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The fputs() function shall write the null-terminated string pointed to by s to the stream pointed to by stream.  The terminating null byte shall not be written.
+
+       The  last  data modification and last file status change timestamps of the file shall be marked for update between the successful execution of fputs() and the next successful completion of a call
+       to fflush() or fclose() on the same stream or a call to exit() or abort().
+
+RETURN VALUE
+       Upon successful completion, fputs() shall return a non-negative number. Otherwise, it shall return EOF, set an error indicator for the stream, and set errno to indicate the error.
+
+ERRORS
+       Refer to fputc().
+
+       The following sections are informative.
+
+EXAMPLES
+   Printing to Standard Output
+       The following example gets the current time, converts it to a string using localtime() and asctime(), and prints it to standard output using fputs().  It then prints the number of minutes  to  an
+       event for which it is waiting.
+
+           #include <time.h>
+           #include <stdio.h>
+           ...
+           time_t now;
+           int minutes_to_event;
+           ...
+           time(&now);
+           printf("The time is ");
+           fputs(asctime(localtime(&now)), stdout);
+           printf("There are still %d minutes to the event.\n",
+               minutes_to_event);
+           ...
+
+APPLICATION USAGE
+       The puts() function appends a <newline> while fputs() does not.
+
+       This volume of POSIX.1‐2017 requires that successful completion simply return a non-negative integer. There are at least three known different implementation conventions for this requirement:
+
+        *  Return a constant value.
+
+        *  Return the last character written.
+
+        *  Return the number of bytes written. Note that this implementation convention cannot be adhered to for strings longer than {INT_MAX} bytes as the value would not be representable in the return
+           type of the function. For backwards-compatibility, implementations can return the number of bytes for strings of up to {INT_MAX} bytes, and return {INT_MAX} for all longer strings.
+
+RATIONALE
+       The fputs() function is one whose source code was specified in the referenced The C Programming Language. In the original edition, the function had no defined return value, yet many practical im‐
+       plementations would, as a side-effect, return the value of the last character written as that was the value remaining in the accumulator used as a return value. In the second edition of the book,
+       either the fixed value 0 or EOF would be returned depending upon the return value of ferror(); however, for compatibility with extant implementations, several implementations would, upon success,
+       return a positive value representing the last byte written.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.5, Standard I/O Streams, fopen(), putc(), puts()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          FPUTS(3P)

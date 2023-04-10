@@ -1,0 +1,53 @@
+SD_EVENT_NOW(3)                  sd_event_now                  SD_EVENT_NOW(3)
+
+NAME
+       sd_event_now - Retrieve current event loop iteration timestamp
+
+SYNOPSIS
+       #include <systemd/sd-event.h>
+
+       int sd_event_now(sd_event *event, clockid_t clock, uint64_t *usec);
+
+DESCRIPTION
+       sd_event_now() returns the time when the most recent event loop
+       iteration began. A timestamp is taken right after returning from the
+       event sleep, and before dispatching any event sources. The event
+       parameter specifies the event loop object to retrieve the timestamp
+       from. The clock parameter specifies the clock to retrieve the timestamp
+       for, and is one of CLOCK_REALTIME (or equivalently
+       CLOCK_REALTIME_ALARM), CLOCK_MONOTONIC, or CLOCK_BOOTTIME (or
+       equivalently CLOCK_BOOTTIME_ALARM), see clock_gettime(2) for more
+       information on the various clocks. The retrieved timestamp is stored in
+       the usec parameter, in µs since the clock's epoch. If this function is
+       invoked before the first event loop iteration, the current time is
+       returned, as reported by clock_gettime(). To distinguish this case from
+       a regular invocation the return value will be positive, and zero when
+       the returned timestamp refers to an actual event loop iteration.
+
+RETURN VALUE
+       If the first event loop iteration has not run yet sd_event_now() writes
+       current time to usec and returns a positive return value. Otherwise, it
+       will write the requested timestamp to usec and return 0. On failure,
+       the call returns a negative errno-style error code.
+
+   Errors
+       Returned values may indicate the following problems:
+
+       -EINVAL
+           An invalid parameter was passed.
+
+       -EOPNOTSUPP
+           Unsupported clock type.
+
+       -ECHILD
+           The event loop object was created in a different process.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-event(3), sd_event_new(3), sd_event_add_time(3),
+       clock_gettime(2)
+
+systemd 253                                                    SD_EVENT_NOW(3)

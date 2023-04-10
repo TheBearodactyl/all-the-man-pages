@@ -1,0 +1,189 @@
+setenv(3)                  Library Functions Manual                  setenv(3)
+
+NAME
+       setenv - change or add an environment variable
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       int setenv(const char *name, const char *value, int overwrite);
+       int unsetenv(const char *name);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       setenv(), unsetenv():
+           _POSIX_C_SOURCE >= 200112L
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+DESCRIPTION
+       The  setenv()  function  adds the variable name to the environment with
+       the value value, if name does not already exist.  If name does exist in
+       the  environment,  then  its  value is changed to value if overwrite is
+       nonzero; if overwrite is zero, then the value of name  is  not  changed
+       (and setenv() returns a success status).  This function makes copies of
+       the strings pointed to by name and value (by contrast with putenv(3)).
+
+       The unsetenv() function deletes the variable name from the environment.
+       If  name does not exist in the environment, then the function succeeds,
+       and the environment is unchanged.
+
+RETURN VALUE
+       setenv() and unsetenv() functions return zero on success, or -1 on  er‐
+       ror, with errno set to indicate the error.
+
+ERRORS
+       EINVAL name is NULL, points to a string of length 0, or contains an '='
+              character.
+
+       ENOMEM Insufficient memory to add a new variable to the environment.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────┬───────────────┬─────────────────────┐
+       │Interface                       │ Attribute     │ Value               │
+       ├────────────────────────────────┼───────────────┼─────────────────────┤
+       │setenv(), unsetenv()            │ Thread safety │ MT-Unsafe const:env │
+       └────────────────────────────────┴───────────────┴─────────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, 4.3BSD.
+
+       Prior to glibc 2.2.2, unsetenv() was prototyped as returning void; more
+       recent glibc versions follow the POSIX.1-compliant prototype  shown  in
+       the SYNOPSIS.
+
+CAVEATS
+       POSIX.1 does not require setenv() or unsetenv() to be reentrant.
+
+BUGS
+       POSIX.1 specifies that if name contains an '=' character, then setenv()
+       should fail with the error EINVAL; however, versions  of  glibc  before
+       glibc 2.3.4 allowed an '=' sign in name.
+
+SEE ALSO
+       clearenv(3), getenv(3), putenv(3), environ(7)
+
+Linux man-pages 6.04              2023-03-30                         setenv(3)
+SETENV(3P)                 POSIX Programmer's Manual                SETENV(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       setenv — add or change environment variable
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       int setenv(const char *envname, const char *envval, int overwrite);
+
+DESCRIPTION
+       The setenv() function shall update or add a variable in the environment
+       of  the  calling  process. The envname argument points to a string con‐
+       taining the name of an environment variable to be added or altered. The
+       environment  variable shall be set to the value to which envval points.
+       The function shall fail if envname points to a string which contains an
+       '=' character. If the environment variable named by envname already ex‐
+       ists and the value of overwrite is non-zero, the function shall  return
+       success  and the environment shall be updated. If the environment vari‐
+       able named by envname already exists and  the  value  of  overwrite  is
+       zero,  the  function shall return success and the environment shall re‐
+       main unchanged.
+
+       The setenv() function shall update the list of pointers to which  envi‐
+       ron points.
+
+       The  strings  described  by envname and envval are copied by this func‐
+       tion.
+
+       The setenv() function need not be thread-safe.
+
+RETURN VALUE
+       Upon successful completion, zero shall be returned. Otherwise, -1 shall
+       be returned, errno set to indicate the error, and the environment shall
+       be unchanged.
+
+ERRORS
+       The setenv() function shall fail if:
+
+       EINVAL The envname argument points to an empty string or  points  to  a
+              string containing an '=' character.
+
+       ENOMEM Insufficient memory was available to add a variable or its value
+              to the environment.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       See exec() for restrictions  on  changing  the  environment  in  multi-
+       threaded applications.
+
+RATIONALE
+       Unanticipated  results may occur if setenv() changes the external vari‐
+       able environ.  In particular, if the optional envp argument  to  main()
+       is  present,  it is not changed, and thus may point to an obsolete copy
+       of the environment (as may any other copy of environ).  However,  other
+       than  the  aforementioned restriction, the standard developers intended
+       that the traditional method of walking through the environment  by  way
+       of the environ pointer must be supported.
+
+       It was decided that setenv() should be required by this version because
+       it addresses a piece of missing functionality, and does  not  impose  a
+       significant burden on the implementor.
+
+       There was considerable debate as to whether the System V putenv() func‐
+       tion or the BSD setenv() function should be  required  as  a  mandatory
+       function. The setenv() function was chosen because it permitted the im‐
+       plementation of the unsetenv() function to delete  environmental  vari‐
+       ables,  without  specifying an additional interface. The putenv() func‐
+       tion is available as part of the XSI option.
+
+       The standard developers considered requiring that setenv() indicate  an
+       error  when  a call to it would result in exceeding {ARG_MAX}.  The re‐
+       quirement was rejected since the condition might be temporary, with the
+       application eventually reducing the environment size. The ultimate suc‐
+       cess or failure depends on the size at the time  of  a  call  to  exec,
+       which returns an indication of this error condition.
+
+       See also the RATIONALE section in getenv().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exec, getenv(), putenv(), unsetenv()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdlib.h>, <sys_types.h>,
+       <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SETENV(3P)

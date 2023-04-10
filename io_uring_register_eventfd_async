@@ -1,0 +1,37 @@
+io_uring_register_eventfd(3)                                                                  liburing Manual                                                                 io_uring_register_eventfd(3)
+
+NAME
+       io_uring_register_eventfd - register an eventfd with a ring
+
+SYNOPSIS
+       #include <liburing.h>
+
+       int io_uring_register_eventfd(struct io_uring *ring,
+                                     int fd);
+
+       int io_uring_register_eventfd_async(struct io_uring *ring,
+                                           int fd);
+
+       int io_uring_unregister_eventfd(struct io_uring *ring);
+
+DESCRIPTION
+       io_uring_register_eventfd(3) registers the eventfd file descriptor fd with the ring identified by ring.
+
+       Whenever  completions  are posted to the CQ ring, an eventfd notification is generated with the registered eventfd descriptor. If io_uring_register_eventfd_async(3) is used, only events that com‐
+       pleted out-of-line will trigger a notification.
+
+       It notifications are no longer desired, io_uring_unregister_eventfd(3) may be called to remove the eventfd registration. No eventfd argument is needed, as a ring can only have  a  single  eventfd
+       registered.
+
+NOTES
+       While  io_uring  generally  takes  care  to avoid spurious events, they can occur.  Similarly, batched completions of CQEs may only trigger a single eventfd notification even if multiple CQEs are
+       posted. The application should make no assumptions on number of events being available having a direct correlation to eventfd notifications posted. An  eventfd  notification  must  thus  only  be
+       treated as a hint to check the CQ ring for completions.
+
+RETURN VALUE
+       Returns 0 on success, or or -errno on error.
+
+SEE ALSO
+       eventfd(2)
+
+liburing-2.2                                                                                  April 16, 2022                                                                  io_uring_register_eventfd(3)

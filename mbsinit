@@ -1,0 +1,122 @@
+mbsinit(3)                                                                               Library Functions Manual                                                                               mbsinit(3)
+
+NAME
+       mbsinit - test for initial shift state
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <wchar.h>
+
+       int mbsinit(const mbstate_t *ps);
+
+DESCRIPTION
+       Character conversion between the multibyte representation and the wide character representation uses conversion state, of type mbstate_t.  Conversion of a string uses a finite-state machine; when
+       it is interrupted after the complete conversion of a number of characters, it may need to save a state for processing the remaining characters.  Such a conversion state is needed for the sake  of
+       encodings such as ISO-2022 and UTF-7.
+
+       The  initial  state is the state at the beginning of conversion of a string.  There are two kinds of state: the one used by multibyte to wide character conversion functions, such as mbsrtowcs(3),
+       and the one used by wide character to multibyte conversion functions, such as wcsrtombs(3), but they both fit in a mbstate_t, and they both have the same representation for an initial state.
+
+       For 8-bit encodings, all states are equivalent to the initial state.  For multibyte encodings like UTF-8, EUC-*, BIG5, or SJIS, the wide character to multibyte conversion functions never  produce
+       non-initial states, but the multibyte to wide-character conversion functions like mbrtowc(3) do produce non-initial states when interrupted in the middle of a character.
+
+       One possible way to create an mbstate_t in initial state is to set it to zero:
+
+           mbstate_t state;
+           memset(&state, 0, sizeof(state));
+
+       On Linux, the following works as well, but might generate compiler warnings:
+
+           mbstate_t state = { 0 };
+
+       The function mbsinit() tests whether *ps corresponds to an initial state.
+
+RETURN VALUE
+       mbsinit() returns nonzero if *ps is an initial state, or if ps is NULL.  Otherwise, it returns 0.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │mbsinit()                                                                                                                                                               │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, C99.
+
+NOTES
+       The behavior of mbsinit() depends on the LC_CTYPE category of the current locale.
+
+SEE ALSO
+       mbrlen(3), mbrtowc(3), mbsrtowcs(3), wcrtomb(3), wcsrtombs(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      mbsinit(3)
+MBSINIT(3P)                                                                              POSIX Programmer's Manual                                                                             MBSINIT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       mbsinit — determine conversion object status
+
+SYNOPSIS
+       #include <wchar.h>
+
+       int mbsinit(const mbstate_t *ps);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       If ps is not a null pointer, the mbsinit() function shall determine whether the object pointed to by ps describes an initial conversion state.
+
+RETURN VALUE
+       The mbsinit() function shall return non-zero if ps is a null pointer, or if the pointed-to object describes an initial conversion state; otherwise, it shall return zero.
+
+       If  an mbstate_t object is altered by any of the functions described as ``restartable'', and is then used with a different character sequence, or in the other conversion direction, or with a dif‐
+       ferent LC_CTYPE category setting than on earlier function calls, the behavior is undefined.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The mbstate_t object is used to describe the current conversion state from a particular character sequence to a wide-character sequence (or vice versa) under the rules of a particular setting  of
+       the LC_CTYPE category of the current locale.
+
+       The initial conversion state corresponds, for a conversion in either direction, to the beginning of a new character sequence in the initial shift state. A zero valued mbstate_t object is at least
+       one way to describe an initial conversion state. A zero valued mbstate_t object can be used to initiate conversion involving any character sequence, in any LC_CTYPE category setting.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       mbrlen(), mbrtowc(), mbsrtowcs(), wcrtomb(), wcsrtombs()
+
+       The Base Definitions volume of POSIX.1‐2017, <wchar.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                        MBSINIT(3P)

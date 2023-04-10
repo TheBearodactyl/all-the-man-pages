@@ -1,0 +1,53 @@
+TERMKEY_STRPKEY(3)                                                                       Library Functions Manual                                                                       TERMKEY_STRPKEY(3)
+
+NAME
+       termkey_strpkey - parse a string representing a key event
+
+SYNOPSIS
+       #include <termkey.h>
+
+       char *termkey_strpkey(TermKey *tk, const char *str,
+                   TermKeyKey *key, TermKeyFormat format);
+
+       Link with -ltermkey.
+
+DESCRIPTION
+       termkey_strpkey(3)  parses a string buffer containing a human-readable representation of a key event. It fills the key structure from the results of this parsing, similar to the strptime(3) stan‐
+       dard library function.
+
+       The format argument specifies the format expected in the string, as a bitmask of the following constants:
+
+       TERMKEY_FORMAT_LONGMOD
+              Expect full modifier names e.g. "Shift-" instead of abbreviating to "S-".
+
+       TERMKEY_FORMAT_CARETCTRL
+              If the only modifier is TERMKEY_MOD_CTRL on a plain letter, accept it as "^X" rather than "Ctrl-X".
+
+       TERMKEY_FORMAT_ALTISMETA
+              Expect the name "Meta" or the letter "M" instead of "Alt" or "A".
+
+       TERMKEY_FORMAT_SPACEMOD
+              Expect spaces instead of hyphens to separate the modifier name(s) from the base key name.
+
+       TERMKEY_FORMAT_LOWERMOD
+              Expect lowercase for the modifier name.
+
+       TERMKEY_FORMAT_LOWERSPACE
+              Expect lowercase with spaces in for the key name instead of camelCase (for example "page down" instead of "PageDown").
+
+       TERMKEY_FORMAT_MOUSE_POS
+              Expect a mouse event to be followed by its position rendered as "@ (col,line)".
+
+       Before returning, this function canonicalises the key structure according to the rules given for termkey_canonicalise(3).
+
+       The TERMKEY_FORMAT_WRAPBRACKET option is currently not supported by termkey_strpkey(). When returning a TERMKEY_TYPE_UNICODE key structure, this function will fill in the utf8 member.
+
+RETURN VALUE
+       After a successful parse, termkey_strpkey() returns a pointer to the first character of the input it did not consume. If the input string contains more characters then  this  will  point  at  the
+       first character beyond. If the entire input string was consumed, then this will point at a null byte. If termkey_strpkey() fails to parse, it returns NULL. After a failed parse, the key structure
+       may contain partial or invalid results. The structure will only be valid if the function returns a non-NULL result.
+
+SEE ALSO
+       termkey_new(3), termkey_strfkey(3), termkey_keycmp(3), termkey(7)
+
+                                                                                                                                                                                        TERMKEY_STRPKEY(3)

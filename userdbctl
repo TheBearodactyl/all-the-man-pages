@@ -1,0 +1,238 @@
+USERDBCTL(1)                                                                                     userdbctl                                                                                    USERDBCTL(1)
+
+NAME
+       userdbctl - Inspect users, groups and group memberships
+
+SYNOPSIS
+       userdbctl [OPTIONS...] {COMMAND} [NAME...]
+
+DESCRIPTION
+       userdbctl may be used to inspect user and groups (as well as group memberships) of the system. This client utility inquires user/group information provided by various system services, both
+       operating on JSON user/group records (as defined by the JSON User Records[1] and JSON Group Records[2] definitions), and classic UNIX NSS/glibc user and group records. This tool is primarily a
+       client to the User/Group Record Lookup API via Varlink[3], and may also pick up drop-in JSON user and group records from /etc/userdb/, /run/userdb/, /run/host/userdb/, /usr/lib/userdb/.
+
+OPTIONS
+       The following options are understood:
+
+       --output=MODE
+           Choose the output mode, takes one of "classic", "friendly", "table", "json". If "classic", an output very close to the format of /etc/passwd or /etc/group is generated. If "friendly" a more
+           comprehensive and user friendly, human readable output is generated; if "table" a minimal, tabular output is generated; if "json" a JSON formatted output is generated. Defaults to "friendly"
+           if a user/group is specified on the command line, "table" otherwise.
+
+           Note that most output formats do not show all available information. In particular, "classic" and "table" show only the most important fields. Various modes also do not show password hashes.
+           Use "json" to view all fields, including any authentication fields.
+
+       --json=FORMAT
+           Selects JSON output mode (like --output=json) and selects the precise display mode. Takes one of "pretty" or "short". If "pretty", human-friendly whitespace and newlines are inserted in the
+           output to make the JSON data more readable. If "short", all superfluous whitespace is suppressed.
+
+       --service=SERVICE[:SERVICE...], -s SERVICE:SERVICE...
+           Controls which services to query for users/groups. Takes a list of one or more service names, separated by ":". See below for a list of well-known service names. If not specified all
+           available services are queried at once.
+
+       --with-nss=BOOL
+           Controls whether to include classic glibc/NSS user/group lookups in the output. If --with-nss=no is used any attempts to resolve or enumerate users/groups provided only via glibc NSS is
+           suppressed. If --with-nss=yes is specified such users/groups are included in the output (which is the default).
+
+       --with-varlink=BOOL
+           Controls whether to include Varlink user/group lookups in the output, i.e. those done via the User/Group Record Lookup API via Varlink[3]. If --with-varlink=no is used any attempts to resolve
+           or enumerate users/groups provided only via Varlink are suppressed. If --with-varlink=yes is specified such users/groups are included in the output (which is the default).
+
+       --with-dropin=BOOL
+           Controls whether to include user/group lookups in the output that are defined using drop-in files in /etc/userdb/, /run/userdb/, /run/host/userdb/, /usr/lib/userdb/. If --with-dropin=no is
+           used these records are suppressed. If --with-dropin=yes is specified such users/groups are included in the output (which is the default).
+
+       --synthesize=BOOL
+           Controls whether to synthesize records for the root and nobody users/groups if they aren't defined otherwise. By default (or "yes") such records are implicitly synthesized if otherwise
+           missing since they have special significance to the OS. When "no" this synthesizing is turned off.
+
+       -N
+           This option is short for --with-nss=no --synthesize=no. Use this option to show only records that are natively defined as JSON user or group records, with all NSS/glibc compatibility and all
+           implicit synthesis turned off.
+
+       --multiplexer=BOOL
+           Controls whether to do lookups via the multiplexer service (if specified as true, the default) or do lookups in the client (if specified as false). Using the multiplexer service is typically
+           preferable, since it runs in a locked down sandbox.
+
+       --chain
+           When used with the ssh-authorized-keys command, this will allow passing an additional command line after the user name that is chain executed after the lookup completed. This allows chaining
+           multiple tools that show SSH authorized keys.
+
+       --no-pager
+           Do not pipe output into a pager.
+
+       --no-legend
+           Do not print the legend, i.e. column headers and the footer with hints.
+
+       -h, --help
+           Print a short help text and exit.
+
+       --version
+           Print a short version string and exit.
+
+COMMANDS
+       The following commands are understood:
+
+       user [USER...]
+           List all known users records or show details of one or more specified user records. Use --output= to tweak output mode.
+
+       group [GROUP...]
+           List all known group records or show details of one or more specified group records. Use --output= to tweak output mode.
+
+       users-in-group [GROUP...]
+           List users that are members of the specified groups. If no groups are specified list all user/group memberships defined. Use --output= to tweak output mode.
+
+       groups-of-user [USER...]
+           List groups that the specified users are members of. If no users are specified list all user/group memberships defined (in this case groups-of-user and users-in-group are equivalent). Use
+           --output= to tweak output mode.
+
+       services
+           List all services currently providing user/group definitions to the system. See below for a list of well-known services providing user information.
+
+       ssh-authorized-keys
+           Show SSH authorized keys for this account. This command is intended to be used to allow the SSH daemon to pick up authorized keys from user records, see below.
+
+WELL-KNOWN SERVICES
+       The userdbctl services command will list all currently running services that provide user or group definitions to the system. The following well-known services are shown among this list:
+
+       io.systemd.DynamicUser
+           This service is provided by the system service manager itself (i.e. PID 1) and makes all users (and their groups) synthesized through the DynamicUser= setting in service unit files available
+           to the system (see systemd.exec(5) for details about this setting).
+
+       io.systemd.Home
+           This service is provided by systemd-homed.service(8) and makes all users (and their groups) belonging to home directories managed by that service available to the system.
+
+       io.systemd.Machine
+           This service is provided by systemd-machined.service(8) and synthesizes records for all users/groups used by a container that employs user namespacing.
+
+       io.systemd.Multiplexer
+           This service is provided by systemd-userdbd.service(8) and multiplexes user/group look-ups to all other running lookup services. This is the primary entry point for user/group record clients,
+           as it simplifies client side implementation substantially since they can ask a single service for lookups instead of asking all running services in parallel.  userdbctl uses this service
+           preferably, too, unless --with-nss= or --service= are used, in which case finer control over the services to talk to is required.
+
+       io.systemd.NameServiceSwitch
+           This service is (also) provided by systemd-userdbd.service(8) and converts classic NSS/glibc user and group records to JSON user/group records, providing full backwards compatibility. Use
+           --with-nss=no to disable this compatibility, see above. Note that compatibility is actually provided in both directions: nss-systemd(8) will automatically synthesize classic NSS/glibc
+           user/group records from all JSON user/group records provided to the system, thus using both APIs is mostly equivalent and provides access to the same data, however the NSS/glibc APIs
+           necessarily expose a more reduced set of fields only.
+
+       io.systemd.DropIn
+           This service is (also) provided by systemd-userdbd.service(8) and picks up JSON user/group records from /etc/userdb/, /run/userdb/, /run/host/userdb/, /usr/lib/userdb/.
+
+       Note that userdbctl has internal support for NSS-based lookups too. This means that if neither io.systemd.Multiplexer nor io.systemd.NameServiceSwitch are running look-ups into the basic
+       user/group databases will still work.
+
+INTEGRATION WITH SSH
+       The userdbctl tool may be used to make the list of SSH authorized keys possibly contained in a user record available to the SSH daemon for authentication. For that configure the following in
+       sshd_config(5):
+
+           ...
+           AuthorizedKeysCommand /usr/bin/userdbctl ssh-authorized-keys %u
+           AuthorizedKeysCommandUser root
+           ...
+
+       Sometimes it's useful to allow chain invocation of another program to list SSH authorized keys. By using the --chain such a tool may be chain executed by userdbctl ssh-authorized-keys once a
+       lookup completes (regardless if an SSH key was found or not). Example:
+
+           ...
+           AuthorizedKeysCommand /usr/bin/userdbctl ssh-authorized-keys %u --chain /usr/bin/othertool %u
+           AuthorizedKeysCommandUser root
+           ...
+
+       The above will first query the userdb database for SSH keys, and then chain execute /usr/bin/othertool to also be queried.
+
+EXIT STATUS
+       On success, 0 is returned, a non-zero failure code otherwise.
+
+ENVIRONMENT
+       $SYSTEMD_LOG_LEVEL
+           The maximum log level of emitted messages (messages with a higher log level, i.e. less important ones, will be suppressed). Either one of (in order of decreasing importance) emerg, alert,
+           crit, err, warning, notice, info, debug, or an integer in the range 0...7. See syslog(3) for more information.
+
+       $SYSTEMD_LOG_COLOR
+           A boolean. If true, messages written to the tty will be colored according to priority.
+
+           This setting is only useful when messages are written directly to the terminal, because journalctl(1) and other tools that display logs will color messages based on the log level on their
+           own.
+
+       $SYSTEMD_LOG_TIME
+           A boolean. If true, console log messages will be prefixed with a timestamp.
+
+           This setting is only useful when messages are written directly to the terminal or a file, because journalctl(1) and other tools that display logs will attach timestamps based on the entry
+           metadata on their own.
+
+       $SYSTEMD_LOG_LOCATION
+           A boolean. If true, messages will be prefixed with a filename and line number in the source code where the message originates.
+
+           Note that the log location is often attached as metadata to journal entries anyway. Including it directly in the message text can nevertheless be convenient when debugging programs.
+
+       $SYSTEMD_LOG_TID
+           A boolean. If true, messages will be prefixed with the current numerical thread ID (TID).
+
+           Note that the this information is attached as metadata to journal entries anyway. Including it directly in the message text can nevertheless be convenient when debugging programs.
+
+       $SYSTEMD_LOG_TARGET
+           The destination for log messages. One of console (log to the attached tty), console-prefixed (log to the attached tty but with prefixes encoding the log level and "facility", see syslog(3),
+           kmsg (log to the kernel circular log buffer), journal (log to the journal), journal-or-kmsg (log to the journal if available, and to kmsg otherwise), auto (determine the appropriate log
+           target automatically, the default), null (disable log output).
+
+       $SYSTEMD_PAGER
+           Pager to use when --no-pager is not given; overrides $PAGER. If neither $SYSTEMD_PAGER nor $PAGER are set, a set of well-known pager implementations are tried in turn, including less(1) and
+           more(1), until one is found. If no pager implementation is discovered no pager is invoked. Setting this environment variable to an empty string or the value "cat" is equivalent to passing
+           --no-pager.
+
+           Note: if $SYSTEMD_PAGERSECURE is not set, $SYSTEMD_PAGER (as well as $PAGER) will be silently ignored.
+
+       $SYSTEMD_LESS
+           Override the options passed to less (by default "FRSXMK").
+
+           Users might want to change two options in particular:
+
+           K
+               This option instructs the pager to exit immediately when Ctrl+C is pressed. To allow less to handle Ctrl+C itself to switch back to the pager command prompt, unset this option.
+
+               If the value of $SYSTEMD_LESS does not include "K", and the pager that is invoked is less, Ctrl+C will be ignored by the executable, and needs to be handled by the pager.
+
+           X
+               This option instructs the pager to not send termcap initialization and deinitialization strings to the terminal. It is set by default to allow command output to remain visible in the
+               terminal even after the pager exits. Nevertheless, this prevents some pager functionality from working, in particular paged output cannot be scrolled with the mouse.
+
+           See less(1) for more discussion.
+
+       $SYSTEMD_LESSCHARSET
+           Override the charset passed to less (by default "utf-8", if the invoking terminal is determined to be UTF-8 compatible).
+
+       $SYSTEMD_PAGERSECURE
+           Takes a boolean argument. When true, the "secure" mode of the pager is enabled; if false, disabled. If $SYSTEMD_PAGERSECURE is not set at all, secure mode is enabled if the effective UID is
+           not the same as the owner of the login session, see geteuid(2) and sd_pid_get_owner_uid(3). In secure mode, LESSSECURE=1 will be set when invoking the pager, and the pager shall disable
+           commands that open or create new files or start new subprocesses. When $SYSTEMD_PAGERSECURE is not set at all, pagers which are not known to implement secure mode will not be used. (Currently
+           only less(1) implements secure mode.)
+
+           Note: when commands are invoked with elevated privileges, for example under sudo(8) or pkexec(1), care must be taken to ensure that unintended interactive features are not enabled. "Secure"
+           mode for the pager may be enabled automatically as describe above. Setting SYSTEMD_PAGERSECURE=0 or not removing it from the inherited environment allows the user to invoke arbitrary
+           commands. Note that if the $SYSTEMD_PAGER or $PAGER variables are to be honoured, $SYSTEMD_PAGERSECURE must be set too. It might be reasonable to completely disable the pager using --no-pager
+           instead.
+
+       $SYSTEMD_COLORS
+           Takes a boolean argument. When true, systemd and related utilities will use colors in their output, otherwise the output will be monochrome. Additionally, the variable can take one of the
+           following special values: "16", "256" to restrict the use of colors to the base 16 or 256 ANSI colors, respectively. This can be specified to override the automatic decision based on $TERM
+           and what the console is connected to.
+
+       $SYSTEMD_URLIFY
+           The value must be a boolean. Controls whether clickable links should be generated in the output for terminal emulators supporting this. This can be specified to override the decision that
+           systemd makes based on $TERM and other conditions.
+
+SEE ALSO
+       systemd(1), systemd-userdbd.service(8), systemd-homed.service(8), nss-systemd(8), getent(1)
+
+NOTES
+        1. JSON User Records
+           https://systemd.io/USER_RECORD
+
+        2. JSON Group Records
+           https://systemd.io/GROUP_RECORD
+
+        3. User/Group Record Lookup API via Varlink
+           https://systemd.io/USER_GROUP_API
+
+systemd 253                                                                                                                                                                                   USERDBCTL(1)

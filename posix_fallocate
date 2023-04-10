@@ -1,0 +1,214 @@
+posix_fallocate(3)         Library Functions Manual         posix_fallocate(3)
+
+NAME
+       posix_fallocate - allocate file space
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <fcntl.h>
+
+       int posix_fallocate(int fd, off_t offset, off_t len);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       posix_fallocate():
+           _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       The function posix_fallocate() ensures that disk space is allocated for
+       the file referred to by the file descriptor fd for the bytes in the
+       range starting at offset and continuing for len bytes.  After a suc‐
+       cessful call to posix_fallocate(), subsequent writes to bytes in the
+       specified range are guaranteed not to fail because of lack of disk
+       space.
+
+       If the size of the file is less than offset+len, then the file is in‐
+       creased to this size; otherwise the file size is left unchanged.
+
+RETURN VALUE
+       posix_fallocate() returns zero on success, or an error number on fail‐
+       ure.  Note that errno is not set.
+
+ERRORS
+       EBADF  fd is not a valid file descriptor, or is not opened for writing.
+
+       EFBIG  offset+len exceeds the maximum file size.
+
+       EINTR  A signal was caught during execution.
+
+       EINVAL offset was less than 0, or len was less than or equal to 0, or
+              the underlying filesystem does not support the operation.
+
+       ENODEV fd does not refer to a regular file.
+
+       ENOSPC There is not enough space left on the device containing the file
+              referred to by fd.
+
+       EOPNOTSUPP
+              The filesystem containing the file referred to by fd does not
+              support this operation.  This error code can be returned by C
+              libraries that don't perform the emulation shown in NOTES, such
+              as musl libc.
+
+       ESPIPE fd refers to a pipe.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see at‐
+       tributes(7).
+
+       ┌──────────────────┬───────────────┬───────────────────────────────────┐
+       │Interface         │ Attribute     │ Value                             │
+       ├──────────────────┼───────────────┼───────────────────────────────────┤
+       │posix_fallocate() │ Thread safety │ MT-Safe (but see NOTES)           │
+       └──────────────────┴───────────────┴───────────────────────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.1.94.  POSIX.1-2001
+
+       POSIX.1-2008 says that an implementation shall give the EINVAL error if
+       len was 0, or offset was less than 0.  POSIX.1-2001 says that an imple‐
+       mentation shall give the EINVAL error if len is less than 0, or  offset
+       was less than 0, and may give the error if len equals zero.
+
+CAVEATS
+       In the glibc implementation, posix_fallocate() is implemented using the
+       fallocate(2) system call, which is MT-safe.  If the underlying filesys‐
+       tem  does not support fallocate(2), then the operation is emulated with
+       the following caveats:
+
+       •  The emulation is inefficient.
+
+       •  There is a race  condition  where  concurrent  writes  from  another
+          thread or process could be overwritten with null bytes.
+
+       •  There  is  a  race condition where concurrent file size increases by
+          another thread or process could result  in  a  file  whose  size  is
+          smaller than expected.
+
+       •  If fd has been opened with the O_APPEND or O_WRONLY flags, the func‐
+          tion fails with the error EBADF.
+
+       In general, the emulation is not MT-safe.  On Linux,  applications  may
+       use  fallocate(2)  if  they  cannot tolerate the emulation caveats.  In
+       general, this is only recommended if the application plans to terminate
+       the  operation if EOPNOTSUPP is returned, otherwise the application it‐
+       self will need to implement a fallback with all the  same  problems  as
+       the emulation provided by glibc.
+
+SEE ALSO
+       fallocate(1), fallocate(2), lseek(2), posix_fadvise(2)
+
+Linux man-pages 6.04              2023-03-30                posix_fallocate(3)
+POSIX_FALLOCATE(3P)        POSIX Programmer's Manual       POSIX_FALLOCATE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       posix_fallocate — file space control (ADVANCED REALTIME)
+
+SYNOPSIS
+       #include <fcntl.h>
+
+       int posix_fallocate(int fd, off_t offset, off_t len);
+
+DESCRIPTION
+       The posix_fallocate() function shall ensure that any  required  storage
+       for  regular  file data starting at offset and continuing for len bytes
+       is allocated on the file system storage media. If posix_fallocate() re‐
+       turns  successfully, subsequent writes to the specified file data shall
+       not fail due to the lack of free space on the file system  storage  me‐
+       dia.
+
+       If  the  offset+len  is beyond the current file size, then posix_fallo‐
+       cate() shall adjust the file size to offset+len.  Otherwise,  the  file
+       size shall not be changed.
+
+       It  is  implementation-defined  whether a previous posix_fadvise() call
+       influences allocation strategy.
+
+       Space allocated via posix_fallocate() shall be freed  by  a  successful
+       call  to  creat()  or open() that truncates the size of the file. Space
+       allocated via posix_fallocate() may be freed by a  successful  call  to
+       ftruncate()  that  reduces  the  file  size to a size smaller than off‐
+       set+len.
+
+RETURN VALUE
+       Upon successful completion, posix_fallocate() shall return zero; other‐
+       wise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The posix_fallocate() function shall fail if:
+
+       EBADF  The fd argument is not a valid file descriptor.
+
+       EBADF  The  fd argument references a file that was opened without write
+              permission.
+
+       EFBIG  The value of offset+len is greater than the maximum file size.
+
+       EINTR  A signal was caught during execution.
+
+       EINVAL The len argument is less than zero, or the  offset  argument  is
+              less  than  zero, or the underlying file system does not support
+              this operation.
+
+       EIO    An I/O error occurred while reading from or writing  to  a  file
+              system.
+
+       ENODEV The fd argument does not refer to a regular file.
+
+       ENOSPC There  is  insufficient  free space remaining on the file system
+              storage media.
+
+       ESPIPE The fd argument is associated with a pipe or FIFO.
+
+       The posix_fallocate() function may fail if:
+
+       EINVAL The len argument is zero.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The posix_fallocate() function is part of the Advisory Information  op‐
+       tion and need not be provided on all implementations.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       creat(), ftruncate(), open(), unlink()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                  POSIX_FALLOCATE(3P)

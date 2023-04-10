@@ -1,0 +1,141 @@
+Test::Builder::IO::Scalar(3perl)                                                     Perl Programmers Reference Guide                                                     Test::Builder::IO::Scalar(3perl)
+
+NAME
+       Test::Builder::IO::Scalar - A copy of IO::Scalar for Test::Builder
+
+DESCRIPTION
+       This is a copy of IO::Scalar which ships with Test::Builder to support scalar references as filehandles on Perl 5.6.  Newer versions of Perl simply use "open()"'s built in support.
+
+       Test::Builder can not have dependencies on other modules without careful consideration, so its simply been copied into the distribution.
+
+COPYRIGHT and LICENSE
+       This file came from the "IO-stringy" Perl5 toolkit.
+
+       Copyright (c) 1996 by Eryq.  All rights reserved.  Copyright (c) 1999,2001 by ZeeGee Software Inc.  All rights reserved.
+
+       This program is free software; you can redistribute it and/or modify it under the same terms as Perl itself.
+
+   Construction
+       new [ARGS...]
+           Class method.  Return a new, unattached scalar handle.  If any arguments are given, they're sent to open().
+
+       open [SCALARREF]
+           Instance method.  Open the scalar handle on a new scalar, pointed to by SCALARREF.  If no SCALARREF is given, a "private" scalar is created to hold the file data.
+
+           Returns the self object on success, undefined on error.
+
+       opened
+           Instance method.  Is the scalar handle opened on something?
+
+       close
+           Instance method.  Disassociate the scalar handle from its underlying scalar.  Done automatically on destroy.
+
+   Input and output
+       flush
+           Instance method.  No-op, provided for OO compatibility.
+
+       getc
+           Instance method.  Return the next character, or undef if none remain.
+
+       getline
+           Instance method.  Return the next line, or undef on end of string.  Can safely be called in an array context.  Currently, lines are delimited by "\n".
+
+       getlines
+           Instance method.  Get all remaining lines.  It will croak() if accidentally called in a scalar context.
+
+       print ARGS...
+           Instance method.  Print ARGS to the underlying scalar.
+
+           Warning: this continues to always cause a seek to the end of the string, but if you perform seek()s and tell()s, it is still safer to explicitly seek-to-end before subsequent print()s.
+
+       read BUF, NBYTES, [OFFSET]
+           Instance method.  Read some bytes from the scalar.  Returns the number of bytes actually read, 0 on end-of-file, undef on error.
+
+       write BUF, NBYTES, [OFFSET]
+           Instance method.  Write some bytes to the scalar.
+
+       sysread BUF, LEN, [OFFSET]
+           Instance method.  Read some bytes from the scalar.  Returns the number of bytes actually read, 0 on end-of-file, undef on error.
+
+       syswrite BUF, NBYTES, [OFFSET]
+           Instance method.  Write some bytes to the scalar.
+
+   Seeking/telling and other attributes
+       autoflush
+           Instance method.  No-op, provided for OO compatibility.
+
+       binmode
+           Instance method.  No-op, provided for OO compatibility.
+
+       clearerr
+           Instance method.  Clear the error and EOF flags.  A no-op.
+
+       eof Instance method.  Are we at end of file?
+
+       seek OFFSET, WHENCE
+           Instance method.  Seek to a given position in the stream.
+
+       sysseek OFFSET, WHENCE
+           Instance method. Identical to "seek OFFSET, WHENCE", q.v.
+
+       tell
+           Instance method.  Return the current position in the stream, as a numeric offset.
+
+       use_RS [YESNO]
+           Instance method.  Deprecated and ignored.  Obey the current setting of $/, like IO::Handle does?  Default is false in 1.x, but cold-welded true in 2.x and later.
+
+       setpos POS
+           Instance method.  Set the current position, using the opaque value returned by "getpos()".
+
+       getpos
+           Instance method.  Return the current position in the string, as an opaque object.
+
+       sref
+           Instance method.  Return a reference to the underlying scalar.
+
+WARNINGS
+       Perl's TIEHANDLE spec was incomplete prior to 5.005_57; it was missing support for "seek()", "tell()", and "eof()".  Attempting to use these functions with an IO::Scalar will not work prior to
+       5.005_57. IO::Scalar will not have the relevant methods invoked; and even worse, this kind of bug can lie dormant for a while.  If you turn warnings on (via $^W or "perl -w"), and you see
+       something like this...
+
+           attempt to seek on unopened filehandle
+
+       ...then you are probably trying to use one of these functions on an IO::Scalar with an old Perl.  The remedy is to simply use the OO version; e.g.:
+
+           $SH->seek(0,0);    ### GOOD: will work on any 5.005
+           seek($SH,0,0);     ### WARNING: will only work on 5.005_57 and beyond
+
+VERSION
+       $Id: Scalar.pm,v 1.6 2005/02/10 21:21:53 dfs Exp $
+
+AUTHORS
+   Primary Maintainer
+       David F. Skoll (dfs@roaringpenguin.com).
+
+   Principal author
+       Eryq (eryq@zeegee.com).  President, ZeeGee Software Inc (http://www.zeegee.com).
+
+   Other contributors
+       The full set of contributors always includes the folks mentioned in "CHANGE LOG" in IO::Stringy.  But just the same, special thanks to the following individuals for their invaluable contributions
+       (if I've forgotten or misspelled your name, please email me!):
+
+       Andy Glew, for contributing "getc()".
+
+       Brandon Browning, for suggesting "opened()".
+
+       David Richter, for finding and fixing the bug in "PRINTF()".
+
+       Eric L. Brine, for his offset-using read() and write() implementations.
+
+       Richard Jones, for his patches to massively improve the performance of "getline()" and add "sysread" and "syswrite".
+
+       B. K. Oxley (binkley), for stringification and inheritance improvements, and sundry good ideas.
+
+       Doug Wilson, for the IO::Handle inheritance and automatic tie-ing.
+
+SEE ALSO
+       IO::String, which is quite similar but which was designed more-recently and with an IO::Handle-like interface in mind, so you could mix OO- and native-filehandle usage without using tied().
+
+       Note: as of version 2.x, these classes all work like their IO::Handle counterparts, so we have comparable functionality to IO::String.
+
+perl v5.36.0                                                                                    2022-12-12                                                                Test::Builder::IO::Scalar(3perl)

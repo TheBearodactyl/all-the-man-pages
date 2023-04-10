@@ -1,0 +1,105 @@
+LINKICC(1)                                                                                General Commands Manual                                                                               LINKICC(1)
+
+NAME
+       linkicc - little cms device link generator.
+
+SYNOPSIS
+       linkicc [options] profiles
+
+DESCRIPTION
+       lcms is a standalone CMM engine, which deals with the color management.  It implements a fast transformation between ICC profiles.  linkicc is a little cms device link generator.
+
+       Links two or more profiles into a single devicelink profile.  Colorspaces must be paired except Lab/XYZ, that can be interchanged.
+
+OPTIONS
+       -a NUM Observer adaptation state (abs.col. only), (0..1.0, float value) [defaults to 1.0].
+
+       -b     Black point compensation.
+
+       -c precision
+              Precision (0=LowRes, 1=Normal, 2=Hi-res) [defaults to 1].
+
+       -d description
+              Description text (quotes can be used).
+
+       -h NUM Show summary of options and examples (0=help, 1=Built-in profiles, 2=Examples, 3=Contact information)
+
+       -k inklimit
+              Ink-limiting in % (CMYK only), (0..400.0, float value) [default 400.0].
+
+       -l     Use linearization curves (may affect accuracy).
+
+       -n gridpoints
+              Alternate way to set precision, number of CLUT points.
+
+       -o profile
+              Output devicelink profile [defaults to 'devicelink.icm'].
+
+       -r profileversion
+              Profile version. (CAUTION: may change the profile implementation), (2.0..4.3, float value) [defaults to 4.3].
+
+       -t NUM Rendering intent
+              0=Perceptual [default]
+              1=Relative colorimetric
+              2=Saturation
+              3=Absolute colorimetric
+              10=Perceptual preserving black ink
+              11=Relative colorimetric preserving black ink
+              12=Saturation preserving black ink
+              13=Perceptual preserving black plane
+              14=Relative colorimetric preserving black plane
+              15=Saturation preserving black plane
+
+       -v verbosity
+              Verbosity level, (0=None, 1=Normal, 2=High, 3=Very High) [defaults to 0].
+
+       -x     Creatively, guess deviceclass of resulting profile.
+
+       -y copyright
+              Copyright notice (quotes can be used) ["No copyright, use freely"].
+
+       -8     Creates 8-bit devicelink.
+
+BUILT-IN PROFILES
+            *Lab2  -- D50-based v2 CIEL*a*b
+            *Lab4  -- D50-based v4 CIEL*a*b
+            *Lab   -- D50-based v4 CIEL*a*b
+            *XYZ   -- CIE XYZ (PCS)
+            *sRGB  -- sRGB color space
+            *Gray22 - Monochrome of Gamma 2.2
+            *Gray30 - Monochrome of Gamma 3.0
+            *null   - Monochrome black for all input
+            *Lin2222- CMYK linearization of gamma 2.2 on each channel
+
+EXAMPLES
+       To create 'devicelink.icm' from a.icc to b.icc:
+            linkicc a.icc b.icc
+
+       To create 'out.icc' from sRGB to cmyk.icc:
+            linkicc -o out.icc *sRGB cmyk.icc
+
+       To create a sRGB input profile working in Lab:
+            linkicc -x -o sRGBLab.icc *sRGB *Lab
+
+       To create a XYZ -> sRGB output profile:
+            linkicc -x -o sRGBLab.icc *XYZ *sRGB
+
+       To create a abstract profile doing softproof for cmyk.icc:
+            linkicc -t1 -x -o softproof.icc *Lab cmyk.icc cmyk.icc *Lab
+
+       To create a 'grayer' sRGB input profile:
+            linkicc -x -o grayer.icc *sRGB gray.icc gray.icc *Lab
+
+       To embed ink limiting into a cmyk output profile:
+            linkicc -x -o cmyklimited.icc -k 250 cmyk.icc *Lab
+
+NOTES
+       For suggestions, comments, bug reports etc. send mail to info@littlecms.com.
+
+SEE ALSO
+       jpgicc(1), psicc(1), tificc(1), transicc(1)
+
+AUTHOR
+       This manual page was written by Shiju p. Nair <shiju.p@gmail.com>, for the Debian project.
+
+                                                                                            September 30, 2004                                                                                  LINKICC(1)

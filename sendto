@@ -1,0 +1,516 @@
+SENDTO(3P)                 POSIX Programmer's Manual                SENDTO(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       sendto — send a message on a socket
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       ssize_t sendto(int socket, const void *message, size_t length,
+           int flags, const struct sockaddr *dest_addr,
+           socklen_t dest_len);
+
+DESCRIPTION
+       The sendto() function shall send a message through a connection-mode or
+       connectionless-mode socket.
+
+       If  the  socket  is  a connectionless-mode socket, the message shall be
+       sent to the address specified by dest_addr if no pre-specified peer ad‐
+       dress  has  been  set. If a peer address has been pre-specified, either
+       the message shall be sent to the address specified by dest_addr  (over‐
+       riding the pre-specified peer address), or the function shall return -1
+       and set errno to [EISCONN].
+
+       If the socket is connection-mode, dest_addr shall be ignored.
+
+       The sendto() function takes the following arguments:
+
+       socket      Specifies the socket file descriptor.
+
+       message     Points to a buffer containing the message to be sent.
+
+       length      Specifies the size of the message in bytes.
+
+       flags       Specifies the type of message transmission. Values of  this
+                   argument are formed by logically OR'ing zero or more of the
+                   following flags:
+
+                   MSG_EOR       Terminates a record (if supported by the pro‐
+                                 tocol).
+
+                   MSG_OOB       Sends  out-of-band  data on sockets that sup‐
+                                 port out-of-band data. The  significance  and
+                                 semantics  of  out-of-band data are protocol-
+                                 specific.
+
+                   MSG_NOSIGNAL  Requests not to send the SIGPIPE signal if an
+                                 attempt  to send is made on a stream-oriented
+                                 socket  that  is  no  longer  connected.  The
+                                 [EPIPE] error shall still be returned.
+
+       dest_addr   Points  to  a sockaddr structure containing the destination
+                   address. The length and format of the address depend on the
+                   address family of the socket.
+
+       dest_len    Specifies  the  length of the sockaddr structure pointed to
+                   by the dest_addr argument.
+
+       If the socket protocol supports broadcast and the specified address  is
+       a broadcast address for the socket protocol, sendto() shall fail if the
+       SO_BROADCAST option is not set for the socket.
+
+       The dest_addr argument specifies the address of the target.
+
+       The length argument specifies the length of the message.
+
+       Successful completion of a call to sendto() does not guarantee delivery
+       of  the  message.  A return value of -1 indicates only locally-detected
+       errors.
+
+       If space is not available at the sending socket to hold the message  to
+       be  transmitted and the socket file descriptor does not have O_NONBLOCK
+       set, sendto() shall block until space is available.  If  space  is  not
+       available  at  the sending socket to hold the message to be transmitted
+       and the socket file descriptor does have O_NONBLOCK set, sendto() shall
+       fail.
+
+       The  socket  in  use may require the process to have appropriate privi‐
+       leges to use the sendto() function.
+
+RETURN VALUE
+       Upon successful completion, sendto() shall return the number  of  bytes
+       sent. Otherwise, -1 shall be returned and errno set to indicate the er‐
+       ror.
+
+ERRORS
+       The sendto() function shall fail if:
+
+       EAFNOSUPPORT
+              Addresses in the specified address family cannot  be  used  with
+              this socket.
+
+       EAGAIN or EWOULDBLOCK
+              The  socket's  file  descriptor is marked O_NONBLOCK and the re‐
+              quested operation would block.
+
+       EBADF  The socket argument is not a valid file descriptor.
+
+       ECONNRESET
+              A connection was forcibly closed by a peer.
+
+       EINTR  A signal interrupted sendto() before any data was transmitted.
+
+       EMSGSIZE
+              The message is too large to be sent all at once, as  the  socket
+              requires.
+
+       ENOTCONN
+              The socket is connection-mode but is not connected.
+
+       ENOTSOCK
+              The socket argument does not refer to a socket.
+
+       EOPNOTSUPP
+              The  socket  argument  is associated with a socket that does not
+              support one or more of the values set in flags.
+
+       EPIPE  The socket is shut down for writing, or the  socket  is  connec‐
+              tion-mode and is no longer connected. In the latter case, and if
+              the socket is of type  SOCK_STREAM  or  SOCK_SEQPACKET  and  the
+              MSG_NOSIGNAL flag is not set, the SIGPIPE signal is generated to
+              the calling thread.
+
+       If the address family of the socket is  AF_UNIX,  then  sendto()  shall
+       fail if:
+
+       EIO    An  I/O error occurred while reading from or writing to the file
+              system.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of
+              the pathname in the socket address.
+
+       ENAMETOOLONG
+              The  length  of  a  component  of  a  pathname  is  longer  than
+              {NAME_MAX}.
+
+       ENOENT A component of the pathname does not name an  existing  file  or
+              the pathname is an empty string.
+
+       ENOTDIR
+              A component of the path prefix of the pathname in the socket ad‐
+              dress names an existing file that is neither a directory  nor  a
+              symbolic  link to a directory, or the pathname in the socket ad‐
+              dress contains at least one non-<slash> character and ends  with
+              one  or  more  trailing <slash> characters and the last pathname
+              component names an existing file that is neither a directory nor
+              a symbolic link to a directory.
+
+       The sendto() function may fail if:
+
+       EACCES Search  permission is denied for a component of the path prefix;
+              or write access to the named socket is denied.
+
+       EDESTADDRREQ
+              The socket is not connection-mode and does not have its peer ad‐
+              dress set, and no destination address was specified.
+
+       EHOSTUNREACH
+              The  destination  host  cannot  be reached (probably because the
+              host is down or a remote router cannot reach it).
+
+       EINVAL The dest_len argument is not a valid length for the address fam‐
+              ily.
+
+       EIO    An  I/O error occurred while reading from or writing to the file
+              system.
+
+       EISCONN
+              A destination address was specified and the  socket  is  already
+              connected.
+
+       ENETDOWN
+              The  local  network  interface  used to reach the destination is
+              down.
+
+       ENETUNREACH
+              No route to the network is present.
+
+       ENOBUFS
+              Insufficient resources were available in the system  to  perform
+              the operation.
+
+       ENOMEM Insufficient memory was available to fulfill the request.
+
+       If  the address family of the socket is AF_UNIX, then sendto() may fail
+       if:
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were  encountered  during
+              resolution of the pathname in the socket address.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolu‐
+              tion of a symbolic link produced an intermediate result  with  a
+              length that exceeds {PATH_MAX}.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The  select()  and poll() functions can be used to determine when it is
+       possible to send more data.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       getsockopt(), poll(), pselect(), recv(), recvfrom(), recvmsg(), send(),
+       sendmsg(), setsockopt(), shutdown(), socket()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_socket.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SENDTO(3P)
+send(2)                       System Calls Manual                      send(2)
+
+NAME
+       send, sendto, sendmsg - send a message on a socket
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       ssize_t send(int sockfd, const void buf[.len], size_t len, int flags);
+       ssize_t sendto(int sockfd, const void buf[.len], size_t len, int flags,
+                      const struct sockaddr *dest_addr, socklen_t addrlen);
+       ssize_t sendmsg(int sockfd, const struct msghdr *msg, int flags);
+
+DESCRIPTION
+       The system calls send(), sendto(), and sendmsg() are used to transmit a
+       message to another socket.
+
+       The send() call may be used only when the  socket  is  in  a  connected
+       state  (so  that the intended recipient is known).  The only difference
+       between send() and write(2) is the presence  of  flags.   With  a  zero
+       flags  argument, send() is equivalent to write(2).  Also, the following
+       call
+
+           send(sockfd, buf, len, flags);
+
+       is equivalent to
+
+           sendto(sockfd, buf, len, flags, NULL, 0);
+
+       The argument sockfd is the file descriptor of the sending socket.
+
+       If sendto() is used on a connection-mode (SOCK_STREAM,  SOCK_SEQPACKET)
+       socket,  the arguments dest_addr and addrlen are ignored (and the error
+       EISCONN may be returned when they are not NULL and 0),  and  the  error
+       ENOTCONN  is returned when the socket was not actually connected.  Oth‐
+       erwise, the address of the target is given by  dest_addr  with  addrlen
+       specifying its size.  For sendmsg(), the address of the target is given
+       by msg.msg_name, with msg.msg_namelen specifying its size.
+
+       For send() and sendto(), the message is found in  buf  and  has  length
+       len.   For  sendmsg(), the message is pointed to by the elements of the
+       array msg.msg_iov.  The sendmsg() call also  allows  sending  ancillary
+       data (also known as control information).
+
+       If  the  message  is too long to pass atomically through the underlying
+       protocol, the error EMSGSIZE is returned, and the message is not trans‐
+       mitted.
+
+       No  indication  of failure to deliver is implicit in a send().  Locally
+       detected errors are indicated by a return value of -1.
+
+       When the message does not fit into  the  send  buffer  of  the  socket,
+       send()  normally blocks, unless the socket has been placed in nonblock‐
+       ing I/O mode.  In nonblocking mode it would fail with the error  EAGAIN
+       or  EWOULDBLOCK in this case.  The select(2) call may be used to deter‐
+       mine when it is possible to send more data.
+
+   The flags argument
+       The flags argument is the bitwise OR of zero or more of  the  following
+       flags.
+
+       MSG_CONFIRM (since Linux 2.3.15)
+              Tell  the  link  layer that forward progress happened: you got a
+              successful reply from the other side.  If the link layer doesn't
+              get  this  it  will  regularly reprobe the neighbor (e.g., via a
+              unicast ARP).  Valid only on SOCK_DGRAM and SOCK_RAW sockets and
+              currently  implemented  only  for IPv4 and IPv6.  See arp(7) for
+              details.
+
+       MSG_DONTROUTE
+              Don't use a gateway to send out the packet, send to  hosts  only
+              on  directly  connected  networks.  This is usually used only by
+              diagnostic or routing programs.  This is defined only for proto‐
+              col families that route; packet sockets don't.
+
+       MSG_DONTWAIT (since Linux 2.2)
+              Enables nonblocking operation; if the operation would block, EA‐
+              GAIN or EWOULDBLOCK is returned.  This provides similar behavior
+              to  setting the O_NONBLOCK flag (via the fcntl(2) F_SETFL opera‐
+              tion), but differs in that MSG_DONTWAIT is  a  per-call  option,
+              whereas  O_NONBLOCK  is  a  setting on the open file description
+              (see open(2)), which will affect  all  threads  in  the  calling
+              process  and  as well as other processes that hold file descrip‐
+              tors referring to the same open file description.
+
+       MSG_EOR (since Linux 2.2)
+              Terminates a record (when this notion is supported, as for sock‐
+              ets of type SOCK_SEQPACKET).
+
+       MSG_MORE (since Linux 2.4.4)
+              The  caller  has  more data to send.  This flag is used with TCP
+              sockets to obtain the same effect as the TCP_CORK socket  option
+              (see tcp(7)), with the difference that this flag can be set on a
+              per-call basis.
+
+              Since Linux 2.6, this flag is also supported  for  UDP  sockets,
+              and  informs the kernel to package all of the data sent in calls
+              with this flag set into a single datagram which  is  transmitted
+              only  when  a call is performed that does not specify this flag.
+              (See also the UDP_CORK socket option described in udp(7).)
+
+       MSG_NOSIGNAL (since Linux 2.2)
+              Don't generate a SIGPIPE signal if the peer on a stream-oriented
+              socket  has closed the connection.  The EPIPE error is still re‐
+              turned.  This provides similar behavior to using sigaction(2) to
+              ignore SIGPIPE, but, whereas MSG_NOSIGNAL is a per-call feature,
+              ignoring SIGPIPE sets  a  process  attribute  that  affects  all
+              threads in the process.
+
+       MSG_OOB
+              Sends  out-of-band  data  on  sockets  that  support this notion
+              (e.g., of type SOCK_STREAM); the underlying protocol  must  also
+              support out-of-band data.
+
+       MSG_FASTOPEN (since Linux 3.7)
+              Attempts  TCP Fast Open (RFC7413) and sends data in the SYN like
+              a combination of connect(2) and write(2), by performing  an  im‐
+              plicit  connect(2)  operation.   It  blocks  until  the  data is
+              buffered and the handshake has completed.   For  a  non-blocking
+              socket,  it returns the number of bytes buffered and sent in the
+              SYN packet.  If the cookie is not available locally, it  returns
+              EINPROGRESS, and sends a SYN with a Fast Open cookie request au‐
+              tomatically.  The caller needs to write the data again when  the
+              socket  is connected.  On errors, it sets the same errno as con‐
+              nect(2) if the handshake fails.  This flag requires enabling TCP
+              Fast Open client support on sysctl net.ipv4.tcp_fastopen.
+
+              Refer to TCP_FASTOPEN_CONNECT socket option in tcp(7) for an al‐
+              ternative approach.
+
+   sendmsg()
+       The definition of the msghdr structure employed by sendmsg() is as fol‐
+       lows:
+
+           struct msghdr {
+               void         *msg_name;       /* Optional address */
+               socklen_t     msg_namelen;    /* Size of address */
+               struct iovec *msg_iov;        /* Scatter/gather array */
+               size_t        msg_iovlen;     /* # elements in msg_iov */
+               void         *msg_control;    /* Ancillary data, see below */
+               size_t        msg_controllen; /* Ancillary data buffer len */
+               int           msg_flags;      /* Flags (unused) */
+           };
+
+       The msg_name field is used on an unconnected socket to specify the tar‐
+       get address for a datagram.  It points to a buffer containing  the  ad‐
+       dress;  the msg_namelen field should be set to the size of the address.
+       For a connected socket, these fields should be specified as NULL and 0,
+       respectively.
+
+       The  msg_iov and msg_iovlen fields specify scatter-gather locations, as
+       for writev(2).
+
+       You may send control information (ancillary data) using the msg_control
+       and msg_controllen members.  The maximum control buffer length the ker‐
+       nel  can  process   is   limited   per   socket   by   the   value   in
+       /proc/sys/net/core/optmem_max;  see socket(7).  For further information
+       on the use of ancillary data in various socket domains, see unix(7) and
+       ip(7).
+
+       The msg_flags field is ignored.
+
+RETURN VALUE
+       On  success, these calls return the number of bytes sent.  On error, -1
+       is returned, and errno is set to indicate the error.
+
+ERRORS
+       These are some standard errors generated by the  socket  layer.   Addi‐
+       tional  errors may be generated and returned from the underlying proto‐
+       col modules; see their respective manual pages.
+
+       EACCES (For UNIX domain sockets,  which  are  identified  by  pathname)
+              Write  permission  is  denied on the destination socket file, or
+              search permission is denied for one of the directories the  path
+              prefix.  (See path_resolution(7).)
+
+              (For  UDP  sockets)  An  attempt  was  made  to  send  to a net‐
+              work/broadcast address as though it was a unicast address.
+
+       EAGAIN or EWOULDBLOCK
+              The socket is marked nonblocking  and  the  requested  operation
+              would  block.   POSIX.1-2001  allows either error to be returned
+              for this case, and does not require these constants to have  the
+              same value, so a portable application should check for both pos‐
+              sibilities.
+
+       EAGAIN (Internet domain datagram sockets) The  socket  referred  to  by
+              sockfd had not previously been bound to an address and, upon at‐
+              tempting to bind it to an ephemeral port, it was determined that
+              all  port  numbers  in the ephemeral port range are currently in
+              use.    See   the   discussion   of    /proc/sys/net/ipv4/ip_lo‐
+              cal_port_range in ip(7).
+
+       EALREADY
+              Another Fast Open is in progress.
+
+       EBADF  sockfd is not a valid open file descriptor.
+
+       ECONNRESET
+              Connection reset by peer.
+
+       EDESTADDRREQ
+              The socket is not connection-mode, and no peer address is set.
+
+       EFAULT An invalid user space address was specified for an argument.
+
+       EINTR  A  signal  occurred  before  any  data was transmitted; see sig‐
+              nal(7).
+
+       EINVAL Invalid argument passed.
+
+       EISCONN
+              The connection-mode socket was connected already but a recipient
+              was  specified.   (Now either this error is returned, or the re‐
+              cipient specification is ignored.)
+
+       EMSGSIZE
+              The socket type requires that message be  sent  atomically,  and
+              the size of the message to be sent made this impossible.
+
+       ENOBUFS
+              The  output queue for a network interface was full.  This gener‐
+              ally indicates that the interface has stopped sending,  but  may
+              be caused by transient congestion.  (Normally, this does not oc‐
+              cur in Linux.  Packets are just silently dropped when  a  device
+              queue overflows.)
+
+       ENOMEM No memory available.
+
+       ENOTCONN
+              The socket is not connected, and no target has been given.
+
+       ENOTSOCK
+              The file descriptor sockfd does not refer to a socket.
+
+       EOPNOTSUPP
+              Some  bit  in the flags argument is inappropriate for the socket
+              type.
+
+       EPIPE  The local end has  been  shut  down  on  a  connection  oriented
+              socket.   In  this case, the process will also receive a SIGPIPE
+              unless MSG_NOSIGNAL is set.
+
+VERSIONS
+       According to POSIX.1-2001,  the  msg_controllen  field  of  the  msghdr
+       structure should be typed as socklen_t, and the msg_iovlen field should
+       be typed as int, but glibc currently types both as size_t.
+
+STANDARDS
+       POSIX.1-2008.
+
+       MSG_CONFIRM is a Linux extension.
+
+HISTORY
+       4.4BSD, SVr4, POSIX.1-2001.  (first appeared in 4.2BSD).
+
+       POSIX.1-2001  describes   only   the   MSG_OOB   and   MSG_EOR   flags.
+       POSIX.1-2008 adds a specification of MSG_NOSIGNAL.
+
+NOTES
+       See sendmmsg(2) for information about a Linux-specific system call that
+       can be used to transmit multiple datagrams in a single call.
+
+BUGS
+       Linux may return EPIPE instead of ENOTCONN.
+
+EXAMPLES
+       An example of the use of sendto() is shown in getaddrinfo(3).
+
+SEE ALSO
+       fcntl(2), getsockopt(2), recv(2), select(2), sendfile(2),  sendmmsg(2),
+       shutdown(2),  socket(2),  write(2), cmsg(3), ip(7), ipv6(7), socket(7),
+       tcp(7), udp(7), unix(7)
+
+Linux man-pages 6.04              2023-03-30                           send(2)

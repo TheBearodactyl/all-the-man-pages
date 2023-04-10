@@ -1,0 +1,93 @@
+internals(3)                                                                                      libmtp                                                                                      internals(3)
+
+NAME
+       internals - The libmtp internals API.
+
+SYNOPSIS
+   Functions
+       void LIBMTP_Set_Debug (int)
+       void LIBMTP_Init (void)
+       int LIBMTP_Get_Supported_Devices_List (LIBMTP_device_entry_t **const, int *const)
+
+Detailed Description
+Function Documentation
+   int LIBMTP_Get_Supported_Devices_List (LIBMTP_device_entry_t **const devices, int *const numdevs)
+       Get a list of the supported USB devices.
+
+       The developers depend on users of this library to constantly add in to the list of supported devices. What we need is the device name, USB Vendor ID (VID) and USB Product ID (PID). put this into
+       a bug ticket at the project homepage, please. The VID/PID is used to let e.g. udev lift the device to console userspace access when it's plugged in.
+
+       Parameters
+           devices a pointer to a pointer that will hold a device list after the call to this function, if it was successful.
+           numdevs a pointer to an integer that will hold the number of devices in the device list if the call was successful.
+
+       Returns
+           0 if the list was successful retrieved, any other value means failure.
+
+   void LIBMTP_Init (void)
+       Initialize the library. You are only supposed to call this one, before using the library for the first time in a program. Never re-initialize libmtp!
+
+       The only thing this does at the moment is to initialise the filetype mapping table, as well as load MTPZ data if necessary.
+
+       References LIBMTP_Set_Debug().
+
+   void LIBMTP_Set_Debug (int level)
+       Set the debug level.
+
+       By default, the debug level is set to '0' (disable).
+
+       References LIBMTP_debug.
+
+       Referenced by LIBMTP_Init().
+
+Author
+       Generated automatically by Doxygen for libmtp from the source code.
+
+Version 1.1.20                                                                                Mon Jul 4 2022                                                                                  internals(3)
+Internals(3perl)                                                                     Perl Programmers Reference Guide                                                                     Internals(3perl)
+
+NAME
+       Internals - Reserved special namespace for internals related functions
+
+SYNOPSIS
+           $is_ro= Internals::SvREADONLY($x)
+           $refcnt= Internals::SvREFCNT($x)
+           hv_clear_placeholders(%hash);
+
+DESCRIPTION
+       The Internals namespace is used by the core Perl development team to expose certain low level internals routines for testing and other purposes.
+
+       In theory these routines were not and are not intended to be used outside of the perl core, and are subject to change and removal at any time.
+
+       In practice people have come to depend on these over the years, despite being historically undocumented, so we will provide some level of forward compatibility for some time. Nevertheless you can
+       assume that any routine documented here is experimental or deprecated and you should find alternatives to their use.
+
+   FUNCTIONS
+       SvREFCNT(THING [, $value])
+           Historically Perl has been a refcounted language. This means that each variable tracks how many things reference it, and when the variable is no longer referenced it will automatically free
+           itself. In theory Perl code should not have to care about this, and in a future version Perl might change to some other strategy, although in practice this is unlikely.
+
+           This function allows one to violate the abstraction of variables and get or set the refcount of a variable, and in generally is really only useful in code that is testing refcount behavior.
+
+           *NOTE* You are strongly discouraged from using this function in non-test code and especially discouraged from using the set form of this function.  The results of doing so may result in
+           segmentation faults or other undefined behavior.
+
+       SvREADONLY(THING, [, $value])
+           Set or get whether a variable is readonly or not. Exactly what the readonly flag means depend on the type of the variable affected and the version of perl used.
+
+           You are strongly discouraged from using this function directly. It is used by various core modules, like "Hash::Util", and the "constant" pragma to implement higher-level behavior which
+           should be used instead.
+
+           See the core implementation for the exact meaning of the readonly flag for each internal variable type.
+
+       hv_clear_placeholders(%hash)
+           Clear any placeholders from a locked hash. Should not be used directly.  You should use the wrapper functions provided by Hash::Util instead.  As of 5.25 also available as "
+           Hash::Util::_clear_placeholders(%hash) "
+
+AUTHOR
+       Perl core development team.
+
+SEE ALSO
+       perlguts Hash::Util constant universal.c
+
+perl v5.36.0                                                                                    2022-12-12                                                                                Internals(3perl)

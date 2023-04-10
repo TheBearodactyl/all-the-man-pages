@@ -1,0 +1,265 @@
+registry(n)                  Tcl Bundled Packages                  registry(n)
+
+______________________________________________________________________________
+
+NAME
+       registry - Manipulate the Windows registry
+
+SYNOPSIS
+       package require registry 1.3
+
+       registry ?-mode? option keyName ?arg arg ...?
+______________________________________________________________________________
+
+DESCRIPTION
+       The  registry  package provides a general set of operations for manipu‐
+       lating the Windows registry.  The package implements the  registry  Tcl
+       command.   This  command  is  only  supported  on the Windows platform.
+       Warning: this command should be used with caution as a  corrupted  reg‐
+       istry can leave your system in an unusable state.
+
+       KeyName  is  the  name of a registry key.  Registry keys must be one of
+       the following forms:
+
+              \\hostname\rootname\keypath
+
+              rootname\keypath
+
+              rootname
+
+       Hostname specifies the name of any valid Windows host that exports  its
+       registry.   The  rootname  component must be one of HKEY_LOCAL_MACHINE,
+       HKEY_USERS, HKEY_CLASSES_ROOT, HKEY_CURRENT_USER,  HKEY_CURRENT_CONFIG,
+       HKEY_PERFORMANCE_DATA,  or  HKEY_DYN_DATA.   The  keypath can be one or
+       more registry key names separated by backslash (\) characters.
+
+       The optional -mode argument indicates which registry to work with; when │
+       it  is  -32bit  the 32-bit registry will be used, and when it is -64bit │
+       the 64-bit registry will be used. If this argument is omitted, the sys‐ │
+       tem's default registry will be the subject of the requested operation.
+
+       Option indicates what to do with the registry key name.  Any unique ab‐
+       breviation for option is acceptable.  The valid options are:
+
+       registry broadcast keyName ?-timeout milliseconds?
+              Sends a broadcast message to the system and running programs  to
+              notify  them of certain updates.  This is necessary to propagate
+              changes to key registry  keys  like  Environment.   The  timeout
+              specifies  the  amount of time, in milliseconds, to wait for ap‐
+              plications to respond to the broadcast message.  It defaults  to
+              3000.   The  following example demonstrates how to add a path to
+              the global Environment and notify  applications  of  the  change
+              without  requiring  a  logoff/logon  step  (assumes admin privi‐
+              leges):
+
+                     set regPath [join {
+                         HKEY_LOCAL_MACHINE
+                         SYSTEM
+                         CurrentControlSet
+                         Control
+                         {Session Manager}
+                         Environment
+                     } "\\"]
+                     set curPath [registry get $regPath "Path"]
+                     registry set $regPath "Path" "$curPath;$addPath"
+                     registry broadcast "Environment"
+
+       registry delete keyName ?valueName?
+              If the optional valueName argument  is  present,  the  specified
+              value  under  keyName will be deleted from the registry.  If the
+              optional valueName is omitted, the specified key and any subkeys
+              or  values beneath it in the registry hierarchy will be deleted.
+              If the key could not be deleted then an error is generated.   If
+              the key did not exist, the command has no effect.
+
+       registry get keyName valueName
+              Returns  the  data associated with the value valueName under the
+              key keyName.  If either the key or the  value  does  not  exist,
+              then  an  error is generated.  For more details on the format of
+              the returned data, see SUPPORTED TYPES, below.
+
+       registry keys keyName ?pattern?
+              If pattern is not specified, returns a list of names of all  the
+              subkeys  of  keyName.  If pattern is specified, only those names
+              matching pattern are returned.  Matching is determined using the
+              same  rules  as for string match.  If the specified keyName does
+              not exist, then an error is generated.
+
+       registry set keyName ?valueName data ?type??
+              If valueName is not specified, creates the  key  keyName  if  it
+              does  not already exist.  If valueName is specified, creates the
+              key keyName and value valueName if necessary.  The  contents  of
+              valueName  are  set to data with the type indicated by type.  If
+              type is not specified, the type sz is assumed.  For more details
+              on the data and type arguments, see SUPPORTED TYPES below.
+
+       registry type keyName valueName
+              Returns the type of the value valueName in the key keyName.  For
+              more information on the possible types, see SUPPORTED TYPES, be‐
+              low.
+
+       registry values keyName ?pattern?
+              If  pattern is not specified, returns a list of names of all the
+              values of keyName.  If pattern is specified,  only  those  names
+              matching pattern are returned.  Matching is determined using the
+              same rules as for string match.
+
+SUPPORTED TYPES
+       Each value under a key in the registry contains some data of a particu‐
+       lar  type in a type-specific representation.  The registry command con‐
+       verts between this internal representation and one that can be  manipu‐
+       lated  by Tcl scripts.  In most cases, the data is simply returned as a
+       Tcl string.  The type indicates the intended use for the data, but does
+       not  actually  change the representation.  For some types, the registry
+       command returns the data in a different form to make it easier  to  ma‐
+       nipulate.  The following types are recognized by the registry command:
+
+       binary           The  registry  value  contains  arbitrary binary data.
+                        The data is represented exactly in Tcl, including  any
+                        embedded nulls.
+
+       none             The registry value contains arbitrary binary data with
+                        no defined type.  The data is represented  exactly  in
+                        Tcl, including any embedded nulls.
+
+       sz               The  registry value contains a null-terminated string.
+                        The data is represented in Tcl as a string.
+
+       expand_sz        The registry value contains a  null-terminated  string
+                        that  contains  unexpanded  references  to environment
+                        variables in the normal Windows  style  (for  example,
+                        “%PATH%”).   The  data  is  represented  in  Tcl  as a
+                        string.
+
+       dword            The registry value  contains  a  little-endian  32-bit
+                        number.   The  data is represented in Tcl as a decimal
+                        string.
+
+       dword_big_endian The registry value contains a big-endian  32-bit  num‐
+                        ber.   The  data  is  represented  in Tcl as a decimal
+                        string.
+
+       link             The registry value contains a symbolic link.  The data
+                        is  represented exactly in Tcl, including any embedded
+                        nulls.
+
+       multi_sz         The registry value contains an  array  of  null-termi‐
+                        nated  strings.   The  data is represented in Tcl as a
+                        list of strings.
+
+       resource_list    The registry value contains a  device-driver  resource
+                        list.  The data is represented exactly in Tcl, includ‐
+                        ing any embedded nulls.
+
+       In addition to the symbolically named types listed above, unknown types
+       are identified using a 32-bit integer that corresponds to the type code
+       returned by the system interfaces.  In this case, the  data  is  repre‐
+       sented exactly in Tcl, including any embedded nulls.
+
+PORTABILITY ISSUES
+       The registry command is only available on Windows.
+
+EXAMPLE
+       Print  out  how  double-clicking on a Tcl script file will invoke a Tcl
+       interpreter:
+
+              package require registry
+              set ext .tcl
+
+              # Read the type name
+              set type [registry get HKEY_CLASSES_ROOT\\$ext {}]
+              # Work out where to look for the command
+              set path HKEY_CLASSES_ROOT\\$type\\Shell\\Open\\command
+              # Read the command!
+              set command [registry get $path {}]
+
+              puts "$ext opens with $command"
+
+KEYWORDS
+       registry
+
+registry                              1.1                          registry(n)
+REGISTRY(7)                                                        REGISTRY(7)
+
+NAME
+       registry - The JavaScript Package Registry
+
+   Description
+       To  resolve  packages by name and version, npm talks to a registry web‐
+       site that implements the CommonJS Package  Registry  specification  for
+       reading package info.
+
+       npm  is  configured  to  use  the  npm  public registry at https://reg‐
+       istry.npmjs.org by default. Use of the npm public registry  is  subject
+       to terms of use available at https://docs.npmjs.com/policies/terms.
+
+       You can configure npm to use any compatible registry you like, and even
+       run your own registry. Use of someone else's registry may  be  governed
+       by their terms of use.
+
+       npm's  package  registry  implementation supports several write APIs as
+       well, to allow for publishing packages and managing user account infor‐
+       mation.
+
+       The  npm  public  registry  is  powered by a CouchDB database, of which
+       there is a public mirror at https://skimdb.npmjs.com/registry.
+
+       The registry URL used is determined by the scope of  the  package  (see
+       npm help scope. If no scope is specified, the default registry is used,
+       which is supplied by the registry config parameter.  See npm help  con‐
+       fig,  npm  help  npmrc,  and npm help config for more on managing npm's
+       configuration.
+
+       When the default registry is used in a package-lock  or  shrinkwrap  is
+       has  the special meaning of "the currently configured registry". If you
+       create a lock file while using the default registry you can  switch  to
+       another  registry  and npm will install packages from the new registry,
+       but if you create a lock file while using a  custom  registry  packages
+       will  be  installed from that registry even after you change to another
+       registry.
+
+   Does npm send any information about me back to the registry?
+       Yes.
+
+       When making requests of the registry npm adds two headers with informa‐
+       tion about your environment:
+
+       • Npm-Scope  –  If your project is scoped, this header will contain its
+         scope. In the future npm hopes to build registry  features  that  use
+         this  information  to allow you to customize your experience for your
+         organization.
+
+       • Npm-In-CI – Set to "true" if npm believes this install is running  in
+         a  continuous integration environment, "false" otherwise. This is de‐
+         tected by looking for the following environment  variables:  CI,  TD‐
+         DIUM,  JENKINS_URL,  bamboo.buildKey. If you'd like to learn more you
+         may   find   the    original    PR    https://github.com/npm/npm-reg‐
+         istry-client/pull/129  interesting.   This  is  used to gather better
+         metrics on how npm is used by humans, versus build farms.
+
+       The npm registry does not try to correlate  the  information  in  these
+       headers  with  any  authenticated accounts that may be used in the same
+       requests.
+
+   How can I prevent my package from being published in the official registry?
+       Set "private": true in your package.json to prevent it from being  pub‐
+       lished  at all, or "publishConfig":{"registry":"http://my-internal-reg‐
+       istry.local"} to force it to be published only to your internal/private
+       registry.
+
+       See  npm  help  package.json  for  more  info on what goes in the pack‐
+       age.json file.
+
+   Where can I find my own, & other's, published packages?
+       https://www.npmjs.com/
+
+   See also
+       • npm help config
+
+       • npm help config
+
+       • npm help npmrc
+
+       • npm help developers
+
+                                September 2022                     REGISTRY(7)

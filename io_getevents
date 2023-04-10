@@ -1,0 +1,132 @@
+io_getevents(3)                                                                                  Linux AIO                                                                                 io_getevents(3)
+
+NAME
+       io_getevents, aio_pgetevents - Read resulting events from io requests
+
+SYNOPSIS
+       #include <errno.h>
+
+       #include <libaio.h>
+
+       struct iocb {
+            void      *data;
+            unsigned  key;
+            short          aio_lio_opcode;
+            short          aio_reqprio;
+            int       aio_fildes;
+       };
+
+       struct io_event {
+               unsigned        PADDED(data, __pad1);
+               unsigned        PADDED(obj,  __pad2);
+               unsigned        PADDED(res,  __pad3);
+               unsigned        PADDED(res2, __pad4);
+       };
+
+       int io_getevents(io_context_t ctx, long nr, struct io_event *events[], struct timespec *timeout);
+       int io_pgetevents(io_context_t ctx, long nr, struct io_event *events[], struct timespec *timeout, sigset_t *sigmask);
+
+DESCRIPTION
+       Attempts to read up to nr events from the completion queue for the aio_context specified by ctx.
+
+RETURN VALUES
+       May  return 0 if no events are available and the timeout specified by when has elapsed, where when == NULL specifies an infinite timeout.  Note that the timeout pointed to by when is relative and
+       will be updated if not NULL and the operation blocks.  Will fail with ENOSYS if not implemented.
+
+   io_pgetevents()
+       The relationship between io_getevents() and io_pgetevents() is analogous to the relationship between select(2) and pselect(2): similar to pselect(2), pgetevents() allows an application to  safely
+       wait until either an aio completion event happens or until a signal is caught.
+
+       The following io_pgetevents() call:
+
+           ret = io_pgetevents(ctx, min_nr, nr, events, timeout, sigmask);
+
+       is equivalent to atomically executing the following calls:
+
+           sigset_t origmask;
+
+           pthread_sigmask(SIG_SETMASK, &sigmask, &origmask);
+           ret = io_getevents(ctx, min_nr, nr, events, timeout);
+           pthread_sigmask(SIG_SETMASK, &origmask, NULL);
+
+       See the description of pselect(2) for an explanation of why io_pgetevents() is necessary.
+
+       If the sigmask argument is specified as NULL, then no signal mask manipulation is performed (and thus io_pgetevents() behaves the same as io_getevents()).
+
+ERRORS
+       EINVAL If ctx is invalid, if min_nr is out of range, if nr is out of range, if when is out of range.
+
+       EFAULT If any of the memory specified to is invalid.
+
+SEE ALSO
+       io(3),  io_cancel(3),  io_fsync(3),  io_prep_fsync(3),  io_prep_pread(3),  io_prep_pwrite(3), io_queue_init(3), io_queue_release(3), io_queue_run(3), io_queue_wait(3), io_set_callback(3), io_sub‐
+       mit(3), errno(3), pselect(2).
+
+Linux                                                                                           2019-07-23                                                                                 io_getevents(3)
+io_getevents(2)                                                                             System Calls Manual                                                                            io_getevents(2)
+
+NAME
+       io_getevents - read asynchronous I/O events from the completion queue
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+       Alternatively, Asynchronous I/O library (libaio, -laio); see VERSIONS.
+
+SYNOPSIS
+       #include <linux/aio_abi.h>    /* Definition of *io_* types */
+       #include <sys/syscall.h>      /* Definition of SYS_* constants */
+       #include <unistd.h>
+
+       int syscall(SYS_io_getevents, aio_context_t ctx_id,
+                   long min_nr, long nr, struct io_event *events,
+                   struct timespec *timeout);
+
+       Note: glibc provides no wrapper for io_getevents(), necessitating the use of syscall(2).
+
+DESCRIPTION
+       Note: this page describes the raw Linux system call interface.  The wrapper function provided by libaio uses a different type for the ctx_id argument.  See VERSIONS.
+
+       The io_getevents() system call attempts to read at least min_nr events and up to nr events from the completion queue of the AIO context specified by ctx_id.
+
+       The timeout argument specifies the amount of time to wait for events, and is specified as a relative timeout in a timespec(3) structure.
+
+       The specified time will be rounded up to the system clock granularity and is guaranteed not to expire early.
+
+       Specifying timeout as NULL means block indefinitely until at least min_nr events have been obtained.
+
+RETURN VALUE
+       On  success,  io_getevents()  returns the number of events read.  This may be 0, or a value less than min_nr, if the timeout expired.  It may also be a nonzero value less than min_nr, if the call
+       was interrupted by a signal handler.
+
+       For the failure return, see VERSIONS.
+
+ERRORS
+       EFAULT Either events or timeout is an invalid pointer.
+
+       EINTR  Interrupted by a signal handler; see signal(7).
+
+       EINVAL ctx_id is invalid.  min_nr is out of range or nr is out of range.
+
+       ENOSYS io_getevents() is not implemented on this architecture.
+
+VERSIONS
+       You probably want to use the io_getevents() wrapper function provided by libaio.
+
+       Note that the libaio wrapper function uses a different type (io_context_t) for the ctx_id argument.  Note also that the libaio wrapper does not follow the usual C library conventions for indicat‐
+       ing errors: on error it returns a negated error number (the negative of one of the values listed in ERRORS).  If the system call is invoked via syscall(2), then the return value follows the usual
+       conventions for indicating an error: -1, with errno set to a (positive) value that indicates the error.
+
+STANDARDS
+       Linux.
+
+HISTORY
+       Linux 2.5.
+
+BUGS
+       An invalid ctx_id may cause a segmentation fault instead of generating the error EINVAL.
+
+SEE ALSO
+       io_cancel(2), io_destroy(2), io_setup(2), io_submit(2), timespec(3), aio(7), time(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                 io_getevents(2)

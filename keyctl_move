@@ -1,0 +1,52 @@
+KEYCTL_MOVE(3)                                                                          Linux Key Management Calls                                                                          KEYCTL_MOVE(3)
+
+NAME
+       keyctl_move - Move a key between keyrings
+
+SYNOPSIS
+       #include <keyutils.h>
+
+       long keyctl_move(key_serial_t key, key_serial_t from_keyring,
+                        key_serial_t to_keyring, unsigned int flags);
+
+DESCRIPTION
+       keyctl_move() atomically unlinks key from from_keyring and links it into to_keyring in a single operation.  Depending on the flags set, a link to any matching key in to_keyring may get displaced.
+
+       flags is a bitwise-OR of zero or more of the following flags:
+
+       KEYCTL_MOVE_EXCL
+              If there's a matching key in to_keyring, don't displace it but rather return an error.
+
+       The caller must have write permission on both keyring to be able to create or remove links in them.
+
+       The caller must have link permission on a key to be able to create a new link to it.
+
+RETURN VALUE
+       On success keyctl_move() return 0.  On error, the value -1 will be returned and errno will have been set to an appropriate error.
+
+ERRORS
+       ENOKEY The key or one of the keyrings specified are invalid.
+
+       ENOKEY A key with the same type and description is present in to_keyring and KEYCTL_MOVE_EXCL is set.
+
+       EKEYEXPIRED
+              The key or one of the keyrings specified have expired.
+
+       EKEYREVOKED
+              The key or one of the keyrings specified have been revoked.
+
+       EACCES The key exists, but is not linkable by the calling process.
+
+       EACCES The keyrings exist, but are not writable by the calling process.
+
+       ENOMEM Insufficient memory to effect the changes.
+
+       EDQUOT Expanding to_keyring would exceed the keyring owner's quota.
+
+LINKING
+       This is a library function that can be found in libkeyutils.  When linking, -lkeyutils should be specified to the linker.
+
+SEE ALSO
+       keyctl(1), add_key(2), keyctl(2), request_key(2), keyctl(3), keyrings(7), keyutils(7)
+
+Linux                                                                                           29 May 2019                                                                                 KEYCTL_MOVE(3)

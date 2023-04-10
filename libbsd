@@ -1,0 +1,121 @@
+libbsd(7)                                                                          BSD Miscellaneous Information Manual                                                                          libbsd(7)
+
+NAME
+     libbsd — utility functions from BSD systems
+
+DESCRIPTION
+     The libbsd library provides a set of compatibility macros and functions commonly found on BSD-based systems.  Its purpose is to make those available on non-BSD based systems to ease portability.
+
+     The library can be used in an overlay mode, which is the preferred way, so that the code is portable and requires no modification to the original BSD code.  This can be done easily with the
+     pkgconf(1) library named libbsd-overlay.  Or by adding the system-specific include directory with the bsd/ suffix to the list of system include paths.  With gcc this could be -isystem
+     ${includedir}/bsd.  In addition the LIBBSD_OVERLAY pre-processor variable needs to be defined.  The includes in this case should be the usual system ones, such as <unistd.h>.
+
+     The other way to use the library is to use the namespaced headers, which is a discouraged way, being less portable as it makes using libbsd mandatory and it will not work on BSD-based systems, and
+     requires modifying original BSD code.  This can be done with the pkgconf(1) library named libbsd.  The includes in this case should be namespaced with bsd/, such as <bsd/unistd.h>.
+
+     The package also provides a libbsd-ctor static library that can be used to inject automatic constructors into a program so that the setproctitle_init(3) function gets invoked automatically at
+     startup time.  This can be done with the pkgconf(1) library named libbsd-ctor.
+
+HEADERS
+     The following are the headers provided by libbsd, that extend the standard system headers.  They can work in normal or overlay modes, for the former they need to be prefixed with bsd/.
+
+     <bitstring.h>
+     <err.h>
+     <getopt.h>
+     <grp.h>
+     <inttypes.h>
+     <libutil.h>
+     <md5.h>
+     <netinet/ip_icmp.h>
+     <nlist.h>
+     <pwd.h>
+     <readpassphrase.h>
+     <stdio.h>
+     <stdlib.h>
+     <string.h>
+     <stringlist.h>
+     <sys/bitstring.h>
+     <sys/cdefs.h>
+     <sys/endian.h>
+     <sys/param.h>
+     <sys/poll.h>
+     <sys/queue.h>
+     <sys/time.h>
+     <sys/tree.h>
+     <timeconv.h>
+     <unistd.h>
+     <vis.h>
+     <wchar.h>
+
+     The following is a libbsd specific convenience header, that includes some of the extended headers.  It only works in non-overlay mode.
+
+     <bsd/bsd.h>
+
+ALTERNATIVES
+     Some functions have different prototypes depending on the BSD where they originated from, and these various implementations provided are selectable at build-time.
+
+     This is the list of functions that provide multiple implementations:
+
+     strnvis(3)
+     strnunvis(3)
+           NetBSD added strnvis(3) and strnunvis(3) but unfortunately made it incompatible with the existing one in OpenBSD and Freedesktop's libbsd (the former having existed for over ten years).  De‐
+           spite this incompatibility being reported during development (see http://gnats.netbsd.org/44977) they still shipped it.  Even more unfortunately FreeBSD and later MacOS picked up this incom‐
+           patible implementation.
+
+           Provide both implementations and default for now to the historical one to avoid breakage, but we will switch to the NetBSD one in a later release, which is internally consistent with the
+           other vis(3) functions and is now more widespread.  Define LIBBSD_NETBSD_VIS to switch to the NetBSD one now.  Define LIBBSD_OPENBSD_VIS to keep using the OpenBSD one.
+
+DEPRECATED
+     Some functions have been deprecated, they will emit warnings at compile time and possibly while being linked at run-time.  This might be due to the functions not being portable at all to other sys‐
+     tems, making the package not buildable there; not portable in a correct or non-buggy way; or because there are better more portable replacements now.
+
+     This is the list of currently deprecated macros and functions:
+
+     fgetln(3)
+           Unportable, requires assistance from the stdio layer.  An implementation has to choose between leaking buffers or being reentrant for a limited amount of streams (this implementation chose
+           the latter with a limit of 32).  Use getline(3) instead, which is available in many systems and required by IEEE Std 1003.1-2008 (“POSIX.1”).
+
+     fgetwln(3)
+           Unportable, requires assistance from the stdio layer.  An implementation has to choose between leaking buffers or being reentrant for a limited amount of streams (this implementation chose
+           the latter with a limit of 32).  Use fgetwc(3) instead, which is available in many systems and required by ISO/IEC 9899:1999 (“ISO C99”) and IEEE Std 1003.1-2001 (“POSIX.1”).
+
+     funopen(3)
+           Unportable, requires assistance from the stdio layer or some hook framework.  On GNU systems the fopencookie(3) function can be used.  Otherwise the code needs to be prepared for neither of
+           these functions being available.
+
+SUPERSEDED
+     Some functions have been superseded by implementations in other system libraries, and might disappear on the next SONAME bump, assuming those other implementation have widespread deployment, or the
+     implementations are present in all major libc for example.
+
+     MD5Init(3)
+     MD5Update(3)
+     MD5Pad(3)
+     MD5Final(3)
+     MD5Transform(3)
+     MD5End(3)
+     MD5File(3)
+     MD5FileChunk(3)
+     MD5Data(3)
+           The set of MD5 digest functions are now proxies for the implementations provided by the libmd companion library, so it is advised to switch to use that directly instead.
+     explicit_bzero(3)
+           This function is provided by glibc 2.25, and musl 1.1.20.
+     reallocarray(3)
+           This function is provided by glibc 2.26, and musl 1.2.2.
+     arc4random(3)
+     arc4random_buf(3)
+     arc4random_uniform(3)
+           These functions are provided by glibc 2.36.  Note that it does not provide the arc4random_stir(3) and arc4random_addrandom(3) functions.
+
+SEE ALSO
+     arc4random(3bsd), bitstring(3bsd), byteorder(3bsd), closefrom(3bsd), errc(3bsd), expand_number(3bsd), explicit_bzero(3bsd), fgetln(3bsd), fgetwln(3bsd), flopen(3bsd), fmtcheck(3bsd),
+     fparseln(3bsd), fpurge(3bsd), funopen(3bsd), getbsize(3bsd), getpeereid(3bsd), getprogname(3bsd), heapsort(3bsd), humanize_number(3bsd), md5(3bsd), nlist(3bsd), pidfile(3bsd), pwcache(3bsd),
+     queue(3bsd), radixsort(3bsd), readpassphrase(3bsd), reallocarray(3bsd), reallocf(3bsd), setmode(3bsd), setproctitle(3bsd), stringlist(3bsd), strlcpy(3bsd), strmode(3bsd), strnstr(3bsd),
+     strtoi(3bsd), strtonum(3bsd), strtou(3bsd), timeradd(3bsd), timeval(3bsd), tree(3bsd), unvis(3bsd), vis(3bsd), wcslcpy(3bsd).
+
+HISTORY
+     The libbsd project started in the Debian GNU/kFreeBSD port as a way to ease porting code from FreeBSD to the GNU-based system.  Pretty early on it was generalized and a project created on FreeDesk‐
+     top.org for other distributions and projects to use.
+
+     It is now distributed as part of most non-BSD distributions.
+
+BSD                                                                                           August 3, 2022                                                                                           BSD

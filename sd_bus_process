@@ -1,0 +1,69 @@
+SD_BUS_PROCESS(3)               sd_bus_process               SD_BUS_PROCESS(3)
+
+NAME
+       sd_bus_process - Drive the connection
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_process(sd_bus *bus, sd_bus_message **ret);
+
+DESCRIPTION
+       sd_bus_process() drives the connection between the client and the
+       message bus. That is, it handles connecting, authentication, and
+       message processing. When invoked pending I/O work is executed, and
+       queued incoming messages are dispatched to registered callbacks. Each
+       time it is invoked a single operation is executed. It returns zero when
+       no operations were pending and positive if a message was processed.
+       When zero is returned the caller should synchronously poll for I/O
+       events before calling into sd_bus_process() again. For that either use
+       the simple, synchronous sd_bus_wait(3) call, or hook up the bus
+       connection object to an external or manual event loop using
+       sd_bus_get_fd(3).
+
+       sd_bus_process() processes at most one incoming message per call. If
+       the parameter ret is not NULL and the call processed a message, *ret is
+       set to this message. The caller owns a reference to this message and
+       should call sd_bus_message_unref(3) when the message is no longer
+       needed. If ret is not NULL, progress was made, but no message was
+       processed, *ret is set to NULL.
+
+       If the bus object is connected to an sd-event(3) event loop (with
+       sd_bus_attach_event(3)), it is not necessary to call sd_bus_process()
+       directly as it is invoked automatically when necessary.
+
+RETURN VALUE
+       If progress was made, a positive integer is returned. If no progress
+       was made, 0 is returned. If an error occurs, a negative errno-style
+       error code is returned.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           An invalid bus object was passed.
+
+       -ECHILD
+           The bus connection was allocated in a parent process and is being
+           reused in a child process after fork().
+
+       -ENOTCONN
+           The bus connection has been terminated already.
+
+       -ECONNRESET
+           The bus connection has been terminated just now.
+
+       -EBUSY
+           This function is already being called, i.e.  sd_bus_process() has
+           been called from a callback function that itself was called by
+           sd_bus_process().
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_wait(3), sd_bus_get_fd(3),
+       sd_bus_message_unref(3), sd-event(3), sd_bus_attach_event(3)
+
+systemd 253                                                  SD_BUS_PROCESS(3)

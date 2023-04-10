@@ -1,0 +1,53 @@
+CURLOPT_RANGE(3)                                                                         curl_easy_setopt options                                                                         CURLOPT_RANGE(3)
+
+NAME
+       CURLOPT_RANGE - byte range to request
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       CURLcode curl_easy_setopt(CURL *handle, CURLOPT_RANGE, char *range);
+
+DESCRIPTION
+       Pass a char * as parameter, which should contain the specified range you want to retrieve. It should be in the format "X-Y", where either X or Y may be left out and X and Y are byte indexes.
+
+       HTTP transfers also support several intervals, separated with commas as in "X-Y,N-M". Using this kind of multiple intervals will cause the HTTP server to send the response document in pieces (us‐
+       ing standard MIME separation techniques). Unfortunately, the HTTP standard (RFC 7233 section 3.1) allows servers to ignore range requests so even when you set CURLOPT_RANGE(3) for a request,  you
+       may end up getting the full response sent back.
+
+       For RTSP, the formatting of a range should follow RFC2326 Section 12.29. For RTSP, byte ranges are not permitted. Instead, ranges should be given in npt, utc, or smpte formats.
+
+       For HTTP PUT uploads this option should not be used, since it may conflict with other options.
+
+       Pass a NULL to this option to disable the use of ranges.
+
+       The application does not have to keep the string around after setting this option.
+
+DEFAULT
+       NULL
+
+PROTOCOLS
+       HTTP, FTP, FILE, RTSP and SFTP.
+
+EXAMPLE
+       CURL *curl = curl_easy_init();
+       if(curl) {
+         curl_easy_setopt(curl, CURLOPT_URL, "https://example.com");
+
+         /* get the first 200 bytes */
+         curl_easy_setopt(curl, CURLOPT_RANGE, "0-199");
+
+         /* Perform the request */
+         curl_easy_perform(curl);
+       }
+
+AVAILABILITY
+       FILE since 7.18.0, RTSP since 7.20.0
+
+RETURN VALUE
+       Returns CURLE_OK on success or CURLE_OUT_OF_MEMORY if there was insufficient heap space.
+
+SEE ALSO
+       CURLOPT_RESUME_FROM(3),
+
+libcurl 7.37.0                                                                                  17 Jun 2014                                                                               CURLOPT_RANGE(3)

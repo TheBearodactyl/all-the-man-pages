@@ -1,0 +1,160 @@
+LISTEN(3P)                                                                               POSIX Programmer's Manual                                                                              LISTEN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       listen — listen for socket connections and limit the queue of incoming connections
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int listen(int socket, int backlog);
+
+DESCRIPTION
+       The listen() function shall mark a connection-mode socket, specified by the socket argument, as accepting connections.
+
+       The backlog argument provides a hint to the implementation which the implementation shall use to limit the number of outstanding connections in the socket's listen queue. Implementations may  im‐
+       pose a limit on backlog and silently reduce the specified value. Normally, a larger backlog argument value shall result in a larger or equal length of the listen queue. Implementations shall sup‐
+       port values of backlog up to SOMAXCONN, defined in <sys/socket.h>.
+
+       The implementation may include incomplete connections in its listen queue. The limits on the number of incomplete connections and completed connections queued may be different.
+
+       The implementation may have an upper limit on the length of the listen queue—either global or per accepting socket. If backlog exceeds this limit, the length of the listen queue  is  set  to  the
+       limit.
+
+       If listen() is called with a backlog argument value that is less than 0, the function behaves as if it had been called with a backlog argument value of 0.
+
+       A backlog argument of 0 may allow the socket to accept connections, in which case the length of the listen queue may be set to an implementation-defined minimum value.
+
+       The socket in use may require the process to have appropriate privileges to use the listen() function.
+
+RETURN VALUE
+       Upon successful completions, listen() shall return 0; otherwise, -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The listen() function shall fail if:
+
+       EBADF  The socket argument is not a valid file descriptor.
+
+       EDESTADDRREQ
+              The socket is not bound to a local address, and the protocol does not support listening on an unbound socket.
+
+       EINVAL The socket is already connected.
+
+       ENOTSOCK
+              The socket argument does not refer to a socket.
+
+       EOPNOTSUPP
+              The socket protocol does not support listen().
+
+       The listen() function may fail if:
+
+       EACCES The calling process does not have appropriate privileges.
+
+       EINVAL The socket has been shut down.
+
+       ENOBUFS
+              Insufficient resources are available in the system to complete the call.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       accept(), connect(), socket()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_socket.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                         LISTEN(3P)
+listen(2)                                                                                   System Calls Manual                                                                                  listen(2)
+
+NAME
+       listen - listen for connections on a socket
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int listen(int sockfd, int backlog);
+
+DESCRIPTION
+       listen() marks the socket referred to by sockfd as a passive socket, that is, as a socket that will be used to accept incoming connection requests using accept(2).
+
+       The sockfd argument is a file descriptor that refers to a socket of type SOCK_STREAM or SOCK_SEQPACKET.
+
+       The  backlog  argument defines the maximum length to which the queue of pending connections for sockfd may grow.  If a connection request arrives when the queue is full, the client may receive an
+       error with an indication of ECONNREFUSED or, if the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EADDRINUSE
+              Another socket is already listening on the same port.
+
+       EADDRINUSE
+              (Internet domain sockets) The socket referred to by sockfd had not previously been bound to an address and, upon attempting to bind it to an ephemeral port, it was determined that all port
+              numbers in the ephemeral port range are currently in use.  See the discussion of /proc/sys/net/ipv4/ip_local_port_range in ip(7).
+
+       EBADF  The argument sockfd is not a valid file descriptor.
+
+       ENOTSOCK
+              The file descriptor sockfd does not refer to a socket.
+
+       EOPNOTSUPP
+              The socket is not of a type that supports the listen() operation.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, 4.4BSD (first appeared in 4.2BSD).
+
+NOTES
+       To accept connections, the following steps are performed:
+
+           (1)  A socket is created with socket(2).
+
+           (2)  The socket is bound to a local address using bind(2), so that other sockets may be connect(2)ed to it.
+
+           (3)  A willingness to accept incoming connections and a queue limit for incoming connections are specified with listen().
+
+           (4)  Connections are accepted with accept(2).
+
+       The  behavior of the backlog argument on TCP sockets changed with Linux 2.2.  Now it specifies the queue length for completely established sockets waiting to be accepted, instead of the number of
+       incomplete connection requests.  The maximum length of the queue for incomplete sockets can be set using /proc/sys/net/ipv4/tcp_max_syn_backlog.  When syncookies are enabled there is  no  logical
+       maximum length and this setting is ignored.  See tcp(7) for more information.
+
+       If  the  backlog  argument is greater than the value in /proc/sys/net/core/somaxconn, then it is silently capped to that value.  Since Linux 5.4, the default in this file is 4096; in earlier ker‐
+       nels, the default value is 128.  Before Linux 2.4.25, this limit was a hard coded value, SOMAXCONN, with the value 128.
+
+EXAMPLES
+       See bind(2).
+
+SEE ALSO
+       accept(2), bind(2), connect(2), socket(2), socket(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                       listen(2)

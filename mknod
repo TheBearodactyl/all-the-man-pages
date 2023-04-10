@@ -1,0 +1,343 @@
+MKNOD(1)                                                                                       User Commands                                                                                      MKNOD(1)
+
+NAME
+       mknod - make block or character special files
+
+SYNOPSIS
+       mknod [OPTION]... NAME TYPE [MAJOR MINOR]
+
+DESCRIPTION
+       Create the special file NAME of the given TYPE.
+
+       Mandatory arguments to long options are mandatory for short options too.
+
+       -m, --mode=MODE
+              set file permission bits to MODE, not a=rw - umask
+
+       -Z     set the SELinux security context to default type
+
+       --context[=CTX]
+              like -Z, or if CTX is specified then set the SELinux or SMACK security context to CTX
+
+       --help display this help and exit
+
+       --version
+              output version information and exit
+
+       Both  MAJOR  and MINOR must be specified when TYPE is b, c, or u, and they must be omitted when TYPE is p.  If MAJOR or MINOR begins with 0x or 0X, it is interpreted as hexadecimal; otherwise, if
+       it begins with 0, as octal; otherwise, as decimal.  TYPE may be:
+
+       b      create a block (buffered) special file
+
+       c, u   create a character (unbuffered) special file
+
+       p      create a FIFO
+
+       NOTE: your shell may have its own version of mknod, which usually supersedes the version described here.  Please refer to your shell's documentation for details about the options it supports.
+
+AUTHOR
+       Written by David MacKenzie.
+
+REPORTING BUGS
+       GNU coreutils online help: <https://www.gnu.org/software/coreutils/>
+       Report any translation bugs to <https://translationproject.org/team/>
+
+COPYRIGHT
+       Copyright © 2023 Free Software Foundation, Inc.  License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+       This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       mknod(2)
+
+       Full documentation <https://www.gnu.org/software/coreutils/mknod>
+       or available locally via: info '(coreutils) mknod invocation'
+
+GNU coreutils 9.2                                                                               April 2023                                                                                        MKNOD(1)
+MKNOD(3P)                                                                                POSIX Programmer's Manual                                                                               MKNOD(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       mknod, mknodat — make directory, special file, or regular file
+
+SYNOPSIS
+       #include <sys/stat.h>
+
+       int mknod(const char *path, mode_t mode, dev_t dev);
+
+       #include <fcntl.h>
+
+       int mknodat(int fd, const char *path, mode_t mode, dev_t dev);
+
+DESCRIPTION
+       The mknod() function shall create a new file named by the pathname to which the argument path points.
+
+       The file type for path is OR'ed into the mode argument, and the application shall select one of the following symbolic constants:
+
+                                                                                 ┌───────────┬──────────────────────────────────┐
+                                                                                 │   Name    │           Description            │
+                                                                                 ├───────────┼──────────────────────────────────┤
+                                                                                 │S_IFIFO    │ FIFO-special                     │
+                                                                                 │S_IFCHR    │ Character-special (non-portable) │
+                                                                                 │S_IFDIR    │ Directory (non-portable)         │
+                                                                                 │S_IFBLK    │ Block-special (non-portable)     │
+                                                                                 │S_IFREG    │ Regular (non-portable)           │
+                                                                                 └───────────┴──────────────────────────────────┘
+       The only portable use of mknod() is to create a FIFO-special file. If mode is not S_IFIFO or dev is not 0, the behavior of mknod() is unspecified.
+
+       The permissions for the new file are OR'ed into the mode argument, and may be selected from any combination of the following symbolic constants:
+
+                                                                           ┌───────────┬─────────────────────────────────────────────┐
+                                                                           │   Name    │                 Description                 │
+                                                                           ├───────────┼─────────────────────────────────────────────┤
+                                                                           │S_ISUID    │ Set user ID on execution.                   │
+                                                                           │S_ISGID    │ Set group ID on execution.                  │
+                                                                           │S_IRWXU    │ Read, write, or execute (search) by owner.  │
+                                                                           │S_IRUSR    │ Read by owner.                              │
+                                                                           │S_IWUSR    │ Write by owner.                             │
+                                                                           │S_IXUSR    │ Execute (search) by owner.                  │
+                                                                           │S_IRWXG    │ Read, write, or execute (search) by group.  │
+                                                                           │S_IRGRP    │ Read by group.                              │
+                                                                           │S_IWGRP    │ Write by group.                             │
+                                                                           │S_IXGRP    │ Execute (search) by group.                  │
+                                                                           │S_IRWXO    │ Read, write, or execute (search) by others. │
+                                                                           │S_IROTH    │ Read by others.                             │
+                                                                           │S_IWOTH    │ Write by others.                            │
+                                                                           │S_IXOTH    │ Execute (search) by others.                 │
+                                                                           │S_ISVTX    │ On directories, restricted deletion flag.   │
+                                                                           └───────────┴─────────────────────────────────────────────┘
+       The user ID of the file shall be initialized to the effective user ID of the process. The group ID of the file shall be initialized to either the effective group ID of the process or the group ID
+       of  the  parent directory. Implementations shall provide a way to initialize the file's group ID to the group ID of the parent directory. Implementations may, but need not, provide an implementa‐
+       tion-defined way to initialize the file's group ID to the effective group ID of the calling process. The owner, group, and other permission bits of mode shall be modified by the  file  mode  cre‐
+       ation mask of the process. The mknod() function shall clear each bit whose corresponding bit in the file mode creation mask of the process is set.
+
+       If path names a symbolic link, mknod() shall fail and set errno to [EEXIST].
+
+       Upon  successful  completion,  mknod() shall mark for update the last data access, last data modification, and last file status change timestamps of the file. Also, the last data modification and
+       last file status change timestamps of the directory that contains the new entry shall be marked for update.
+
+       Only a process with appropriate privileges may invoke mknod() for file types other than FIFO-special.
+
+       The mknodat() function shall be equivalent to the mknod() function except in the case where path specifies a relative path. In this case the newly created directory, special file, or regular file
+       is  located relative to the directory associated with the file descriptor fd instead of the current working directory. If the access mode of the open file description associated with the file de‐
+       scriptor is not O_SEARCH, the function shall check whether directory searches are permitted using the current permissions of the directory underlying the file descriptor. If the  access  mode  is
+       O_SEARCH, the function shall not perform the check.
+
+       If mknodat() is passed the special value AT_FDCWD in the fd parameter, the current working directory shall be used and the behavior shall be identical to a call to mknod().
+
+RETURN VALUE
+       Upon successful completion, these functions shall return 0.  Otherwise, these functions shall return -1 and set errno to indicate the error. If -1 is returned, the new file shall not be created.
+
+ERRORS
+       These functions shall fail if:
+
+       EACCES A component of the path prefix denies search permission, or write permission is denied on the parent directory.
+
+       EEXIST The named file exists.
+
+       EINVAL An invalid argument exists.
+
+       EIO    An I/O error occurred while accessing the file system.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a component of a pathname is longer than {NAME_MAX}.
+
+       ENOENT A component of the path prefix of path does not name an existing file or path is an empty string.
+
+       ENOENT or ENOTDIR
+              The  path argument contains at least one non-<slash> character and ends with one or more trailing <slash> characters. If path without the trailing <slash> characters would name an existing
+              file, an [ENOENT] error shall not occur.
+
+       ENOSPC The directory that would contain the new file cannot be extended or the file system is out of file allocation resources.
+
+       ENOTDIR
+              A component of the path prefix names an existing file that is neither a directory nor a symbolic link to a directory.
+
+       EPERM  The invoking process does not have appropriate privileges and the file type is not FIFO-special.
+
+       EROFS  The directory in which the file is to be created is located on a read-only file system.
+
+       The mknodat() function shall fail if:
+
+       EACCES The access mode of the open file description associated with fd is not O_SEARCH and the permissions of the directory underlying fd do not permit directory searches.
+
+       EBADF  The path argument does not specify an absolute path and the fd argument is neither AT_FDCWD nor a valid file descriptor open for reading or searching.
+
+       ENOTDIR
+              The path argument is not an absolute path and fd is a file descriptor associated with a non-directory file.
+
+       These functions may fail if:
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were encountered during resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolution of a symbolic link produced an intermediate result with a length that exceeds {PATH_MAX}.
+
+       The following sections are informative.
+
+EXAMPLES
+   Creating a FIFO Special File
+       The following example shows how to create a FIFO special file named /home/cnd/mod_done, with read/write permissions for owner, and with read permissions for group and others.
+
+           #include <sys/types.h>
+           #include <sys/stat.h>
+
+           dev_t dev;
+           int   status;
+           ...
+           status  = mknod("/home/cnd/mod_done", S_IFIFO | S_IWUSR |
+               S_IRUSR | S_IRGRP | S_IROTH, dev);
+
+APPLICATION USAGE
+       The mkfifo() function is preferred over this function for making FIFO special files.
+
+RATIONALE
+       The POSIX.1‐1990 standard required that the group ID of a newly created file be set to the group ID of its parent directory or to the effective group ID of the creating process.  FIPS  151‐2  re‐
+       quired  that  implementations provide a way to have the group ID be set to the group ID of the containing directory, but did not prohibit implementations also supporting a way to set the group ID
+       to the effective group ID of the creating process.  Conforming applications should not assume which group ID will be used. If it matters, an application can use chown() to set the group ID  after
+       the file is created, or determine under what conditions the implementation will set the desired group ID.
+
+       The  purpose  of  the mknodat() function is to create directories, special files, or regular files in directories other than the current working directory without exposure to race conditions. Any
+       part of the path of a file could be changed in parallel to a call to mknod(), resulting in unspecified behavior. By opening a file descriptor for the target  directory  and  using  the  mknodat()
+       function it can be guaranteed that the newly created directory, special file, or regular file is located relative to the desired directory.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       chmod(), creat(), exec, fstatat(), mkdir(), mkfifo(), open(), umask()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <sys_stat.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          MKNOD(3P)
+mknod(2)                                                                                    System Calls Manual                                                                                   mknod(2)
+
+NAME
+       mknod, mknodat - create a special or ordinary file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/stat.h>
+
+       int mknod(const char *pathname, mode_t mode, dev_t dev);
+
+       #include <fcntl.h>           /* Definition of AT_* constants */
+       #include <sys/stat.h>
+
+       int mknodat(int dirfd, const char *pathname, mode_t mode, dev_t dev);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       mknod():
+           _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       The system call mknod() creates a filesystem node (file, device special file, or named pipe) named pathname, with attributes specified by mode and dev.
+
+       The  mode argument specifies both the file mode to use and the type of node to be created.  It should be a combination (using bitwise OR) of one of the file types listed below and zero or more of
+       the file mode bits listed in inode(7).
+
+       The file mode is modified by the process's umask in the usual way: in the absence of a default ACL, the permissions of the created node are (mode & ~umask).
+
+       The file type must be one of S_IFREG, S_IFCHR, S_IFBLK, S_IFIFO, or S_IFSOCK to specify a regular file (which will be created empty), character special  file,  block  special  file,  FIFO  (named
+       pipe), or UNIX domain socket, respectively.  (Zero file type is equivalent to type S_IFREG.)
+
+       If the file type is S_IFCHR or S_IFBLK, then dev specifies the major and minor numbers of the newly created device special file (makedev(3) may be useful to build the value for dev); otherwise it
+       is ignored.
+
+       If pathname already exists, or is a symbolic link, this call fails with an EEXIST error.
+
+       The newly created node will be owned by the effective user ID of the process.  If the directory containing the node has the set-group-ID bit set, or if the filesystem is mounted  with  BSD  group
+       semantics, the new node will inherit the group ownership from its parent directory; otherwise it will be owned by the effective group ID of the process.
+
+   mknodat()
+       The mknodat() system call operates in exactly the same way as mknod(), except for the differences described here.
+
+       If  the pathname given in pathname is relative, then it is interpreted relative to the directory referred to by the file descriptor dirfd (rather than relative to the current working directory of
+       the calling process, as is done by mknod() for a relative pathname).
+
+       If pathname is relative and dirfd is the special value AT_FDCWD, then pathname is interpreted relative to the current working directory of the calling process (like mknod()).
+
+       If pathname is absolute, then dirfd is ignored.
+
+       See openat(2) for an explanation of the need for mknodat().
+
+RETURN VALUE
+       mknod() and mknodat() return zero on success.  On error, -1 is returned and errno is set to indicate the error.
+
+ERRORS
+       EACCES The parent directory does not allow write permission to the process, or one of the directories in the path prefix of pathname did not  allow  search  permission.   (See  also  path_resolu‐
+              tion(7).)
+
+       EBADF  (mknodat()) pathname is relative but dirfd is neither AT_FDCWD nor a valid file descriptor.
+
+       EDQUOT The user's quota of disk blocks or inodes on the filesystem has been exhausted.
+
+       EEXIST pathname already exists.  This includes the case where pathname is a symbolic link, dangling or not.
+
+       EFAULT pathname points outside your accessible address space.
+
+       EINVAL mode requested creation of something other than a regular file, device special file, FIFO or socket.
+
+       ELOOP  Too many symbolic links were encountered in resolving pathname.
+
+       ENAMETOOLONG
+              pathname was too long.
+
+       ENOENT A directory component in pathname does not exist or is a dangling symbolic link.
+
+       ENOMEM Insufficient kernel memory was available.
+
+       ENOSPC The device containing pathname has no room for the new node.
+
+       ENOTDIR
+              A component used as a directory in pathname is not, in fact, a directory.
+
+       ENOTDIR
+              (mknodat()) pathname is relative and dirfd is a file descriptor referring to a file other than a directory.
+
+       EPERM  mode  requested creation of something other than a regular file, FIFO (named pipe), or UNIX domain socket, and the caller is not privileged (Linux: does not have the CAP_MKNOD capability);
+              also returned if the filesystem containing pathname does not support the type of node requested.
+
+       EROFS  pathname refers to a file on a read-only filesystem.
+
+VERSIONS
+       POSIX.1-2001 says: "The only portable use of mknod() is to create a FIFO-special file.  If mode is not S_IFIFO or dev is not 0, the behavior of mknod() is  unspecified."   However,  nowadays  one
+       should never use mknod() for this purpose; one should use mkfifo(3), a function especially defined for this purpose.
+
+       Under Linux, mknod() cannot be used to create directories.  One should make directories with mkdir(2).
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       mknod()
+              SVr4, 4.4BSD, POSIX.1-2001 (but see VERSIONS).
+
+       mknodat()
+              Linux 2.6.16, glibc 2.4.  POSIX.1-2008.
+
+NOTES
+       There are many infelicities in the protocol underlying NFS.  Some of these affect mknod() and mknodat().
+
+SEE ALSO
+       mknod(1), chmod(2), chown(2), fcntl(2), mkdir(2), mount(2), socket(2), stat(2), umask(2), unlink(2), makedev(3), mkfifo(3), acl(5), path_resolution(7)
+
+Linux man-pages 6.04                                                                            2023-03-31                                                                                        mknod(2)

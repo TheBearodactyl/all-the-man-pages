@@ -1,0 +1,566 @@
+PIPE(3P)                   POSIX Programmer's Manual                  PIPE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pipe — create an interprocess channel
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int pipe(int fildes[2]);
+
+DESCRIPTION
+       The pipe() function shall create a pipe and place two file descriptors,
+       one  each into the arguments fildes[0] and fildes[1], that refer to the
+       open file descriptions for the read and write ends  of  the  pipe.  The
+       file  descriptors shall be allocated as described in Section 2.14, File
+       Descriptor Allocation.  The O_NONBLOCK and FD_CLOEXEC  flags  shall  be
+       clear  on  both  file descriptors. (The fcntl() function can be used to
+       set both these flags.)
+
+       Data can be written to the file descriptor fildes[1] and read from  the
+       file  descriptor  fildes[0].   A  read on the file descriptor fildes[0]
+       shall access data written to the file descriptor fildes[1] on a  first-
+       in-first-out  basis.  It  is unspecified whether fildes[0] is also open
+       for writing and whether fildes[1] is also open for reading.
+
+       A process has the pipe open for reading (correspondingly writing) if it
+       has  a  file  descriptor  open  that  refers to the read end, fildes[0]
+       (write end, fildes[1]).
+
+       The pipe's user ID shall be set to the effective user ID of the calling
+       process.
+
+       The pipe's group ID shall be set to the effective group ID of the call‐
+       ing process.
+
+       Upon successful completion, pipe() shall mark for update the last  data
+       access,  last data modification, and last file status change timestamps
+       of the pipe.
+
+RETURN VALUE
+       Upon successful completion, 0 shall be returned; otherwise, -1 shall be
+       returned and errno set to indicate the error, no file descriptors shall
+       be allocated and the contents of fildes shall be left unmodified.
+
+ERRORS
+       The pipe() function shall fail if:
+
+       EMFILE All, or all but one, of the file descriptors  available  to  the
+              process are currently open.
+
+       ENFILE The  number of simultaneously open files in the system would ex‐
+              ceed a system-imposed limit.
+
+       The following sections are informative.
+
+EXAMPLES
+   Using a Pipe to Pass Data Between a Parent Process and a Child Process
+       The following example demonstrates the use of a pipe to  transfer  data
+       between  a  parent  process  and a child process. Error handling is ex‐
+       cluded, but otherwise this code demonstrates good practice  when  using
+       pipes:  after the fork() the two processes close the unused ends of the
+       pipe before they commence transferring data.
+
+           #include <stdlib.h>
+           #include <unistd.h>
+           ...
+
+           int fildes[2];
+           const int BSIZE = 100;
+           char buf[BSIZE];
+           ssize_t nbytes;
+           int status;
+
+           status = pipe(fildes);
+           if (status == -1 ) {
+               /* an error occurred */
+               ...
+           }
+
+           switch (fork()) {
+           case -1: /* Handle error */
+               break;
+
+           case 0:  /* Child - reads from pipe */
+               close(fildes[1]);                       /* Write end is unused */
+               nbytes = read(fildes[0], buf, BSIZE);   /* Get data from pipe */
+               /* At this point, a further read would see end-of-file ... */
+               close(fildes[0]);                       /* Finished with pipe */
+               exit(EXIT_SUCCESS);
+
+           default:  /* Parent - writes to pipe */
+               close(fildes[0]);                       /* Read end is unused */
+               write(fildes[1], "Hello world\n", 12);  /* Write data on pipe */
+               close(fildes[1]);                       /* Child will see EOF */
+               exit(EXIT_SUCCESS);
+           }
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       The wording carefully avoids using the verb ``to  open''  in  order  to
+       avoid any implication of use of open(); see also write().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.14, File Descriptor Allocation, fcntl(), read(), write()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <unistd.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                             PIPE(3P)
+pipe(2)                       System Calls Manual                      pipe(2)
+
+NAME
+       pipe, pipe2 - create pipe
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int pipe(int pipefd[2]);
+
+       #define _GNU_SOURCE             /* See feature_test_macros(7) */
+       #include <fcntl.h>              /* Definition of O_* constants */
+       #include <unistd.h>
+
+       int pipe2(int pipefd[2], int flags);
+
+       /* On Alpha, IA-64, MIPS, SuperH, and SPARC/SPARC64, pipe() has the
+          following prototype; see NOTES */
+
+       #include <unistd.h>
+
+       struct fd_pair {
+           long fd[2];
+       };
+       struct fd_pair pipe(void);
+
+DESCRIPTION
+       pipe()  creates  a pipe, a unidirectional data channel that can be used
+       for interprocess communication.  The array pipefd is used to return two
+       file  descriptors  referring to the ends of the pipe.  pipefd[0] refers
+       to the read end of the pipe.  pipefd[1] refers to the write end of  the
+       pipe.   Data  written  to  the write end of the pipe is buffered by the
+       kernel until it is read from the read end of the pipe.  For further de‐
+       tails, see pipe(7).
+
+       If  flags is 0, then pipe2() is the same as pipe().  The following val‐
+       ues can be bitwise ORed in flags to obtain different behavior:
+
+       O_CLOEXEC
+              Set the close-on-exec (FD_CLOEXEC) flag on the two new file  de‐
+              scriptors.   See the description of the same flag in open(2) for
+              reasons why this may be useful.
+
+       O_DIRECT (since Linux 3.4)
+              Create a pipe that performs I/O in "packet" mode.  Each write(2)
+              to  the  pipe  is  dealt with as a separate packet, and read(2)s
+              from the pipe will read one packet at a time.  Note the  follow‐
+              ing points:
+
+              •  Writes  of  greater than PIPE_BUF bytes (see pipe(7)) will be
+                 split into multiple packets.  The constant  PIPE_BUF  is  de‐
+                 fined in <limits.h>.
+
+              •  If a read(2) specifies a buffer size that is smaller than the
+                 next packet, then the requested number of bytes are read, and
+                 the  excess  bytes in the packet are discarded.  Specifying a
+                 buffer size of  PIPE_BUF  will  be  sufficient  to  read  the
+                 largest possible packets (see the previous point).
+
+              •  Zero-length packets are not supported.  (A read(2) that spec‐
+                 ifies a buffer size of zero is a no-op, and returns 0.)
+
+              Older kernels that do not support this flag will  indicate  this
+              via an EINVAL error.
+
+              Since  Linux  4.5, it is possible to change the O_DIRECT setting
+              of a pipe file descriptor using fcntl(2).
+
+       O_NONBLOCK
+              Set the O_NONBLOCK file status flag on the  open  file  descrip‐
+              tions  referred to by the new file descriptors.  Using this flag
+              saves extra calls to fcntl(2) to achieve the same result.
+
+       O_NOTIFICATION_PIPE
+              Since Linux 5.8, general notification mechanism is built on  the
+              top  of the pipe where kernel splices notification messages into
+              pipes opened by user space.  The owner of the pipe has  to  tell
+              the kernel which sources of events to watch and filters can also
+              be applied to select which subevents should be placed  into  the
+              pipe.
+
+RETURN VALUE
+       On  success,  zero is returned.  On error, -1 is returned, errno is set
+       to indicate the error, and pipefd is left unchanged.
+
+       On Linux (and other systems), pipe() does not modify pipefd on failure.
+       A  requirement  standardizing  this  behavior was added in POSIX.1-2008
+       TC2.  The Linux-specific pipe2() system call likewise does  not  modify
+       pipefd on failure.
+
+ERRORS
+       EFAULT pipefd is not valid.
+
+       EINVAL (pipe2()) Invalid value in flags.
+
+       EMFILE The per-process limit on the number of open file descriptors has
+              been reached.
+
+       ENFILE The system-wide limit on the total number of open files has been
+              reached.
+
+       ENFILE The  user  hard  limit on memory that can be allocated for pipes
+              has been reached and the caller is not privileged; see pipe(7).
+
+       ENOPKG (pipe2()) O_NOTIFICATION_PIPE was passed in  flags  and  support
+              for  notifications (CONFIG_WATCH_QUEUE) is not compiled into the
+              kernel.
+
+VERSIONS
+       The System V ABI on some architectures allows the use of more than  one
+       register  for returning multiple values; several architectures (namely,
+       Alpha, IA-64, MIPS, SuperH, and SPARC/SPARC64) (ab)use this feature  in
+       order  to  implement the pipe() system call in a functional manner: the
+       call doesn't take any arguments and returns a pair of file  descriptors
+       as  the  return  value  on  success.  The glibc pipe() wrapper function
+       transparently deals with this.  See syscall(2) for information  regard‐
+       ing registers used for storing second file descriptor.
+
+STANDARDS
+       pipe() POSIX.1-2008.
+
+       pipe2()
+              Linux.
+
+HISTORY
+       pipe() POSIX.1-2001.
+
+       pipe2()
+              Linux 2.6.27, glibc 2.9.
+
+EXAMPLES
+       The  following  program  creates  a pipe, and then fork(2)s to create a
+       child process; the child inherits a duplicate set of  file  descriptors
+       that  refer  to  the same pipe.  After the fork(2), each process closes
+       the file descriptors that it doesn't need for the pipe  (see  pipe(7)).
+       The  parent  then writes the string contained in the program's command-
+       line argument to the pipe, and the child reads this string a byte at  a
+       time from the pipe and echoes it on standard output.
+
+   Program source
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <string.h>
+       #include <sys/wait.h>
+       #include <unistd.h>
+
+       int
+       main(int argc, char *argv[])
+       {
+           int    pipefd[2];
+           char   buf;
+           pid_t  cpid;
+
+           if (argc != 2) {
+               fprintf(stderr, "Usage: %s <string>\n", argv[0]);
+               exit(EXIT_FAILURE);
+           }
+
+           if (pipe(pipefd) == -1) {
+               perror("pipe");
+               exit(EXIT_FAILURE);
+           }
+
+           cpid = fork();
+           if (cpid == -1) {
+               perror("fork");
+               exit(EXIT_FAILURE);
+           }
+
+           if (cpid == 0) {    /* Child reads from pipe */
+               close(pipefd[1]);          /* Close unused write end */
+
+               while (read(pipefd[0], &buf, 1) > 0)
+                   write(STDOUT_FILENO, &buf, 1);
+
+               write(STDOUT_FILENO, "\n", 1);
+               close(pipefd[0]);
+               _exit(EXIT_SUCCESS);
+
+           } else {            /* Parent writes argv[1] to pipe */
+               close(pipefd[0]);          /* Close unused read end */
+               write(pipefd[1], argv[1], strlen(argv[1]));
+               close(pipefd[1]);          /* Reader will see EOF */
+               wait(NULL);                /* Wait for child */
+               exit(EXIT_SUCCESS);
+           }
+       }
+
+SEE ALSO
+       fork(2),   read(2),   socketpair(2),  splice(2),  tee(2),  vmsplice(2),
+       write(2), popen(3), pipe(7)
+
+Linux man-pages 6.04              2023-03-30                           pipe(2)
+pipe(7)                Miscellaneous Information Manual                pipe(7)
+
+NAME
+       pipe - overview of pipes and FIFOs
+
+DESCRIPTION
+       Pipes  and  FIFOs  (also known as named pipes) provide a unidirectional
+       interprocess communication channel.  A pipe has a read end and a  write
+       end.  Data written to the write end of a pipe can be read from the read
+       end of the pipe.
+
+       A pipe is created using pipe(2), which creates a new pipe  and  returns
+       two  file  descriptors,  one referring to the read end of the pipe, the
+       other referring to the write end.  Pipes can be used to create a commu‐
+       nication channel between related processes; see pipe(2) for an example.
+
+       A  FIFO (short for First In First Out) has a name within the filesystem
+       (created using mkfifo(3)), and is opened using  open(2).   Any  process
+       may  open a FIFO, assuming the file permissions allow it.  The read end
+       is opened using the O_RDONLY flag; the write end is  opened  using  the
+       O_WRONLY  flag.  See fifo(7) for further details.  Note: although FIFOs
+       have a pathname in the filesystem, I/O on FIFOs does not involve opera‐
+       tions on the underlying device (if there is one).
+
+   I/O on pipes and FIFOs
+       The only difference between pipes and FIFOs is the manner in which they
+       are created and opened.  Once these tasks have been  accomplished,  I/O
+       on pipes and FIFOs has exactly the same semantics.
+
+       If  a  process  attempts  to read from an empty pipe, then read(2) will
+       block until data is available.  If a process attempts  to  write  to  a
+       full  pipe  (see below), then write(2) blocks until sufficient data has
+       been read from the pipe to allow the write  to  complete.   Nonblocking
+       I/O  is  possible by using the fcntl(2) F_SETFL operation to enable the
+       O_NONBLOCK open file status flag.
+
+       The communication channel provided by a pipe is a byte stream: there is
+       no concept of message boundaries.
+
+       If  all file descriptors referring to the write end of a pipe have been
+       closed, then an attempt to read(2) from the pipe will  see  end-of-file
+       (read(2) will return 0).  If all file descriptors referring to the read
+       end of a pipe have been closed, then a write(2) will  cause  a  SIGPIPE
+       signal to be generated for the calling process.  If the calling process
+       is ignoring this signal, then write(2) fails with the error EPIPE.   An
+       application  that uses pipe(2) and fork(2) should use suitable close(2)
+       calls to close unnecessary duplicate  file  descriptors;  this  ensures
+       that end-of-file and SIGPIPE/EPIPE are delivered when appropriate.
+
+       It is not possible to apply lseek(2) to a pipe.
+
+   Pipe capacity
+       A  pipe  has  a limited capacity.  If the pipe is full, then a write(2)
+       will block or fail, depending on whether the  O_NONBLOCK  flag  is  set
+       (see  below).   Different implementations have different limits for the
+       pipe capacity.  Applications should not rely on a particular  capacity:
+       an  application  should  be designed so that a reading process consumes
+       data as soon as it is available, so that a writing process does not re‐
+       main blocked.
+
+       Before  Linux 2.6.11, the capacity of a pipe was the same as the system
+       page size (e.g., 4096 bytes on i386).  Since Linux 2.6.11, the pipe ca‐
+       pacity  is 16 pages (i.e., 65,536 bytes in a system with a page size of
+       4096 bytes).  Since Linux 2.6.35,  the  default  pipe  capacity  is  16
+       pages,  but  the  capacity  can  be  queried and set using the fcntl(2)
+       F_GETPIPE_SZ and F_SETPIPE_SZ operations.  See fcntl(2) for more infor‐
+       mation.
+
+       The  following  ioctl(2)  operation, which can be applied to a file de‐
+       scriptor that refers to either end of a pipe, places  a  count  of  the
+       number  of unread bytes in the pipe in the int buffer pointed to by the
+       final argument of the call:
+
+           ioctl(fd, FIONREAD, &nbytes);
+
+       The FIONREAD operation is not specified in any standard,  but  is  pro‐
+       vided on many implementations.
+
+   /proc files
+       On  Linux,  the following files control how much memory can be used for
+       pipes:
+
+       /proc/sys/fs/pipe-max-pages (only in Linux 2.6.34)
+              An upper limit, in pages, on the capacity that  an  unprivileged
+              user (one without the CAP_SYS_RESOURCE capability) can set for a
+              pipe.
+
+              The default value for this limit is 16 times  the  default  pipe
+              capacity (see above); the lower limit is two pages.
+
+              This  interface  was  removed  in  Linux  2.6.35,  in  favor  of
+              /proc/sys/fs/pipe-max-size.
+
+       /proc/sys/fs/pipe-max-size (since Linux 2.6.35)
+              The maximum size (in bytes) of individual pipes that can be  set
+              by users without the CAP_SYS_RESOURCE capability.  The value as‐
+              signed to this file may be rounded upward, to reflect the  value
+              actually employed for a convenient implementation.  To determine
+              the rounded-up value, display the contents of  this  file  after
+              assigning a value to it.
+
+              The default value for this file is 1048576 (1 MiB).  The minimum
+              value that can be assigned to this file is the system page size.
+              Attempts  to  set a limit less than the page size cause write(2)
+              to fail with the error EINVAL.
+
+              Since Linux 4.9, the value on this file also acts as  a  ceiling
+              on the default capacity of a new pipe or newly opened FIFO.
+
+       /proc/sys/fs/pipe-user-pages-hard (since Linux 4.5)
+              The hard limit on the total size (in pages) of all pipes created
+              or set by a single unprivileged user (i.e., one with neither the
+              CAP_SYS_RESOURCE  nor the CAP_SYS_ADMIN capability).  So long as
+              the total number of pages allocated to  pipe  buffers  for  this
+              user  is at this limit, attempts to create new pipes will be de‐
+              nied, and attempts to increase a pipe's capacity will be denied.
+
+              When the value of this limit is zero (which is the default),  no
+              hard limit is applied.
+
+       /proc/sys/fs/pipe-user-pages-soft (since Linux 4.5)
+              The soft limit on the total size (in pages) of all pipes created
+              or set by a single unprivileged user (i.e., one with neither the
+              CAP_SYS_RESOURCE  nor the CAP_SYS_ADMIN capability).  So long as
+              the total number of pages allocated to  pipe  buffers  for  this
+              user  is  at this limit, individual pipes created by a user will
+              be limited to one page, and attempts to increase a pipe's capac‐
+              ity will be denied.
+
+              When  the value of this limit is zero, no soft limit is applied.
+              The default value for this file is 16384, which permits creating
+              up to 1024 pipes with the default capacity.
+
+       Before   Linux   4.9,   some   bugs   affected   the  handling  of  the
+       pipe-user-pages-soft and pipe-user-pages-hard limits; see BUGS.
+
+   PIPE_BUF
+       POSIX.1 says that writes of less than PIPE_BUF bytes  must  be  atomic:
+       the  output  data  is  written  to  the  pipe as a contiguous sequence.
+       Writes of more than PIPE_BUF bytes may be nonatomic: the kernel may in‐
+       terleave  the  data  with data written by other processes.  POSIX.1 re‐
+       quires PIPE_BUF to be at least 512 bytes.  (On Linux, PIPE_BUF is  4096
+       bytes.)  The precise semantics depend on whether the file descriptor is
+       nonblocking (O_NONBLOCK), whether there are  multiple  writers  to  the
+       pipe, and on n, the number of bytes to be written:
+
+       O_NONBLOCK disabled, n <= PIPE_BUF
+              All  n bytes are written atomically; write(2) may block if there
+              is not room for n bytes to be written immediately
+
+       O_NONBLOCK enabled, n <= PIPE_BUF
+              If there is room to write n bytes to  the  pipe,  then  write(2)
+              succeeds  immediately,  writing  all n bytes; otherwise write(2)
+              fails, with errno set to EAGAIN.
+
+       O_NONBLOCK disabled, n > PIPE_BUF
+              The write is nonatomic: the data given to write(2) may be inter‐
+              leaved  with write(2)s by other process; the write(2) blocks un‐
+              til n bytes have been written.
+
+       O_NONBLOCK enabled, n > PIPE_BUF
+              If the pipe is full, then write(2) fails, with errno set to  EA‐
+              GAIN.   Otherwise,  from  1  to  n bytes may be written (i.e., a
+              "partial write" may occur; the caller should  check  the  return
+              value  from  write(2)  to see how many bytes were actually writ‐
+              ten), and these bytes may be interleaved with  writes  by  other
+              processes.
+
+   Open file status flags
+       The  only  open file status flags that can be meaningfully applied to a
+       pipe or FIFO are O_NONBLOCK and O_ASYNC.
+
+       Setting the O_ASYNC flag for the read end of a  pipe  causes  a  signal
+       (SIGIO  by default) to be generated when new input becomes available on
+       the pipe.  The target for delivery of signals must be set using the fc‐
+       ntl(2)  F_SETOWN command.  On Linux, O_ASYNC is supported for pipes and
+       FIFOs only since Linux 2.6.
+
+   Portability notes
+       On some systems (but not Linux), pipes are bidirectional: data  can  be
+       transmitted in both directions between the pipe ends.  POSIX.1 requires
+       only unidirectional pipes.  Portable applications should avoid reliance
+       on bidirectional pipe semantics.
+
+   BUGS
+       Before   Linux   4.9,   some   bugs   affected   the  handling  of  the
+       pipe-user-pages-soft and pipe-user-pages-hard limits when using the fc‐
+       ntl(2) F_SETPIPE_SZ operation to change a pipe's capacity:
+
+       (a)  When increasing the pipe capacity, the checks against the soft and
+            hard limits were made against existing consumption,  and  excluded
+            the  memory required for the increased pipe capacity.  The new in‐
+            crease in pipe capacity could then push the total memory  used  by
+            the  user for pipes (possibly far) over a limit.  (This could also
+            trigger the problem described next.)
+
+            Starting with Linux 4.9, the limit checking  includes  the  memory
+            required for the new pipe capacity.
+
+       (b)  The  limit  checks  were performed even when the new pipe capacity
+            was less than the existing pipe  capacity.   This  could  lead  to
+            problems  if a user set a large pipe capacity, and then the limits
+            were lowered, with the result that the user could  no  longer  de‐
+            crease the pipe capacity.
+
+            Starting  with  Linux 4.9, checks against the limits are performed
+            only when increasing a pipe's capacity; an unprivileged  user  can
+            always decrease a pipe's capacity.
+
+       (c)  The  accounting  and checking against the limits were done as fol‐
+            lows:
+
+            (1)  Test whether the user has exceeded the limit.
+            (2)  Make the new pipe buffer allocation.
+            (3)  Account new allocation against the limits.
+
+            This was racey.  Multiple processes could pass point (1)  simulta‐
+            neously,  and  then  allocate pipe buffers that were accounted for
+            only in step (3), with the result that the user's pipe buffer  al‐
+            location could be pushed over the limit.
+
+            Starting  with  Linux 4.9, the accounting step is performed before
+            doing the allocation, and the operation fails if the  limit  would
+            be exceeded.
+
+       Before  Linux  4.9, bugs similar to points (a) and (c) could also occur
+       when the kernel allocated memory for a new pipe buffer; that  is,  when
+       calling pipe(2) and when opening a previously unopened FIFO.
+
+SEE ALSO
+       mkfifo(1),  dup(2),  fcntl(2),  open(2),  pipe(2),  poll(2), select(2),
+       socketpair(2),  splice(2),  stat(2),  tee(2),  vmsplice(2),  mkfifo(3),
+       epoll(7), fifo(7)
+
+Linux man-pages 6.04              2023-03-08                           pipe(7)

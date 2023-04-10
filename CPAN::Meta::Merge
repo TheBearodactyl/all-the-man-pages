@@ -1,0 +1,68 @@
+CPAN::Meta::Merge(3perl)                                                             Perl Programmers Reference Guide                                                             CPAN::Meta::Merge(3perl)
+
+NAME
+       CPAN::Meta::Merge - Merging CPAN Meta fragments
+
+VERSION
+       version 2.150010
+
+SYNOPSIS
+        my $merger = CPAN::Meta::Merge->new(default_version => "2");
+        my $meta = $merger->merge($base, @additional);
+
+DESCRIPTION
+METHODS
+   new
+       This creates a CPAN::Meta::Merge object. It takes one mandatory named argument, "version", declaring the version of the meta-spec that must be used for the merge. It can optionally take an
+       "extra_mappings" argument that allows one to add additional merging functions for specific elements.
+
+       The "extra_mappings" arguments takes a hash ref with the same type of structure as described in CPAN::Meta::Spec, except with its values as one of the defined merge strategies or a code ref to a
+       merging function.
+
+         my $merger = CPAN::Meta::Merge->new(
+             default_version => '2',
+             extra_mappings => {
+                 'optional_features' => \&custom_merge_function,
+                 'x_custom' => 'set_addition',
+                 'x_meta_meta' => {
+                     name => 'identical',
+                     tags => 'set_addition',
+                 }
+             }
+         );
+
+   merge(@fragments)
+       Merge all @fragments together. It will accept both CPAN::Meta objects and (possibly incomplete) hashrefs of metadata.
+
+MERGE STRATEGIES
+       "merge" uses various strategies to combine different elements of the CPAN::Meta objects.  The following strategies can be used with the extra_mappings argument of "new":
+
+       identical
+           The elements must be identical
+
+       set_addition
+           The union of two array refs
+
+             [ a, b ] U [ a, c]  = [ a, b, c ]
+
+       uniq_map
+           Key value pairs from the right hash are merged to the left hash.  Key collisions are only allowed if their values are the same.  This merge function will recurse into nested hash refs
+           following the same merge rules.
+
+       improvise
+           This merge strategy will try to pick the appropriate predefined strategy based on what element type.  Array refs will try to use the "set_addition" strategy,  Hash refs will try to use the
+           "uniq_map" strategy, and everything else will try the "identical" strategy.
+
+AUTHORS
+       •   David Golden <dagolden@cpan.org>
+
+       •   Ricardo Signes <rjbs@cpan.org>
+
+       •   Adam Kennedy <adamk@cpan.org>
+
+COPYRIGHT AND LICENSE
+       This software is copyright (c) 2010 by David Golden, Ricardo Signes, Adam Kennedy and Contributors.
+
+       This is free software; you can redistribute it and/or modify it under the same terms as the Perl 5 programming language system itself.
+
+perl v5.36.0                                                                                    2022-12-12                                                                        CPAN::Meta::Merge(3perl)

@@ -1,0 +1,116 @@
+SD_EVENT_ADD_SIGNAL(3)        sd_event_add_signal       SD_EVENT_ADD_SIGNAL(3)
+
+NAME
+       sd_event_add_signal, sd_event_source_get_signal,
+       sd_event_signal_handler_t, SD_EVENT_SIGNAL_PROCMASK - Add a UNIX
+       process signal event source to an event loop
+
+SYNOPSIS
+       #include <systemd/sd-event.h>
+
+       typedef struct sd_event_source sd_event_source;
+
+       SD_EVENT_SIGNAL_PROCMASK
+
+       typedef int (*sd_event_signal_handler_t)(sd_event_source *s,
+                                                const struct signalfd_siginfo *si,
+                                                void *userdata);
+
+       int sd_event_add_signal(sd_event *event, sd_event_source **source,
+                               int signal, sd_event_signal_handler_t handler,
+                               void *userdata);
+
+       int sd_event_source_get_signal(sd_event_source *source);
+
+DESCRIPTION
+       sd_event_add_signal() adds a new UNIX process signal event source to an
+       event loop. The event loop object is specified in the event parameter,
+       and the event source object is returned in the source parameter. The
+       signal parameter specifies the numeric signal to be handled (see
+       signal(7)).
+
+       The handler parameter is a function to call when the signal is received
+       or NULL. The handler function will be passed the userdata pointer,
+       which may be chosen freely by the caller. The handler also receives a
+       pointer to a signalfd_siginfo structure containing information about
+       the received signal. See signalfd(2) for further information. The
+       handler may return negative to signal an error (see below), other
+       return values are ignored. If handler is NULL, a default handler that
+       calls sd_event_exit(3) will be used.
+
+       Only a single handler may be installed for a specific signal. The
+       signal must be blocked in all threads before this function is called
+       (using sigprocmask(2) or pthread_sigmask(3)). For convenience, if the
+       special flag SD_EVENT_SIGNAL_PROCMASK is ORed into the specified signal
+       the signal will be automatically masked as necessary, for the calling
+       thread. Note that this only works reliably if the signal is already
+       masked in all other threads of the process, or if there are no other
+       threads at the moment of invocation.
+
+       By default, the event source is enabled permanently (SD_EVENT_ON), but
+       this may be changed with sd_event_source_set_enabled(3). If the handler
+       function returns a negative error code, it will either be disabled
+       after the invocation, even if the SD_EVENT_ON mode was requested
+       before, or it will cause the loop to terminate, see
+       sd_event_source_set_exit_on_failure(3).
+
+       To destroy an event source object use sd_event_source_unref(3), but
+       note that the event source is only removed from the event loop when all
+       references to the event source are dropped. To make sure an event
+       source does not fire anymore, even if it is still referenced, disable
+       the event source using sd_event_source_set_enabled(3) with
+       SD_EVENT_OFF.
+
+       If the second parameter of sd_event_add_signal() is NULL no reference
+       to the event source object is returned. In this case the event source
+       is considered "floating", and will be destroyed implicitly when the
+       event loop itself is destroyed.
+
+       If the handler parameter to sd_event_add_signal() is NULL, and the
+       event source fires, this will be considered a request to exit the event
+       loop. In this case, the userdata parameter, cast to an integer, is
+       passed as the exit code parameter to sd_event_exit(3).
+
+       sd_event_source_get_signal() returns the configured signal number of an
+       event source created previously with sd_event_add_signal(). It takes
+       the event source object as the source parameter.
+
+RETURN VALUE
+       On success, these functions return 0 or a positive integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -ENOMEM
+           Not enough memory to allocate an object.
+
+       -EINVAL
+           An invalid argument has been passed.
+
+       -EBUSY
+           A handler is already installed for this signal or the signal was
+           not blocked previously.
+
+       -ESTALE
+           The event loop is already terminated.
+
+       -ECHILD
+           The event loop has been created in a different process.
+
+       -EDOM
+           The passed event source is not a signal event source.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-event(3), sd_event_new(3), sd_event_now(3),
+       sd_event_add_io(3), sd_event_add_time(3), sd_event_add_child(3),
+       sd_event_add_inotify(3), sd_event_add_defer(3),
+       sd_event_source_set_enabled(3), sd_event_source_set_description(3),
+       sd_event_source_set_userdata(3), sd_event_source_set_floating(3),
+       signal(7), signalfd(2), sigprocmask(2), pthread_sigmask(3)
+
+systemd 253                                             SD_EVENT_ADD_SIGNAL(3)

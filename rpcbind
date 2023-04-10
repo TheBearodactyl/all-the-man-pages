@@ -1,0 +1,197 @@
+
+RPCBIND(8)                BSD System Manager's Manual               RPCBIND(8)
+
+NAME
+     rpcbind — universal addresses to RPC program number mapper
+
+SYNOPSIS
+     rpcbind [-adhiLls]
+
+DESCRIPTION
+     The rpcbind utility is a server that converts RPC program numbers into
+     universal addresses.  It must be running on the host to be able to make
+     RPC calls on a server on that machine.
+
+     When an RPC service is started, it tells rpcbind the address at which it
+     is listening, and the RPC program numbers it is prepared to serve.  When
+     a client wishes to make an RPC call to a given program number, it first
+     contacts rpcbind on the server machine to determine the address where RPC
+     requests should be sent.
+
+     The rpcbind utility should be started before any other RPC service.  Nor‐
+     mally, standard RPC servers are started by port monitors, so rpcbind must
+     be started before port monitors are invoked.
+
+     When rpcbind is started, it checks that certain name-to-address transla‐
+     tion-calls function correctly.  If they fail, the network configuration
+     databases may be corrupt.  Since RPC services cannot function correctly
+     in this situation, rpcbind reports the condition and terminates.
+
+     The rpcbind utility can only be started by the super-user.
+
+OPTIONS
+     -a      When debugging (-d), do an abort on errors.
+
+     -d      Run in debug mode.  In this mode, rpcbind will log additional in‐
+             formation during operation, and will abort on certain errors if
+             -a is also specified.  With this option, the name-to-address
+             translation consistency checks are shown in detail.
+
+     -f      Do not fork and become a background process.
+
+     -h      Specify specific IP addresses to bind to for UDP requests.  This
+             option may be specified multiple times and can be used to re‐
+             strict the interfaces rpcbind will respond to.  When specifying
+             IP addresses with -h, rpcbind will automatically add 127.0.0.1
+             and if IPv6 is enabled, ::1 to the list.  If no -h option is
+             specified, rpcbind will bind to INADDR_ANY, which could lead to
+             problems on a multi-homed host due to rpcbind returning a UDP
+             packet from a different IP address than it was sent to.  Note
+             that when rpcbind is controlled via systemd's socket activation,
+             the -h option is ignored. In this case, you need to edit the
+             ListenStream and ListenDgram definitions in
+             /usr/lib/systemd/system/rpcbind.socket instead.
+
+     -i      “Insecure” mode.  Allow calls to SET and UNSET from any host.
+             Normally rpcbind accepts these requests only from the loopback
+             interface for security reasons.  This change is necessary for
+             programs that were compiled with earlier versions of the rpc li‐
+             brary and do not make those requests using the loopback inter‐
+             face.
+
+     -l      Turn on libwrap connection logging.
+
+     -s      Cause rpcbind to change to the user daemon as soon as possible.
+             This causes rpcbind to use non-privileged ports for outgoing con‐
+             nections, preventing non-privileged clients from using rpcbind to
+             connect to services from a privileged port.
+
+     -w      Cause rpcbind to do a "warm start" by read a state file when
+             rpcbind starts up. The state file is created when rpcbind termi‐
+             nates.
+
+NOTES
+     All RPC servers must be restarted if rpcbind is restarted.
+
+SEE ALSO
+     rpcinfo(8)
+
+LINUX PORT
+BSD                           September 14, 1992                           BSD
+RPCBIND(3)               BSD Library Functions Manual               RPCBIND(3)
+
+NAME
+     rpcb_getmaps, rpcb_getaddr, rpcb_gettime, rpcb_rmtcall, rpcb_set,
+     rpcb_unset — library routines for RPC bind service
+
+SYNOPSIS
+     #include <rpc/rpc.h>
+
+     rpcblist *
+     rpcb_getmaps(const struct netconfig *netconf, const char *host);
+
+     bool_t
+     rpcb_getaddr(const rpcprog_t prognum, const rpcvers_t versnum,
+         const struct netconfig *netconf, struct netbuf *svcaddr,
+         const char *host);
+
+     bool_t
+     rpcb_gettime(const char *host, time_t * timep);
+
+     enum clnt_stat
+     rpcb_rmtcall(const struct netconfig *netconf, const char *host,
+         const rpcprog_t prognum, const rpcvers_t versnum,
+         const rpcproc_t procnum, const xdrproc_t inproc, const caddr_t in,
+         const xdrproc_t outproc, const caddr_t out,
+         const struct timeval tout, const struct netbuf *svcaddr);
+
+     bool_t
+     rpcb_set(const rpcprog_t prognum, const rpcvers_t versnum,
+         const struct netconfig *netconf, const struct netbuf *svcaddr);
+
+     bool_t
+     rpcb_unset(const rpcprog_t prognum, const rpcvers_t versnum,
+         const struct netconfig *netconf);
+
+DESCRIPTION
+     These routines allow client C programs to make procedure calls to the RPC
+     binder service.  (see rpcbind(8)) maintains a list of mappings between
+     programs and their universal addresses.
+
+Routines
+     rpcb_getmaps()
+            An interface to the rpcbind service, which returns a list of the
+            current RPC program-to-address mappings on host.  It uses the
+            transport specified through netconf to contact the remote rpcbind
+            service on host.  This routine will return NULL, if the remote
+            rpcbind could not be contacted.
+
+     rpcb_getaddr()
+            An interface to the rpcbind service, which finds the address of
+            the service on host that is registered with program number
+            prognum, version versnum, and speaks the transport protocol asso‐
+            ciated with netconf.  The address found is returned in svcaddr.
+            The svcaddr argument should be preallocated.  This routine returns
+            TRUE if it succeeds.  A return value of FALSE means that the map‐
+            ping does not exist or that the RPC system failed to contact the
+            remote rpcbind service.  In the latter case, the global variable
+            rpc_createerr (see rpc_clnt_create(3)) contains the RPC status.
+
+     rpcb_gettime()
+            This routine returns the time on host in timep.  If host is NULL,
+            rpcb_gettime() returns the time on its own machine.  This routine
+            returns TRUE if it succeeds, FALSE if it fails.  The
+            rpcb_gettime() function can be used to synchronize the time be‐
+            tween the client and the remote server.
+
+     rpcb_rmtcall()
+            An interface to the rpcbind service, which instructs rpcbind on
+            host to make an RPC call on your behalf to a procedure on that
+            host.  The netconfig() structure should correspond to a connec‐
+            tionless transport.  The svcaddr argument will be modified to the
+            server's address if the procedure succeeds (see rpc_call() and
+            clnt_call() in rpc_clnt_calls(3) for the definitions of other ar‐
+            guments).
+
+            This procedure should normally be used for a “ping” and nothing
+            else.  This routine allows programs to do lookup and call, all in
+            one step.
+
+            Note: Even if the server is not running rpcb_rmtcall() does not
+            return any error messages to the caller.  In such a case, the
+            caller times out.
+
+            Note: rpcb_rmtcall() is only available for connectionless trans‐
+            ports.
+
+     rpcb_set()
+            An interface to the rpcbind service, which establishes a mapping
+            between the triple [prognum, versnum, netconf->nc_netid] and
+            svcaddr on the machine's rpcbind service.  The value of nc_netid
+            must correspond to a network identifier that is defined by the
+            netconfig database.  This routine returns TRUE if it succeeds,
+            FALSE otherwise.  (See also svc_reg() in rpc_svc_calls(3).)  If
+            there already exists such an entry with rpcbind, rpcb_set() will
+            fail.
+
+     rpcb_unset()
+            An interface to the rpcbind service, which destroys the mapping
+            between the triple [prognum, versnum, netconf->nc_netid] and the
+            address on the machine's rpcbind service.  If netconf is NULL,
+            rpcb_unset() destroys all mapping between the triple [prognum,
+            versnum, all-transports] and the addresses on the machine's
+            rpcbind service.  This routine returns TRUE if it succeeds, FALSE
+            otherwise.  Only the owner of the service or the super-user can
+            destroy the mapping.  (See also svc_unreg() in rpc_svc_calls(3).)
+
+AVAILABILITY
+     These functions are part of libtirpc.
+
+ENVIRONMENT
+     If RPCB_V2FIRST is defined, rpcbind protocol version tryout algorithm
+     changes from v4,v2,v3 to v2,v4,v3.
+
+SEE ALSO
+     rpc_clnt_calls(3), rpc_svc_calls(3), rpcbind(8), rpcinfo(8)
+
+BSD                               May 7, 1993                              BSD

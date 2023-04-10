@@ -1,0 +1,56 @@
+UDEV_DEVICE_HAS_TAG(3)                                                                      udev_device_has_tag                                                                     UDEV_DEVICE_HAS_TAG(3)
+
+NAME
+       udev_device_has_tag, udev_device_has_current_tag, udev_device_get_devlinks_list_entry, udev_device_get_properties_list_entry, udev_device_get_tags_list_entry,
+       udev_device_get_current_tags_list_entry, udev_device_get_sysattr_list_entry, udev_device_get_property_value, udev_device_get_sysattr_value, udev_device_set_sysattr_value - Retrieve or set device
+       attributes
+
+SYNOPSIS
+       #include <libudev.h>
+
+       int udev_device_has_tag(struct udev_device *udev_device, const char *tag);
+
+       int udev_device_has_current_tag(struct udev_device *udev_device, const char *tag);
+
+       struct udev_list_entry *udev_device_get_devlinks_list_entry(struct udev_device *udev_device);
+
+       struct udev_list_entry *udev_device_get_properties_list_entry(struct udev_device *udev_device);
+
+       struct udev_list_entry *udev_device_get_tags_list_entry(struct udev_device *udev_device);
+
+       struct udev_list_entry *udev_device_get_current_tags_list_entry(struct udev_device *udev_device);
+
+       struct udev_list_entry *udev_device_get_sysattr_list_entry(struct udev_device *udev_device);
+
+       const char *udev_device_get_property_value(struct udev_device *udev_device, const char *key);
+
+       const char *udev_device_get_sysattr_value(struct udev_device *udev_device, const char *sysattr);
+
+       int udev_device_set_sysattr_value(struct udev_device *udev_device, const char *sysattr, const char *value);
+
+DESCRIPTION
+       udev_device_has_tag() returns a valuer larger than zero if the specified device object has the indicated tag assigned to it, and zero otherwise. See udev(7) for details on the tags concept.
+       udev_device_has_current_tag() executes a similar check, however only determines whether the indicated tag was set as result of the most recent event seen for the device. Tags are "sticky", i.e.
+       once set for a device they remain on the device until the device is unplugged, even if the rules run for later events of the same device do not set them anymore. Any tag for which
+       udev_device_has_current_tag() returns true will hence also return true when passed to udev_device_has_tag(), but the opposite might not be true, in case a tag is no longer configured by the rules
+       applied to the most recent device even.
+
+       udev_device_get_tags_list_entry() returns a udev_list_entry object, encapsulating a list of tags set for the specified device. Similar, udev_device_get_current_tags_list_entry() returns a list of
+       tags set for the specified device as effect of the most recent device event seen (see above for details on the difference).
+
+RETURN VALUE
+       On success, udev_device_has_tag() and udev_device_has_current_tag() return positive or 0, depending on whether the device has the given tag or not. On failure, a negative error code is returned.
+
+       On success, udev_device_get_devlinks_list_entry(), udev_device_get_properties_list_entry(), udev_device_get_tags_list_entry(), udev_device_get_current_tags_list_entry() and
+       udev_device_get_sysattr_list_entry() return a pointer to the first entry of the retrieved list. If that list is empty, or if an error occurred, NULL is returned.
+
+       On success, udev_device_get_property_value() and udev_device_get_sysattr_value() return a pointer to a constant string of the requested value. On error, NULL is returned. Attributes that may
+       contain NUL bytes should not be retrieved with udev_device_get_sysattr_value(); instead, read them directly from the files within the device's syspath.
+
+       On success, udev_device_set_sysattr_value() returns an integer greater than, or equal to, 0. On failure, a negative error code is returned. Values that contain NUL bytes should not be set with
+       this function; instead, write them directly to the files within the device's syspath.
+
+SEE ALSO
+       udev(7), udev_new(3), udev_device_new_from_syspath(3), udev_device_get_syspath(3), udev_enumerate_new(3), udev_monitor_new_from_netlink(3), udev_list_entry(3), systemd(1),
+
+systemd 253                                                                                                                                                                         UDEV_DEVICE_HAS_TAG(3)

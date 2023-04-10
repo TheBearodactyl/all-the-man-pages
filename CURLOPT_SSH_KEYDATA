@@ -1,0 +1,49 @@
+CURLOPT_SSH_KEYDATA(3)                                                                   curl_easy_setopt options                                                                   CURLOPT_SSH_KEYDATA(3)
+
+NAME
+       CURLOPT_SSH_KEYDATA - pointer passed to the SSH key callback
+
+SYNOPSIS
+       #include <curl/curl.h>
+
+       CURLcode curl_easy_setopt(CURL *handle, CURLOPT_SSH_KEYDATA, void *pointer);
+
+DESCRIPTION
+       Pass a void * as parameter. This pointer will be passed along verbatim to the callback set with CURLOPT_SSH_KEYFUNCTION(3).
+
+DEFAULT
+       NULL
+
+PROTOCOLS
+       SFTP and SCP
+
+EXAMPLE
+       static int keycb(CURL *easy,
+                        const struct curl_khkey *knownkey,
+                        const struct curl_khkey *foundkey,
+                        enum curl_khmatch,
+                        void *clientp)
+       {
+         /* 'clientp' points to the callback_data struct */
+         /* investigate the situation and return the correct value */
+         return CURLKHSTAT_FINE_ADD_TO_FILE;
+       }
+       {
+         curl_easy_setopt(curl, CURLOPT_URL, "sftp://example.com/thisfile.txt");
+         curl_easy_setopt(curl, CURLOPT_SSH_KEYFUNCTION, keycb);
+         curl_easy_setopt(curl, CURLOPT_SSH_KEYDATA, &callback_data);
+         curl_easy_setopt(curl, CURLOPT_SSH_KNOWNHOSTS, "/home/user/known_hosts");
+
+         curl_easy_perform(curl);
+       }
+
+AVAILABILITY
+       Added in 7.19.6
+
+RETURN VALUE
+       Returns CURLE_OK if the option is supported, and CURLE_UNKNOWN_OPTION if not.
+
+SEE ALSO
+       CURLOPT_SSH_KEYDATA(3), CURLOPT_SSH_KNOWNHOSTS(3),
+
+libcurl 7.37.0                                                                                  19 Jun 2014                                                                         CURLOPT_SSH_KEYDATA(3)

@@ -1,0 +1,238 @@
+mq_open(3)                                                                               Library Functions Manual                                                                               mq_open(3)
+
+NAME
+       mq_open - open a message queue
+
+LIBRARY
+       Real-time library (librt, -lrt)
+
+SYNOPSIS
+       #include <fcntl.h>           /* For O_* constants */
+       #include <sys/stat.h>        /* For mode constants */
+       #include <mqueue.h>
+
+       mqd_t mq_open(const char *name, int oflag);
+       mqd_t mq_open(const char *name, int oflag, mode_t mode,
+                     struct mq_attr *attr);
+
+DESCRIPTION
+       mq_open() creates a new POSIX message queue or opens an existing queue.  The queue is identified by name.  For details of the construction of name, see mq_overview(7).
+
+       The  oflag argument specifies flags that control the operation of the call.  (Definitions of the flags values can be obtained by including <fcntl.h>.)  Exactly one of the following must be speci‐
+       fied in oflag:
+
+       O_RDONLY
+              Open the queue to receive messages only.
+
+       O_WRONLY
+              Open the queue to send messages only.
+
+       O_RDWR Open the queue to both send and receive messages.
+
+       Zero or more of the following flags can additionally be ORed in oflag:
+
+       O_CLOEXEC (since Linux 2.6.26)
+              Set the close-on-exec flag for the message queue descriptor.  See open(2) for a discussion of why this flag is useful.
+
+       O_CREAT
+              Create the message queue if it does not exist.  The owner (user ID) of the message queue is set to the effective user ID of the calling process.  The group ownership (group ID) is  set  to
+              the effective group ID of the calling process.
+
+       O_EXCL If O_CREAT was specified in oflag, and a queue with the given name already exists, then fail with the error EEXIST.
+
+       O_NONBLOCK
+              Open the queue in nonblocking mode.  In circumstances where mq_receive(3) and mq_send(3) would normally block, these functions instead fail with the error EAGAIN.
+
+       If  O_CREAT  is  specified in oflag, then two additional arguments must be supplied.  The mode argument specifies the permissions to be placed on the new queue, as for open(2).  (Symbolic defini‐
+       tions for the permissions bits can be obtained by including <sys/stat.h>.)  The permissions settings are masked against the process umask.
+
+       The fields of the struct mq_attr pointed to attr specify the maximum number of messages and the maximum size of messages that the queue will allow.  This structure is defined as follows:
+
+           struct mq_attr {
+               long mq_flags;       /* Flags (ignored for mq_open()) */
+               long mq_maxmsg;      /* Max. # of messages on queue */
+               long mq_msgsize;     /* Max. message size (bytes) */
+               long mq_curmsgs;     /* # of messages currently in queue
+                                       (ignored for mq_open()) */
+           };
+
+       Only the mq_maxmsg and mq_msgsize fields are employed when calling mq_open(); the values in the remaining fields are ignored.
+
+       If attr is NULL, then the queue is created with implementation-defined default attributes.  Since Linux 3.5, two /proc files can be used to control these defaults; see mq_overview(7) for details.
+
+RETURN VALUE
+       On success, mq_open() returns a message queue descriptor for use by other message queue functions.  On error, mq_open() returns (mqd_t) -1, with errno set to indicate the error.
+
+ERRORS
+       EACCES The queue exists, but the caller does not have permission to open it in the specified mode.
+
+       EACCES name contained more than one slash.
+
+       EEXIST Both O_CREAT and O_EXCL were specified in oflag, but a queue with this name already exists.
+
+       EINVAL name doesn't follow the format in mq_overview(7).
+
+       EINVAL O_CREAT was specified in oflag, and attr was not NULL, but attr->mq_maxmsg or attr->mq_msqsize was invalid.  Both of these fields must be greater than zero.  In a process that is  unprivi‐
+              leged  (does  not have the CAP_SYS_RESOURCE capability), attr->mq_maxmsg must be less than or equal to the msg_max limit, and attr->mq_msgsize must be less than or equal to the msgsize_max
+              limit.  In addition, even in a privileged process, attr->mq_maxmsg cannot exceed the HARD_MAX limit.  (See mq_overview(7) for details of these limits.)
+
+       EMFILE The per-process limit on the number of open file and message queue descriptors has been reached (see the description of RLIMIT_NOFILE in getrlimit(2)).
+
+       ENAMETOOLONG
+              name was too long.
+
+       ENFILE The system-wide limit on the total number of open files and message queues has been reached.
+
+       ENOENT The O_CREAT flag was not specified in oflag, and no queue with this name exists.
+
+       ENOENT name was just "/" followed by no other characters.
+
+       ENOMEM Insufficient memory.
+
+       ENOSPC Insufficient space for the creation of a new message queue.  This probably occurred because the queues_max limit was encountered; see mq_overview(7).
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                                                                                                                                               │ Attribute     │ Value   │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────┤
+       │mq_open()                                                                                                                                                               │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────┘
+
+VERSIONS
+   C library/kernel differences
+       The mq_open() library function is implemented on top of a system call of the same name.  The library function performs the check that the name starts with a slash (/), giving the EINVAL error  if
+       it does not.  The kernel system call expects name to contain no preceding slash, so the C library function passes name without the preceding slash (i.e., name+1) to the system call.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+BUGS
+       Before Linux 2.6.14, the process umask was not applied to the permissions specified in mode.
+
+SEE ALSO
+       mq_close(3), mq_getattr(3), mq_notify(3), mq_receive(3), mq_send(3), mq_unlink(3), mq_overview(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      mq_open(3)
+MQ_OPEN(3P)                                                                              POSIX Programmer's Manual                                                                             MQ_OPEN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       mq_open — open a message queue (REALTIME)
+
+SYNOPSIS
+       #include <mqueue.h>
+
+       mqd_t mq_open(const char *name, int oflag, ...);
+
+DESCRIPTION
+       The mq_open() function shall establish the connection between a process and a message queue with a message queue descriptor. It shall create an open message queue description that refers  to  the
+       message  queue, and a message queue descriptor that refers to that open message queue description. The message queue descriptor is used by other functions to refer to that message queue. The name
+       argument points to a string naming a message queue. It is unspecified whether the name appears in the file system and is visible to other functions that take pathnames as arguments. The name  ar‐
+       gument conforms to the construction rules for a pathname, except that the interpretation of <slash> characters other than the leading <slash> character in name is implementation-defined, and that
+       the length limits for the name argument are implementation-defined and need not be the same as the pathname limits {PATH_MAX} and {NAME_MAX}.  If name begins with the <slash> character, then pro‐
+       cesses  calling  mq_open()  with the same value of name shall refer to the same message queue object, as long as that name has not been removed. If name does not begin with the <slash> character,
+       the effect is implementation-defined. If the name argument is not the name of an existing message queue and creation is not requested, mq_open() shall fail and return an error.
+
+       A message queue descriptor may be implemented using a file descriptor, in which case applications can open up to at least {OPEN_MAX} file and message queues.
+
+       The oflag argument requests the desired receive and/or send access to the message queue. The requested access permission to receive messages or send messages  shall  be  granted  if  the  calling
+       process would be granted read or write access, respectively, to an equivalently protected file.
+
+       The value of oflag is the bitwise-inclusive OR of values from the following list.  Applications shall specify exactly one of the first three values (access modes) below in the value of oflag:
+
+       O_RDONLY    Open  the  message  queue for receiving messages. The process can use the returned message queue descriptor with mq_receive(), but not mq_send().  A message queue may be open multiple
+                   times in the same or different processes for receiving messages.
+
+       O_WRONLY    Open the queue for sending messages. The process can use the returned message queue descriptor with mq_send() but not mq_receive().  A message queue may be open multiple times in  the
+                   same or different processes for sending messages.
+
+       O_RDWR      Open  the  queue for both receiving and sending messages. The process can use any of the functions allowed for O_RDONLY and O_WRONLY. A message queue may be open multiple times in the
+                   same or different processes for sending messages.
+
+       Any combination of the remaining flags may be specified in the value of oflag:
+
+       O_CREAT     Create a message queue. It requires two additional arguments: mode, which shall be of type mode_t, and attr, which shall be a pointer to an mq_attr structure. If the pathname name has
+                   already  been used to create a message queue that still exists, then this flag shall have no effect, except as noted under O_EXCL.  Otherwise, a message queue shall be created without
+                   any messages in it. The user ID of the message queue shall be set to the effective user ID of the process. The group ID of the message queue shall be set to the effective group ID  of
+                   the  process;  however,  if the name argument is visible in the file system, the group ID may be set to the group ID of the containing directory. When bits in mode other than the file
+                   permission bits are specified, the effect is unspecified. If attr is NULL, the message queue shall be created with implementation-defined default message queue attributes. If attr  is
+                   non-NULL  and  the calling process has appropriate privileges on name, the message queue mq_maxmsg and mq_msgsize attributes shall be set to the values of the corresponding members in
+                   the mq_attr structure referred to by attr.  The values of the mq_flags and mq_curmsgs members of the mq_attr structure shall be ignored. If attr is non-NULL, but the  calling  process
+                   does not have appropriate privileges on name, the mq_open() function shall fail and return an error without creating the message queue.
+
+       O_EXCL      If O_EXCL and O_CREAT are set, mq_open() shall fail if the message queue name exists. The check for the existence of the message queue and the creation of the message queue if it does
+                   not exist shall be atomic with respect to other threads executing mq_open() naming the same name with O_EXCL and O_CREAT set. If O_EXCL is set and O_CREAT is not set,  the  result  is
+                   undefined.
+
+       O_NONBLOCK  Determines  whether  an mq_send() or mq_receive() waits for resources or messages that are not currently available, or fails with errno set to [EAGAIN]; see mq_send() and mq_receive()
+                   for details.
+
+       The mq_open() function does not add or remove messages from the queue.
+
+RETURN VALUE
+       Upon successful completion, the function shall return a message queue descriptor; otherwise, the function shall return (mqd_t)-1 and set errno to indicate the error.
+
+ERRORS
+       The mq_open() function shall fail if:
+
+       EACCES The message queue exists and the permissions specified by oflag are denied, or the message queue does not exist and permission to create the message queue is denied.
+
+       EEXIST O_CREAT and O_EXCL are set and the named message queue already exists.
+
+       EINTR  The mq_open() function was interrupted by a signal.
+
+       EINVAL The mq_open() function is not supported for the given name.
+
+       EINVAL O_CREAT was specified in oflag, the value of attr is not NULL, and either mq_maxmsg or mq_msgsize was less than or equal to zero.
+
+       EMFILE Too many message queue descriptors or file descriptors are currently in use by this process.
+
+       ENFILE Too many message queues are currently open in the system.
+
+       ENOENT O_CREAT is not set and the named message queue does not exist.
+
+       ENOSPC There is insufficient space for the creation of the new message queue.
+
+       If any of the following conditions occur, the mq_open() function may return (mqd_t)-1 and set errno to the corresponding value.
+
+       ENAMETOOLONG
+              The length of the name argument exceeds {_POSIX_PATH_MAX} on systems that do not support the XSI option or exceeds {_XOPEN_PATH_MAX} on XSI systems, or has a  pathname  component  that  is
+              longer than {_POSIX_NAME_MAX} on systems that do not support the XSI option or longer than {_XOPEN_NAME_MAX} on XSI systems.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       A future version might require the mq_open() and mq_unlink() functions to have semantics similar to normal file system operations.
+
+SEE ALSO
+       mq_close(), mq_getattr(), mq_receive(), mq_send(), mq_setattr(), mq_unlink(), msgctl(), msgget(), msgrcv(), msgsnd()
+
+       The Base Definitions volume of POSIX.1‐2017, <mqueue.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                        MQ_OPEN(3P)

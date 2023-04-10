@@ -1,0 +1,174 @@
+PACSIFT(1)                          pacsift                         PACSIFT(1)
+
+NAME
+       pacsift - query and filter packages
+
+SYNOPSIS
+        pacsift [options] (<field> <term>)...
+        pacsift (--help|--version)
+
+DESCRIPTION
+       By default the intersection of matched packages are returned.  If a
+       field is provided multiple times the union of matches will be used for
+       that field.
+
+       If stdin is not connected to a terminal, packages to filter will be
+       read from stdin.
+
+       Combine with pacinfo to display brief package information similar to
+       "pacman -Qs" and "pacman -Ss":
+
+        pacsift --name pacman | pacinfo --short
+
+OPTIONS
+       --config=path
+           Set an alternate configuration file path.
+
+       --dbext=extension
+           Set an alternate sync database extension.
+
+       --dbpath=path
+           Set an alternate database path.
+
+       --root=path
+           Set an alternate installation root.
+
+       --sysroot=path
+           Set an alternate system root.  See pacutils-sysroot(7).
+
+       --null[=sep]
+           Set an alternate separator for values parsed from stdin.  By
+           default a newline "\n" is used as the separator.  If --null is used
+           without specifying sep "NUL" will be used.
+
+       --exists
+           Exit with a non-zero value if no matches are found.
+
+       --not-exists
+           Exit with a non-zero value if matches are found.
+
+       --invert
+           Return packages that DO NOT match the provided search terms.
+
+       --any
+           Return the union of matched packages rather than the intersection.
+
+       --exact
+           Match values exactly.
+
+       --regex
+           Treat string values as extended case-insensitive regular
+           expressions.
+
+       --help
+           Display usage information and exit.
+
+       --version
+           Display version information and exit.
+
+   Filters
+       Filters limit the initial set of packages to be searched.  They may not
+       be used if packages are provided on stdin and they are not affected by
+       --invert or --any.
+
+       --local
+           Search locally installed packages.  Similar to:
+            pacsift --repo=local | pacsift ...
+
+       --sync
+           Search packages in sync databases.  Similar to:
+            pacsift --invert --repo=local | pacsift ...
+
+       --cache (EXPERIMENTAL)
+           Search packages in cache directories.
+
+   String Fields
+       By default string fields will use a case-insensitive substring search.
+       If --exact is used string fields must match val exactly.  If "--regex"
+       is used val will be used as an extended case-insensitive regular
+       expression.
+
+       --repo=val
+       --name=val
+       --base=val
+       --description=val
+       --packager=val
+       --group=val
+       --owns-file=path
+           File paths must match the package database; no attempt is made to
+           resolve the provided path.  Note: when used with --exact the
+           installation root will be removed from path if present, otherwise
+           path will be used exactly as provided.  May be used with realpath
+           or which to more easily search for the owner of installed files:
+
+            pacsift --local --exact --owns-file="$(which pacsift)"
+
+       --license=val
+       --url=val
+
+   Dependency Fields
+       Dependencies may be specified in the format "<pkgname>[<cmp><version]".
+       "cmp" may be any of the following: "=", "<", "<=", ">", ">=".  If
+       "version" is provided the package dependency must be an exact match to
+       the search term.  If "version" is omitted only "pkgname" will be
+       compared unless --exact is used.  If "--exact" is used and "version" is
+       not provided only dependencies with no version specified will be
+       matched.
+
+       Dependency fields are not affected by --regex.
+
+       --provides
+       --conflicts
+       --replaces
+       --depends
+       --optdepends
+
+   Size Fields
+       Size fields may be prefixed with any of the following comparisons: "=",
+       "!=", "<", "<=", ">", ">=".  If no comparison is provided "=" will be
+       used.  The size may be followed by abbreviated unit.  Units are case-
+       sensitive.
+
+       --size
+       --installed-size
+       --download-size
+
+   Date Fields
+       Date fields may be prefixed with any of the following comparisons: "=",
+       "!=", "<", "<=", ">", ">=".  If no comparison is provided "=" will be
+       used.  Dates may be provided as seconds since the epoch or any of the
+       following "strptime" formats: "%Y-%m-%d", "%Y-%m-%d %H:%M", "%Y-%m-%d
+       %H:%M:%S".
+
+       --install-date
+       --build-date
+
+   Other
+       --satisfies=dependency
+           Search for packages that satisfy dependency.
+
+EXAMPLES
+       Find broken packages:
+            pacsift --packager allan
+
+       Find large installed packages:
+            pacsift --local --size '>1.5GB'
+
+       Find packages with either "pacman" or "alpm" in their description:
+            pacsift --description pacman --description alpm
+
+       Find packages with both "pacman" and "alpm" in their description:
+            pacsift --description pacman | pacsift --description alpm
+
+       Check if a package is installed:
+            pacsift --local --exists --satisfies pacman && echo "pacman is installed"
+
+CAVEATS
+       pacsift determines whether or not to read packages from stdin based on
+       a naive check using isatty(3).  If pacsift is called in an environment,
+       such as a shell function or script being used in a pipe, where stdin is
+       not connected to a terminal but does not contain packages to filter,
+       pacsift should be called with stdin closed.  For POSIX-compatible
+       shells, this can be done with "<&-".
+
+pacutils                          2021-08-14                        PACSIFT(1)

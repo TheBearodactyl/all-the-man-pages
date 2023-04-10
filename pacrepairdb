@@ -1,0 +1,95 @@
+PACREPAIRDB(1)                    pacrepairdb                   PACREPAIRDB(1)
+
+NAME
+       pacrepairdb - fix corrupted database entries
+
+SYNOPSIS
+        pacrepairdb [options] <package>...
+        pacrepairdb (--help|--version)
+
+DESCRIPTION
+       Attempt to repair broken package entries in libalpm's database.  Any
+       missing essential files will be created and the packages will be
+       reinstalled from the cache.
+
+       If stdin is not connected to a terminal, package names will be read
+       from stdin.
+
+OPTIONS
+       --cachedir=path
+           Set an alternate cache directory path.
+
+       --config=path
+           Set an alternate configuration file path.
+
+       --dbonly
+           Make the changes to the database without actually extracting or
+           removing any packages.
+
+       --dbpath=path
+           Set an alternate database path.
+
+       --debug
+           Display additional debugging information.
+
+       --hookdir
+           Add additional user hook directories.
+
+       --logfile=path
+           Set an alternate log file path.
+
+       --no-confirm
+           Assume default responses to all prompts.
+
+       --no-scriptlet
+           Do not run package install scripts.
+
+       --no-hooks
+           Do not run transaction hooks.
+
+       --no-timeout
+           Disable low-speed timeouts for downloads.
+
+       --print-only
+           Display the packages to be repaired and the cache packages to be
+           used and exit.
+
+       --root=path
+           Set an alternate installation root.
+
+       --sysroot=path
+           Set an alternate system root.  See pacutils-sysroot(7).
+
+       --verbose
+           Display additional progress information.
+
+       --help
+           Display usage information and exit.
+
+       --version
+           Display version information and exit.
+
+EXAMPLES
+       Find and reinstall broken packages:
+
+        paccheck --list-broken --files --file-properties --db-files --require-mtree | pacrepairdb
+
+CAVEATS
+       pacrepairdb expects all of the packages being repaired to be cached.
+       Cached packages that match the name and version of an installed package
+       are assumed to be the same package.  No attempt is made to validate
+       cached packages.  If a cache contains a package that does not match the
+       installed package, but nonetheless has the same name and version,
+       pacrepairdb will blindly install it, worsening any database problems.
+
+       pacrepairdb does not check for leftover orphaned files.  It is the
+       user's responsibility locate and handle orphaned files.
+
+       pacrepairdb determines whether or not to read package names from stdin
+       based on a naive check using isatty(3).  If pacrepairdb is called in an
+       environment, such as a shell function or script being used in a pipe,
+       where stdin is not connected to a terminal but does not contain package
+       names to repair, pacrepairdb should be called with stdin closed.  For
+       POSIX-compatible shells, this can be done with "<&-".
+
+pacutils                          2021-08-14                    PACREPAIRDB(1)

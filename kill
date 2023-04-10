@@ -1,0 +1,537 @@
+KILL(1)                                                                                        User Commands                                                                                       KILL(1)
+
+NAME
+       kill - terminate a process
+
+SYNOPSIS
+       kill  [-signal|-s signal|-p]  [-q value] [-a] [--timeout milliseconds signal] [--] pid|name...
+
+       kill -l [number] | -L
+
+DESCRIPTION
+       The command kill sends the specified signal to the specified processes or process groups.
+
+       If no signal is specified, the TERM signal is sent. The default action for this signal is to terminate the process. This signal should be used in preference to the KILL signal (number 9), since a
+       process may install a handler for the TERM signal in order to perform clean-up steps before terminating in an orderly fashion. If a process does not terminate after a TERM signal has been sent,
+       then the KILL signal may be used; be aware that the latter signal cannot be caught, and so does not give the target process the opportunity to perform any clean-up before terminating.
+
+       Most modern shells have a builtin kill command, with a usage rather similar to that of the command described here. The --all, --pid, and --queue options, and the possibility to specify processes
+       by command name, are local extensions.
+
+       If signal is 0, then no actual signal is sent, but error checking is still performed.
+
+ARGUMENTS
+       The list of processes to be signaled can be a mixture of names and PIDs.
+
+       pid
+           Each pid can be expressed in one of the following ways:
+
+           n
+               where n is larger than 0. The process with PID n is signaled.
+
+           0
+               All processes in the current process group are signaled.
+
+           -1
+               All processes with a PID larger than 1 are signaled.
+
+           -n
+               where n is larger than 1. All processes in process group n are signaled. When an argument of the form '-n' is given, and it is meant to denote a process group, either a signal must be
+               specified first, or the argument must be preceded by a '--' option, otherwise it will be taken as the signal to send.
+
+       name
+           All processes invoked using this name will be signaled.
+
+OPTIONS
+       -s, --signal signal
+           The signal to send. It may be given as a name or a number.
+
+       -l, --list [number]
+           Print a list of signal names, or convert the given signal number to a name. The signals can be found in /usr/include/linux/signal.h.
+
+       -L, --table
+           Similar to -l, but it will print signal names and their corresponding numbers.
+
+       -a, --all
+           Do not restrict the command-name-to-PID conversion to processes with the same UID as the present process.
+
+       -p, --pid
+           Only print the process ID (PID) of the named processes, do not send any signals.
+
+       --verbose
+           Print PID(s) that will be signaled with kill along with the signal.
+
+       -q, --queue value
+           Send the signal using sigqueue(3) rather than kill(2). The value argument is an integer that is sent along with the signal. If the receiving process has installed a handler for this signal
+           using the SA_SIGINFO flag to sigaction(2), then it can obtain this data via the si_sigval field of the siginfo_t structure.
+
+       --timeout milliseconds signal
+           Send a signal defined in the usual way to a process, followed by an additional signal after a specified delay. The --timeout option causes kill to wait for a period defined in milliseconds
+           before sending a follow-up signal to the process. This feature is implemented using the Linux kernel PID file descriptor feature in order to guarantee that the follow-up signal is sent to the
+           same process or not sent if the process no longer exists.
+
+           Note that the operating system may re-use PIDs and implementing an equivalent feature in a shell using kill and sleep would be subject to races whereby the follow-up signal might be sent to a
+           different process that used a recycled PID.
+
+           The --timeout option can be specified multiple times: the signals are sent sequentially with the specified timeouts. The --timeout option can be combined with the --queue option.
+
+           As an example, the following command sends the signals QUIT, TERM and KILL in sequence and waits for 1000 milliseconds between sending the signals:
+
+               kill --verbose --timeout 1000 TERM --timeout 1000 KILL \
+                       --signal QUIT 12345
+
+EXIT STATUS
+       kill has the following exit status values:
+
+       0
+           success
+
+       1
+           failure
+
+       64
+           partial success (when more than one process specified)
+
+NOTES
+       Although it is possible to specify the TID (thread ID, see gettid(2)) of one of the threads in a multithreaded process as the argument of kill, the signal is nevertheless directed to the process
+       (i.e., the entire thread group). In other words, it is not possible to send a signal to an explicitly selected thread in a multithreaded process. The signal will be delivered to an arbitrarily
+       selected thread in the target process that is not blocking the signal. For more details, see signal(7) and the description of CLONE_THREAD in clone(2).
+
+       Various shells provide a builtin kill command that is preferred in relation to the kill(1) executable described by this manual. The easiest way to ensure one is executing the command described in
+       this page is to use the full path when calling the command, for example: /bin/kill --version
+
+AUTHORS
+       Salvatore Valente <svalente@mit.edu>, Karel Zak <kzak@redhat.com>
+
+       The original version was taken from BSD 4.4.
+
+SEE ALSO
+       bash(1), tcsh(1), sigaction(2), kill(2), sigqueue(3), signal(7)
+
+REPORTING BUGS
+       For bug reports, use the issue tracker at https://github.com/util-linux/util-linux/issues.
+
+AVAILABILITY
+       The kill command is part of the util-linux package which can be downloaded from Linux Kernel Archive <https://www.kernel.org/pub/linux/utils/util-linux/>.
+
+util-linux 2.38.1                                                                               2022-05-11                                                                                         KILL(1)
+KILL(1P)                                                                                 POSIX Programmer's Manual                                                                                KILL(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       kill — terminate or signal processes
+
+SYNOPSIS
+       kill -s signal_name pid...
+
+       kill -l [exit_status]
+
+       kill [-signal_name] pid...
+
+       kill [-signal_number] pid...
+
+DESCRIPTION
+       The kill utility shall send a signal to the process or processes specified by each pid operand.
+
+       For each pid operand, the kill utility shall perform actions equivalent to the kill() function defined in the System Interfaces volume of POSIX.1‐2017 called with the following arguments:
+
+        *  The value of the pid operand shall be used as the pid argument.
+
+        *  The sig argument is the value specified by the -s option, -signal_number option, or the -signal_name option, or by SIGTERM, if none of these options is specified.
+
+OPTIONS
+       The kill utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines, except that in the last two SYNOPSIS forms, the  -signal_number  and  -sig‐
+       nal_name options are usually more than a single character.
+
+       The following options shall be supported:
+
+       -l        (The letter ell.) Write all values of signal_name supported by the implementation, if no operand is given. If an exit_status operand is given and it is a value of the '?'  shell special
+                 parameter (see Section 2.5.2, Special Parameters and wait) corresponding to a process that was terminated by a signal, the signal_name corresponding to the signal  that  terminated  the
+                 process shall be written. If an exit_status operand is given and it is the unsigned decimal integer value of a signal number, the signal_name (the symbolic constant name without the SIG
+                 prefix defined in the Base Definitions volume of POSIX.1‐2017) corresponding to that signal shall be written. Otherwise, the results are unspecified.
+
+       -s signal_name
+                 Specify the signal to send, using one of the symbolic names defined in the <signal.h> header. Values of signal_name shall be recognized in a case-independent fashion,  without  the  SIG
+                 prefix. In addition, the symbolic name 0 shall be recognized, representing the signal value zero. The corresponding signal shall be sent instead of SIGTERM.
+
+       -signal_name
+                 Equivalent to -s signal_name.
+
+       -signal_number
+                 Specify  a  non-negative  decimal integer, signal_number, representing the signal to be used instead of SIGTERM, as the sig argument in the effective call to kill().  The correspondence
+                 between integer values and the sig value used is shown in the following list.
+
+                 The effects of specifying any signal_number other than those listed below are undefined.
+
+                 0     0
+
+                 1     SIGHUP
+
+                 2     SIGINT
+
+                 3     SIGQUIT
+
+                 6     SIGABRT
+
+                 9     SIGKILL
+
+                 14    SIGALRM
+
+                 15    SIGTERM
+
+                 If the first argument is a negative integer, it shall be interpreted as a -signal_number option, not as a negative pid operand specifying a process group.
+
+OPERANDS
+       The following operands shall be supported:
+
+       pid       One of the following:
+
+                  1. A decimal integer specifying a process or process group to be signaled.  The process or processes selected by positive, negative, and zero values of the pid operand shall be as  de‐
+                     scribed  for  the  kill()  function. If process number 0 is specified, all processes in the current process group shall be signaled. For the effects of negative pid numbers, see the
+                     kill() function defined in the System Interfaces volume of POSIX.1‐2017. If the first pid operand is negative, it should be preceded by "--" to keep it from being interpreted as  an
+                     option.
+
+                  2. A  job control job ID (see the Base Definitions volume of POSIX.1‐2017, Section 3.204, Job Control Job ID) that identifies a background process group to be signaled. The job control
+                     job ID notation is applicable only for invocations of kill in the current shell execution environment; see Section 2.12, Shell Execution Environment.
+
+       exit_status
+                 A decimal integer specifying a signal number or the exit status of a process terminated by a signal.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of kill:
+
+       LANG      Provide a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables  for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       When the -l option is not specified, the standard output shall not be used.
+
+       When the -l option is specified, the symbolic name of each signal shall be written in the following format:
+
+           "%s%c", <signal_name>, <separator>
+
+       where the <signal_name> is in uppercase, without the SIG prefix, and the <separator> shall be either a <newline> or a <space>.  For the last signal written, <separator> shall be a <newline>.
+
+       When both the -l option and exit_status operand are specified, the symbolic name of the corresponding signal shall be written in the following format:
+
+           "%s\n", <signal_name>
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    At least one matching process was found for each pid operand, and the specified signal was successfully processed for at least one matching process.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       Process numbers can be found by using ps.
+
+       The job control job ID notation is not required to work as expected when kill is operating in its own utility execution environment. In either of the following examples:
+
+           nohup kill %1 &
+           system("kill %1");
+
+       the kill operates in a different environment and does not share the shell's understanding of job numbers.
+
+EXAMPLES
+       Any of the commands:
+
+           kill -9 100 -165
+           kill -s kill 100 -165
+           kill -s KILL 100 -165
+
+       sends  the  SIGKILL signal to the process whose process ID is 100 and to all processes whose process group ID is 165, assuming the sending process has permission to send that signal to the speci‐
+       fied processes, and that they exist.
+
+       The System Interfaces volume of POSIX.1‐2017 and this volume of POSIX.1‐2017 do not require specific signal numbers for any signal_names.  Even the -signal_number option  provides  symbolic  (al‐
+       though  numeric)  names  for signals. If a process is terminated by a signal, its exit status indicates the signal that killed it, but the exact values are not specified. The kill -l option, how‐
+       ever, can be used to map decimal signal numbers and exit status values into the name of a signal. The following example reports the status of a terminated job:
+
+           job
+           stat=$?
+           if [ $stat -eq 0 ]
+           then
+               echo job completed successfully.
+           elif [ $stat -gt 128 ]
+           then
+               echo job terminated by signal SIG$(kill -l $stat).
+           else
+               echo job terminated with error code $stat.
+           fi
+
+       To send the default signal to a process group (say 123), an application should use a command similar to one of the following:
+
+           kill -TERM -123
+           kill -- -123
+
+RATIONALE
+       The -l option originated from the C shell, and is also implemented in the KornShell. The C shell output can consist of multiple output lines because the signal names do not always fit on a single
+       line  on some terminal screens. The KornShell output also included the implementation-defined signal numbers and was considered by the standard developers to be too difficult for scripts to parse
+       conveniently. The specified output format is intended not only to accommodate the historical C shell output, but also to permit an entirely vertical or entirely horizontal listing on systems  for
+       which this is appropriate.
+
+       An  early  proposal  invented the name SIGNULL as a signal_name for signal 0 (used by the System Interfaces volume of POSIX.1‐2017 to test for the existence of a process without sending it a sig‐
+       nal). Since the signal_name 0 can be used in this case unambiguously, SIGNULL has been removed.
+
+       An early proposal also required symbolic signal_names to be recognized with or without the SIG prefix. Historical versions of kill have not written the SIG prefix for the -l option and  have  not
+       recognized the SIG prefix on signal_names.  Since neither applications portability nor ease-of-use would be improved by requiring this extension, it is no longer required.
+
+       To avoid an ambiguity of an initial negative number argument specifying either a signal number or a process group, POSIX.1‐2008 mandates that it is always considered the former by implementations
+       that support the XSI option. It also requires that conforming applications always use the "--" options terminator argument when specifying a process group, unless an option is also specified.
+
+       The -s option was added in response to international interest in providing some form of kill that meets the Utility Syntax Guidelines.
+
+       The job control job ID notation is not required to work as expected when kill is operating in its own utility execution environment. In either of the following examples:
+
+           nohup kill %1 &
+           system("kill %1");
+
+       the kill operates in a different environment and does not understand how the shell has managed its job numbers.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Chapter 2, Shell Command Language, ps, wait
+
+       The Base Definitions volume of POSIX.1‐2017, Section 3.204, Job Control Job ID, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines, <signal.h>
+
+       The System Interfaces volume of POSIX.1‐2017, kill()
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           KILL(1P)
+KILL(3P)                                                                                 POSIX Programmer's Manual                                                                                KILL(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       kill — send a signal to a process or a group of processes
+
+SYNOPSIS
+       #include <signal.h>
+
+       int kill(pid_t pid, int sig);
+
+DESCRIPTION
+       The kill() function shall send a signal to a process or a group of processes specified by pid.  The signal to be sent is specified by sig and is either one from the list given in <signal.h> or 0.
+       If sig is 0 (the null signal), error checking is performed but no signal is actually sent. The null signal can be used to check the validity of pid.
+
+       For a process to have permission to send a signal to a process designated by pid, unless the sending process has appropriate privileges, the real or effective user ID of the sending process shall
+       match the real or saved set-user-ID of the receiving process.
+
+       If pid is greater than 0, sig shall be sent to the process whose process ID is equal to pid.
+
+       If pid is 0, sig shall be sent to all processes (excluding an unspecified set of system processes) whose process group ID is equal to the process group ID of the sender, and for which the process
+       has permission to send a signal.
+
+       If pid is -1, sig shall be sent to all processes (excluding an unspecified set of system processes) for which the process has permission to send that signal.
+
+       If  pid  is negative, but not -1, sig shall be sent to all processes (excluding an unspecified set of system processes) whose process group ID is equal to the absolute value of pid, and for which
+       the process has permission to send a signal.
+
+       If the value of pid causes sig to be generated for the sending process, and if sig is not blocked for the calling thread and if no other thread has sig unblocked or  is  waiting  in  a  sigwait()
+       function for sig, either sig or at least one pending unblocked signal shall be delivered to the sending thread before kill() returns.
+
+       The user ID tests described above shall not be applied when sending SIGCONT to a process that is a member of the same session as the sending process.
+
+       An  implementation  that provides extended security controls may impose further implementation-defined restrictions on the sending of signals, including the null signal. In particular, the system
+       may deny the existence of some or all of the processes specified by pid.
+
+       The kill() function is successful if the process has permission to send sig to any of the processes specified by pid.  If kill() fails, no signal shall be sent.
+
+RETURN VALUE
+       Upon successful completion, 0 shall be returned. Otherwise, -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The kill() function shall fail if:
+
+       EINVAL The value of the sig argument is an invalid or unsupported signal number.
+
+       EPERM  The process does not have permission to send the signal to any receiving process.
+
+       ESRCH  No process or process group can be found corresponding to that specified by pid.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       The semantics for permission checking for kill() differed between System V and most other implementations, such as Version 7 or 4.3 BSD. The semantics chosen for this volume of POSIX.1‐2017 agree
+       with  System  V.   Specifically, a set-user-ID process cannot protect itself against signals (or at least not against SIGKILL) unless it changes its real user ID.  This choice allows the user who
+       starts an application to send it signals even if it changes its effective user ID.  The other semantics give more power to an application that wants to protect itself from the user who ran it.
+
+       Some implementations provide semantic extensions to the kill() function when the absolute value of pid is greater than some maximum, or otherwise special, value. Negative values  are  a  flag  to
+       kill().   Since  most  implementations return [ESRCH] in this case, this behavior is not included in this volume of POSIX.1‐2017, although a conforming implementation could provide such an exten‐
+       sion.
+
+       The unspecified processes to which a signal cannot be sent may include the scheduler or init.
+
+       There was initially strong sentiment to specify that, if pid specifies that a signal be sent to the calling process and that signal is not blocked, that signal would be  delivered  before  kill()
+       returns.  This would permit a process to call kill() and be guaranteed that the call never return. However, historical implementations that provide only the signal() function make only the weaker
+       guarantee in this volume of POSIX.1‐2017, because they only deliver one signal each time a process enters the kernel.  Modifications to such implementations to support  the  sigaction()  function
+       generally require entry to the kernel following return from a signal-catching function, in order to restore the signal mask. Such modifications have the effect of satisfying the stronger require‐
+       ment, at least when sigaction() is used, but not necessarily when signal() is used. The standard developers considered making the stronger requirement except when signal() is used, but felt  this
+       would  be  unnecessarily complex. Implementors are encouraged to meet the stronger requirement whenever possible. In practice, the weaker requirement is the same, except in the rare case when two
+       signals arrive during a very short window. This reasoning also applies to a similar requirement for sigprocmask().
+
+       In 4.2 BSD, the SIGCONT signal can be sent to any descendant process regardless of user-ID security checks.  This allows a job control shell to continue a job even if processes in  the  job  have
+       altered  their user IDs (as in the su command). In keeping with the addition of the concept of sessions, similar functionality is provided by allowing the SIGCONT signal to be sent to any process
+       in the same session regardless of user ID security checks. This is less restrictive than BSD in the sense that ancestor processes (in the same session) can now be the recipient.  It is  more  re‐
+       strictive than BSD in the sense that descendant processes that form new sessions are now subject to the user ID checks. A similar relaxation of security is not necessary for the other job control
+       signals since those signals are typically sent by the terminal driver in recognition of special characters being typed; the terminal driver bypasses all security checks.
+
+       In secure implementations, a process may be restricted from sending a signal to a process having a different security label.  In order to prevent the existence or nonexistence of a  process  from
+       being used as a covert channel, such processes should appear nonexistent to the sender; that is, [ESRCH] should be returned, rather than [EPERM], if pid refers only to such processes.
+
+       Historical  implementations varied on the result of a kill() with pid indicating a zombie process. Some indicated success on such a call (subject to permission checking), while others gave an er‐
+       ror of [ESRCH].  Since the definition of process lifetime in this volume of POSIX.1‐2017 covers zombie processes, the [ESRCH] error as described is inappropriate in this case and  implementations
+       that  give  this  error do not conform. This means that an application cannot have a parent process check for termination of a particular child by sending it the null signal with kill(), but must
+       instead use waitpid() or waitid().
+
+       There is some belief that the name kill() is misleading, since the function is not always intended to cause process termination. However, the name is common to all historical implementations, and
+       any change would be in conflict with the goal of minimal changes to existing application code.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       getpid(), raise(), setsid(), sigaction(), sigqueue(), wait()
+
+       The Base Definitions volume of POSIX.1‐2017, <signal.h>, <sys_types.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           KILL(3P)
+kill(2)                                                                                     System Calls Manual                                                                                    kill(2)
+
+NAME
+       kill - send signal to a process
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <signal.h>
+
+       int kill(pid_t pid, int sig);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       kill():
+           _POSIX_C_SOURCE
+
+DESCRIPTION
+       The kill() system call can be used to send any signal to any process group or process.
+
+       If pid is positive, then signal sig is sent to the process with the ID specified by pid.
+
+       If pid equals 0, then sig is sent to every process in the process group of the calling process.
+
+       If pid equals -1, then sig is sent to every process for which the calling process has permission to send signals, except for process 1 (init), but see below.
+
+       If pid is less than -1, then sig is sent to every process in the process group whose ID is -pid.
+
+       If  sig  is  0, then no signal is sent, but existence and permission checks are still performed; this can be used to check for the existence of a process ID or process group ID that the caller is
+       permitted to signal.
+
+       For a process to have permission to send a signal, it must either be privileged (under Linux: have the CAP_KILL capability in the user namespace of the target process), or the real  or  effective
+       user  ID  of  the  sending process must equal the real or saved set-user-ID of the target process.  In the case of SIGCONT, it suffices when the sending and receiving processes belong to the same
+       session.  (Historically, the rules were different; see NOTES.)
+
+RETURN VALUE
+       On success (at least one signal was sent), zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       EINVAL An invalid signal was specified.
+
+       EPERM  The calling process does not have permission to send the signal to any of the target processes.
+
+       ESRCH  The target process or process group does not exist.  Note that an existing process might be a zombie, a process that has terminated execution, but has not yet been wait(2)ed for.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+   Linux notes
+       Across different kernel versions, Linux has enforced different rules for the permissions required for an unprivileged process to send a signal to another process.  In Linux 1.0 to 1.2.2, a signal
+       could  be  sent  if  the effective user ID of the sender matched effective user ID of the target, or the real user ID of the sender matched the real user ID of the target.  From Linux 1.2.3 until
+       1.3.77, a signal could be sent if the effective user ID of the sender matched either the real or effective user ID of the target.  The current rules, which conform to  POSIX.1,  were  adopted  in
+       Linux 1.3.78.
+
+NOTES
+       The  only signals that can be sent to process ID 1, the init process, are those for which init has explicitly installed signal handlers.  This is done to assure the system is not brought down ac‐
+       cidentally.
+
+       POSIX.1 requires that kill(-1,sig) send sig to all processes that the calling process may send signals to, except possibly for  some  implementation-defined  system  processes.   Linux  allows  a
+       process to signal itself, but on Linux the call kill(-1,sig) does not signal the calling process.
+
+       POSIX.1  requires  that if a process sends a signal to itself, and the sending thread does not have the signal blocked, and no other thread has it unblocked or is waiting for it in sigwait(3), at
+       least one unblocked signal must be delivered to the sending thread before the kill() returns.
+
+BUGS
+       In Linux 2.6 up to and including Linux 2.6.7, there was a bug that meant that when sending signals to a process group, kill() failed with the error EPERM if the caller did not have permission  to
+       send  the  signal to any (rather than all) of the members of the process group.  Notwithstanding this error return, the signal was still delivered to all of the processes for which the caller had
+       permission to signal.
+
+SEE ALSO
+       kill(1), _exit(2), pidfd_send_signal(2), signal(2), tkill(2), exit(3), killpg(3), sigqueue(3), capabilities(7), credentials(7), signal(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         kill(2)

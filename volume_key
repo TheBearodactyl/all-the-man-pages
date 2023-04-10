@@ -1,0 +1,110 @@
+volume_key(8)                                                                             System Manager's Manual                                                                            volume_key(8)
+
+NAME
+       volume_key - work with volume encryption secrets and escrow packets
+
+SYNOPIS
+       volume_key [OPTION]... OPERAND...
+
+DESCRIPTION
+       volume_key extracts "secrets" used for volume encryption (for example keys or passphrases) and stores them into separate encrypted "escrow packets", uses a previously created escrow packet to re‐
+       store access to a volume (e.g. if the user forgets a passphrase), or manipulates the information in escrow packets.
+
+       The mode of operation and operands of volume_key are determined by specifying one of the --save, --restore, --setup-volume, --reencrypt, --dump or --secrets options.  See the OPTIONS sections for
+       details.
+
+OPTIONS
+       In all options described below, VOLUME is a LUKS device, not the plaintext device contained within:
+              blkid -s TYPE VOLUME
+       should report TYPE="crypto_LUKS".
+
+       The following options determine the mode of operation and expected operands of volume_key:
+
+       --save Expects  operands  VOLUME  [PACKET].  Open VOLUME.  If PACKET is provided, load the secrets from it.  Otherwise, extract secrets from VOLUME, prompting the user if necessary.  In any case,
+              store secrets in one or more output packets.
+
+       --restore
+              Expects operands VOLUME PACKET.  Open VOLUME and use the secrets in PACKET to make VOLUME accessible again, prompting the  user  if  necessary  (e.g.  by  letting  the  user  enter  a  new
+              passphrase).
+
+       --setup-volume
+              Expects operands VOLUME PACKET NAME.  Open VOLUME and use the secrets in PACKET to set up VOLUME for use of the decrypted data as NAME.
+
+              Currently NAME is a name of a dm-crypt volume, and this operation makes the decrypted volume available as /dev/mapper/NAME.
+
+              This operation should not permanently alter VOLUME (e.g. by adding a new passphrase); the user can of course access and modify the decrypted volume, modifying VOLUME in the process.
+
+       --reencrypt
+              Expects operand PACKET.  Open PACKET, decrypting it if necessary, and store the information in one or more new output packets.
+
+       --dump Expects operand PACKET.  Open PACKET, decrypting it if necessary, and output the contents of PACKET.  The secrets are not output by default.
+
+       --secrets
+              Expects operand PACKET.  Open PACKET, decrypting it if necessary, and output secrets contained in PACKET.
+
+       --help Show usage information.
+
+       --version
+              Show version of volume_key.
+
+       The following options alter the behavior of the specified operation:
+
+       -b, --batch
+              Run  in  batch  mode.   Read  passwords and passphrases from standard input, each terminated by a NUL character.  If a packet does not match a volume exactly, fail instead of prompting the
+              user.
+
+       -d, --nss-dir DIR
+              Use private keys in NSS database in DIR to decrypt public key-encrypted packets.
+
+       -o, --output PACKET
+              Write the default secret to PACKET.
+
+              Which secret is the default depends on volume format: it should not be likely to expire, and it should allow restoring access to the volume using --restore.
+
+       --output-data-encryption-key PACKET
+              Write the data encryption key (the key directly used to encrypt the actual volume data) to PACKET.
+
+       --output-passphrase PACKET
+              Write a passphrase that can be used to access the volume to PACKET.
+
+       --create-random-passphrase PACKET
+              Generate a random alphanumeric passphrase, add it to VOLUME (without affecting other passphrases) and store the random passphrase into PACKET.
+
+       -c, --certificate CERT
+              Load a certificate from the file specified by CERT and encrypt all output packets using the public key contained in the certificate.  If this option is not specified,  all  output  packets
+              are encrypted using a passphrase.
+
+              Note that CERT is a certificate file name, not a NSS certificate nickname.
+
+       --output-format FORMAT
+              Use  FORMAT for all output packets.  FORMAT can currently be one of asymmetric (use CMS to encrypt the whole packet, requires a certificate), asymmetric_wrap_secret_only (wrap only the se‐
+              cret, requires a certificate), passphrase (use GPG to encrypt the whole packet, requires a passphrase).
+
+       --unencrypted
+              Only dump the unencrypted parts of the packet, if any, with --dump.  Do not require any passphrase or private key access.
+
+       --with-secrets
+              Include secrets in the output of --dump
+
+EXIT STATUS
+       volume_key returns with exit status 0 on success, 1 on error.
+
+NOTES
+       The only currently supported volume format is LUKS.
+
+EXAMPLE
+       Typical usage of volume_key proceeds as follows.  During system installation or soon after, back up the default secret of a volume, and add a system-specific random passphrase.  Encrypt both  us‐
+       ing a certificate:
+              volume_key --save VOLUME -c CERT -o PACKET_DEFAULT --create-random-passphrase PACKET_PASSPHRASE
+       Store PACKET_DEFAULT and PACKET_PASSPHRASE outside of the computer.
+
+       If the user forgets a passphrase, and you can access the computer, decrypt PACKET_DEFAULT using the certificate private key (which should never leave a secure machine):
+              volume_key --reencrypt -d NSS_DB PACKET_DEFAULT -o PACKET_DEFAULT_PW
+       Then boot the computer (e.g. using a "rescue mode"), copy PACKET_DEFAULT_PW to it, and restore access to the volume:
+              volume_key --restore VOLUME PACKET_DEFAULT_PW
+
+       If the user forgets the passphrase, and you cannot access the computer, decrypt the backup passphrase:
+              volume_key --secrets PACKET_PASSPHRASE
+       and tell the backup passphrase to the user.  (You can later generate a new backup passphrase.)
+
+volume_key                                                                                       Jun 2011                                                                                    volume_key(8)

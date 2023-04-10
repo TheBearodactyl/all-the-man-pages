@@ -1,0 +1,109 @@
+Esys_CertifyCreation(3)                                                                          tpm2-tss                                                                          Esys_CertifyCreation(3)
+
+NAME
+       Esys_CertifyCreation - The ESAPI function for the TPM2_CertifyCreation command.
+
+SYNOPSIS
+   Functions
+       TSS2_RC Esys_CertifyCreation_Async (ESYS_CONTEXT *esysContext, ESYS_TR signHandle, ESYS_TR objectHandle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_DATA *qualifyingData,
+           const TPM2B_DIGEST *creationHash, const TPMT_SIG_SCHEME *inScheme, const TPMT_TK_CREATION *creationTicket)
+       TSS2_RC Esys_CertifyCreation (ESYS_CONTEXT *esysContext, ESYS_TR signHandle, ESYS_TR objectHandle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_DATA *qualifyingData, const
+           TPM2B_DIGEST *creationHash, const TPMT_SIG_SCHEME *inScheme, const TPMT_TK_CREATION *creationTicket, TPM2B_ATTEST **certifyInfo, TPMT_SIGNATURE **signature)
+       TSS2_RC Esys_CertifyCreation_Finish (ESYS_CONTEXT *esysContext, TPM2B_ATTEST **certifyInfo, TPMT_SIGNATURE **signature)
+
+Detailed Description
+       ESAPI function to invoke the TPM2_CertifyCreation command either as a one-call or in an asynchronous manner.
+
+Function Documentation
+   TSS2_RC Esys_CertifyCreation (ESYS_CONTEXT * esysContext, ESYS_TR signHandle, ESYS_TR objectHandle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_DATA * qualifyingData, const
+       TPM2B_DIGEST * creationHash, const TPMT_SIG_SCHEME * inScheme, const TPMT_TK_CREATION * creationTicket, TPM2B_ATTEST ** certifyInfo, TPMT_SIGNATURE ** signature)
+       One-Call function for TPM2_CertifyCreation
+
+       This function invokes the TPM2_CertifyCreation command in a one-call variant. This means the function will block until the TPM response is available. All input parameters are const. The memory
+       for non-simple output parameters is allocated by the function implementation.
+
+       Parameters
+           esysContext The ESYS_CONTEXT.
+           signHandle Handle of the key that will sign the attestation block.
+           objectHandle The object associated with the creation data.
+           shandle1 Session handle for authorization of signHandle
+           shandle2 Second session handle.
+           shandle3 Third session handle.
+           qualifyingData User-provided qualifying data.
+           creationHash Hash of the creation data produced by TPM2_Create() or TPM2_CreatePrimary().
+           inScheme TPM2_Signing scheme to use if the scheme for signHandle is TPM2_ALG_NULL.
+           creationTicket Ticket produced by TPM2_Create() or TPM2_CreatePrimary().
+           certifyInfo The structure that was signed. (callee-allocated)
+           signature The signature over certifyInfo . (callee-allocated)
+
+       Return values
+           TSS2_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if the esysContext or required input pointers or required output handle references are NULL.
+           TSS2_ESYS_RC_BAD_CONTEXT if esysContext corruption is detected.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory for internal operations or return parameters.
+           TSS2_ESYS_RC_BAD_SEQUENCE if the context has an asynchronous operation already pending.
+           TSS2_ESYS_RC_INSUFFICIENT_RESPONSE if the TPM's response does not at least contain the tag, response length, and response code.
+           TSS2_ESYS_RC_MALFORMED_RESPONSE if the TPM's response is corrupted.
+           TSS2_ESYS_RC_RSP_AUTH_FAILED if the response HMAC from the TPM did not verify.
+           TSS2_ESYS_RC_MULTIPLE_DECRYPT_SESSIONS if more than one session has the 'decrypt' attribute bit set.
+           TSS2_ESYS_RC_MULTIPLE_ENCRYPT_SESSIONS if more than one session has the 'encrypt' attribute bit set.
+           TSS2_ESYS_RC_BAD_TR if any of the ESYS_TR objects are unknown to the ESYS_CONTEXT or are of the wrong type or if required ESYS_TR objects are ESYS_TR_NONE.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+
+   TSS2_RC Esys_CertifyCreation_Async (ESYS_CONTEXT * esysContext, ESYS_TR signHandle, ESYS_TR objectHandle, ESYS_TR shandle1, ESYS_TR shandle2, ESYS_TR shandle3, const TPM2B_DATA * qualifyingData,
+       const TPM2B_DIGEST * creationHash, const TPMT_SIG_SCHEME * inScheme, const TPMT_TK_CREATION * creationTicket)
+       Asynchronous function for TPM2_CertifyCreation
+
+       This function invokes the TPM2_CertifyCreation command in a asynchronous variant. This means the function will return as soon as the command has been sent downwards the stack to the TPM. All
+       input parameters are const. In order to retrieve the TPM's response call Esys_CertifyCreation_Finish.
+
+       Parameters
+           esysContext The ESYS_CONTEXT.
+           signHandle Handle of the key that will sign the attestation block.
+           objectHandle The object associated with the creation data.
+           shandle1 Session handle for authorization of signHandle
+           shandle2 Second session handle.
+           shandle3 Third session handle.
+           qualifyingData User-provided qualifying data.
+           creationHash Hash of the creation data produced by TPM2_Create() or TPM2_CreatePrimary().
+           inScheme TPM2_Signing scheme to use if the scheme for signHandle is TPM2_ALG_NULL.
+           creationTicket Ticket produced by TPM2_Create() or TPM2_CreatePrimary().
+
+       Return values
+           ESYS_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if the esysContext or required input pointers or required output handle references are NULL.
+           TSS2_ESYS_RC_BAD_CONTEXT if esysContext corruption is detected.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory for internal operations or return parameters.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+           TSS2_ESYS_RC_MULTIPLE_DECRYPT_SESSIONS if more than one session has the 'decrypt' attribute bit set.
+           TSS2_ESYS_RC_MULTIPLE_ENCRYPT_SESSIONS if more than one session has the 'encrypt' attribute bit set.
+           TSS2_ESYS_RC_BAD_TR if any of the ESYS_TR objects are unknown to the ESYS_CONTEXT or are of the wrong type or if required ESYS_TR objects are ESYS_TR_NONE.
+
+   TSS2_RC Esys_CertifyCreation_Finish (ESYS_CONTEXT * esysContext, TPM2B_ATTEST ** certifyInfo, TPMT_SIGNATURE ** signature)
+       Asynchronous finish function for TPM2_CertifyCreation
+
+       This function returns the results of a TPM2_CertifyCreation command invoked via Esys_CertifyCreation_Finish. All non-simple output parameters are allocated by the function's implementation. NULL
+       can be passed for every output parameter if the value is not required.
+
+       Parameters
+           esysContext The ESYS_CONTEXT.
+           certifyInfo The structure that was signed. (callee-allocated)
+           signature The signature over certifyInfo . (callee-allocated)
+
+       Return values
+           TSS2_RC_SUCCESS on success
+           ESYS_RC_SUCCESS if the function call was a success.
+           TSS2_ESYS_RC_BAD_REFERENCE if the esysContext or required input pointers or required output handle references are NULL.
+           TSS2_ESYS_RC_BAD_CONTEXT if esysContext corruption is detected.
+           TSS2_ESYS_RC_MEMORY if the ESAPI cannot allocate enough memory for internal operations or return parameters.
+           TSS2_ESYS_RC_BAD_SEQUENCE if the context has an asynchronous operation already pending.
+           TSS2_ESYS_RC_TRY_AGAIN if the timeout counter expires before the TPM response is received.
+           TSS2_ESYS_RC_INSUFFICIENT_RESPONSE if the TPM's response does not at least contain the tag, response length, and response code.
+           TSS2_ESYS_RC_RSP_AUTH_FAILED if the response HMAC from the TPM did not verify.
+           TSS2_ESYS_RC_MALFORMED_RESPONSE if the TPM's response is corrupted.
+           TSS2_RCs produced by lower layers of the software stack may be returned to the caller unaltered unless handled internally.
+
+Author
+       Generated automatically by Doxygen for tpm2-tss from the source code.
+
+Version 3.2.0                                                                                 Tue Nov 1 2022                                                                       Esys_CertifyCreation(3)

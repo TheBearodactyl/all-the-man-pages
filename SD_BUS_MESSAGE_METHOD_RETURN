@@ -1,0 +1,112 @@
+SD_BUS_MESSAGE_NEW(3)         sd_bus_message_new         SD_BUS_MESSAGE_NEW(3)
+
+NAME
+       sd_bus_message_new, sd_bus_message_ref, sd_bus_message_unref,
+       sd_bus_message_unrefp, SD_BUS_MESSAGE_METHOD_CALL,
+       SD_BUS_MESSAGE_METHOD_RETURN, SD_BUS_MESSAGE_METHOD_ERROR,
+       SD_BUS_MESSAGE_SIGNAL, sd_bus_message_get_bus - Create a new bus
+       message object and create or destroy references to it
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       enum {
+             SD_BUS_MESSAGE_METHOD_CALL,
+             SD_BUS_MESSAGE_METHOD_RETURN,
+             SD_BUS_MESSAGE_METHOD_ERROR,
+             SD_BUS_MESSAGE_SIGNAL,
+       };
+
+       int sd_bus_message_new(sd_bus *bus, sd_bus_message **m, uint8_t type);
+
+       sd_bus_message *sd_bus_message_ref(sd_bus_message *m);
+
+       sd_bus_message *sd_bus_message_unref(sd_bus_message *m);
+
+       void sd_bus_message_unrefp(sd_bus_message **mp);
+
+       sd_bus *sd_bus_message_get_bus(sd_bus_message *m);
+
+DESCRIPTION
+       sd_bus_message_new() creates a new bus message object attached to the
+       bus bus and returns it in the output parameter m. This object is
+       reference-counted, and will be destroyed when all references are gone.
+       Initially, the caller of this function owns the sole reference to the
+       message object. Note that the message object holds a reference to the
+       bus object, so the bus object will not be destroyed as long as the
+       message exists.
+
+       Note: this is a low-level call. In most cases functions like
+       sd_bus_message_new_method_call(3), sd_bus_message_new_method_error(3),
+       sd_bus_message_new_method_return(3), and sd_bus_message_new_signal(3)
+       that create a message of a certain type and initialize various fields
+       are easier to use.
+
+       The type parameter specifies the type of the message. It must be one of
+       SD_BUS_MESSAGE_METHOD_CALL — a method call,
+       SD_BUS_MESSAGE_METHOD_RETURN — a method call reply,
+       SD_BUS_MESSAGE_METHOD_ERROR — an error reply to a method call,
+       SD_BUS_MESSAGE_SIGNAL — a broadcast message with no reply.
+
+       The flag to allow interactive authorization is initialized based on the
+       current value set in the bus object, see
+       sd_bus_set_allow_interactive_authorization(3). This may be changed
+       using sd_bus_message_set_allow_interactive_authorization(3).
+
+       sd_bus_message_ref() increases the internal reference counter of m by
+       one.
+
+       sd_bus_message_unref() decreases the internal reference counter of m by
+       one. Once the reference count has dropped to zero, message object is
+       destroyed and cannot be used anymore, so further calls to
+       sd_bus_message_ref() or sd_bus_message_unref() are illegal.
+
+       sd_bus_message_unrefp() is similar to sd_bus_message_unref() but takes
+       a pointer to a pointer to an sd_bus_message object. This call is useful
+       in conjunction with GCC's and LLVM's Clean-up Variable Attribute[1].
+       See sd_bus_new(3) for an example how to use the cleanup attribute.
+
+       sd_bus_message_ref() and sd_bus_message_unref() execute no operation if
+       the passed in bus message object address is NULL.
+       sd_bus_message_unrefp() will first dereference its argument, which must
+       not be NULL, and will execute no operation if that is NULL.
+
+       sd_bus_message_get_bus() returns the bus object that message m is
+       attached to.
+
+RETURN VALUE
+       On success, sd_bus_message_new() returns 0 or a positive integer. On
+       failure, it returns a negative errno-style error code.
+
+       sd_bus_message_ref() always returns the argument.
+
+       sd_bus_message_unref() always returns NULL.
+
+       sd_bus_message_get_bus() always returns the bus object.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           Specified type is invalid.
+
+       -ENOTCONN
+           The bus parameter bus is NULL or the bus is not connected.
+
+       -ENOMEM
+           Memory allocation failed.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_new(3),
+       sd_bus_message_new_method_call(3), sd_bus_message_new_method_error(3),
+       sd_bus_message_new_method_return(3), sd_bus_message_new_signal(3)
+
+NOTES
+        1. Clean-up Variable Attribute
+           https://gcc.gnu.org/onlinedocs/gcc/Common-Variable-Attributes.html
+
+systemd 253                                              SD_BUS_MESSAGE_NEW(3)

@@ -1,0 +1,147 @@
+SETGID(3P)                 POSIX Programmer's Manual                SETGID(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       setgid — set-group-ID
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int setgid(gid_t gid);
+
+DESCRIPTION
+       If the process has appropriate privileges, setgid() shall set the  real
+       group ID, effective group ID, and the saved set-group-ID of the calling
+       process to gid.
+
+       If the process does not have appropriate privileges, but gid  is  equal
+       to  the real group ID or the saved set-group-ID, setgid() shall set the
+       effective group ID to gid; the real group  ID  and  saved  set-group-ID
+       shall remain unchanged.
+
+       The  setgid() function shall not affect the supplementary group list in
+       any way.
+
+       Any supplementary group IDs of the calling  process  shall  remain  un‐
+       changed.
+
+RETURN VALUE
+       Upon  successful  completion, 0 is returned. Otherwise, -1 shall be re‐
+       turned and errno set to indicate the error.
+
+ERRORS
+       The setgid() function shall fail if:
+
+       EINVAL The value of the gid argument is invalid and is not supported by
+              the implementation.
+
+       EPERM  The  process  does  not have appropriate privileges and gid does
+              not match the real group ID or the saved set-group-ID.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       Refer to the RATIONALE section in setuid().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exec, getegid(), geteuid(), getgid(), getuid(),  setegid(),  seteuid(),
+       setregid(), setreuid(), setuid()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_types.h>, <unistd.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SETGID(3P)
+setgid(2)                     System Calls Manual                    setgid(2)
+
+NAME
+       setgid - set group identity
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int setgid(gid_t gid);
+
+DESCRIPTION
+       setgid()  sets  the  effective group ID of the calling process.  If the
+       calling process is privileged (more precisely: has the CAP_SETGID capa‐
+       bility  in its user namespace), the real GID and saved set-group-ID are
+       also set.
+
+       Under Linux, setgid() is implemented like the POSIX  version  with  the
+       _POSIX_SAVED_IDS  feature.   This allows a set-group-ID program that is
+       not set-user-ID-root to drop all of its group privileges, do  some  un-
+       privileged work, and then reengage the original effective group ID in a
+       secure manner.
+
+RETURN VALUE
+       On success, zero is returned.  On error, -1 is returned, and  errno  is
+       set to indicate the error.
+
+ERRORS
+       EINVAL The  group  ID  specified in gid is not valid in this user name‐
+              space.
+
+       EPERM  The calling  process  is  not  privileged  (does  not  have  the
+              CAP_SETGID  capability  in its user namespace), and gid does not
+              match the real group ID or saved  set-group-ID  of  the  calling
+              process.
+
+VERSIONS
+   C library/kernel differences
+       At the kernel level, user IDs and group IDs are a per-thread attribute.
+       However, POSIX requires that all threads in a process  share  the  same
+       credentials.   The  NPTL threading implementation handles the POSIX re‐
+       quirements by providing wrapper functions for the various system  calls
+       that  change process UIDs and GIDs.  These wrapper functions (including
+       the one for setgid()) employ a signal-based technique  to  ensure  that
+       when  one  thread  changes credentials, all of the other threads in the
+       process also change their credentials.  For details, see nptl(7).
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4.
+
+       The original Linux setgid() system call  supported  only  16-bit  group
+       IDs.   Subsequently,  Linux 2.4 added setgid32() supporting 32-bit IDs.
+       The glibc setgid() wrapper function transparently deals with the varia‐
+       tion across kernel versions.
+
+SEE ALSO
+       getgid(2),  setegid(2),  setregid(2),  capabilities(7), credentials(7),
+       user_namespaces(7)
+
+Linux man-pages 6.04              2023-03-30                         setgid(2)

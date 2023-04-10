@@ -1,0 +1,49 @@
+PCRE2_SERIALIZE_ENCODE(3)  Library Functions Manual  PCRE2_SERIALIZE_ENCODE(3)
+
+NAME
+       PCRE2 - Perl-compatible regular expressions (revised API)
+
+SYNOPSIS
+
+       #include <pcre2.h>
+
+       int32_t pcre2_serialize_encode(const pcre2_code **codes,
+         int32_t number_of_codes, uint8_t **serialized_bytes,
+         PCRE2_SIZE *serialized_size, pcre2_general_context *gcontext);
+
+DESCRIPTION
+
+       This  function  encodes  a list of compiled patterns into a byte stream
+       that can be saved on disc or elsewhere. Note that this is  not  an  ab‐
+       stract  format  like  Java  or .NET. Conversion of the byte stream back
+       into usable compiled patterns can only happen on a host that is running
+       the  same version of PCRE2, with the same code unit width, and the host
+       must also have the same endianness, pointer width and PCRE2_SIZE  type.
+       The arguments for pcre2_serialize_encode() are:
+
+         codes             pointer to a vector containing the list
+         number_of_codes   number of slots in the vector
+         serialized_bytes  set to point to the serialized byte stream
+         serialized_size   set to the number of bytes in the byte stream
+         gcontext          pointer to a general context or NULL
+
+       The context argument is used to obtain memory for the byte stream. When
+       the serialized data is no longer needed, it must be  freed  by  calling
+       pcre2_serialize_free().  The yield of the function is the number of se‐
+       rialized patterns, or one of the following negative error codes:
+
+         PCRE2_ERROR_BADDATA      number_of_codes is zero or less
+         PCRE2_ERROR_BADMAGIC     mismatch of id bytes in one of the patterns
+         PCRE2_ERROR_MEMORY       memory allocation failed
+         PCRE2_ERROR_MIXEDTABLES  the patterns do not all use the same tables
+         PCRE2_ERROR_NULL         an argument other than gcontext is NULL
+
+       PCRE2_ERROR_BADMAGIC means either that a pattern's code has  been  cor‐
+       rupted,  or that a slot in the vector does not point to a compiled pat‐
+       tern.
+
+       There is a complete description of the PCRE2 native API in the pcre2api
+       page and a description of the serialization functions in the pcre2seri‐
+       alize page.
+
+PCRE2 10.32                      27 June 2018        PCRE2_SERIALIZE_ENCODE(3)

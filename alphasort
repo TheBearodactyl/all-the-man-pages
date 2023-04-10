@@ -1,0 +1,274 @@
+scandir(3)                                                                               Library Functions Manual                                                                               scandir(3)
+
+NAME
+       scandir, scandirat, alphasort, versionsort - scan a directory for matching entries
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <dirent.h>
+
+       int scandir(const char *restrict dirp,
+                   struct dirent ***restrict namelist,
+                   int (*filter)(const struct dirent *),
+                   int (*compar)(const struct dirent **,
+                                 const struct dirent **));
+
+       int alphasort(const struct dirent **a, const struct dirent **b);
+       int versionsort(const struct dirent **a, const struct dirent **b);
+
+       #include <fcntl.h>          /* Definition of AT_* constants */
+       #include <dirent.h>
+
+       int scandirat(int dirfd, const char *restrict dirp,
+                   struct dirent ***restrict namelist,
+                   int (*filter)(const struct dirent *),
+                   int (*compar)(const struct dirent **,
+                                 const struct dirent **));
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       scandir(), alphasort():
+           /* Since glibc 2.10: */ _POSIX_C_SOURCE >= 200809L
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+       versionsort():
+           _GNU_SOURCE
+
+       scandirat():
+           _GNU_SOURCE
+
+DESCRIPTION
+       The  scandir() function scans the directory dirp, calling filter() on each directory entry.  Entries for which filter() returns nonzero are stored in strings allocated via malloc(3), sorted using
+       qsort(3) with the comparison function compar(), and collected in array namelist which is allocated via malloc(3).  If filter is NULL, all entries are selected.
+
+       The alphasort() and versionsort() functions can be used as the comparison function compar().  The former sorts directory entries using strcoll(3), the latter using strverscmp(3)  on  the  strings
+       (*a)->d_name and (*b)->d_name.
+
+   scandirat()
+       The scandirat() function operates in exactly the same way as scandir(), except for the differences described here.
+
+       If  the pathname given in dirp is relative, then it is interpreted relative to the directory referred to by the file descriptor dirfd (rather than relative to the current working directory of the
+       calling process, as is done by scandir() for a relative pathname).
+
+       If dirp is relative and dirfd is the special value AT_FDCWD, then dirp is interpreted relative to the current working directory of the calling process (like scandir()).
+
+       If dirp is absolute, then dirfd is ignored.
+
+       See openat(2) for an explanation of the need for scandirat().
+
+RETURN VALUE
+       The scandir() function returns the number of directory entries selected.  On error, -1 is returned, with errno set to indicate the error.
+
+       The alphasort() and versionsort() functions return an integer less than, equal to, or greater than zero if the first argument is considered to be respectively less than, equal to, or greater than
+       the second.
+
+ERRORS
+       EBADF  (scandirat()) dirp is relative but dirfd is neither AT_FDCWD nor a valid file descriptor.
+
+       ENOENT The path in dirp does not exist.
+
+       ENOMEM Insufficient memory to complete the operation.
+
+       ENOTDIR
+              The path in dirp is not a directory.
+
+       ENOTDIR
+              (scandirat()) dirp is a relative pathname and dirfd is a file descriptor referring to a file other than a directory.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                                                                                                                                                        │ Attribute     │ Value          │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────┤
+       │scandir(), scandirat()                                                                                                                                           │ Thread safety │ MT-Safe        │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────┤
+       │alphasort(), versionsort()                                                                                                                                       │ Thread safety │ MT-Safe locale │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────┘
+
+STANDARDS
+       alphasort()
+       scandir()
+              POSIX.1-2008.
+
+       versionsort()
+       scandirat()
+              GNU.
+
+HISTORY
+       alphasort()
+       scandir()
+              4.3BSD, POSIX.1-2008.
+
+       versionsort()
+              glibc 2.1.
+
+       scandirat()
+              glibc 2.15.
+
+NOTES
+       Since glibc 2.1, alphasort() calls strcoll(3); earlier it used strcmp(3).
+
+       Before  glibc 2.10, the two arguments of alphasort() and versionsort() were typed as const void *.  When alphasort() was standardized in POSIX.1-2008, the argument type was specified as the type-
+       safe const struct dirent **, and glibc 2.10 changed the definition of alphasort() (and the nonstandard versionsort()) to match the standard.
+
+EXAMPLES
+       The program below prints a list of the files in the current directory in reverse order.
+
+   Program source
+
+       #define _DEFAULT_SOURCE
+       #include <dirent.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+
+       int
+       main(void)
+       {
+           struct dirent **namelist;
+           int n;
+
+           n = scandir(".", &namelist, NULL, alphasort);
+           if (n == -1) {
+               perror("scandir");
+               exit(EXIT_FAILURE);
+           }
+
+           while (n--) {
+               printf("%s\n", namelist[n]->d_name);
+               free(namelist[n]);
+           }
+           free(namelist);
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       closedir(3), fnmatch(3), opendir(3), readdir(3), rewinddir(3), seekdir(3), strcmp(3), strcoll(3), strverscmp(3), telldir(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      scandir(3)
+ALPHASORT(3P)                                                                            POSIX Programmer's Manual                                                                           ALPHASORT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       alphasort, scandir — scan a directory
+
+SYNOPSIS
+       #include <dirent.h>
+
+       int alphasort(const struct dirent **d1, const struct dirent **d2);
+       int scandir(const char *dir, struct dirent ***namelist,
+           int (*sel)(const struct dirent *),
+           int (*compar)(const struct dirent **, const struct dirent **));
+
+DESCRIPTION
+       The alphasort() function can be used as the comparison function for the scandir() function to sort the directory entries, d1 and d2, into alphabetical order. Sorting happens as if by calling  the
+       strcoll() function on the d_name element of the dirent structures passed as the two parameters. If the strcoll() function fails, the return value of alphasort() is unspecified.
+
+       The  alphasort()  function shall not change the setting of errno if successful. Since no return value is reserved to indicate an error, an application wishing to check for error situations should
+       set errno to 0, then call alphasort(), then check errno.
+
+       The scandir() function shall scan the directory dir, calling the function referenced by sel on each directory entry. Entries for which the function referenced by sel  returns  non-zero  shall  be
+       stored in strings allocated as if by a call to malloc(), and sorted as if by a call to qsort() with the comparison function compar, except that compar need not provide total ordering. The strings
+       are collected in array namelist which shall be allocated as if by a call to malloc().  If sel is a null pointer, all entries shall be selected.  If the comparison function compar does not provide
+       total ordering, the order in which the directory entries are stored is unspecified.
+
+RETURN VALUE
+       Upon successful completion, the alphasort() function shall return an integer greater than, equal to, or less than 0, according to whether the name of the directory entry pointed to by d1 is lexi‐
+       cally greater than, equal to, or less than the directory pointed to by d2 when both are interpreted as appropriate to the current locale. There is no return value reserved to indicate an error.
+
+       Upon successful completion, the scandir() function shall return the number of entries in the array and a pointer to the array through the parameter namelist.  Otherwise,  the  scandir()  function
+       shall return -1.
+
+ERRORS
+       The scandir() function shall fail if:
+
+       EACCES Search permission is denied for the component of the path prefix of dir or read permission is denied for dir.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of the dir argument.
+
+       ENAMETOOLONG
+              The length of a component of a pathname is longer than {NAME_MAX}.
+
+       ENOENT A component of dir does not name an existing directory or dir is an empty string.
+
+       ENOMEM Insufficient storage space is available.
+
+       ENOTDIR
+              A component of dir names an existing file that is neither a directory nor a symbolic link to a directory.
+
+       EOVERFLOW
+              One of the values to be returned or passed to a callback function cannot be represented correctly.
+
+       The scandir() function may fail if:
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were encountered during resolution of the dir argument.
+
+       EMFILE All file descriptors available to the process are currently open.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolution of a symbolic link produced an intermediate result with a length that exceeds {PATH_MAX}.
+
+       ENFILE Too many files are currently open in the system.
+
+       The following sections are informative.
+
+EXAMPLES
+       An example to print the files in the current directory:
+
+           #include <dirent.h>
+           #include <stdio.h>
+           #include <stdlib.h>
+           ...
+           struct dirent **namelist;
+           int i,n;
+
+               n = scandir(".", &namelist, 0, alphasort);
+               if (n < 0)
+                   perror("scandir");
+               else {
+                   for (i = 0; i < n; i++) {
+                       printf("%s\n", namelist[i]->d_name);
+                       free(namelist[i]);
+                       }
+                   }
+               free(namelist);
+           ...
+
+APPLICATION USAGE
+       If  dir  contains  filenames  that do not form character strings, or which contain characters outside the domain of the collating sequence of the current locale, the alphasort() function need not
+       provide a total ordering. This condition is not possible if all filenames within the directory consist only of characters from the portable filename character set.
+
+       The scandir() function may allocate dynamic storage during its operation. If scandir() is forcibly terminated, such as by longjmp() or siglongjmp() being executed by the function  pointed  to  by
+       sel or compar, or by an interrupt routine, scandir() does not have a chance to free that storage, so it remains permanently allocated. A safe way to handle interrupts is to store the fact that an
+       interrupt has occurred, then wait until scandir() returns to act on the interrupt.
+
+       For functions that allocate memory as if by malloc(), the application should release such memory when it is no longer required by a call to free().  For scandir(), this is namelist (including all
+       of the individual strings in namelist).
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       qsort(), strcoll()
+
+       The Base Definitions volume of POSIX.1‐2017, <dirent.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                      ALPHASORT(3P)

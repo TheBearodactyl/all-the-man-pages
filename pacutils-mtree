@@ -1,0 +1,96 @@
+pacutils-mtree(3)               pacutils-mtree               pacutils-mtree(3)
+
+NAME
+       pacutils-mtree - read mtree data for installed packages
+
+SYNOPSIS
+        #include <pacutils/mtree.h>
+
+        typedef struct pu_mtree_t {
+          char *path;
+          char *type;
+          uid_t uid;
+          gid_t gid;
+          mode_t mode;
+          off_t size;
+          char *md5digest;
+          char *sha256digest;
+        } pu_mtree_t;
+
+        typedef struct {
+          FILE *stream;
+          int eof;
+          pu_mtree_t defaults;
+        } pu_mtree_reader_t;
+
+        pu_mtree_reader_t *pu_mtree_reader_open_stream(FILE *stream);
+        pu_mtree_reader_t *pu_mtree_reader_open_package(alpm_handle_t *h, alpm_pkg_t *p);
+        pu_mtree_t *pu_mtree_reader_next(pu_mtree_reader_t *reader, pu_mtree_t *dest);
+        void pu_mtree_reader_free(pu_mtree_reader_t *reader);
+        void pu_mtree_free(pu_mtree_t *mtree);
+
+        /* deprecated */
+        alpm_list_t *pu_mtree_load_pkg_mtree(alpm_handle_t *handle, alpm_pkg_t *pkg);
+
+DESCRIPTION
+       Package mtree reading functions are provided to fill gaps in
+       libarchive's mtree reader, notably "md5digest" and "sha256digest" which
+       are currently not read by libarchive.  Support is incomplete and should
+       only be used to supplement libalpm's native mtree reader.
+
+       pu_mtree_reader_t *pu_mtree_reader_open_stream(FILE *stream);
+           Open a file stream for parsing.
+
+       pu_mtree_reader_t *pu_mtree_reader_open_package(alpm_handle_t *h,
+       alpm_pkg_t *p);
+           Open an installed package's mtree file for parsing.  Results are
+           undefined if "p" is not a locally installed package.
+
+       pu_mtree_t *pu_mtree_reader_next(pu_mtree_reader_t *reader, pu_mtree_t
+       *dest);
+           Read and return the next entry in the mtree file.  If "dest" is
+           "NULL" a new "pu_mtree_t" object will be allocated that should be
+           freed by the caller.  Otherwise, it will be filled with the parsed
+           data.  Internally allocated memory will automatically be freed as
+           needed.
+
+       void pu_mtree_free(pu_mtree_t *mtree);
+           Free a "pu_mtree_t" struct.
+
+       void pu_mtree_reader_free(pu_mtree_reader_t *reader);
+           Free a "pu_mtree_reader_t" object.
+
+       alpm_list_t *pu_mtree_load_pkg_mtree(alpm_handle_t *handle, alpm_pkg_t
+       *pkg);
+           Returns a list of mtree entries for "pkg".  DEPRECATED: use
+           "pu_mtree_reader_open_package" instead.
+
+EXAMPLES
+       Print file md5sums for a package:
+            pu_mtree_t *m;
+            pu_mtree_reader_t *r;
+
+            if((r = pu_mtree_reader_open_package(handle, pkg)) == NULL) {
+                fprintf(stderr, "error: unable to load mtree data for '%s'\n",
+                   alpm_pkg_get_name(pkg));
+                return;
+            }
+
+            while((m = pu_mtree_reader_next(r, NULL))) {
+                const char *md5 = m->md5digest;
+                printf("%s: %s\n", m->path,
+                    md5 && md5[0] != '\0' ? md5 : "(no md5sum provided)");
+                pu_mtree_free(m);
+            }
+            if(!reader->eof) {
+                fprintf(stderr, "error: unable to read mtree data for '%s'\n",
+                   alpm_pkg_get_name(pkg));
+            }
+
+            pu_mtree_reader_free(r);
+
+SEE ALSO
+       alpm_pkg_mtree_open(3), alpm_pkg_mtree_next(3), alpm_pkg_mtree_close(3)
+       mtree(5) - description of "pu_mtree_t" members
+
+pacutils                          2021-08-14                 pacutils-mtree(3)

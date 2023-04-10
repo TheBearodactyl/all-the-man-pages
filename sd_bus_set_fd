@@ -1,0 +1,55 @@
+SD_BUS_SET_FD(3)                 sd_bus_set_fd                SD_BUS_SET_FD(3)
+
+NAME
+       sd_bus_set_fd - Set the file descriptors to use for bus communication
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       int sd_bus_set_fd(sd_bus *bus, int input_fd, int output_fd);
+
+DESCRIPTION
+       sd_bus_set_fd() sets the file descriptors used to communicate by a bus
+       connection object. Both input_fd and output_fd must be valid file
+       descriptors, referring to stream-based file objects (e.g. a stream
+       socket, a pair of pipes or FIFOs, or even a TTY device).  input_fd must
+       be readable, and output_fd must be writable. The same file descriptor
+       may be used (and typically is used) as both the input and the output
+       file descriptor. This function must be called before the bus connection
+       is started via sd_bus_start(3).
+
+       The bus connection object will take possession of the passed file
+       descriptors and will close them automatically when it is freed. Use
+       sd_bus_set_close_on_exit(3) to turn off this behaviour.
+
+RETURN VALUE
+       On success, sd_bus_set_fd() returns a non-negative integer. On failure,
+       it returns a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           An invalid bus object was passed.
+
+       -ECHILD
+           The bus connection was allocated in a parent process and is being
+           reused in a child process after fork().
+
+       -EBADF
+           An invalid file descriptor was passed to sd_bus_set_fd().
+
+       -ENOPKG
+           The bus cannot be resolved.
+
+       -EPERM
+           The bus connection has already been started.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_get_fd(3), sd_bus_start(3)
+
+systemd 253                                                   SD_BUS_SET_FD(3)

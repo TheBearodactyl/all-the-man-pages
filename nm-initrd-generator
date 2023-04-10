@@ -1,0 +1,81 @@
+NM-INITRD-GENERATOR(8)                                                                     System Administration                                                                    NM-INITRD-GENERATOR(8)
+
+NAME
+       nm-initrd-generator - early boot NetworkManager configuration generator
+
+SYNOPSIS
+       nm-initrd-generator [OPTIONS...] -- [CMDLINE...]
+
+DESCRIPTION
+       nm-initrd-generator scans the command line for options relevant to network configuration and creates configuration files for an early instance of NetworkManager run from the initial ramdisk
+       during early boot.
+
+OPTIONS
+       -c | --connections-dir path
+           Output connection directory.
+
+       -p | --persistent-connections-dir path
+           Persistent connection directory. If it exists, rd.neednet will not cause a default connection to be generated in absence of other options.
+
+       -i | --initrd-data-dir path
+           Output directory for initrd data (e.g. hostname).
+
+       -d | --sysfs-dir path
+           The sysfs mount point.
+
+       -r | --run-config-dir path
+           Output directory for config files.
+
+       -s | --stdout
+           Dump connections to standard output. Useful for debugging.
+
+       CMDLINE
+           The options that appear on the kernel command line. The following options are recognized:
+               ip
+               rd.route
+               bridge
+               bond
+               team
+               vlan
+               ib.pkey
+               bootdev
+               nameserver
+               net.ifnames
+               rd.peerdns
+               rd.iscsi.ibft
+               rd.bootif
+               rd.neednet
+               rd.ethtool
+               rd.net.timeout.dhcp
+               rd.net.dhcp.retry
+               rd.net.dhcp.vendor-class
+               rd.net.timeout.carrier
+               rd.znet
+               rd.znet_ifname
+               BOOTIF
+           Please consult the dracut.cmdline(7) manual for the documentation of the precise format of the values supported.
+
+DIFFERENCES FROM THE NETWORK-LEGACY DRACUT MODULE
+       nm-initrd-generator generates a set of connections that are then configured by the NetworkManager instance running in the initrd. There are some differences in behavior compared to the
+       network-legacy dracut module:
+
+       •   When an interface is configured with a static address and a gateway, the network-legacy module waits that the gateway responds to arping requests before proceeding, while NetworkManager
+           doesn't.
+
+       •   network-legacy configures interfaces one by one in the order in which they are announced by udev. If multiple interfaces specify a hostname (from command line or from DHCP), the one from the
+           last interface activated wins. With NetworkManager, hostnames from command line have higher precedence over ones from DHCP, and the last that appears in the command line wins.
+
+       •   NetworkManager supports the ib.pkey=PARENT.PKEY argument to set up an Infiniband partition on IPoIB parent device PARENT using the specified partition key PKEY. The partition key must be in
+           hexadecimal notation without leading "0x", for example "ib.pkey=ib0.8004".
+
+       •   NetworkManager supports the rd.ethtool=INTERFACE:AUTONEG:SPEED kernel command line option to set up ethtool NIC configuration parameters AUTONEG and SPEED. The INTERFACE being configured must
+           be specified, and the other parameters are optional and can be left blank. When SPEED is set, duplex mode is automatically set to 'full'.  INTERFACE accepts string values, AUTONEG accepts
+           boolean values (true and false / on or off / 0 or 1), and SPEED accepts positive integer values.
+
+EXIT STATUS
+       nm-initrd-generator exits with status 0. It ignores unrecognized options and prints an error message if it encounters a malformed option.
+
+SEE ALSO
+       dracut.cmdline(7), NetworkManager(8).
+
+NetworkManager 1.42.4                                                                                                                                                               NM-INITRD-GENERATOR(8)

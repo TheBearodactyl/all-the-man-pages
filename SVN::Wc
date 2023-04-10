@@ -1,0 +1,357 @@
+native::Wc(3)         User Contributed Perl Documentation        native::Wc(3)
+
+NAME
+       SVN::Wc - Subversion working copy functions
+
+SYNOPSIS
+       Incomplete
+
+FUNCTIONS
+       SVN::Wc::parse_externals_description3($parent_directory, $desc,
+       $canonicalize_url, $pool);
+           Parse the string $desc as an "svn:externals" value and return a
+           reference to an array of _p_svn_wc_external_item2_t objects.  If
+           $canonicalize_url is true, canonicalize the "url" member of those
+           objects.  $parent_directory is only used in constructing error
+           strings.
+
+OBJECTS
+   svn_wc_status2_t
+       $wcstat->entry()
+           A svn_wc_entry_t object for the item.  Can be undef if not under
+           version control.
+
+       $wcstat->text_status()
+           An integer representing the status of the item's text.  Can be one
+           of the $SVN::Wc::Status::* constants.
+
+       $wcstat->prop_status()
+           An integer representing the status of the item's properties.  Can
+           be one of the $SVN::Wc::Status::* constants.
+
+       $wcstat->locked()
+           A boolean telling if the item is locked.  A directory can be locked
+           if a working copy update was interrupted.
+
+       $wcstat->copied()
+           A boolean telling if the item was copied.  A file or directory can
+           be copied if it's scheduled for addition-with-history (or part of a
+           subtree that is scheduled as such).
+
+       $wcstat->switched()
+           A boolean telling if the item was switched.  A file or directory
+           can be switched if the switch command has been used.
+
+       $wcstat->repos_text_status()
+           An integer representing the status of the item's text in the
+           repository.  Can be one of the $SVN::Wc::Status::* constants.
+
+       $wcstat->repos_prop_status()
+           An integer representing the status of the item's properties in the
+           repository.  Can be one of the $SVN::Wc::Status::* constants.
+
+       $wcstat->repos_lock()
+           A svn_lock_t object representing the entry's lock in the
+           repository, if any.
+
+       $wcstat->url()
+           The url (actual or expected) of the item.
+
+       $wcstat->ood_last_cmt_rev()
+           An integer representing the youngest committed revision or
+           $SVN::Core::INVALID_REVNUM is not out of date.
+
+       $wcstat->ood_last_cmt_date()
+           The date of the most recent commit as microseconds since 00:00:00
+           January 1, 1970 UTC or 0 if not out of date.
+
+       $wcstat->ood_kind()
+           An integer representing the kind of the youngest commit.  Can be
+           any of the $SVN::Node::* constants.  Will be $SVN::Node::none if
+           not out of date.
+
+       $wcstat->tree_conflict()
+           A svn_wc_conflict_description_t object if the entry is the victim
+           of a tree conflict or undef.
+
+       $wcstat->file_external()
+           A boolean telling if the item is a file that was added to the
+           working copy as an svn:externals.  If file_external is TRUE, then
+           switched is always FALSE.
+
+       $wcstat->pristine_text_status()
+           An integer representing the status of the item's text as compared
+           to the pristine base of the file.  Can be one of the
+           $SVN::Wc::Status::* constants.
+
+       $wcstat->pristine_prop_status()
+           An integer representing the status of the item's properties as
+           compared to the pristine base of the node.  Can be one of the
+           $SVN::Wc::Status::* constants.
+
+   svn_wc_status_t
+       Same as svn_wc_status2_t, but without the repos_lock, url,
+       ood_last_cmt_rev, ood_last_cmt_date, ood_kind, ood_last_cmt_author,
+       tree_conflict, file_external, pristine_text_status,
+       pristine_prop_status fields.
+
+   svn_wc_entry_t
+       $wcent->name()
+           Entry's name.
+
+       $wcent->revision()
+           Base revision.
+
+       $wcent->url()
+           URL in repository.
+
+       $wcent->repos()
+           Canonical repository URL.
+
+       $wcent->uuid()
+           Repository uuid.
+
+       $wcent->kind()
+           The kind of node.  One of the following constants:
+           $SVN::Node::none, $SVN::Node::file, $SVN::Node::dir,
+           $SVN::Node::unknown.
+
+       $wcent->schedule()
+           Scheduling.  One of the SVN::Wc::Schedule::* constants.
+
+       $wcent->copied()
+           In a copied state.
+
+       $wcent->deleted()
+           Deleted, but parent rev lags behind.
+
+       $wcent->absent()
+           Absent -- we know an entry of this name exists, but that's all
+           (usually this happens because of authz restrictions)
+
+       $wcent->incomplete()
+           For THIS_DIR entry, implies whole entries file is incomplete.
+
+       $wcent->copyfrom_url()
+           Copyfrom location.
+
+       $wcent->copyfrom_rev()
+           Copyfrom revision.
+
+       $wcent->conflict_old()
+           Old version of conflicted file.
+
+       $wcent->conflict_new()
+           New version of conflicted file.
+
+       $wcent->conflict_wrk()
+           Working version of conflicted file.
+
+       $wcent->prejfile()
+           Property reject file.
+
+       $wcent->text_time()
+           Last up-to-date time for text contents (0 means no information
+           available).
+
+       $wcent->prop_time()
+           Last up-to-date time for properties (0 means no information
+           available).
+
+       $wcent->checksum()
+           Base-64 encoded checksum for the untranslated text base file, can
+           be undef for backwards compatibility.
+
+       $wcent->cmt_rev()
+           Last revision this was changed.
+
+       $wcent->cmt_date()
+           Last date this was changed.
+
+       $wcent->cmt_author()
+           Last commit author of this item.
+
+   svn_wc_external_item2_t
+       $ext->target_dir()
+           The name of the subdirectory into which this external should be
+           checked out.  This is relative to the parent directory that holds
+           this external item.
+
+       $ext->url()
+           Where to check out from. This is possibly a relative external URL,
+           as allowed in externals definitions, but without the peg revision.
+
+       $ext->revision()
+           What revision to check out, a svn_opt_revision_t object.  The only
+           valid kind()s for this are $SVN::Core::opt_revision_number,
+           $SVN::Core::opt_revision_date, and $SVN::Core::opt_revision_head.
+
+       $ext->peg_revision()
+           The peg revision to use when checking out, a svn_opt_revision_t
+           object.  The only valid kind()s for this are
+           $SVN::Core::opt_revision_number, $SVN::Core::opt_revision_date, and
+           $SVN::Core::opt_revision_head.
+
+CONSTANTS
+   SVN::Wc::Notify::Action
+       $SVN::Wc::Notify::Action::add
+           Adding a path to revision control.
+
+       $SVN::Wc::Notify::Action::copy
+           Copying a versioned path.
+
+       $SVN::Wc::Notify::Action::delete
+           Deleting a versioned path.
+
+       $SVN::Wc::Notify::Action::restore
+           Restoring a missing path from the pristine text-base.
+
+       $SVN::Wc::Notify::Action::revert
+           Reverting a modified path.
+
+       $SVN::Wc::Notify::Action::failed_revert
+           A revert operation has failed.
+
+       $SVN::Wc::Notify::Action::resolved
+           Resolving a conflict.
+
+       $SVN::Wc::Notify::Action::skip
+           Skipping a path.
+
+       $SVN::Wc::Notify::Action::update_delete
+           Got a delete in an update.
+
+       $SVN::Wc::Notify::Action::update_add
+           Got an add in an update.
+
+       $SVN::Wc::Notify::Action::update_update
+           Got any other action in an update.
+
+       $SVN::Wc::Notify::Action::update_completed
+           The last notification in an update (including updates of
+           externals).
+
+       $SVN::Wc::Notify::Action::update_external
+           Updating an external module.
+
+       $SVN::Wc::Notify::Action::status_completed
+           The last notification in a status (including status on externals).
+
+       $SVN::Wc::Notify::Action::status_external
+           Running status on an external module.
+
+       $SVN::Wc::Notify::Action::commit_modified
+           Committing a modification.
+
+       $SVN::Wc::Notify::Action::commit_added
+           Committing an addition.
+
+       $SVN::Wc::Notify::Action::commit_deleted
+           Committing a deletion.
+
+       $SVN::Wc::Notify::Action::commit_replaced
+           Committing a replacement.
+
+       $SVN::Wc::Notify::Action::commit_postfix_txdelta
+           Transmitting post-fix text-delta data for a file.
+
+       $SVN::Wc::Notify::Action::blame_revision
+           Processed a single revision's blame.
+
+   SVN::Wc::Notify::State
+       $SVN::Wc::Notify::State::unknown
+           Notifier doesn't know or isn't saying.
+
+       $SVN::Wc::Notify::State::unchanged
+           The state did not change.
+
+       $SVN::Wc::Notify::State::missing
+           The item wasn't present.
+
+       $SVN::Wc::Notify::State::obstructed
+           An unversioned item obstructed work.
+
+       $SVN::Wc::Notify::State::changed
+           Pristine state was modified.
+
+       $SVN::Wc::Notify::State::merged
+           Modified state had mods merged in.
+
+       $SVN::Wc::Notify::State::conflicted
+           Modified state got conflicting mods.
+
+   SVN::Wc::Schedule
+       $SVN::Wc::Schedule::normal
+           Nothing special here.
+
+       $SVN::Wc::Schedule::add
+           Slated for addition.
+
+       $SVN::Wc::Schedule::delete
+           Slated for deletion.
+
+       $SVN::Wc::Schedule::replace
+           Slated for replacement (delete + add)
+
+   SVN::Wc::Status
+       $SVN::Wc::Status::none
+           Does not exist.
+
+       $SVN::Wc::Status::unversioned
+           Is not a versioned node in this working copy.
+
+       $SVN::Wc::Status::normal
+           Exists, but uninteresting.
+
+       $SVN::Wc::Status::added
+           Is scheduled for addition.
+
+       $SVN::Wc::Status::missing
+           Under version control but missing.
+
+       $SVN::Wc::Status::deleted
+           Scheduled for deletion.
+
+       $SVN::Wc::Status::replaced
+           Was deleted and then re-added.
+
+       $SVN::Wc::Status::modified
+           Text or props have been modified.
+
+       $SVN::Wc::Status::merged
+           Local mods received repos mods.
+
+       $SVN::Wc::Status::conflicted
+           Local mods received conflicting mods.
+
+       $SVN::Wc::Status::ignored
+           A node marked as ignored.
+
+       $SVN::Wc::Status::obstructed
+           An unversioned resource is in the way of the versioned resource.
+
+       $SVN::Wc::Status::external
+           An unversioned path populated by an svn:externals property.
+
+       $SVN::Wc::Status::incomplete
+           A directory doesn't contain a complete entries list.
+
+COPYRIGHT
+           Licensed to the Apache Software Foundation (ASF) under one
+           or more contributor license agreements.  See the NOTICE file
+           distributed with this work for additional information
+           regarding copyright ownership.  The ASF licenses this file
+           to you under the Apache License, Version 2.0 (the
+           "License"); you may not use this file except in compliance
+           with the License.  You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+           Unless required by applicable law or agreed to in writing,
+           software distributed under the License is distributed on an
+           "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+           KIND, either express or implied.  See the License for the
+           specific language governing permissions and limitations
+           under the License.
+
+perl v5.36.0                      2022-12-23                     native::Wc(3)

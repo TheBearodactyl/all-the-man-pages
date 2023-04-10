@@ -1,0 +1,95 @@
+SD_EVENT_SOURCE_SET_PRIORsd_event_source_set_prSD_EVENT_SOURCE_SET_PRIORITY(3)
+
+NAME
+       sd_event_source_set_priority, sd_event_source_get_priority,
+       SD_EVENT_PRIORITY_IMPORTANT, SD_EVENT_PRIORITY_NORMAL,
+       SD_EVENT_PRIORITY_IDLE - Set or retrieve the priority of event sources
+
+SYNOPSIS
+       #include <systemd/sd-event.h>
+
+       enum {
+               SD_EVENT_PRIORITY_IMPORTANT = -100,
+               SD_EVENT_PRIORITY_NORMAL = 0,
+               SD_EVENT_PRIORITY_IDLE = 100,
+       };
+
+       int sd_event_source_set_priority(sd_event_source *source,
+                                        int64_t priority);
+
+       int sd_event_source_get_priority(sd_event_source *source,
+                                        int64_t *priority);
+
+DESCRIPTION
+       sd_event_source_set_priority() may be used to set the priority for the
+       event source object specified as source. The priority is specified as
+       an arbitrary signed 64bit integer. The priority is initialized to
+       SD_EVENT_PRIORITY_NORMAL (0) when the event source is allocated with a
+       call such as sd_event_add_io(3) or sd_event_add_time(3), and may be
+       changed with this call. If multiple event sources have seen events at
+       the same time, they are dispatched in the order indicated by the event
+       sources' priorities. Event sources with smaller priority values are
+       dispatched first. As well-known points of reference, the constants
+       SD_EVENT_PRIORITY_IMPORTANT (-100), SD_EVENT_PRIORITY_NORMAL (0) and
+       SD_EVENT_PRIORITY_IDLE (100) may be used to indicate event sources that
+       shall be dispatched early, normally or late. It is recommended to
+       specify priorities based on these definitions, and relative to them —
+       however, the full 64bit signed integer range is available for ordering
+       event sources.
+
+       Priorities define the order in which event sources that have seen
+       events are dispatched. Care should be taken to ensure that
+       high-priority event sources (those with negative priority values
+       assigned) do not cause starvation of low-priority event sources (those
+       with positive priority values assigned).
+
+       The order in which event sources with the same priority are dispatched
+       is undefined, but the event loop generally tries to dispatch them in
+       the order it learnt about events on them. As the backing kernel
+       primitives do not provide accurate information about the order in which
+       events occurred this is not necessarily reliable. However, it is
+       guaranteed that if events are seen on multiple same-priority event
+       sources at the same time, each one is not dispatched again until all
+       others have been dispatched once. This behavior guarantees that within
+       each priority particular event sources do not starve or dominate the
+       event loop.
+
+       The priority of event sources may be changed at any time of their
+       lifetime, with the exception of inotify event sources (i.e. those
+       created with sd_event_add_inotify(3)) whose priority may only be
+       changed in the time between their initial creation and the first
+       subsequent event loop iteration.
+
+       sd_event_source_get_priority() may be used to query the current
+       priority assigned to the event source object source.
+
+RETURN VALUE
+       On success, sd_event_source_set_priority() and
+       sd_event_source_get_priority() return a non-negative integer. On
+       failure, they return a negative errno-style error code.
+
+   Errors
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           source is not a valid pointer to an sd_event_source object.
+
+       -ENOMEM
+           Not enough memory.
+
+       -ESTALE
+           The event loop is already terminated.
+
+       -ECHILD
+           The event loop has been created in a different process.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       sd-event(3), sd_event_add_io(3), sd_event_add_time(3),
+       sd_event_add_signal(3), sd_event_add_child(3), sd_event_add_inotify(3),
+       sd_event_add_defer(3)
+
+systemd 253                                    SD_EVENT_SOURCE_SET_PRIORITY(3)

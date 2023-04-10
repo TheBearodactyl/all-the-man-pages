@@ -1,0 +1,48 @@
+GET_AUDITFAIL_ACTION(3)                                                                  Linux Programmer's Manual                                                                 GET_AUDITFAIL_ACTION(3)
+
+NAME
+       get_auditfail_action - Get failure_action tunable value
+
+SYNOPSIS
+       #include <libaudit.h>
+
+       int get_auditfail_action(auditfail_t *failmode);
+
+DESCRIPTION
+       This function gets the failure_action tunable value stored in /etc/libaudit.conf. get_auditfail_action should be called after an audit_open call returns an error to see what action the admin pre‐
+       fers.
+
+       The failure_action value found in /etc/libaudit.conf is copied into the failmode argument upon function return.  This value should then be used by the calling application to determine what action
+       should be taken when the audit subsystem is unavailable.
+
+RETURN VALUE
+       Upon  success,  get_auditfail_action  returns a zero, and the failmode argument will hold the failure_action value.  The possible values for failure_action are: FAIL_IGNORE (0), FAIL_LOG (1), and
+       FAIL_TERMINATE (2). Upon failure, get_auditfail_action returns a return code of one.
+
+ERRORS
+       An error is returned if there is an error reading /etc/libaudit.conf or if the failure_action tunable is not found in the file.
+
+EXAMPLES
+              /* Sample code */
+              auditfail_t failmode;
+
+              if ((fd = audit_open() ) < 0 ) {
+                   fprintf (stderr, "Cannot open netlink audit socket");
+
+                   /* Get the failure_action */
+                   if ((rc = get_auditfail_action(&failmode)) == 0) {
+                       if (failmode == FAIL_LOG)
+                            fprintf (stderr, "Audit subsystem unavailable");
+                       else if (failmode == FAIL_TERMINATE)
+                            exit (1);
+                       /* If failmode == FAIL_IGNORE, do nothing */
+                   }
+              }
+
+SEE ALSO
+       audit_open(3), auditd(8).
+
+AUTHOR
+       Lisa M. Smith.
+
+Linux 2.7                                                                                        2006-7-10                                                                         GET_AUDITFAIL_ACTION(3)

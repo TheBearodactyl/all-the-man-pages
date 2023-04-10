@@ -1,0 +1,132 @@
+ttyname(3)                                                                               Library Functions Manual                                                                               ttyname(3)
+
+NAME
+       ttyname, ttyname_r - return name of a terminal
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       char *ttyname(int fd);
+       int ttyname_r(int fd, char buf[.buflen], size_t buflen);
+
+DESCRIPTION
+       The  function ttyname() returns a pointer to the null-terminated pathname of the terminal device that is open on the file descriptor fd, or NULL on error (for example, if fd is not connected to a
+       terminal).  The return value may point to static data, possibly overwritten by the next call.  The function ttyname_r() stores this pathname in the buffer buf of length buflen.
+
+RETURN VALUE
+       The function ttyname() returns a pointer to a pathname on success.  On error, NULL is returned, and errno is set to indicate the error.  The function ttyname_r() returns 0 on success, and an  er‐
+       ror number upon error.
+
+ERRORS
+       EBADF  Bad file descriptor.
+
+       ENODEV fd refers to a slave pseudoterminal device but the corresponding pathname could not be found (see NOTES).
+
+       ENOTTY fd does not refer to a terminal device.
+
+       ERANGE (ttyname_r()) buflen was too small to allow storing the pathname.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────────────┐
+       │Interface                                                                                                                                                │ Attribute     │ Value                  │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────────────┤
+       │ttyname()                                                                                                                                                │ Thread safety │ MT-Unsafe race:ttyname │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────────────┤
+       │ttyname_r()                                                                                                                                              │ Thread safety │ MT-Safe                │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, 4.2BSD.
+
+NOTES
+       A  process  that  keeps a file descriptor that refers to a pts(4) device open when switching to another mount namespace that uses a different /dev/ptmx instance may still accidentally find that a
+       device path of the same name for that file descriptor exists.  However, this device path refers to a different device and thus can't be used to access the device that the file  descriptor  refers
+       to.  Calling ttyname() or ttyname_r() on the file descriptor in the new mount namespace will cause these functions to return NULL and set errno to ENODEV.
+
+SEE ALSO
+       tty(1), fstat(2), ctermid(3), isatty(3), pts(4)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      ttyname(3)
+TTYNAME(3P)                                                                              POSIX Programmer's Manual                                                                             TTYNAME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       ttyname, ttyname_r — find the pathname of a terminal
+
+SYNOPSIS
+       #include <unistd.h>
+
+       char *ttyname(int fildes);
+       int ttyname_r(int fildes, char *name, size_t namesize);
+
+DESCRIPTION
+       The ttyname() function shall return a pointer to a string containing a null-terminated pathname of the terminal associated with file descriptor fildes.   The  application  shall  not  modify  the
+       string returned. The returned pointer might be invalidated or the string content might be overwritten by a subsequent call to ttyname().  The returned pointer and the string content might also be
+       invalidated if the calling thread is terminated.
+
+       The ttyname() function need not be thread-safe.
+
+       The ttyname_r() function shall store the null-terminated pathname of the terminal associated with the file descriptor fildes in the character array referenced by  name.   The  array  is  namesize
+       characters long and should have space for the name and the terminating null character. The maximum length of the terminal name shall be {TTY_NAME_MAX}.
+
+RETURN VALUE
+       Upon successful completion, ttyname() shall return a pointer to a string. Otherwise, a null pointer shall be returned and errno set to indicate the error.
+
+       If successful, the ttyname_r() function shall return zero. Otherwise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The ttyname() function may fail if:
+
+       EBADF  The fildes argument is not a valid file descriptor.
+
+       ENOTTY The file associated with the fildes argument is not a terminal.
+
+       The ttyname_r() function may fail if:
+
+       EBADF  The fildes argument is not a valid file descriptor.
+
+       ENOTTY The file associated with the fildes argument is not a terminal.
+
+       ERANGE The value of namesize is smaller than the length of the string to be returned including the terminating null character.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       The term ``terminal'' is used instead of the historical term ``terminal device'' in order to avoid a reference to an undefined term.
+
+       The thread-safe version places the terminal name in a user-supplied buffer and returns a non-zero value if it fails. The non-thread-safe version may return the name in a static data area that may
+       be overwritten by each call.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       The Base Definitions volume of POSIX.1‐2017, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                        TTYNAME(3P)

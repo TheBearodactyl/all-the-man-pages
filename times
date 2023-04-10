@@ -1,0 +1,287 @@
+TIMES(1P)                                                                                POSIX Programmer's Manual                                                                               TIMES(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       times — write process times
+
+SYNOPSIS
+       times
+
+DESCRIPTION
+       The times utility shall write the accumulated user and system times for the shell and for all of its child processes, in the following POSIX locale format:
+
+           "%dm%fs %dm%fs\n%dm%fs %dm%fs\n", <shell user minutes>,
+               <shell user seconds>, <shell system minutes>,
+               <shell system seconds>, <children user minutes>,
+               <children user seconds>, <children system minutes>,
+               <children system seconds>
+
+       The four pairs of times shall correspond to the members of the <sys/times.h> tms structure (defined in the Base Definitions volume of POSIX.1‐2017, Chapter 13, Headers) as  returned  by  times():
+       tms_utime, tms_stime, tms_cutime, and tms_cstime, respectively.
+
+OPTIONS
+       None.
+
+OPERANDS
+       None.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       None.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       See the DESCRIPTION.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+        0    Successful completion.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       None.
+
+EXAMPLES
+       $ times
+       0m0.43s 0m1.11s
+       8m44.18s 1m43.23s
+
+RATIONALE
+       The times special built-in from the Single UNIX Specification is now required for all conforming shells.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.14, Special Built-In Utilities
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_times.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          TIMES(1P)
+TIMES(3P)                                                                                POSIX Programmer's Manual                                                                               TIMES(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       times — get process and waited-for child process times
+
+SYNOPSIS
+       #include <sys/times.h>
+
+       clock_t times(struct tms *buffer);
+
+DESCRIPTION
+       The times() function shall fill the tms structure pointed to by buffer with time-accounting information. The tms structure is defined in <sys/times.h>.
+
+       All times are measured in terms of the number of clock ticks used.
+
+       The times of a terminated child process shall be included in the tms_cutime and tms_cstime elements of the parent when wait(), waitid(), or waitpid() returns the process  ID  of  this  terminated
+       child. If a child process has not waited for its children, their times shall not be included in its times.
+
+        *  The tms_utime structure member is the CPU time charged for the execution of user instructions of the calling process.
+
+        *  The tms_stime structure member is the CPU time charged for execution by the system on behalf of the calling process.
+
+        *  The tms_cutime structure member is the sum of the tms_utime and tms_cutime times of the child processes.
+
+        *  The tms_cstime structure member is the sum of the tms_stime and tms_cstime times of the child processes.
+
+RETURN VALUE
+       Upon  successful  completion, times() shall return the elapsed real time, in clock ticks, since an arbitrary point in the past (for example, system start-up time). This point does not change from
+       one invocation of times() within the process to another. The return value may overflow the possible range of type clock_t.  If times() fails, (clock_t)-1 shall be returned and errno set to  indi‐
+       cate the error.
+
+ERRORS
+       The times() function shall fail if:
+
+       EOVERFLOW
+              The return value would overflow the range of clock_t.
+
+       The following sections are informative.
+
+EXAMPLES
+   Timing a Database Lookup
+       The  following  example defines two functions, start_clock() and end_clock(), that are used to time a lookup. It also defines variables of type clock_t and tms to measure the duration of transac‐
+       tions. The start_clock() function saves the beginning times given by the times() function. The end_clock() function gets the ending times and prints the difference between the two times.
+
+           #include <sys/times.h>
+           #include <stdio.h>
+           ...
+           void start_clock(void);
+           void end_clock(char *msg);
+           ...
+           static clock_t st_time;
+           static clock_t en_time;
+           static struct tms st_cpu;
+           static struct tms en_cpu;
+           ...
+           void
+           start_clock()
+           {
+               st_time = times(&st_cpu);
+           }
+
+           /* This example assumes that the result of each subtraction
+              is within the range of values that can be represented in
+              an integer type. */
+           void
+           end_clock(char *msg)
+           {
+               en_time = times(&en_cpu);
+
+               fputs(msg,stdout);
+               printf("Real Time: %jd, User Time %jd, System Time %jd\n",
+                   (intmax_t)(en_time - st_time),
+                   (intmax_t)(en_cpu.tms_utime - st_cpu.tms_utime),
+                   (intmax_t)(en_cpu.tms_stime - st_cpu.tms_stime));
+           }
+
+APPLICATION USAGE
+       Applications should use sysconf(_SC_CLK_TCK) to determine the number of clock ticks per second as it may vary from system to system.
+
+RATIONALE
+       The accuracy of the times reported is intentionally left unspecified to allow implementations flexibility in design, from uniprocessor to multi-processor networks.
+
+       The inclusion of times of child processes is recursive, so that a parent process may collect the total times of all of its descendants.  But the times of a child are only added to  those  of  its
+       parent when its parent successfully waits on the child. Thus, it is not guaranteed that a parent process can always see the total times of all its descendants; see also the discussion of the term
+       ``realtime'' in alarm().
+
+       If the type clock_t is defined to be a signed 32-bit integer, it overflows in somewhat more than a year if there are 60 clock ticks per second, or less than a year if there are 100. There are in‐
+       dividual  systems  that run continuously for longer than that. This volume of POSIX.1‐2017 permits an implementation to make the reference point for the returned value be the start-up time of the
+       process, rather than system start-up time.
+
+       The term ``charge'' in this context has nothing to do with billing for services. The operating system accounts for time used in this way. That information must be correct, regardless of how  that
+       information is used.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       alarm(), exec, fork(), sysconf(), time(), wait(), waitid()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_times.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          TIMES(3P)
+times(2)                                                                                    System Calls Manual                                                                                   times(2)
+
+NAME
+       times - get process times
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/times.h>
+
+       clock_t times(struct tms *buf);
+
+DESCRIPTION
+       times() stores the current process times in the struct tms that buf points to.  The struct tms is as defined in <sys/times.h>:
+
+           struct tms {
+               clock_t tms_utime;  /* user time */
+               clock_t tms_stime;  /* system time */
+               clock_t tms_cutime; /* user time of children */
+               clock_t tms_cstime; /* system time of children */
+           };
+
+       The  tms_utime field contains the CPU time spent executing instructions of the calling process.  The tms_stime field contains the CPU time spent executing inside the kernel while performing tasks
+       on behalf of the calling process.
+
+       The tms_cutime field contains the sum of the tms_utime and tms_cutime values for all waited-for terminated children.  The tms_cstime field contains the sum of the tms_stime and tms_cstime  values
+       for all waited-for terminated children.
+
+       Times  for  terminated children (and their descendants) are added in at the moment wait(2) or waitpid(2) returns their process ID.  In particular, times of grandchildren that the children did not
+       wait for are never seen.
+
+       All times reported are in clock ticks.
+
+RETURN VALUE
+       times() returns the number of clock ticks that have elapsed since an arbitrary point in the past.  The return value may overflow the possible range of type clock_t.  On error, (clock_t) -1 is re‐
+       turned, and errno is set to indicate the error.
+
+ERRORS
+       EFAULT tms points outside the process's address space.
+
+VERSIONS
+       On  Linux,  the buf argument can be specified as NULL, with the result that times() just returns a function result.  However, POSIX does not specify this behavior, and most other UNIX implementa‐
+       tions require a non-NULL value for buf.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+       In POSIX.1-1996 the symbol CLK_TCK (defined in <time.h>) is mentioned as obsolescent.  It is obsolete now.
+
+       Before Linux 2.6.9, if the disposition of SIGCHLD is set to SIG_IGN, then the times of  terminated  children  are  automatically  included  in  the  tms_cstime  and  tms_cutime  fields,  although
+       POSIX.1-2001 says that this should happen only if the calling process wait(2)s on its children.  This nonconformance is rectified in Linux 2.6.9 and later.
+
+       On  Linux,  the  “arbitrary point in the past” from which the return value of times() is measured has varied across kernel versions.  On Linux 2.4 and earlier, this point is the moment the system
+       was booted.  Since Linux 2.6, this point is (2^32/HZ) - 300 seconds before system boot time.  This variability across kernel versions (and across UNIX implementations),  combined  with  the  fact
+       that the returned value may overflow the range of clock_t, means that a portable application would be wise to avoid using this value.  To measure changes in elapsed time, use clock_gettime(2) in‐
+       stead.
+
+       SVr1-3 returns long and the struct members are of type time_t although they store clock ticks, not seconds since the Epoch.  V7 used long for the struct members, because it  had  no  type  time_t
+       yet.
+
+NOTES
+       The number of clock ticks per second can be obtained using:
+
+           sysconf(_SC_CLK_TCK);
+
+       Note that clock(3) also returns a value of type clock_t, but this value is measured in units of CLOCKS_PER_SEC, not the clock ticks used by times().
+
+BUGS
+       A  limitation  of  the Linux system call conventions on some architectures (notably i386) means that on Linux 2.6 there is a small time window (41 seconds) soon after boot when times() can return
+       -1, falsely indicating that an error occurred.  The same problem can occur when the return value wraps past the maximum value that can be stored in clock_t.
+
+SEE ALSO
+       time(1), getrusage(2), wait(2), clock(3), sysconf(3), time(7)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        times(2)

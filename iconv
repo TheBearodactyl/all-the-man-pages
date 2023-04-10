@@ -1,0 +1,438 @@
+iconv(1)                                                                                  General Commands Manual                                                                                 iconv(1)
+
+NAME
+       iconv - convert text from one character encoding to another
+
+SYNOPSIS
+       iconv [options] [-f from-encoding] [-t to-encoding] [inputfile]...
+
+DESCRIPTION
+       The  iconv  program  reads in text in one encoding and outputs the text in another encoding.  If no input files are given, or if it is given as a dash (-), iconv reads from standard input.  If no
+       output file is given, iconv writes to standard output.
+
+       If no from-encoding is given, the default is derived from the current locale's character encoding.  If no to-encoding is given, the default is derived from the current locale's  character  encod‐
+       ing.
+
+OPTIONS
+       -f from-encoding, --from-code=from-encoding
+              Use from-encoding for input characters.
+
+       -t to-encoding, --to-code=to-encoding
+              Use to-encoding for output characters.
+
+              If the string //IGNORE is appended to to-encoding, characters that cannot be converted are discarded and an error is printed after conversion.
+
+              If  the string //TRANSLIT is appended to to-encoding, characters being converted are transliterated when needed and possible.  This means that when a character cannot be represented in the
+              target character set, it can be approximated through one or several similar looking characters.  Characters that are outside of the target character set and cannot  be  transliterated  are
+              replaced with a question mark (?) in the output.
+
+       -l, --list
+              List all known character set encodings.
+
+       -c     Silently discard characters that cannot be converted instead of terminating when encountering such characters.
+
+       -o outputfile, --output=outputfile
+              Use outputfile for output.
+
+       -s, --silent
+              This option is ignored; it is provided only for compatibility.
+
+       --verbose
+              Print progress information on standard error when processing multiple files.
+
+       -?, --help
+              Print a usage summary and exit.
+
+       --usage
+              Print a short usage summary and exit.
+
+       -V, --version
+              Print the version number, license, and disclaimer of warranty for iconv.
+
+EXIT STATUS
+       Zero on success, nonzero on errors.
+
+ENVIRONMENT
+       Internally,  the  iconv program uses the iconv(3) function which in turn uses gconv modules (dynamically loaded shared libraries) to convert to and from a character set.  Before calling iconv(3),
+       the iconv program must first allocate a conversion descriptor using iconv_open(3).  The operation of the latter function is influenced by the setting of the GCONV_PATH environment variable:
+
+       •  If GCONV_PATH is not set, iconv_open(3) loads the system gconv module configuration cache file created by iconvconfig(8) and then, based on the configuration, loads the gconv modules needed to
+          perform the conversion.  If the system gconv module configuration cache file is not available then the system gconv module configuration file is used.
+
+       •  If  GCONV_PATH is defined (as a colon-separated list of pathnames), the system gconv module configuration cache is not used.  Instead, iconv_open(3) first tries to load the configuration files
+          by searching the directories in GCONV_PATH in order, followed by the system default gconv module configuration file.  If a directory does not contain a gconv  module  configuration  file,  any
+          gconv  modules that it may contain are ignored.  If a directory contains a gconv module configuration file and it is determined that a module needed for this conversion is available in the di‐
+          rectory, then the needed module is loaded from that directory, the order being such that the first suitable module found in GCONV_PATH is used.  This allows users to  use  custom  modules  and
+          even replace system-provided modules by providing such modules in GCONV_PATH directories.
+
+FILES
+       /usr/lib/gconv
+              Usual default gconv module path.
+
+       /usr/lib/gconv/gconv-modules
+              Usual system default gconv module configuration file.
+
+       /usr/lib/gconv/gconv-modules.cache
+              Usual system gconv module configuration cache.
+
+       Depending on the architecture, the above files may instead be located at directories with the path prefix /usr/lib64.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+EXAMPLES
+       Convert text from the ISO 8859-15 character encoding to UTF-8:
+
+           $ iconv -f ISO-8859-15 -t UTF-8 < input.txt > output.txt
+
+       The next example converts from UTF-8 to ASCII, transliterating when possible:
+
+           $ echo abc ß α € àḃç | iconv -f UTF-8 -t ASCII//TRANSLIT
+           abc ss ? EUR abc
+
+SEE ALSO
+       locale(1), uconv(1), iconv(3), nl_langinfo(3), charsets(7), iconvconfig(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        iconv(1)
+ICONV(1P)                                                                                POSIX Programmer's Manual                                                                               ICONV(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       iconv — codeset conversion
+
+SYNOPSIS
+       iconv [-cs] -f frommap -t tomap [file...]
+
+       iconv -f fromcode [-cs] [-t tocode] [file...]
+
+       iconv -t tocode [-cs] [-f fromcode] [file...]
+
+       iconv -l
+
+DESCRIPTION
+       The iconv utility shall convert the encoding of characters in file from one codeset to another and write the results to standard output.
+
+       When the options indicate that charmap files are used to specify the codesets (see OPTIONS), the codeset conversion shall be accomplished by performing a logical join on  the  symbolic  character
+       names in the two charmaps. The implementation need not support the use of charmap files for codeset conversion unless the POSIX2_LOCALEDEF symbol is defined on the system.
+
+OPTIONS
+       The iconv utility shall conform to the Base Definitions volume of POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following options shall be supported:
+
+       -c        Omit  any  characters  that are invalid in the codeset of the input file from the output. When -c is not used, the results of encountering invalid characters in the input stream (either
+                 those that are not characters in the codeset of the input file or that have no corresponding character in the codeset of the output file) shall be specified in the system documentation.
+                 The presence or absence of -c shall not affect the exit status of iconv.
+
+       -f fromcodeset
+                 Identify the codeset of the input file. The implementation shall recognize the following two forms of the fromcodeset option-argument:
+
+                 fromcode  The  fromcode option-argument must not contain a <slash> character. It shall be interpreted as the name of one of the codeset descriptions provided by the implementation in an
+                           unspecified format. Valid values of fromcode are implementation-defined.
+
+                 frommap   The frommap option-argument must contain a <slash> character. It shall be interpreted as the pathname of  a  charmap  file  as  defined  in  the  Base  Definitions  volume  of
+                           POSIX.1‐2017, Section 6.4, Character Set Description File.  If the pathname does not represent a valid, readable charmap file, the results are undefined.
+
+                 If this option is omitted, the codeset of the current locale shall be used.
+
+       -l        Write all supported fromcode and tocode values to standard output in an unspecified format.
+
+       -s        Suppress any messages written to standard error concerning invalid characters. When -s is not used, the results of encountering invalid characters in the input stream (either those that
+                 are not valid characters in the codeset of the input file or that have no corresponding character in the codeset of the output file) shall be specified in the system documentation.  The
+                 presence or absence of -s shall not affect the exit status of iconv.
+
+       -t tocodeset
+                 Identify the codeset to be used for the output file. The implementation shall recognize the following two forms of the tocodeset option-argument:
+
+                 tocode    The semantics shall be equivalent to the -f fromcode option.
+
+                 tomap     The semantics shall be equivalent to the -f frommap option.
+
+                 If this option is omitted, the codeset of the current locale shall be used.
+
+       If either -f or -t represents a charmap file, but the other does not (or is omitted), or both -f and -t are omitted, the results are undefined.
+
+OPERANDS
+       The following operand shall be supported:
+
+       file      A pathname of an input file. If no file operands are specified, or if a file operand is '-', the standard input shall be used.
+
+STDIN
+       The standard input shall be used only if no file operands are specified, or if a file operand is '-'.
+
+INPUT FILES
+       The input file shall be a text file.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of iconv:
+
+       LANG      Provide  a default value for the internationalization variables that are unset or null. (See the Base Definitions volume of POSIX.1‐2017, Section 8.2, Internationalization Variables for
+                 the precedence of internationalization variables used to determine the values of locale categories.)
+
+       LC_ALL    If set to a non-empty string value, override the values of all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of sequences of bytes of text data as characters (for example, single-byte as opposed to multi-byte characters in arguments). During transla‐
+                 tion of the file, this variable is superseded by the use of the fromcode option-argument.
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format and contents of diagnostic messages written to standard error.
+
+       NLSPATH   Determine the location of message catalogs for the processing of LC_MESSAGES.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       When the -l option is used, the standard output shall contain all supported fromcode and tocode values, written in an unspecified format.
+
+       When  the  -l option is not used, the standard output shall contain the sequence of characters read from the input files, translated to the specified codeset. Nothing else shall be written to the
+       standard output.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    An error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The user must ensure that both charmap files use the same symbolic names for characters the two codesets have in common.
+
+EXAMPLES
+       The following example converts the contents of file mail.x400 from the ISO/IEC 6937:2001 standard codeset to the ISO/IEC 8859‐1:1998 standard codeset, and stores the results in file mail.local:
+
+           iconv -f IS6937 -t IS8859 mail.x400 > mail.local
+
+RATIONALE
+       The iconv utility can be used portably only when the user provides two charmap files as option-arguments. This is because a single charmap provided by the user cannot reliably be joined with  the
+       names in a system-provided character set description. The valid values for fromcode and tocode are implementation-defined and do not have to have any relation to the charmap mechanisms. As an aid
+       to interactive users, the -l option was adopted from the Plan 9 operating system. It writes information concerning these implementation-defined values. The format is unspecified because there are
+       many  possible  useful  formats that could be chosen, such as a matrix of valid combinations of fromcode and tocode.  The -l option is not intended for shell script usage; conforming applications
+       will have to use charmaps.
+
+       The iconv utility may support the conversion between ASCII and EBCDIC-based encodings, but is not required to do so. In an XSI-compliant implementation, the dd utility is the only method  guaran‐
+       teed to support conversion between these two character sets.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       dd, gencat
+
+       The Base Definitions volume of POSIX.1‐2017, Section 6.4, Character Set Description File, Chapter 8, Environment Variables, Section 12.2, Utility Syntax Guidelines
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          ICONV(1P)
+iconv(3)                                                                                 Library Functions Manual                                                                                 iconv(3)
+
+NAME
+       iconv - perform character set conversion
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <iconv.h>
+
+       size_t iconv(iconv_t cd,
+                    char **restrict inbuf, size_t *restrict inbytesleft,
+                    char **restrict outbuf, size_t *restrict outbytesleft);
+
+DESCRIPTION
+       The iconv() function converts a sequence of characters in one character encoding to a sequence of characters in another character encoding.  The cd argument is a conversion descriptor, previously
+       created by a call to iconv_open(3); the conversion descriptor defines the character encodings that iconv() uses for the conversion.  The inbuf argument is the address of a variable that points to
+       the  first  character of the input sequence; inbytesleft indicates the number of bytes in that buffer.  The outbuf argument is the address of a variable that points to the first byte available in
+       the output buffer; outbytesleft indicates the number of bytes available in the output buffer.
+
+       The main case is when inbuf is not NULL and *inbuf is not NULL.  In this case, the iconv() function converts the multibyte sequence starting at *inbuf to a multibyte sequence starting at *outbuf.
+       At most *inbytesleft bytes, starting at *inbuf, will be read.  At most *outbytesleft bytes, starting at *outbuf, will be written.
+
+       The  iconv() function converts one multibyte character at a time, and for each character conversion it increments *inbuf and decrements *inbytesleft by the number of converted input bytes, it in‐
+       crements *outbuf and decrements *outbytesleft by the number of converted output bytes, and it updates the conversion state contained in cd.  If the character encoding of the  input  is  stateful,
+       the iconv() function can also convert a sequence of input bytes to an update to the conversion state without producing any output bytes; such input is called a shift sequence.  The conversion can
+       stop for four reasons:
+
+       •  An invalid multibyte sequence is encountered in the input.  In this case, it sets errno to EILSEQ and returns (size_t) -1.  *inbuf is left pointing to the beginning of  the  invalid  multibyte
+          sequence.
+
+       •  The  input  byte  sequence  has  been entirely converted, that is, *inbytesleft has gone down to 0.  In this case, iconv() returns the number of nonreversible conversions performed during this
+          call.
+
+       •  An incomplete multibyte sequence is encountered in the input, and the input byte sequence terminates after it.  In this case, it sets errno to EINVAL and returns (size_t) -1.  *inbuf  is  left
+          pointing to the beginning of the incomplete multibyte sequence.
+
+       •  The output buffer has no more room for the next converted character.  In this case, it sets errno to E2BIG and returns (size_t) -1.
+
+       A  different case is when inbuf is NULL or *inbuf is NULL, but outbuf is not NULL and *outbuf is not NULL.  In this case, the iconv() function attempts to set cd's conversion state to the initial
+       state and store a corresponding shift sequence at *outbuf.  At most *outbytesleft bytes, starting at *outbuf, will be written.  If the output buffer has no more room for this reset  sequence,  it
+       sets errno to E2BIG and returns (size_t) -1.  Otherwise, it increments *outbuf and decrements *outbytesleft by the number of bytes written.
+
+       A third case is when inbuf is NULL or *inbuf is NULL, and outbuf is NULL or *outbuf is NULL.  In this case, the iconv() function sets cd's conversion state to the initial state.
+
+RETURN VALUE
+       The iconv() function returns the number of characters converted in a nonreversible way during this call; reversible conversions are not counted.  In case of error, iconv() returns (size_t) -1 and
+       sets errno to indicate the error.
+
+ERRORS
+       The following errors can occur, among others:
+
+       E2BIG  There is not sufficient room at *outbuf.
+
+       EILSEQ An invalid multibyte sequence has been encountered in the input.
+
+       EINVAL An incomplete multibyte sequence has been encountered in the input.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────────────┐
+       │Interface                                                                                                                                                       │ Attribute     │ Value           │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────────────┤
+       │iconv()                                                                                                                                                         │ Thread safety │ MT-Safe race:cd │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────────────┘
+
+       The iconv() function is MT-Safe, as long as callers arrange for mutual exclusion on the cd argument.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.1.  POSIX.1-2001.
+
+NOTES
+       In each series of calls to iconv(), the last should be one with inbuf or *inbuf equal to NULL, in order to flush out any partially converted input.
+
+       Although inbuf and outbuf are typed as char **, this does not mean that the objects they point can be interpreted as C strings or as arrays of characters: the interpretation of character byte se‐
+       quences is handled internally by the conversion functions.  In some encodings, a zero byte may be a valid part of a multibyte character.
+
+       The  caller  of  iconv()  must ensure that the pointers passed to the function are suitable for accessing characters in the appropriate character set.  This includes ensuring correct alignment on
+       platforms that have tight restrictions on alignment.
+
+SEE ALSO
+       iconv_close(3), iconv_open(3), iconvconfig(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        iconv(3)
+ICONV(3P)                                                                                POSIX Programmer's Manual                                                                               ICONV(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       iconv — codeset conversion function
+
+SYNOPSIS
+       #include <iconv.h>
+
+       size_t iconv(iconv_t cd, char **restrict inbuf,
+           size_t *restrict inbytesleft, char **restrict outbuf,
+           size_t *restrict outbytesleft);
+
+DESCRIPTION
+       The iconv() function shall convert the sequence of characters from one codeset, in the array specified by inbuf, into a sequence of corresponding characters in another codeset, in the array spec‐
+       ified  by outbuf.  The codesets are those specified in the iconv_open() call that returned the conversion descriptor, cd.  The inbuf argument points to a variable that points to the first charac‐
+       ter in the input buffer and inbytesleft indicates the number of bytes to the end of the buffer to be converted. The outbuf argument points to a variable that points to the first available byte in
+       the output buffer and outbytesleft indicates the number of the available bytes to the end of the buffer.
+
+       For  state-dependent  encodings, the conversion descriptor cd is placed into its initial shift state by a call for which inbuf is a null pointer, or for which inbuf points to a null pointer. When
+       iconv() is called in this way, and if outbuf is not a null pointer or a pointer to a null pointer, and outbytesleft points to a positive value, iconv() shall place, into the  output  buffer,  the
+       byte  sequence  to  change  the  output buffer to its initial shift state. If the output buffer is not large enough to hold the entire reset sequence, iconv() shall fail and set errno to [E2BIG].
+       Subsequent calls with inbuf as other than a null pointer or a pointer to a null pointer cause the conversion to take place from the current state of the conversion descriptor.
+
+       If a sequence of input bytes does not form a valid character in the specified codeset, conversion shall stop after the previous successfully converted character. If the input buffer ends with  an
+       incomplete character or shift sequence, conversion shall stop after the previous successfully converted bytes. If the output buffer is not large enough to hold the entire converted input, conver‐
+       sion shall stop just prior to the input bytes that would cause the output buffer to overflow. The variable pointed to by inbuf shall be updated to point to the byte following the last  byte  suc‐
+       cessfully  used in the conversion. The value pointed to by inbytesleft shall be decremented to reflect the number of bytes still not converted in the input buffer. The variable pointed to by out‐
+       buf shall be updated to point to the byte following the last byte of converted output data. The value pointed to by outbytesleft shall be decremented to reflect the number of bytes  still  avail‐
+       able  in  the  output buffer. For state-dependent encodings, the conversion descriptor shall be updated to reflect the shift state in effect at the end of the last successfully converted byte se‐
+       quence.
+
+       If iconv() encounters a character in the input buffer that is valid, but for which an identical character does not exist in the target codeset, iconv()  shall  perform  an  implementation-defined
+       conversion on this character.
+
+RETURN VALUE
+       The  iconv()  function  shall  update the variables pointed to by the arguments to reflect the extent of the conversion and return the number of non-identical conversions performed. If the entire
+       string in the input buffer is converted, the value pointed to by inbytesleft shall be 0. If the input conversion is stopped due to any conditions mentioned above, the  value  pointed  to  by  in‐
+       bytesleft shall be non-zero and errno shall be set to indicate the condition. If an error occurs, iconv() shall return (size_t)-1 and set errno to indicate the error.
+
+ERRORS
+       The iconv() function shall fail if:
+
+       EILSEQ Input conversion stopped due to an input byte that does not belong to the input codeset.
+
+       E2BIG  Input conversion stopped due to lack of space in the output buffer.
+
+       EINVAL Input conversion stopped due to an incomplete character or shift sequence at the end of the input buffer.
+
+       The iconv() function may fail if:
+
+       EBADF  The cd argument is not a valid open conversion descriptor.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The  inbuf  argument  indirectly points to the memory area which contains the conversion input data. The outbuf argument indirectly points to the memory area which is to contain the result of the
+       conversion. The objects indirectly pointed to by inbuf and outbuf are not restricted to containing data that is directly representable in the ISO C standard language char data type. The  type  of
+       inbuf and outbuf, char **, does not imply that the objects pointed to are interpreted as null-terminated C strings or arrays of characters. Any interpretation of a byte sequence that represents a
+       character in a given character set encoding scheme is done internally within the codeset converters. For example, the area pointed to indirectly by inbuf and/or outbuf can contain all zero octets
+       that  are not interpreted as string terminators but as coded character data according to the respective codeset encoding scheme. The type of the data (char, short, long, and so on) read or stored
+       in the objects is not specified, but may be inferred for both the input and output data by the converters determined by the fromcode and tocode arguments of iconv_open().
+
+       Regardless of the data type inferred by the converter, the size of the remaining space in both input and output objects (the intbytesleft and outbytesleft arguments) is always measured in bytes.
+
+       For implementations that support the conversion of state-dependent encodings, the conversion descriptor must be able to accurately reflect the shift-state in effect at the end of  the  last  suc‐
+       cessful conversion. It is not required that the conversion descriptor itself be updated, which would require it to be a pointer type. Thus, implementations are free to implement the descriptor as
+       a handle (other than a pointer type) by which the conversion information can be accessed and updated.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       iconv_open(), iconv_close(), mbsrtowcs()
+
+       The Base Definitions volume of POSIX.1‐2017, <iconv.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                          ICONV(3P)

@@ -1,0 +1,538 @@
+__gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >(3)                        Library Functions Manual                        __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >(3)
+
+NAME
+       __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category > - Safe iterator wrapper.
+
+SYNOPSIS
+       #include <safe_iterator.h>
+
+       Inherits _Iterator, and __gnu_debug::_Safe_iterator_base.
+
+       Inherited by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, std::random_access_iterator_tag >.
+
+   Public Types
+       typedef _Safe_iterator< _Iterator, _Sequence, iterator_category > _Self
+       typedef _Traits::difference_type difference_type
+       typedef _Traits::iterator_category iterator_category
+       using iterator_concept = std::__detail::__iter_concept< _Iterator >
+       typedef _Iterator iterator_type
+       typedef _Traits::pointer pointer
+       typedef _Traits::reference reference
+       typedef _Traits::value_type value_type
+
+   Public Member Functions
+       _Safe_iterator () noexcept
+       _Safe_iterator (_Iterator __i, const _Safe_sequence_base *__seq) noexcept
+           Safe iterator construction from an unsafe iterator and its sequence.
+       _Safe_iterator (_Safe_iterator &&__x) noexcept
+           Move construction.
+       _Safe_iterator (const _Safe_iterator &__x) noexcept
+           Copy construction.
+       template<typename _MutableIterator > _Safe_iterator (const _Safe_iterator< _MutableIterator, _Sequence, typename __gnu_cxx::__enable_if< _IsConstant::__value &&std::__are_same< _MutableIterator,
+           _OtherIterator >::__value, _Category >::__type > &__x) noexcept
+           Converting constructor from a mutable iterator to a constant iterator.
+       void _M_attach (_Safe_sequence_base *__seq)
+       void _M_attach_single (_Safe_sequence_base *__seq)
+       bool _M_attached_to (const _Safe_sequence_base *__seq) const
+       bool _M_before_dereferenceable () const
+           Is the iterator before a dereferenceable one?
+       template<typename _Diff > bool _M_can_advance (const std::pair< _Diff, _Distance_precision > &__dist, int __way) const
+       bool _M_can_advance (difference_type __n, bool __strict=false) const
+       bool _M_can_compare (const _Safe_iterator_base &__x) const  throw ()
+       bool _M_dereferenceable () const
+           Is the iterator dereferenceable?
+       void _M_detach_single ()  throw ()
+       _Distance_traits< _Iterator >::__type _M_get_distance_from_begin () const
+       _Distance_traits< _Iterator >::__type _M_get_distance_to (const _Safe_iterator &__rhs) const
+       _Distance_traits< _Iterator >::__type _M_get_distance_to_end () const
+       __gnu_cxx::__conditional_type< _IsConstant::__value, const_Sequence *, _Sequence * >::__type _M_get_sequence () const
+       bool _M_incrementable () const
+           Is the iterator incrementable?
+       void _M_invalidate ()
+       bool _M_is_before_begin () const
+           Is this iterator equal to the sequence's before_begin() iterator if any?
+       bool _M_is_begin () const
+           Is this iterator equal to the sequence's begin() iterator?
+       bool _M_is_beginnest () const
+           Is this iterator equal to the sequence's before_begin() iterator if any or begin() otherwise?
+       bool _M_is_end () const
+           Is this iterator equal to the sequence's end() iterator?
+       void _M_reset ()  throw ()
+       bool _M_singular () const  throw ()
+       void _M_unlink ()  throw ()
+       bool _M_valid_range (const _Safe_iterator &__rhs, std::pair< difference_type, _Distance_precision > &__dist, bool __check_dereferenceable=true) const
+       const _Iterator & base () const noexcept
+       _Iterator & base () noexcept
+           Return the underlying iterator.
+       operator _Iterator () const noexcept
+           Conversion to underlying non-debug iterator to allow better interaction with non-debug containers.
+       reference operator* () const noexcept
+           Iterator dereference.
+       _Safe_iterator & operator++ () noexcept
+           Iterator preincrement.
+       _Safe_iterator operator++ (int) noexcept
+           Iterator postincrement.
+       pointer operator-> () const noexcept
+           Iterator dereference.
+       _Safe_iterator & operator= (_Safe_iterator &&__x) noexcept
+           Move assignment.
+       _Safe_iterator & operator= (const _Safe_iterator &__x) noexcept
+           Copy assignment.
+
+   Static Public Member Functions
+       static constexpr bool _S_constant ()
+           Determine if this is a constant iterator.
+
+   Public Attributes
+       _Safe_iterator_base * _M_next
+       _Safe_iterator_base * _M_prior
+       _Safe_sequence_base * _M_sequence
+       unsigned int _M_version
+
+   Protected Types
+       typedef std::__are_same< typename _Sequence::_Base::const_iterator, _Iterator > _IsConstant
+       typedef __gnu_cxx::__conditional_type< _IsConstant::__value, typename_Sequence::_Base::iterator, typename_Sequence::_Base::const_iterator >::__type _OtherIterator
+
+   Protected Member Functions
+       _Safe_iterator (_Iterator __i, _Safe_sequence_base *__seq, _Attach_single) noexcept
+       void _M_attach (_Safe_sequence_base *__seq, bool __constant)
+       void _M_attach_single (_Safe_sequence_base *__seq, bool __constant)  throw ()
+       void _M_detach ()
+       __gnu_cxx::__mutex & _M_get_mutex ()  throw ()
+
+   Friends
+       template<typename _IteR > bool operator!= (const _Self &__lhs, const _Safe_iterator< _IteR, _Sequence, iterator_category > &__rhs) noexcept
+       bool operator!= (const _Self &__lhs, const _Self &__rhs) noexcept
+       template<typename _IteR > bool operator== (const _Self &__lhs, const _Safe_iterator< _IteR, _Sequence, iterator_category > &__rhs) noexcept
+       bool operator== (const _Self &__lhs, const _Self &__rhs) noexcept
+
+Detailed Description
+   template<typename _Iterator, typename _Sequence, typename _Category = typename std::iterator_traits<_Iterator>::iterator_category>
+       class __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >"Safe iterator wrapper.
+
+       The class template _Safe_iterator is a wrapper around an iterator that tracks the iterator's movement among sequences and checks that operations performed on the 'safe' iterator are legal. In
+       additional to the basic iterator operations (which are validated, and then passed to the underlying iterator), _Safe_iterator has member functions for iterator invalidation, attaching/detaching
+       the iterator from sequences, and querying the iterator's state.
+
+       Note that _Iterator must be the first base class so that it gets initialized before the iterator is being attached to the container's list of iterators and it is being detached before _Iterator
+       get destroyed. Otherwise it would result in a data race.
+
+       Definition at line 114 of file safe_iterator.h.
+
+Member Typedef Documentation
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef std::__are_same<typename
+       _Sequence::_Base::const_iterator, _Iterator> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_IsConstant [protected]
+       Definition at line 125 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef
+       __gnu_cxx::__conditional_type<_IsConstant::__value,typename_Sequence::_Base::iterator,typename_Sequence::_Base::const_iterator>::__type __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::_OtherIterator [protected]
+       Definition at line 130 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Safe_iterator<_Iterator, _Sequence, iterator_category>
+       __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_Self
+       Definition at line 466 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Traits::difference_type __gnu_debug::_Safe_iterator<
+       _Iterator, _Sequence, _Category >::difference_type
+       Definition at line 144 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Traits::iterator_category __gnu_debug::_Safe_iterator<
+       _Iterator, _Sequence, _Category >::iterator_category
+       Definition at line 142 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> using __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::iterator_concept =  std::__detail::__iter_concept<_Iterator>
+       Definition at line 149 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Iterator __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::iterator_type
+       Definition at line 141 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Traits::pointer __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::pointer
+       Definition at line 146 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Traits::reference __gnu_debug::_Safe_iterator<
+       _Iterator, _Sequence, _Category >::reference
+       Definition at line 145 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> typedef _Traits::value_type __gnu_debug::_Safe_iterator<
+       _Iterator, _Sequence, _Category >::value_type
+       Definition at line 143 of file safe_iterator.h.
+
+Constructor & Destructor Documentation
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_Safe_iterator (_Iterator __i, _Safe_sequence_base * __seq, _Attach_single) [inline],  [protected],  [noexcept]
+       Definition at line 135 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_Safe_iterator () [inline],  [noexcept]
+       Postcondition
+           the iterator is singular and unattached
+
+       Definition at line 153 of file safe_iterator.h.
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator++().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_Safe_iterator (_Iterator __i, const _Safe_sequence_base * __seq) [inline],  [noexcept]
+       Safe iterator construction from an unsafe iterator and its sequence.
+
+       Precondition
+           seq is not NULL
+
+       Postcondition
+           this is not singular
+
+       Definition at line 162 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_singular().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_Safe_iterator (const _Safe_iterator< _Iterator, _Sequence, _Category > & __x) [inline],  [noexcept]
+       Copy construction.
+
+       Definition at line 174 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_Safe_iterator (_Safe_iterator< _Iterator, _Sequence, _Category > && __x) [inline],  [noexcept]
+       Move construction.
+
+       Postcondition
+           __x is singular and unattached
+
+       Definition at line 192 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base(), and std::swap().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> template<typename _MutableIterator > __gnu_debug::_Safe_iterator<
+       _Iterator, _Sequence, _Category >::_Safe_iterator (const _Safe_iterator< _MutableIterator, _Sequence, typename __gnu_cxx::__enable_if< _IsConstant::__value &&std::__are_same< _MutableIterator,
+       _OtherIterator >::__value, _Category >::__type > & __x) [inline],  [noexcept]
+       Converting constructor from a mutable iterator to a constant iterator.
+
+       Definition at line 212 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach().
+
+Member Function Documentation
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> void __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_attach (_Safe_sequence_base * __seq) [inline]
+       Attach iterator to the given sequence.
+
+       Definition at line 378 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_attach(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_S_constant().
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_Safe_iterator(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator=().
+
+   void __gnu_debug::_Safe_iterator_base::_M_attach (_Safe_sequence_base * __seq, bool __constant) [protected],  [inherited]
+       Attaches this iterator to the given sequence, detaching it from whatever sequence it was attached to originally. If the new sequence is the NULL pointer, the iterator is left unattached.
+
+       Referenced by __gnu_debug::_Safe_iterator_base::_Safe_iterator_base(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> void __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_attach_single (_Safe_sequence_base * __seq) [inline]
+       Likewise, but not thread-safe.
+
+       Definition at line 383 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_attach_single(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_S_constant().
+
+   void __gnu_debug::_Safe_iterator_base::_M_attach_single (_Safe_sequence_base * __seq, bool __constant) [protected],  [inherited]
+       Likewise, but not thread-safe.
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach_single().
+
+   bool __gnu_debug::_Safe_iterator_base::_M_attached_to (const _Safe_sequence_base * __seq) const [inline],  [inherited]
+       Determines if we are attached to the given sequence.
+
+       Definition at line 131 of file safe_base.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_sequence.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_before_dereferenceable () const [inline]
+       Is the iterator before a dereferenceable one?
+
+       Definition at line 393 of file safe_iterator.h.
+
+       References __gnu_debug::__base(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_incrementable(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category > template<typename _Diff > bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_can_advance (const std::pair<
+       _Diff, _Distance_precision > & __dist, int __way) const
+       Definition at line 110 of file safe_iterator.tcc.
+
+   template<typename _Iterator , typename _Sequence , typename _Category > bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_can_advance (difference_type __n, bool __strict =
+       false) const
+       Definition at line 86 of file safe_iterator.tcc.
+
+   bool __gnu_debug::_Safe_iterator_base::_M_can_compare (const _Safe_iterator_base & __x) const [inherited]
+       Can we compare this iterator to the given iterator __x? Returns true if both iterators are nonsingular and reference the same sequence.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_dereferenceable () const [inline]
+       Is the iterator dereferenceable?
+
+       Definition at line 388 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_is_before_begin(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_is_end(), and
+       __gnu_debug::_Safe_iterator_base::_M_singular().
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator*(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator->().
+
+   void __gnu_debug::_Safe_iterator_base::_M_detach () [protected],  [inherited]
+       Detach the iterator for whatever sequence it is attached to, if any.
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator=().
+
+   void __gnu_debug::_Safe_iterator_base::_M_detach_single () [inherited]
+       Likewise, but not thread-safe.
+
+       Referenced by __gnu_debug::_Safe_sequence< _Sequence >::_M_transfer_from_if().
+
+   template<typename _Iterator , typename _Sequence , typename _Category > _Distance_traits< _Iterator >::__type __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_get_distance_from_begin
+       Definition at line 38 of file safe_iterator.tcc.
+
+   template<typename _Iterator , typename _Sequence , typename _Category > _Distance_traits< _Iterator >::__type __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_get_distance_to (const
+       _Safe_iterator< _Iterator, _Sequence, _Category > & __rhs) const
+       Definition at line 123 of file safe_iterator.tcc.
+
+   template<typename _Iterator , typename _Sequence , typename _Category > _Distance_traits< _Iterator >::__type __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_get_distance_to_end
+       Definition at line 62 of file safe_iterator.tcc.
+
+   __gnu_cxx::__mutex & __gnu_debug::_Safe_iterator_base::_M_get_mutex () [protected],  [inherited]
+       For use in _Safe_iterator.
+
+       Referenced by __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::operator++(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator++(), __gnu_debug::_Safe_iterator<
+       _Iterator, _Sequence, _Category >::operator=(), and __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::operator=().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_cxx::__conditional_type< _IsConstant::__value,
+       const_Sequence *, _Sequence * >::__type __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_get_sequence () const [inline]
+       Definition at line 427 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_incrementable () const [inline]
+       Is the iterator incrementable?
+
+       Definition at line 405 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_is_end(), and __gnu_debug::_Safe_iterator_base::_M_singular().
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_before_dereferenceable(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator++().
+
+   void __gnu_debug::_Safe_iterator_base::_M_invalidate () [inline],  [inherited]
+       Invalidate the iterator, making it singular.
+
+       Definition at line 146 of file safe_base.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_version.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_is_before_begin () const [inline]
+       Is this iterator equal to the sequence's before_begin() iterator if any?
+
+       Definition at line 455 of file safe_iterator.h.
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_dereferenceable().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_is_begin () const [inline]
+       Is this iterator equal to the sequence's begin() iterator?
+
+       Definition at line 444 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_is_beginnest () const [inline]
+       Is this iterator equal to the sequence's before_begin() iterator if any or begin() otherwise?
+
+       Definition at line 461 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::_M_is_end () const [inline]
+       Is this iterator equal to the sequence's end() iterator?
+
+       Definition at line 449 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_dereferenceable(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_incrementable().
+
+   void __gnu_debug::_Safe_iterator_base::_M_reset () [inherited]
+       Reset all member variables
+
+   bool __gnu_debug::_Safe_iterator_base::_M_singular () const [inherited]
+       Is this iterator singular?
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_Safe_iterator(), __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::_Safe_local_iterator(),
+       __gnu_debug::__check_singular_aux(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_dereferenceable(), __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence
+       >::_M_dereferenceable(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_incrementable(), __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::_M_incrementable(), and
+       __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::operator=().
+
+   void __gnu_debug::_Safe_iterator_base::_M_unlink () [inline],  [inherited]
+       Unlink itself
+
+       Definition at line 155 of file safe_base.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_next, and __gnu_debug::_Safe_iterator_base::_M_prior.
+
+   template<typename _Iterator , typename _Sequence , typename _Category > bool __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_valid_range (const _Safe_iterator< _Iterator,
+       _Sequence, _Category > & __rhs, std::pair< difference_type, _Distance_precision > & __dist, bool __check_dereferenceable = true) const
+       Definition at line 192 of file safe_iterator.tcc.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> static constexpr bool __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::_S_constant () [inline],  [static],  [constexpr]
+       Determine if this is a constant iterator.
+
+       Definition at line 358 of file safe_iterator.h.
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach_single().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> const _Iterator & __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::base () const [inline],  [noexcept]
+       Definition at line 368 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> _Iterator & __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::base () [inline],  [noexcept]
+       Return the underlying iterator.
+
+       Definition at line 365 of file safe_iterator.h.
+
+       Referenced by __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_Safe_iterator(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_before_dereferenceable(),
+       __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_is_begin(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_is_end(), __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::operator*(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator++(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator->(),
+       and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator=().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::operator _Iterator () const [inline],  [noexcept]
+       Conversion to underlying non-debug iterator to allow better interaction with non-debug containers.
+
+       Definition at line 374 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> reference __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::operator* () const [inline],  [noexcept]
+       Iterator dereference.
+
+       Precondition
+           iterator is dereferenceable
+
+       Definition at line 302 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_dereferenceable(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> _Safe_iterator & __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::operator++ () [inline],  [noexcept]
+       Iterator preincrement.
+
+       Precondition
+           iterator is incrementable
+
+       Definition at line 330 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator_base::_M_get_mutex(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_incrementable(), and __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> _Safe_iterator __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::operator++ (int) [inline],  [noexcept]
+       Iterator postincrement.
+
+       Precondition
+           iterator is incrementable
+
+       Definition at line 345 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_Safe_iterator(), __gnu_debug::_Safe_iterator_base::_M_get_mutex(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::_M_incrementable(), __gnu_debug::_Safe_iterator_base::_M_sequence, and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> pointer __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::operator-> () const [inline],  [noexcept]
+       Iterator dereference.
+
+       Precondition
+           iterator is dereferenceable
+
+       Definition at line 316 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_dereferenceable(), and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> _Safe_iterator & __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::operator= (_Safe_iterator< _Iterator, _Sequence, _Category > && __x) [inline],  [noexcept]
+       Move assignment.
+
+       Postcondition
+           __x is singular and unattached
+
+       Definition at line 266 of file safe_iterator.h.
+
+       References std::__addressof(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach(), __gnu_debug::_Safe_iterator_base::_M_detach(),
+       __gnu_debug::_Safe_iterator_base::_M_get_mutex(), __gnu_debug::_Safe_iterator_base::_M_sequence, __gnu_debug::_Safe_iterator_base::_M_version, and __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::base().
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> _Safe_iterator & __gnu_debug::_Safe_iterator< _Iterator,
+       _Sequence, _Category >::operator= (const _Safe_iterator< _Iterator, _Sequence, _Category > & __x) [inline],  [noexcept]
+       Copy assignment.
+
+       Definition at line 234 of file safe_iterator.h.
+
+       References __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::_M_attach(), __gnu_debug::_Safe_iterator_base::_M_detach(), __gnu_debug::_Safe_iterator_base::_M_get_mutex(),
+       __gnu_debug::_Safe_iterator_base::_M_sequence, __gnu_debug::_Safe_iterator_base::_M_version, and __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::base().
+
+Friends And Related Function Documentation
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> template<typename _IteR > bool operator!= (const _Self & __lhs,
+       const _Safe_iterator< _IteR, _Sequence, iterator_category > & __rhs) [friend]
+       Definition at line 499 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool operator!= (const _Self & __lhs, const _Self & __rhs)
+       [friend]
+       Definition at line 490 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> template<typename _IteR > bool operator== (const _Self & __lhs,
+       const _Safe_iterator< _IteR, _Sequence, iterator_category > & __rhs) [friend]
+       Definition at line 479 of file safe_iterator.h.
+
+   template<typename _Iterator , typename _Sequence , typename _Category  = typename std::iterator_traits<_Iterator>::iterator_category> bool operator== (const _Self & __lhs, const _Self & __rhs)
+       [friend]
+       Definition at line 470 of file safe_iterator.h.
+
+Member Data Documentation
+   _Safe_iterator_base* __gnu_debug::_Safe_iterator_base::_M_next [inherited]
+       Pointer to the next iterator in the sequence's list of iterators. Only valid when _M_sequence != NULL.
+
+       Definition at line 74 of file safe_base.h.
+
+       Referenced by __gnu_debug::_Safe_sequence< _SafeSequence >::_M_invalidate_if(), __gnu_debug::_Safe_sequence< _Sequence >::_M_transfer_from_if(), and __gnu_debug::_Safe_iterator_base::_M_unlink().
+
+   _Safe_iterator_base* __gnu_debug::_Safe_iterator_base::_M_prior [inherited]
+       Pointer to the previous iterator in the sequence's list of iterators. Only valid when _M_sequence != NULL.
+
+       Definition at line 70 of file safe_base.h.
+
+       Referenced by __gnu_debug::_Safe_sequence< _SafeSequence >::_M_invalidate_if(), __gnu_debug::_Safe_sequence< _Sequence >::_M_transfer_from_if(), and __gnu_debug::_Safe_iterator_base::_M_unlink().
+
+   _Safe_sequence_base* __gnu_debug::_Safe_iterator_base::_M_sequence [inherited]
+       The sequence this iterator references; may be NULL to indicate a singular iterator.
+
+       Definition at line 57 of file safe_base.h.
+
+       Referenced by __gnu_debug::_Safe_iterator_base::_Safe_iterator_base(), __gnu_debug::_Safe_local_iterator_base::_Safe_local_iterator_base(), __gnu_debug::_Safe_iterator_base::_M_attached_to(),
+       __gnu_debug::_Safe_sequence< _Sequence >::_M_transfer_from_if(), __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::operator++(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence,
+       _Category >::operator++(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >::operator=(), and __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::operator=().
+
+   unsigned int __gnu_debug::_Safe_iterator_base::_M_version [inherited]
+       The version number of this iterator. The sentinel value 0 is used to indicate an invalidated iterator (i.e., one that is singular because of an operation on the container). This version number
+       must equal the version number in the sequence referenced by _M_sequence for the iterator to be non-singular.
+
+       Definition at line 66 of file safe_base.h.
+
+       Referenced by __gnu_debug::_Safe_iterator_base::_M_invalidate(), __gnu_debug::_Safe_sequence< _Sequence >::_M_transfer_from_if(), __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category
+       >::operator=(), and __gnu_debug::_Safe_local_iterator< _Iterator, _Sequence >::operator=().
+
+Author
+       Generated automatically by Doxygen for libstdc++ from the source code.
+
+libstdc++                                                                                     Wed Feb 1 2023                             __gnu_debug::_Safe_iterator< _Iterator, _Sequence, _Category >(3)

@@ -1,0 +1,500 @@
+UNSHARE(1)                                                                                     User Commands                                                                                    UNSHARE(1)
+
+NAME
+       unshare - run program in new namespaces
+
+SYNOPSIS
+       unshare [options] [program [arguments]]
+
+DESCRIPTION
+       The unshare command creates new namespaces (as specified by the command-line options described below) and then executes the specified program. If program is not given, then "${SHELL}" is run
+       (default: /bin/sh).
+
+       By default, a new namespace persists only as long as it has member processes. A new namespace can be made persistent even when it has no member processes by bind mounting /proc/pid/ns/type files
+       to a filesystem path. A namespace that has been made persistent in this way can subsequently be entered with nsenter(1) even after the program terminates (except PID namespaces where a
+       permanently running init process is required). Once a persistent namespace is no longer needed, it can be unpersisted by using umount(8) to remove the bind mount. See the EXAMPLES section for
+       more details.
+
+       unshare since util-linux version 2.36 uses /proc/[pid]/ns/pid_for_children and /proc/[pid]/ns/time_for_children files for persistent PID and TIME namespaces. This change requires Linux kernel
+       4.17 or newer.
+
+       The following types of namespaces can be created with unshare:
+
+       mount namespace
+           Mounting and unmounting filesystems will not affect the rest of the system, except for filesystems which are explicitly marked as shared (with mount --make-shared; see /proc/self/mountinfo or
+           findmnt -o+PROPAGATION for the shared flags). For further details, see mount_namespaces(7).
+
+           unshare since util-linux version 2.27 automatically sets propagation to private in a new mount namespace to make sure that the new namespace is really unshared. It’s possible to disable this
+           feature with option --propagation unchanged. Note that private is the kernel default.
+
+       UTS namespace
+           Setting hostname or domainname will not affect the rest of the system. For further details, see uts_namespaces(7).
+
+       IPC namespace
+           The process will have an independent namespace for POSIX message queues as well as System V message queues, semaphore sets and shared memory segments. For further details, see
+           ipc_namespaces(7).
+
+       network namespace
+           The process will have independent IPv4 and IPv6 stacks, IP routing tables, firewall rules, the /proc/net and /sys/class/net directory trees, sockets, etc. For further details, see
+           network_namespaces(7).
+
+       PID namespace
+           Children will have a distinct set of PID-to-process mappings from their parent. For further details, see pid_namespaces(7).
+
+       cgroup namespace
+           The process will have a virtualized view of /proc/self/cgroup, and new cgroup mounts will be rooted at the namespace cgroup root. For further details, see cgroup_namespaces(7).
+
+       user namespace
+           The process will have a distinct set of UIDs, GIDs and capabilities. For further details, see user_namespaces(7).
+
+       time namespace
+           The process can have a distinct view of CLOCK_MONOTONIC and/or CLOCK_BOOTTIME which can be changed using /proc/self/timens_offsets. For further details, see time_namespaces(7).
+
+OPTIONS
+       -i, --ipc[=file]
+           Create a new IPC namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file.
+
+       -m, --mount[=file]
+           Create a new mount namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file. Note that file must be located on a mount whose propagation type is
+           not shared (or an error results). Use the command findmnt -o+PROPAGATION when not sure about the current setting. See also the examples below.
+
+       -n, --net[=file]
+           Create a new network namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file.
+
+       -p, --pid[=file]
+           Create a new PID namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file. (Creation of a persistent PID namespace will fail if the --fork
+           option is not also specified.)
+
+           See also the --fork and --mount-proc options.
+
+       -u, --uts[=file]
+           Create a new UTS namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file.
+
+       -U, --user[=file]
+           Create a new user namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file.
+
+       -C, --cgroup[=file]
+           Create a new cgroup namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file.
+
+       -T, --time[=file]
+           Create a new time namespace. If file is specified, then the namespace is made persistent by creating a bind mount at file. The --monotonic and --boottime options can be used to specify the
+           corresponding offset in the time namespace.
+
+       -f, --fork
+           Fork the specified program as a child process of unshare rather than running it directly. This is useful when creating a new PID namespace. Note that when unshare is waiting for the child
+           process, then it ignores SIGINT and SIGTERM and does not forward any signals to the child. It is necessary to send signals to the child process.
+
+       --keep-caps
+           When the --user option is given, ensure that capabilities granted in the user namespace are preserved in the child process.
+
+       --kill-child[=signame]
+           When unshare terminates, have signame be sent to the forked child process. Combined with --pid this allows for an easy and reliable killing of the entire process tree below unshare. If not
+           given, signame defaults to SIGKILL. This option implies --fork.
+
+       --mount-proc[=mountpoint]
+           Just before running the program, mount the proc filesystem at mountpoint (default is /proc). This is useful when creating a new PID namespace. It also implies creating a new mount namespace
+           since the /proc mount would otherwise mess up existing programs on the system. The new proc filesystem is explicitly mounted as private (with MS_PRIVATE|MS_REC).
+
+       --map-user=uid|name
+           Run the program only after the current effective user ID has been mapped to uid. If this option is specified multiple times, the last occurrence takes precedence. This option implies --user.
+
+       --map-users=outeruid,inneruid,count|auto
+           Run the program only after the block of user IDs of size count beginning at outeruid has been mapped to the block of user IDs beginning at inneruid. This mapping is created with newuidmap(1).
+           If the range of user IDs overlaps with the mapping specified by --map-user, then a "hole" will be removed from the mapping. This may result in the highest user ID of the mapping not being
+           mapped. The special value auto will map the first block of user IDs owned by the effective user from /etc/subuid to a block starting at user ID 0. If this option is specified multiple times,
+           the last occurrence takes precedence. This option implies --user.
+
+       --map-group=gid|name
+           Run the program only after the current effective group ID has been mapped to gid. If this option is specified multiple times, the last occurrence takes precedence. This option implies
+           --setgroups=deny and --user.
+
+       --map-groups=outergid,innergid,count|auto
+           Run the program only after the block of group IDs of size count beginning at outergid has been mapped to the block of group IDs beginning at innergid. This mapping is created with
+           newgidmap(1). If the range of group IDs overlaps with the mapping specified by --map-group, then a "hole" will be removed from the mapping. This may result in the highest group ID of the
+           mapping not being mapped. The special value auto will map the first block of user IDs owned by the effective user from /etc/subgid to a block starting at group ID 0. If this option is
+           specified multiple times, the last occurrence takes precedence. This option implies --user.
+
+       --map-auto
+           Map the first block of user IDs owned by the effective user from /etc/subuid to a block starting at user ID 0. In the same manner, also map the first block of group IDs owned by the effective
+           group from /etc/subgid to a block starting at group ID 0. This option is intended to handle the common case where the first block of subordinate user and group IDs can map the whole user and
+           group ID space. This option is equivalent to specifying --map-users=auto and --map-groups=auto.
+
+       -r, --map-root-user
+           Run the program only after the current effective user and group IDs have been mapped to the superuser UID and GID in the newly created user namespace. This makes it possible to conveniently
+           gain capabilities needed to manage various aspects of the newly created namespaces (such as configuring interfaces in the network namespace or mounting filesystems in the mount namespace)
+           even when run unprivileged. As a mere convenience feature, it does not support more sophisticated use cases, such as mapping multiple ranges of UIDs and GIDs. This option implies
+           --setgroups=deny and --user. This option is equivalent to --map-user=0 --map-group=0.
+
+       -c, --map-current-user
+           Run the program only after the current effective user and group IDs have been mapped to the same UID and GID in the newly created user namespace. This option implies --setgroups=deny and
+           --user. This option is equivalent to --map-user=$(id -ru) --map-group=$(id -rg).
+
+       --propagation private|shared|slave|unchanged
+           Recursively set the mount propagation flag in the new mount namespace. The default is to set the propagation to private. It is possible to disable this feature with the argument unchanged.
+           The option is silently ignored when the mount namespace (--mount) is not requested.
+
+       --setgroups allow|deny
+           Allow or deny the setgroups(2) system call in a user namespace.
+
+           To be able to call setgroups(2), the calling process must at least have CAP_SETGID. But since Linux 3.19 a further restriction applies: the kernel gives permission to call setgroups(2) only
+           after the GID map (/proc/pid*/gid_map*) has been set. The GID map is writable by root when setgroups(2) is enabled (i.e., allow, the default), and the GID map becomes writable by unprivileged
+           processes when setgroups(2) is permanently disabled (with deny).
+
+       -R, --root=dir
+           run the command with root directory set to dir.
+
+       -w, --wd=dir
+           change working directory to dir.
+
+       -S, --setuid uid
+           Set the user ID which will be used in the entered namespace.
+
+       -G, --setgid gid
+           Set the group ID which will be used in the entered namespace and drop supplementary groups.
+
+       --monotonic offset
+           Set the offset of CLOCK_MONOTONIC which will be used in the entered time namespace. This option requires unsharing a time namespace with --time.
+
+       --boottime offset
+           Set the offset of CLOCK_BOOTTIME which will be used in the entered time namespace. This option requires unsharing a time namespace with --time.
+
+       -h, --help
+           Display help text and exit.
+
+       -V, --version
+           Print version and exit.
+
+NOTES
+       The proc and sysfs filesystems mounting as root in a user namespace have to be restricted so that a less privileged user cannot get more access to sensitive files that a more privileged user made
+       unavailable. In short the rule for proc and sysfs is as close to a bind mount as possible.
+
+EXAMPLES
+       The following command creates a PID namespace, using --fork to ensure that the executed command is performed in a child process that (being the first process in the namespace) has PID 1. The
+       --mount-proc option ensures that a new mount namespace is also simultaneously created and that a new proc(5) filesystem is mounted that contains information corresponding to the new PID
+       namespace. When the readlink(1) command terminates, the new namespaces are automatically torn down.
+
+           # unshare --fork --pid --mount-proc readlink /proc/self
+           1
+
+       As an unprivileged user, create a new user namespace where the user’s credentials are mapped to the root IDs inside the namespace:
+
+           $ id -u; id -g
+           1000
+           1000
+           $ unshare --user --map-root-user \
+                   sh -c ''whoami; cat /proc/self/uid_map /proc/self/gid_map''
+           root
+                    0       1000          1
+                    0       1000          1
+
+       As an unprivileged user, create a user namespace where the first 65536 IDs are all mapped, and the user’s credentials are mapped to the root IDs inside the namespace. The map is determined by the
+       subordinate IDs assigned in subuid(5) and subgid(5). Demonstrate this mapping by creating a file with user ID 1 and group ID 1. For brevity, only the user ID mappings are shown:
+
+           $ id -u
+           1000
+           $ cat /etc/subuid
+           1000:100000:65536
+           $ unshare --user --map-auto --map-root-user
+           # id -u
+           0
+           # cat /proc/self/uid_map
+                    0       1000          1
+                    1     100000      65535
+           # touch file; chown 1:1 file
+           # ls -ln --time-style=+ file
+           -rw-r--r-- 1 1 1 0  file
+           # exit
+           $ ls -ln --time-style=+ file
+           -rw-r--r-- 1 100000 100000 0  file
+
+       The first of the following commands creates a new persistent UTS namespace and modifies the hostname as seen in that namespace. The namespace is then entered with nsenter(1) in order to display
+       the modified hostname; this step demonstrates that the UTS namespace continues to exist even though the namespace had no member processes after the unshare command terminated. The namespace is
+       then destroyed by removing the bind mount.
+
+           # touch /root/uts-ns
+           # unshare --uts=/root/uts-ns hostname FOO
+           # nsenter --uts=/root/uts-ns hostname
+           FOO
+           # umount /root/uts-ns
+
+       The following commands establish a persistent mount namespace referenced by the bind mount /root/namespaces/mnt. In order to ensure that the creation of that bind mount succeeds, the parent
+       directory (/root/namespaces) is made a bind mount whose propagation type is not shared.
+
+           # mount --bind /root/namespaces /root/namespaces
+           # mount --make-private /root/namespaces
+           # touch /root/namespaces/mnt
+           # unshare --mount=/root/namespaces/mnt
+
+       The following commands demonstrate the use of the --kill-child option when creating a PID namespace, in order to ensure that when unshare is killed, all of the processes within the PID namespace
+       are killed.
+
+           # set +m                # Don't print job status messages
+
+           # unshare --pid --fork --mount-proc --kill-child -- \
+
+                  bash --norc -c ''(sleep 555 &) && (ps a &) && sleep 999'' &
+           [1] 53456
+           #     PID TTY      STAT   TIME COMMAND
+                 1 pts/3    S+     0:00 sleep 999
+                 3 pts/3    S+     0:00 sleep 555
+                 5 pts/3    R+     0:00 ps a
+
+           # ps h -o 'comm' $! # Show that background job is unshare(1)
+           unshare
+           # kill $! # Kill unshare(1)
+           # pidof sleep
+
+       The pidof(1) command prints no output, because the sleep processes have been killed. More precisely, when the sleep process that has PID 1 in the namespace (i.e., the namespace’s init process)
+       was killed, this caused all other processes in the namespace to be killed. By contrast, a similar series of commands where the --kill-child option is not used shows that when unshare terminates,
+       the processes in the PID namespace are not killed:
+
+           # unshare --pid --fork --mount-proc -- \
+
+                  bash --norc -c ''(sleep 555 &) && (ps a &) && sleep 999'' &
+           [1] 53479
+           #     PID TTY      STAT   TIME COMMAND
+                 1 pts/3    S+     0:00 sleep 999
+                 3 pts/3    S+     0:00 sleep 555
+                 5 pts/3    R+     0:00 ps a
+
+           # kill $!
+           # pidof sleep
+           53482 53480
+
+       The following example demonstrates the creation of a time namespace where the boottime clock is set to a point several years in the past:
+
+           # uptime -p             # Show uptime in initial time namespace
+           up 21 hours, 30 minutes
+           # unshare --time --fork --boottime 300000000 uptime -p
+           up 9 years, 28 weeks, 1 day, 2 hours, 50 minutes
+
+AUTHORS
+       Mikhail Gusarov <dottedmag@dottedmag.net>, Karel Zak <kzak@redhat.com>
+
+SEE ALSO
+       newuidmap(1) newgidmap(1) clone(2), unshare(2), namespaces(7), mount(8)
+
+REPORTING BUGS
+       For bug reports, use the issue tracker at https://github.com/util-linux/util-linux/issues.
+
+AVAILABILITY
+       The unshare command is part of the util-linux package which can be downloaded from Linux Kernel Archive <https://www.kernel.org/pub/linux/utils/util-linux/>.
+
+util-linux 2.38.1                                                                               2022-05-11                                                                                      UNSHARE(1)
+unshare(2)                                                                                  System Calls Manual                                                                                 unshare(2)
+
+NAME
+       unshare - disassociate parts of the process execution context
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #define _GNU_SOURCE
+       #include <sched.h>
+
+       int unshare(int flags);
+
+DESCRIPTION
+       unshare()  allows  a  process (or thread) to disassociate parts of its execution context that are currently being shared with other processes (or threads).  Part of the execution context, such as
+       the mount namespace, is shared implicitly when a new process is created using fork(2) or vfork(2), while other parts, such as virtual memory, may be shared by explicit  request  when  creating  a
+       process or thread using clone(2).
+
+       The main use of unshare() is to allow a process to control its shared execution context without creating a new process.
+
+       The flags argument is a bit mask that specifies which parts of the execution context should be unshared.  This argument is specified by ORing together zero or more of the following constants:
+
+       CLONE_FILES
+              Reverse the effect of the clone(2) CLONE_FILES flag.  Unshare the file descriptor table, so that the calling process no longer shares its file descriptors with any other process.
+
+       CLONE_FS
+              Reverse the effect of the clone(2) CLONE_FS flag.  Unshare filesystem attributes, so that the calling process no longer shares its root directory (chroot(2)), current directory (chdir(2)),
+              or umask (umask(2)) attributes with any other process.
+
+       CLONE_NEWCGROUP (since Linux 4.6)
+              This flag has the same effect as the clone(2) CLONE_NEWCGROUP flag.  Unshare the cgroup namespace.  Use of CLONE_NEWCGROUP requires the CAP_SYS_ADMIN capability.
+
+       CLONE_NEWIPC (since Linux 2.6.19)
+              This flag has the same effect as the clone(2) CLONE_NEWIPC flag.  Unshare the IPC namespace, so that the calling process has a private copy of the IPC namespace which is  not  shared  with
+              any other process.  Specifying this flag automatically implies CLONE_SYSVSEM as well.  Use of CLONE_NEWIPC requires the CAP_SYS_ADMIN capability.
+
+       CLONE_NEWNET (since Linux 2.6.24)
+              This  flag has the same effect as the clone(2) CLONE_NEWNET flag.  Unshare the network namespace, so that the calling process is moved into a new network namespace which is not shared with
+              any previously existing process.  Use of CLONE_NEWNET requires the CAP_SYS_ADMIN capability.
+
+       CLONE_NEWNS
+              This flag has the same effect as the clone(2) CLONE_NEWNS flag.  Unshare the mount namespace, so that the calling process has a private copy of its namespace which is not shared  with  any
+              other process.  Specifying this flag automatically implies CLONE_FS as well.  Use of CLONE_NEWNS requires the CAP_SYS_ADMIN capability.  For further information, see mount_namespaces(7).
+
+       CLONE_NEWPID (since Linux 3.8)
+              This  flag  has the same effect as the clone(2) CLONE_NEWPID flag.  Unshare the PID namespace, so that the calling process has a new PID namespace for its children which is not shared with
+              any previously existing process.  The calling process is not moved into the new namespace.  The first child created by the calling process will have the process ID 1 and  will  assume  the
+              role  of  init(1)  in the new namespace.  CLONE_NEWPID automatically implies CLONE_THREAD as well.  Use of CLONE_NEWPID requires the CAP_SYS_ADMIN capability.  For further information, see
+              pid_namespaces(7).
+
+       CLONE_NEWTIME (since Linux 5.6)
+              Unshare the time namespace, so that the calling process has a new time namespace for its children which is not shared with any previously existing process.   The  calling  process  is  not
+              moved into the new namespace.  Use of CLONE_NEWTIME requires the CAP_SYS_ADMIN capability.  For further information, see time_namespaces(7).
+
+       CLONE_NEWUSER (since Linux 3.8)
+              This  flag  has the same effect as the clone(2) CLONE_NEWUSER flag.  Unshare the user namespace, so that the calling process is moved into a new user namespace which is not shared with any
+              previously existing process.  As with the child process created by clone(2) with the CLONE_NEWUSER flag, the caller obtains a full set of capabilities in the new namespace.
+
+              CLONE_NEWUSER requires that the calling process is not threaded; specifying CLONE_NEWUSER automatically implies CLONE_THREAD.  Since Linux 3.9,  CLONE_NEWUSER  also  automatically  implies
+              CLONE_FS.   CLONE_NEWUSER requires that the user ID and group ID of the calling process are mapped to user IDs and group IDs in the user namespace of the calling process at the time of the
+              call.
+
+              For further information on user namespaces, see user_namespaces(7).
+
+       CLONE_NEWUTS (since Linux 2.6.19)
+              This flag has the same effect as the clone(2) CLONE_NEWUTS flag.  Unshare the UTS IPC namespace, so that the calling process has a private copy of the UTS namespace  which  is  not  shared
+              with any other process.  Use of CLONE_NEWUTS requires the CAP_SYS_ADMIN capability.
+
+       CLONE_SYSVSEM (since Linux 2.6.26)
+              This  flag  reverses  the effect of the clone(2) CLONE_SYSVSEM flag.  Unshare System V semaphore adjustment (semadj) values, so that the calling process has a new empty semadj list that is
+              not shared with any other process.  If this is the last process that has a reference to the process's current semadj list, then the adjustments in that list are applied to the  correspond‐
+              ing semaphores, as described in semop(2).
+
+       In  addition,  CLONE_THREAD, CLONE_SIGHAND, and CLONE_VM can be specified in flags if the caller is single threaded (i.e., it is not sharing its address space with another process or thread).  In
+       this case, these flags have no effect.  (Note also that specifying CLONE_THREAD automatically implies CLONE_VM, and specifying CLONE_VM automatically implies CLONE_SIGHAND.)  If  the  process  is
+       multithreaded, then the use of these flags results in an error.
+
+       If flags is specified as zero, then unshare() is a no-op; no changes are made to the calling process's execution context.
+
+RETURN VALUE
+       On success, zero returned.  On failure, -1 is returned and errno is set to indicate the error.
+
+ERRORS
+       EINVAL An invalid bit was specified in flags.
+
+       EINVAL CLONE_THREAD, CLONE_SIGHAND, or CLONE_VM was specified in flags, and the caller is multithreaded.
+
+       EINVAL CLONE_NEWIPC was specified in flags, but the kernel was not configured with the CONFIG_SYSVIPC and CONFIG_IPC_NS options.
+
+       EINVAL CLONE_NEWNET was specified in flags, but the kernel was not configured with the CONFIG_NET_NS option.
+
+       EINVAL CLONE_NEWPID was specified in flags, but the kernel was not configured with the CONFIG_PID_NS option.
+
+       EINVAL CLONE_NEWUSER was specified in flags, but the kernel was not configured with the CONFIG_USER_NS option.
+
+       EINVAL CLONE_NEWUTS was specified in flags, but the kernel was not configured with the CONFIG_UTS_NS option.
+
+       EINVAL CLONE_NEWPID was specified in flags, but the process has previously called unshare() with the CLONE_NEWPID flag.
+
+       ENOMEM Cannot allocate sufficient memory to copy parts of caller's context that need to be unshared.
+
+       ENOSPC (since Linux 3.7)
+              CLONE_NEWPID was specified in flags, but the limit on the nesting depth of PID namespaces would have been exceeded; see pid_namespaces(7).
+
+       ENOSPC (since Linux 4.9; beforehand EUSERS)
+              CLONE_NEWUSER was specified in flags, and the call would cause the limit on the number of nested user namespaces to be exceeded.  See user_namespaces(7).
+
+              From Linux 3.11 to Linux 4.8, the error diagnosed in this case was EUSERS.
+
+       ENOSPC (since Linux 4.9)
+              One of the values in flags specified the creation of a new user namespace, but doing so would have caused the limit defined by the corresponding file in /proc/sys/user to be exceeded.  For
+              further details, see namespaces(7).
+
+       EPERM  The calling process did not have the required privileges for this operation.
+
+       EPERM  CLONE_NEWUSER was specified in flags, but either the effective user ID or the effective group ID of the caller does not have a mapping in the parent namespace (see user_namespaces(7)).
+
+       EPERM (since Linux 3.9)
+              CLONE_NEWUSER was specified in flags and the caller is in a chroot environment (i.e., the caller's root directory does not match the root directory of the mount namespace in which  it  re‐
+              sides).
+
+       EUSERS (from Linux 3.11 to Linux 4.8)
+              CLONE_NEWUSER was specified in flags, and the limit on the number of nested user namespaces would be exceeded.  See the discussion of the ENOSPC error above.
+
+STANDARDS
+       Linux.
+
+HISTORY
+       Linux 2.6.16.
+
+NOTES
+       Not  all  of the process attributes that can be shared when a new process is created using clone(2) can be unshared using unshare().  In particular, as at kernel 3.8, unshare() does not implement
+       flags that reverse the effects of CLONE_SIGHAND, CLONE_THREAD, or CLONE_VM.  Such functionality may be added in the future, if required.
+
+       Creating all kinds of namespace, except user namespaces, requires the CAP_SYS_ADMIN capability.  However, since creating a user namespace automatically confers a full set of capabilities,  creat‐
+       ing both a user namespace and any other type of namespace in the same unshare() call does not require the CAP_SYS_ADMIN capability in the original namespace.
+
+EXAMPLES
+       The program below provides a simple implementation of the unshare(1) command, which unshares one or more namespaces and executes the command supplied in its command-line arguments.  Here's an ex‐
+       ample of the use of this program, running a shell in a new mount namespace, and verifying that the original shell and the new shell are in separate mount namespaces:
+
+           $ readlink /proc/$$/ns/mnt
+           mnt:[4026531840]
+           $ sudo ./unshare -m /bin/bash
+           # readlink /proc/$$/ns/mnt
+           mnt:[4026532325]
+
+       The differing output of the two readlink(1) commands shows that the two shells are in different mount namespaces.
+
+   Program source
+
+       /* unshare.c
+
+          A simple implementation of the unshare(1) command: unshare
+          namespaces and execute a command.
+       */
+       #define _GNU_SOURCE
+       #include <err.h>
+       #include <sched.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <unistd.h>
+
+       static void
+       usage(char *pname)
+       {
+           fprintf(stderr, "Usage: %s [options] program [arg...]\n", pname);
+           fprintf(stderr, "Options can be:\n");
+           fprintf(stderr, "    -C   unshare cgroup namespace\n");
+           fprintf(stderr, "    -i   unshare IPC namespace\n");
+           fprintf(stderr, "    -m   unshare mount namespace\n");
+           fprintf(stderr, "    -n   unshare network namespace\n");
+           fprintf(stderr, "    -p   unshare PID namespace\n");
+           fprintf(stderr, "    -t   unshare time namespace\n");
+           fprintf(stderr, "    -u   unshare UTS namespace\n");
+           fprintf(stderr, "    -U   unshare user namespace\n");
+           exit(EXIT_FAILURE);
+       }
+
+       int
+       main(int argc, char *argv[])
+       {
+           int flags, opt;
+
+           flags = 0;
+
+           while ((opt = getopt(argc, argv, "CimnptuU")) != -1) {
+               switch (opt) {
+               case 'C': flags |= CLONE_NEWCGROUP;      break;
+               case 'i': flags |= CLONE_NEWIPC;        break;
+               case 'm': flags |= CLONE_NEWNS;         break;
+               case 'n': flags |= CLONE_NEWNET;        break;
+               case 'p': flags |= CLONE_NEWPID;        break;
+               case 't': flags |= CLONE_NEWTIME;        break;
+               case 'u': flags |= CLONE_NEWUTS;        break;
+               case 'U': flags |= CLONE_NEWUSER;       break;
+               default:  usage(argv[0]);
+               }
+           }
+
+           if (optind >= argc)
+               usage(argv[0]);
+
+           if (unshare(flags) == -1)
+               err(EXIT_FAILURE, "unshare");
+
+           execvp(argv[optind], &argv[optind]);
+           err(EXIT_FAILURE, "execvp");
+       }
+
+SEE ALSO
+       unshare(1), clone(2), fork(2), kcmp(2), setns(2), vfork(2), namespaces(7)
+
+       Documentation/userspace-api/unshare.rst in the Linux kernel source tree (or Documentation/unshare.txt before Linux 4.12)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      unshare(2)

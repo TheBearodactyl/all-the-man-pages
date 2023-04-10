@@ -1,0 +1,122 @@
+IR-KEYTABLE(1)                                                                                 User Commands                                                                                IR-KEYTABLE(1)
+
+NAME
+       ir-keytable - a swiss-knife tool to handle Remote Controllers.
+
+SYNOPSIS
+       ir-keytable [OPTION]...
+
+DESCRIPTION
+       ir-keytable is a tool that lists Remote Controller devices, loads rc keymaps, tests events, and adjusts other Remote Controller options.
+
+       Rather than loading a rc keymap, it is also possible to set protocol decoders and set rc scancode to keycode mappings directly.
+
+       Note: You need to have read permissions on /dev/input for most of the options to work.
+
+OPTIONS
+       -a, --auto-load=CFGFILE
+              Auto-load keymaps, based on a configuration file. Only works with --sysdev.
+
+       -c, --clear
+              Clears the scancode to keycode mappings.
+
+       -D, --delay=DELAY
+              Sets the delay before repeating a keystroke.
+
+       -k, --set-key=SCANKEY
+              Set scancode to keycode mapping.
+
+       -p, --protocol=PROTOCOL
+              Comma separated list of kernel protocols or BPF protocol to enable. All other protocols are disabled.
+
+       -e, --parameter=PARAMETER
+              Comma separated list of parameters for the BPF protocol.
+
+       -P, --period=PERIOD
+              Sets the period to repeat a keystroke.
+
+       -r, --read
+              Read and show the current scancode to keycode mapping.
+
+       -s, --sysdev=SYSDEV
+              rc device to control, defaults to rc0 if not specified.
+
+       -t, --test
+              test if the rc device is generating events
+
+       -v, --verbose
+              Enables debug messages.
+
+       -w, --write=KEYMAP
+              Reads the protocols and scancode to keycode mapping from the KEYMAP file, and enables those on the rc device.
+
+       -?, --help
+              Prints the help message
+
+       --usage
+              Give a short usage message
+
+       -V, --version
+              print the v4l2-utils version
+
+       Mandatory or optional arguments to long options are also mandatory or optional for any corresponding short options. Options can be combined together.
+
+   The options arguments are:
+       SYSDEV the rc device as found at /sys/class/rc
+
+       KEYMAP a toml keymap file with a list of protocols and scancodes to keycode mappings.  The format is described in rc_keymap(5).
+
+       SCANKEY
+              a set of scancode1=keycode1,scancode2=keycode2.. value pairs
+
+       PROTOCOL
+              Comma  separated  list  of kernel protocols to be enabled (case insensitive).  Supported kernel protocols are: nec, rc-5, rc-6, jvc, sony, sanyo, rc-5-sz, sharp, mce-kbd, xmp, imon, rc-mm,
+              other, all. It can also be a BPF protocol, e.g. manchester, pulse_distance, pulse_length.  If it does not match any of these, it is taken to be the path of BPF decoder to be loaded.
+
+       PARAMETERS
+              Comma separated list of parameters for the BPF protocol being loaded. They have the format of name=value, where value is an number.
+
+       DELAY  Delay before repeating a keystroke
+
+       PERIOD Period to repeat a keystroke
+
+       CFGFILE
+              configuration file that associates a driver/keymap name with a keymap file
+
+EXIT STATUS
+       On success, it returns 0. Otherwise, it will return the error code.
+
+EXAMPLES
+       To list all connected Remote Controller devices:
+            ir-keytable
+
+       To clean the keycode mapping and use a newer one:
+            ir-keytable -c -w /etc/rc_keymaps/nec_terratec_cinergy_xs.toml
+
+       To append more codes to the existing table:
+            ir-keytable -w /etc/rc_keymaps/nec_terratec_cinergy_xs.toml
+
+       To read the current scancode to keycode mapping on the second remote controller:
+            ir-keytable -s rc1 -r
+
+       To enable NEC protocol and load a BPF protocol, with a parameter for the BPF protocol:
+            ir-keytable -p nec,pulse_distance -e pulse_header=9000
+
+       If you do not know what protocol a remote uses, it can be helpful to first try with all kernel decoders enabled. The decoded protocol and scancodes will be displayed in the output:
+            ir-keytable -c -p all -t
+
+BUGS
+       Report bugs to Linux Media Mailing List <linux-media@vger.kernel.org>
+
+COPYRIGHT
+       Copyright (c) 2010-2014 by Mauro Carvalho Chehab.
+
+       License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>.
+       This is free software: you are free to change and redistribute it.  There is NO WARRANTY, to the extent permitted by law.
+
+SEE ALSO
+       The keymap format is described in rc_keymap(5).
+
+       To transmit IR or receive raw IR, see ir-ctl(1).
+
+v4l-utils 1.24.1                                                                              Fri Oct 3 2014                                                                                IR-KEYTABLE(1)

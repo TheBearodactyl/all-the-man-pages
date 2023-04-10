@@ -1,0 +1,107 @@
+albums(3)                                                                                         libmtp                                                                                         albums(3)
+
+NAME
+       albums - The audio/video album management API.
+
+SYNOPSIS
+   Functions
+       LIBMTP_album_t * LIBMTP_new_album_t (void)
+       void LIBMTP_destroy_album_t (LIBMTP_album_t *)
+       LIBMTP_album_t * LIBMTP_Get_Album_List (LIBMTP_mtpdevice_t *)
+       LIBMTP_album_t * LIBMTP_Get_Album_List_For_Storage (LIBMTP_mtpdevice_t *, uint32_t const)
+       LIBMTP_album_t * LIBMTP_Get_Album (LIBMTP_mtpdevice_t *, uint32_t const)
+       int LIBMTP_Create_New_Album (LIBMTP_mtpdevice_t *, LIBMTP_album_t *const)
+       int LIBMTP_Update_Album (LIBMTP_mtpdevice_t *, LIBMTP_album_t const *const)
+       int LIBMTP_Set_Album_Name (LIBMTP_mtpdevice_t *, LIBMTP_album_t *, const char *)
+
+Detailed Description
+Function Documentation
+   int LIBMTP_Create_New_Album (LIBMTP_mtpdevice_t * device, LIBMTP_album_t *const metadata)
+       This routine creates a new album based on the metadata supplied. If the tracks field of the metadata contains a track listing, these tracks will be added to the album.
+
+       Parameters
+           device a pointer to the device to create the new album on.
+           metadata the metadata for the new album. If the function exits with success, the album_id field of this struct will contain the new ID of the album.
+
+           • metadata->parent_id should be set to the parent (e.g. folder) to store this track in. Since some devices are a bit picky about where files are placed, a default folder will be chosen if
+             libmtp has detected one for the current filetype and this parameter is set to 0. If this is 0 and no default folder can be found, the file will be stored in the root folder.
+           • metadata->storage_id should be set to the desired storage (e.g. memory card or whatever your device presents) to store this track in. Setting this to 0 will store the track on the primary
+             storage.
+       Returns
+           0 on success, any other value means failure.
+       See also
+           LIBMTP_Update_Album()
+           LIBMTP_Delete_Object()
+       References LIBMTP_mtpdevice_struct::default_album_folder, LIBMTP_mtpdevice_struct::default_music_folder, and LIBMTP_album_struct::parent_id.
+   void LIBMTP_destroy_album_t (LIBMTP_album_t * album)
+       This recursively deletes the memory for an album structure
+       Parameters
+           album structure to destroy
+       See also
+           LIBMTP_new_album_t()
+       References LIBMTP_album_struct::artist, LIBMTP_album_struct::composer, LIBMTP_album_struct::genre, LIBMTP_album_struct::name, and LIBMTP_album_struct::tracks.
+   LIBMTP_album_t * LIBMTP_Get_Album (LIBMTP_mtpdevice_t * device, uint32_t const albid)
+       This function retrieves an individual album from the device.
+       Parameters
+           device a pointer to the device to get the album from.
+           albid the unique ID of the album to retrieve.
+       Returns
+           a valid album metadata or NULL on failure.
+       See also
+           LIBMTP_Get_Album_List()
+       References LIBMTP_mtpdevice_struct::params.
+   LIBMTP_album_t * LIBMTP_Get_Album_List (LIBMTP_mtpdevice_t * device)
+       This function returns a list of the albums available on the device.
+       Parameters
+           device a pointer to the device to get the album listing from.
+       Returns
+           an album list on success, else NULL. If there are no albums on the device, NULL will be returned as well.
+       See also
+           LIBMTP_Get_Album()
+       References LIBMTP_Get_Album_List_For_Storage().
+   LIBMTP_album_t * LIBMTP_Get_Album_List_For_Storage (LIBMTP_mtpdevice_t * device, uint32_t const storage_id)
+       This function returns a list of the albums available on the device. You can filter on the storage ID.
+       Parameters
+           device a pointer to the device to get the album listing from.
+           storage_id ID of device storage (if null, all storages)
+       Returns
+           an album list on success, else NULL. If there are no albums on the device, NULL will be returned as well.
+       See also
+           LIBMTP_Get_Album()
+       References LIBMTP_mtpdevice_struct::params.
+       Referenced by LIBMTP_Get_Album_List().
+   LIBMTP_album_t * LIBMTP_new_album_t (void)
+       This creates a new album metadata structure and allocates memory for it. Notice that if you add strings to this structure they will be freed by the corresponding LIBMTP_destroy_album_t operation
+       later, so be careful of using strdup() when assigning strings.
+       Returns
+           a pointer to the newly allocated metadata structure.
+       See also
+           LIBMTP_destroy_album_t()
+       References LIBMTP_album_struct::album_id.
+   int LIBMTP_Set_Album_Name (LIBMTP_mtpdevice_t * device, LIBMTP_album_t * album, const char * newname)
+       This function renames a single album. This simply means that the PTP_OPC_ObjectFileName property is updated, if this is supported by the device. The album filename should nominally end with an
+       extension like '.alb'.
+       NOTE: if you want to change the metadata the device display about a playlist you must not use this function, use LIBMTP_Update_Album() instead!
+       Parameters
+           device a pointer to the device that contains the file.
+           album the album metadata of the album to rename. On success, the name member is updated. Be aware, that this name can be different than newname depending of device restrictions.
+           newname the new name for this object.
+       Returns
+           0 on success, any other value means failure.
+       See also
+           LIBMTP_Update_Album()
+   int LIBMTP_Update_Album (LIBMTP_mtpdevice_t * device, LIBMTP_album_t const *const metadata)
+       This routine updates an album based on the metadata supplied. If the tracks field of the metadata contains a track listing, these tracks will be added to the album in place of those already
+       present, i.e. the previous track listing will be deleted.
+       Parameters
+           device a pointer to the device to create the new album on.
+           metadata the metadata for the album to be updated. notice that the field album_id must contain the appropriate album ID.
+       Returns
+           0 on success, any other value means failure.
+       See also
+           LIBMTP_Create_New_Album()
+           LIBMTP_Delete_Object()
+Author
+       Generated automatically by Doxygen for libmtp from the source code.
+
+Version 1.1.20                                                                                Mon Jul 4 2022                                                                                     albums(3)

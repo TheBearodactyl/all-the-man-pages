@@ -1,0 +1,263 @@
+CONNECT(3P)                                                                              POSIX Programmer's Manual                                                                             CONNECT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       connect — connect a socket
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int connect(int socket, const struct sockaddr *address,
+           socklen_t address_len);
+
+DESCRIPTION
+       The connect() function shall attempt to make a connection on a connection-mode socket or to set or reset the peer address of a connectionless-mode socket. The function takes the  following  argu‐
+       ments:
+
+       socket      Specifies the file descriptor associated with the socket.
+
+       address     Points to a sockaddr structure containing the peer address. The length and format of the address depend on the address family of the socket.
+
+       address_len Specifies the length of the sockaddr structure pointed to by the address argument.
+
+       If the socket has not already been bound to a local address, connect() shall bind it to an address which, unless the socket's address family is AF_UNIX, is an unused local address.
+
+       If the initiating socket is not connection-mode, then connect() shall set the socket's peer address, and no connection is made. For SOCK_DGRAM sockets, the peer address identifies where all data‐
+       grams are sent on subsequent send() functions, and limits the remote sender for subsequent recv() functions. If the sa_family member of address is AF_UNSPEC, the socket's peer  address  shall  be
+       reset. Note that despite no connection being made, the term ``connected'' is used to describe a connectionless-mode socket for which a peer address has been set.
+
+       If the initiating socket is connection-mode, then connect() shall attempt to establish a connection to the address specified by the address argument. If the connection cannot be established imme‐
+       diately and O_NONBLOCK is not set for the file descriptor for the socket, connect() shall block for up to an unspecified timeout interval until the connection is established. If the  timeout  in‐
+       terval expires before the connection is established, connect() shall fail and the connection attempt shall be aborted. If connect() is interrupted by a signal that is caught while blocked waiting
+       to establish a connection, connect() shall fail and set errno to [EINTR], but the connection request shall not be aborted, and the connection shall be established asynchronously.
+
+       If the connection cannot be established immediately and O_NONBLOCK is set for the file descriptor for the socket, connect() shall fail and set errno to [EINPROGRESS], but the  connection  request
+       shall  not be aborted, and the connection shall be established asynchronously. Subsequent calls to connect() for the same socket, before the connection is established, shall fail and set errno to
+       [EALREADY].
+
+       When the connection has been established asynchronously, pselect(), select(), and poll() shall indicate that the file descriptor for the socket is ready for writing.
+
+       The socket in use may require the process to have appropriate privileges to use the connect() function.
+
+RETURN VALUE
+       Upon successful completion, connect() shall return 0; otherwise, -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The connect() function shall fail if:
+
+       EADDRNOTAVAIL
+              The specified address is not available from the local machine.
+
+       EAFNOSUPPORT
+              The specified address is not a valid address for the address family of the specified socket.
+
+       EALREADY
+              A connection request is already in progress for the specified socket.
+
+       EBADF  The socket argument is not a valid file descriptor.
+
+       ECONNREFUSED
+              The target address was not listening for connections or refused the connection request.
+
+       EINPROGRESS
+              O_NONBLOCK is set for the file descriptor for the socket and the connection cannot be immediately established; the connection shall be established asynchronously.
+
+       EINTR  The attempt to establish a connection was interrupted by delivery of a signal that was caught; the connection shall be established asynchronously.
+
+       EISCONN
+              The specified socket is connection-mode and is already connected.
+
+       ENETUNREACH
+              No route to the network is present.
+
+       ENOTSOCK
+              The socket argument does not refer to a socket.
+
+       EPROTOTYPE
+              The specified address has a different type than the socket bound to the specified peer address.
+
+       ETIMEDOUT
+              The attempt to connect timed out before a connection was made.
+
+       If the address family of the socket is AF_UNIX, then connect() shall fail if:
+
+       EIO    An I/O error occurred while reading from or writing to the file system.
+
+       ELOOP  A loop exists in symbolic links encountered during resolution of the pathname in address.
+
+       ENAMETOOLONG
+              The length of a component of a pathname is longer than {NAME_MAX}.
+
+       ENOENT A component of the pathname does not name an existing file or the pathname is an empty string.
+
+       ENOTDIR
+              A component of the path prefix of the pathname in address names an existing file that is neither a directory nor a symbolic link to a directory, or the  pathname  in  address  contains  at
+              least one non-<slash> character and ends with one or more trailing <slash> characters and the last pathname component names an existing file that is neither a directory nor a symbolic link
+              to a directory.
+
+       The connect() function may fail if:
+
+       EACCES Search permission is denied for a component of the path prefix; or write access to the named socket is denied.
+
+       EADDRINUSE
+              Attempt to establish a connection that uses addresses that are already in use.
+
+       ECONNRESET
+              Remote host reset the connection request.
+
+       EHOSTUNREACH
+              The destination host cannot be reached (probably because the host is down or a remote router cannot reach it).
+
+       EINVAL The address_len argument is not a valid length for the address family; or invalid address family in the sockaddr structure.
+
+       ELOOP  More than {SYMLOOP_MAX} symbolic links were encountered during resolution of the pathname in address.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolution of a symbolic link produced an intermediate result with a length that exceeds {PATH_MAX}.
+
+       ENETDOWN
+              The local network interface used to reach the destination is down.
+
+       ENOBUFS
+              No buffer space is available.
+
+       EOPNOTSUPP
+              The socket is listening and cannot be connected.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       If connect() fails, the state of the socket is unspecified. Conforming applications should close the file descriptor and create a new socket before attempting to reconnect.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       accept(), bind(), close(), getsockname(), poll(), pselect(), send(), shutdown(), socket()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_socket.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                        CONNECT(3P)
+connect(2)                                                                                  System Calls Manual                                                                                 connect(2)
+
+NAME
+       connect - initiate a connection on a socket
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int connect(int sockfd, const struct sockaddr *addr,
+                   socklen_t addrlen);
+
+DESCRIPTION
+       The  connect() system call connects the socket referred to by the file descriptor sockfd to the address specified by addr.  The addrlen argument specifies the size of addr.  The format of the ad‐
+       dress in addr is determined by the address space of the socket sockfd; see socket(2) for further details.
+
+       If the socket sockfd is of type SOCK_DGRAM, then addr is the address to which datagrams are sent by default, and the only address from which datagrams are received.  If  the  socket  is  of  type
+       SOCK_STREAM or SOCK_SEQPACKET, this call attempts to make a connection to the socket that is bound to the address specified by addr.
+
+       Some protocol sockets (e.g., UNIX domain stream sockets) may successfully connect() only once.
+
+       Some protocol sockets (e.g., datagram sockets in the UNIX and Internet domains) may use connect() multiple times to change their association.
+
+       Some  protocol sockets (e.g., TCP sockets as well as datagram sockets in the UNIX and Internet domains) may dissolve the association by connecting to an address with the sa_family member of sock‐
+       addr set to AF_UNSPEC; thereafter, the socket can be connected to another address.  (AF_UNSPEC is supported since Linux 2.2.)
+
+RETURN VALUE
+       If the connection or binding succeeds, zero is returned.  On error, -1 is returned, and errno is set to indicate the error.
+
+ERRORS
+       The following are general socket errors only.  There may be other domain-specific error codes.
+
+       EACCES For UNIX domain sockets, which are identified by pathname: Write permission is denied on the socket file, or search permission is denied for one of the  directories  in  the  path  prefix.
+              (See also path_resolution(7).)
+
+       EACCES, EPERM
+              The user tried to connect to a broadcast address without having the socket broadcast flag enabled or the connection request failed because of a local firewall rule.
+
+       EACCES It  can  also  be returned if an SELinux policy denied a connection (for example, if there is a policy saying that an HTTP proxy can only connect to ports associated with HTTP servers, and
+              the proxy tries to connect to a different port).
+
+       EADDRINUSE
+              Local address is already in use.
+
+       EADDRNOTAVAIL
+              (Internet domain sockets) The socket referred to by sockfd had not previously been bound to an address and, upon attempting to bind it to an ephemeral port, it was determined that all port
+              numbers in the ephemeral port range are currently in use.  See the discussion of /proc/sys/net/ipv4/ip_local_port_range in ip(7).
+
+       EAFNOSUPPORT
+              The passed address didn't have the correct address family in its sa_family field.
+
+       EAGAIN For  nonblocking UNIX domain sockets, the socket is nonblocking, and the connection cannot be completed immediately.  For other socket families, there are insufficient entries in the rout‐
+              ing cache.
+
+       EALREADY
+              The socket is nonblocking and a previous connection attempt has not yet been completed.
+
+       EBADF  sockfd is not a valid open file descriptor.
+
+       ECONNREFUSED
+              A connect() on a stream socket found no one listening on the remote address.
+
+       EFAULT The socket structure address is outside the user's address space.
+
+       EINPROGRESS
+              The socket is nonblocking and the connection cannot be completed immediately.  (UNIX domain sockets failed with EAGAIN instead.)  It is possible to select(2) or poll(2) for  completion  by
+              selecting  the  socket  for writing.  After select(2) indicates writability, use getsockopt(2) to read the SO_ERROR option at level SOL_SOCKET to determine whether connect() completed suc‐
+              cessfully (SO_ERROR is zero) or unsuccessfully (SO_ERROR is one of the usual error codes listed here, explaining the reason for the failure).
+
+       EINTR  The system call was interrupted by a signal that was caught; see signal(7).
+
+       EISCONN
+              The socket is already connected.
+
+       ENETUNREACH
+              Network is unreachable.
+
+       ENOTSOCK
+              The file descriptor sockfd does not refer to a socket.
+
+       EPROTOTYPE
+              The socket type does not support the requested communications protocol.  This error can occur, for example, on an attempt to connect a UNIX domain datagram socket to a stream socket.
+
+       ETIMEDOUT
+              Timeout while attempting connection.  The server may be too busy to accept new connections.  Note that for IP sockets the timeout may be very  long  when  syncookies  are  enabled  on  the
+              server.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.4BSD, (connect() first appeared in 4.2BSD).
+
+NOTES
+       If connect() fails, consider the state of the socket as unspecified.  Portable applications should close the socket and create a new one for reconnecting.
+
+EXAMPLES
+       An example of the use of connect() is shown in getaddrinfo(3).
+
+SEE ALSO
+       accept(2), bind(2), getsockname(2), listen(2), socket(2), path_resolution(7), selinux(8)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      connect(2)

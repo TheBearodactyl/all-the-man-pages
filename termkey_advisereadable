@@ -1,0 +1,39 @@
+TERMKEY_ADVISEREADABLE(3)                                                                Library Functions Manual                                                                TERMKEY_ADVISEREADABLE(3)
+
+NAME
+       termkey_advisereadable - read more bytes from the underlying terminal
+
+SYNOPSIS
+       #include <termkey.h>
+
+       TermKeyResult termkey_advisereadable(TermKey *tk);
+
+       Link with -ltermkey.
+
+DESCRIPTION
+       termkey_advisereadable()  informs  the  termkey(7) instance that new input may be available on the underlying file descriptor and so it should call read(2) to obtain it. If at least one more byte
+       was read it will return TERMKEY_RES_AGAIN to indicate it may be useful to call termkey_getkey(3) again. If no more input was read then TERMKEY_RES_NONE is returned. If there was no  buffer  space
+       remaining, then TERMKEY_RES_ERROR is returned with errno set to ENOMEM. If no filehandle is associated with this instance, TERMKEY_RES_ERROR is returned with errno set to EBADF.
+
+       This  function,  along  with  termkey_getkey(3)  make  it  possible  to  use  the  termkey  instance  in  an  asynchronous  program.  To  provide  bytes  without using a readable file handle, use
+       termkey_push_bytes(3).
+
+       For synchronous usage, termkey_waitkey(3) performs the input blocking task.
+
+RETURN VALUE
+       termkey_advisereadable() returns one of the following constants:
+
+       TERMKEY_RES_AGAIN
+              At least one byte was read.
+
+       TERMKEY_RES_NONE
+              No nore bytes were read.
+
+       TERMKEY_RES_ERROR
+              An IO error occurred. errno will be preserved. If the error is EINTR then this will only be returned if TERMKEY_FLAG_EINTR flag is not set; if it is then the IO operation will  be  retried
+              instead.
+
+SEE ALSO
+       termkey_getkey(3), termkey_waitkey(3), termkey_set_waittime(3), termkey(7)
+
+                                                                                                                                                                                 TERMKEY_ADVISEREADABLE(3)

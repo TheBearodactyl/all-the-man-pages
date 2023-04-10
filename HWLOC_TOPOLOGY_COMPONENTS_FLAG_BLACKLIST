@@ -1,0 +1,109 @@
+hwlocality_setsource(3)                                                                  Hardware Locality (hwloc)                                                                 hwlocality_setsource(3)
+
+NAME
+       hwlocality_setsource - Changing the Source of Topology Discovery
+
+SYNOPSIS
+   Enumerations
+       enum hwloc_topology_components_flag_e { HWLOC_TOPOLOGY_COMPONENTS_FLAG_BLACKLIST }
+
+   Functions
+       int hwloc_topology_set_pid (hwloc_topology_t restrict topology, hwloc_pid_t pid)
+       int hwloc_topology_set_synthetic (hwloc_topology_t restrict topology, const char *restrict description)
+       int hwloc_topology_set_xml (hwloc_topology_t restrict topology, const char *restrict xmlpath)
+       int hwloc_topology_set_xmlbuffer (hwloc_topology_t restrict topology, const char *restrict buffer, int size)
+       int hwloc_topology_set_components (hwloc_topology_t restrict topology, unsigned long flags, const char *restrict name)
+
+Detailed Description
+       If none of the functions below is called, the default is to detect all the objects of the machine that the caller is allowed to access.
+
+       This default behavior may also be modified through environment variables if the application did not modify it already. Setting HWLOC_XMLFILE in the environment enforces the discovery from a XML
+       file as if hwloc_topology_set_xml() had been called. Setting HWLOC_SYNTHETIC enforces a synthetic topology as if hwloc_topology_set_synthetic() had been called.
+
+       Finally, HWLOC_THISSYSTEM enforces the return value of hwloc_topology_is_thissystem().
+
+Enumeration Type Documentation
+   enum hwloc_topology_components_flag_e
+       Flags to be passed to hwloc_topology_set_components()
+
+       Enumerator
+
+       HWLOC_TOPOLOGY_COMPONENTS_FLAG_BLACKLIST
+              Blacklist the target component from being used.
+
+Function Documentation
+   int hwloc_topology_set_components (hwloc_topology_t restrict topology, unsigned long flags, const char *restrict name)
+       Prevent a discovery component from being used for a topology. name is the name of the discovery component that should not be used when loading topology topology. The name is a string such as
+       'cuda'.
+
+       For components with multiple phases, it may also be suffixed with the name of a phase, for instance 'linux:io'.
+
+       flags should be HWLOC_TOPOLOGY_COMPONENTS_FLAG_BLACKLIST.
+
+       This may be used to avoid expensive parts of the discovery process. For instance, CUDA-specific discovery may be expensive and unneeded while generic I/O discovery could still be useful.
+
+   int hwloc_topology_set_pid (hwloc_topology_t restrict topology, hwloc_pid_t pid)
+       Change which process the topology is viewed from. On some systems, processes may have different views of the machine, for instance the set of allowed CPUs. By default, hwloc exposes the view from
+       the current process. Calling hwloc_topology_set_pid() permits to make it expose the topology of the machine from the point of view of another process.
+
+       Note
+           hwloc_pid_t is pid_t on Unix platforms, and HANDLE on native Windows platforms.
+
+           -1 is returned and errno is set to ENOSYS on platforms that do not support this feature.
+
+   int hwloc_topology_set_synthetic (hwloc_topology_t restrict topology, const char *restrict description)
+       Enable synthetic topology. Gather topology information from the given description, a space-separated string of <type:number> describing the object type and arity at each level. All types may be
+       omitted (space-separated string of numbers) so that hwloc chooses all types according to usual topologies. See also the Synthetic topologies.
+
+       Setting the environment variable HWLOC_SYNTHETIC may also result in this behavior.
+
+       If description was properly parsed and describes a valid topology configuration, this function returns 0. Otherwise -1 is returned and errno is set to EINVAL.
+
+       Note that this function does not actually load topology information; it just tells hwloc where to load it from. You'll still need to invoke hwloc_topology_load() to actually load the topology
+       information.
+
+       Note
+           For convenience, this backend provides empty binding hooks which just return success.
+
+           On success, the synthetic component replaces the previously enabled component (if any), but the topology is not actually modified until hwloc_topology_load().
+
+   int hwloc_topology_set_xml (hwloc_topology_t restrict topology, const char *restrict xmlpath)
+       Enable XML-file based topology. Gather topology information from the XML file given at xmlpath. Setting the environment variable HWLOC_XMLFILE may also result in this behavior. This file may have
+       been generated earlier with hwloc_topology_export_xml() in hwloc/export.h, or lstopo file.xml.
+
+       Note that this function does not actually load topology information; it just tells hwloc where to load it from. You'll still need to invoke hwloc_topology_load() to actually load the topology
+       information.
+
+       Returns
+           -1 with errno set to EINVAL on failure to read the XML file.
+
+       Note
+           See also hwloc_topology_set_userdata_import_callback() for importing application-specific object userdata.
+
+           For convenience, this backend provides empty binding hooks which just return success. To have hwloc still actually call OS-specific hooks, the HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM has to be set
+           to assert that the loaded file is really the underlying system.
+
+           On success, the XML component replaces the previously enabled component (if any), but the topology is not actually modified until hwloc_topology_load().
+
+   int hwloc_topology_set_xmlbuffer (hwloc_topology_t restrict topology, const char *restrict buffer, int size)
+       Enable XML based topology using a memory buffer (instead of a file, as with hwloc_topology_set_xml()). Gather topology information from the XML memory buffer given at buffer and of length size.
+       This buffer may have been filled earlier with hwloc_topology_export_xmlbuffer() in hwloc/export.h.
+
+       Note that this function does not actually load topology information; it just tells hwloc where to load it from. You'll still need to invoke hwloc_topology_load() to actually load the topology
+       information.
+
+       Returns
+           -1 with errno set to EINVAL on failure to read the XML buffer.
+
+       Note
+           See also hwloc_topology_set_userdata_import_callback() for importing application-specific object userdata.
+
+           For convenience, this backend provides empty binding hooks which just return success. To have hwloc still actually call OS-specific hooks, the HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM has to be set
+           to assert that the loaded file is really the underlying system.
+
+           On success, the XML component replaces the previously enabled component (if any), but the topology is not actually modified until hwloc_topology_load().
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                      hwlocality_setsource(3)

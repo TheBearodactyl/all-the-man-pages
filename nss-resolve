@@ -1,0 +1,68 @@
+NSS-RESOLVE(8)                                                                                  nss-resolve                                                                                 NSS-RESOLVE(8)
+
+NAME
+       nss-resolve, libnss_resolve.so.2 - Hostname resolution via systemd-resolved.service
+
+SYNOPSIS
+       libnss_resolve.so.2
+
+DESCRIPTION
+       nss-resolve is a plug-in module for the GNU Name Service Switch (NSS) functionality of the GNU C Library (glibc) enabling it to resolve hostnames via the systemd-resolved(8) local network name
+       resolution service. It replaces the nss-dns plug-in module that traditionally resolves hostnames via DNS.
+
+       To activate the NSS module, add "resolve [!UNAVAIL=return]" to the line starting with "hosts:" in /etc/nsswitch.conf. Specifically, it is recommended to place "resolve" early in
+       /etc/nsswitch.conf's "hosts:" line. It should be before the "files" entry, since systemd-resolved supports /etc/hosts internally, but with caching. To the contrary, it should be after
+       "mymachines", to give hostnames given to local VMs and containers precedence over names received over DNS. Finally, we recommend placing "dns" somewhere after "resolve", to fall back to nss-dns
+       if systemd-resolved.service is not available.
+
+       Note that systemd-resolved will synthesize DNS resource records in a few cases, for example for "localhost" and the current local hostname, see systemd-resolved(8) for the full list. This
+       duplicates the functionality of nss-myhostname(8), but it is still recommended (see examples below) to keep nss-myhostname configured in /etc/nsswitch.conf, to keep those names resolveable if
+       systemd-resolved is not running.
+
+       Please keep in mind that nss-myhostname (and nss-resolve) also resolve in the other direction — from locally attached IP addresses to hostnames. If you rely on that lookup being provided by DNS,
+       you might want to order things differently.
+
+       Communication between nss-resolve and systemd-resolved.service takes place via the /run/systemd/resolve/io.systemd.Resolve AF_UNIX socket.
+
+ENVIRONMENT VARIABLES
+       $SYSTEMD_NSS_RESOLVE_VALIDATE
+           Takes a boolean argument. When false, cryptographic validation of resource records via DNSSEC will be disabled. This may be useful for testing, or when system time is known to be unreliable.
+
+       $SYSTEMD_NSS_RESOLVE_SYNTHESIZE
+           Takes a boolean argument. When false, synthetic records, e.g. for the local host name, will not be returned. See section SYNTHETIC RECORDS in systemd-resolved.service(8) for more information.
+           This may be useful to query the "public" resource records, independent of the configuration of the local machine.
+
+       $SYSTEMD_NSS_RESOLVE_CACHE
+           Takes a boolean argument. When false, the cache of previously queried records will not be used by systemd-resolved.
+
+       $SYSTEMD_NSS_RESOLVE_ZONE
+           Takes a boolean argument. When false, answers using locally registered public LLMNR/mDNS resource records will not be returned.
+
+       $SYSTEMD_NSS_RESOLVE_TRUST_ANCHOR
+           Takes a boolean argument. When false, answers using locally configured trust anchors will not be used.
+
+       $SYSTEMD_NSS_RESOLVE_NETWORK
+           Takes a boolean argument. When false, answers will be returned without using the network, i.e. either from local sources or the cache in systemd-resolved.
+
+EXAMPLE
+       Here is an example /etc/nsswitch.conf file that enables nss-resolve correctly:
+
+           passwd:         compat systemd
+           group:          compat [SUCCESS=merge] systemd
+           shadow:         compat systemd
+           gshadow:        files systemd
+
+           hosts:          mymachines resolve [!UNAVAIL=return] files myhostname dns
+           networks:       files
+
+           protocols:      db files
+           services:       db files
+           ethers:         db files
+           rpc:            db files
+
+           netgroup:       nis
+
+SEE ALSO
+       systemd(1), systemd-resolved(8), nss-systemd(8), nss-myhostname(8), nss-mymachines(8), nsswitch.conf(5), systemd.syntax(5)
+
+systemd 253                                                                                                                                                                                 NSS-RESOLVE(8)

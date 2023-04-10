@@ -1,0 +1,248 @@
+PACTRANS(1)                        pactrans                        PACTRANS(1)
+
+NAME
+       pactrans, pacinstall, pacremove - install/remove alpm packages
+
+SYNOPSIS
+        pactrans   [options] <target>...
+        pacinstall [options] <target>...
+        pacremove  [options] <target>...
+        pactrans   (--help|--version)
+
+DESCRIPTION
+       Install/remove alpm packages.  The pacinstall and pacremove aliases are
+       provided as a convenience, differing only in their default
+       interpretation of targets.  Otherwise, they are identical.
+
+       If stdin is not connected to a terminal, pkgspecs to install/remove
+       will be read from stdin.
+
+OPTIONS
+   Operations
+       Operation options affect the interpretation of all targets following
+       them until another operation option is encountered.
+
+       --spec (pactrans default)
+           Interpret following targets as pkgspecs.  If a pkgspec indicates a
+           package file or a repository package, it will be installed.  If it
+           indicates a package in the local database, it will be removed.  See
+           PKGSPEC for details on the format.
+
+       --install (pacinstall default)
+           Interpret following targets as packages to be installed from a
+           repository.  If only the package name is provided repositories will
+           be searched in the order they are declared.
+
+       --remove (pacremove default)
+           Interpret following targets as package names to be uninstalled.
+
+       --file
+           Interpret following targets as paths to package files to be
+           installed.
+
+       --sysupgrade
+           Upgrade installed packages.
+
+   Configuration Options
+       --cache-dir=path
+           Set an alternate cache directory path.
+
+       --config=path
+           Set an alternate configuration file path.
+
+       --dbext=extension
+           Set an alternate sync database extension.
+
+       --dbpath=path
+           Set an alternate database path.
+
+       --logfile=path
+           Set an alternate log file path.
+
+       --root=path
+           Set an alternate installation root.
+
+       --sysroot=path
+           Set an alternate system root.  See pacutils-sysroot(7).
+
+       --null[=sep]
+           Set an alternate separator for values parsed from stdin.  By
+           default a newline "\n" is used as the separator.  If --null is used
+           without specifying sep "NUL" will be used.
+
+       --debug
+           Display additional debugging information.
+
+       --print-only
+           Display the what the transaction would do and exit.
+
+       --no-confirm
+           Assume default responses to all prompts.
+
+       --no-timeout
+           Disable low-speed timeouts for downloads.
+
+       --help
+           Display usage information and exit.
+
+       --version
+           Display version information and exit.
+
+   Transaction Options
+       --dbsync
+           Update sync databases before performing the transaction.
+
+       --dbonly
+           Make the changes to the database without actually extracting or
+           removing any packages.
+
+       --nodeps
+           Ignore dependency versions.  Pass twice to ignore dependency checks
+           altogether.
+
+       --no-scriptlet
+           Do not run package install scripts.
+
+       --no-hooks
+           Do not run transaction hooks.
+
+   Sysupgrade Options
+       --ignore-pkg=package
+           Ignore upgrades for package package.  package may be a shell-style
+           glob pattern.
+
+       --ignore-group=group
+           Ignore upgrades for any packages in group group.  group may be a
+           shell-style glob pattern.
+
+   --install/--file Options
+       --as-deps
+           Mark all installed packages as dependencies.
+
+       --as-explicit
+           Mark all installed packages as explicitly installed.
+
+       --download-only
+           Download packages without actually installing them.
+
+   --remove Options
+       --cascade
+           Uninstall all installed packages that depend on a package being
+           uninstalled.
+
+       --no-backup
+           Do not save .pacsave backups.
+
+       --recursive
+           Uninstall any dependencies of packages being removed that are not
+           required by any other packages.
+
+       --unneeded
+           Do not uninstall any packages required by an installed package.
+
+   Prompt Disposition Options
+       --resolve-conflicts=method
+           Select a method to use for resolving conflicts.  Possible values
+           for method are:
+
+           "prompt"
+               Prompt the user to remove the installed conflicting package.
+
+           "none"
+               Do not remove any conflicting packages.
+
+           "all"
+               Remove any conflicting packages.
+
+           "provided"
+               Remove a conflicting package if the new package provides it.
+
+           "depends"
+               Remove a conflicting package if it was installed as a
+               dependency.
+
+           "provided-depends"
+               Remove a conflicting package if it was installed as a
+               dependency and the new package provides it.
+
+       --resolve-replacements=method
+           Select a method to use for resolving replacements.  Possible values
+           for method are:
+
+           "prompt"
+               Prompt the user to replace the package.
+
+           "none"
+               Do not replace any packages.
+
+           "all"
+               Perform all available package replacements.
+
+           "provided"
+               Perform replacements where the new package provides the old
+               one.
+
+           "depends"
+               Perform replacements where the old package was installed as a
+               dependency.
+
+           "provided-depends"
+               Perform replacements where the old package was installed as a
+               dependency and the new package provides the old one.
+
+       --install-ignored-packages=prompt|yes|no
+           Set the disposition for prompts to install ignored packages.
+
+       --delete-corrupt-files=prompt|yes|no
+           Set the disposition for prompts to delete corrupt package.
+
+       --use-first-provider=prompt|yes|no
+           Set the disposition for prompts to select a provider.  If set to
+           "yes", the first available provider will be selected.
+
+       --skip-unresolvable=prompt|yes|no
+           Set the disposition for prompts to skip packages with unresolvable
+           dependencies.
+
+       --import-pgp-keys=prompt|yes|no
+           Set the disposition for prompts to import missing PGP keys.
+
+       --yolo
+           Set all prompt disposition options to their "all" or "yes" value
+           and set --no-confirm.
+
+       NOTE: regardless of the disposition options chosen, all dependencies
+       must still be satisfied in order for the transaction to succeed unless
+       --nodeps is used as well.
+
+PKGSPEC
+       A pkgspec is a string that can identify an individual package.
+       Accepted formats are:
+
+       <repository>/<package>
+            core/pacman
+            local/pacman
+
+       <proto>://<path/to/package/file>
+            file:///var/cache/pacman/pkg/pacman-4.1.0-1-x86_64.pkg.tar.xz
+
+EXAMPLES
+       Replace foo with bar
+            pactrans local/foo baz/bar
+
+           Or, if bar's repository is unknown:
+
+            pacinstall bar --remove foo
+
+       Install foo and bar:
+            pactrans --install foo bar
+
+CAVEATS
+       pactrans determines whether or not to read pkgspecs from stdin based on
+       a naive check using isatty(3).  If pactrans is called in an
+       environment, such as a shell function or script being used in a pipe,
+       where stdin is not connected to a terminal but does not contain
+       pkgspecs to install/remove, pactrans should be called with stdin
+       closed.  For POSIX-compatible shells, this can be done with "<&-".
+
+pacutils                          2021-08-14                       PACTRANS(1)

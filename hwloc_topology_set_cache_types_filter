@@ -1,0 +1,226 @@
+hwlocality_configuration(3)                                                              Hardware Locality (hwloc)                                                             hwlocality_configuration(3)
+
+NAME
+       hwlocality_configuration - Topology Detection Configuration and Query
+
+SYNOPSIS
+   Data Structures
+       struct hwloc_topology_discovery_support
+       struct hwloc_topology_cpubind_support
+       struct hwloc_topology_membind_support
+       struct hwloc_topology_misc_support
+       struct hwloc_topology_support
+
+   Enumerations
+       enum hwloc_topology_flags_e { HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED, HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM, HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES, HWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT =
+           (1UL<<3), HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_CPUBINDING = (1UL<<4), HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_MEMBINDING = (1UL<<5), HWLOC_TOPOLOGY_FLAG_DONT_CHANGE_BINDING = (1UL<<6),
+           HWLOC_TOPOLOGY_FLAG_NO_DISTANCES = (1UL<<7), HWLOC_TOPOLOGY_FLAG_NO_MEMATTRS = (1UL<<8), HWLOC_TOPOLOGY_FLAG_NO_CPUKINDS = (1UL<<9) }
+       enum hwloc_type_filter_e { HWLOC_TYPE_FILTER_KEEP_ALL, HWLOC_TYPE_FILTER_KEEP_NONE, HWLOC_TYPE_FILTER_KEEP_STRUCTURE, HWLOC_TYPE_FILTER_KEEP_IMPORTANT }
+
+   Functions
+       int hwloc_topology_set_flags (hwloc_topology_t topology, unsigned long flags)
+       unsigned long hwloc_topology_get_flags (hwloc_topology_t topology)
+       int hwloc_topology_is_thissystem (hwloc_topology_t restrict topology)
+       const struct hwloc_topology_support * hwloc_topology_get_support (hwloc_topology_t restrict topology)
+       int hwloc_topology_set_type_filter (hwloc_topology_t topology, hwloc_obj_type_t type, enum hwloc_type_filter_e filter)
+       int hwloc_topology_get_type_filter (hwloc_topology_t topology, hwloc_obj_type_t type, enum hwloc_type_filter_e *filter)
+       int hwloc_topology_set_all_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       int hwloc_topology_set_cache_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       int hwloc_topology_set_icache_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       int hwloc_topology_set_io_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       void hwloc_topology_set_userdata (hwloc_topology_t topology, const void *userdata)
+       void * hwloc_topology_get_userdata (hwloc_topology_t topology)
+
+Detailed Description
+       Several functions can optionally be called between hwloc_topology_init() and hwloc_topology_load() to configure how the detection should be performed, e.g. to ignore some objects types, define a
+       synthetic topology, etc.
+
+Enumeration Type Documentation
+   enum hwloc_topology_flags_e
+       Flags to be set onto a topology context before load. Flags should be given to hwloc_topology_set_flags(). They may also be returned by hwloc_topology_get_flags().
+
+       Enumerator
+
+       HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED
+              Detect the whole system, ignore reservations, include disallowed objects. Gather all online resources, even if some were disabled by the administrator. For instance, ignore Linux
+              Cgroup/Cpusets and gather all processors and memory nodes. However offline PUs and NUMA nodes are still ignored.
+
+       When this flag is not set, PUs and NUMA nodes that are disallowed are not added to the topology. Parent objects (package, core, cache, etc.) are added only if some of their children are allowed.
+       All existing PUs and NUMA nodes in the topology are allowed. hwloc_topology_get_allowed_cpuset() and hwloc_topology_get_allowed_nodeset() are equal to the root object cpuset and nodeset.
+
+       When this flag is set, the actual sets of allowed PUs and NUMA nodes are given by hwloc_topology_get_allowed_cpuset() and hwloc_topology_get_allowed_nodeset(). They may be smaller than the root
+       object cpuset and nodeset.
+
+       If the current topology is exported to XML and reimported later, this flag should be set again in the reimported topology so that disallowed resources are reimported as well.
+
+       HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM
+              Assume that the selected backend provides the topology for the system on which we are running. This forces hwloc_topology_is_thissystem() to return 1, i.e. makes hwloc assume that the
+              selected backend provides the topology for the system on which we are running, even if it is not the OS-specific backend but the XML backend for instance. This means making the binding
+              functions actually call the OS-specific system calls and really do binding, while the XML backend would otherwise provide empty hooks just returning success.
+
+       Setting the environment variable HWLOC_THISSYSTEM may also result in the same behavior.
+
+       This can be used for efficiency reasons to first detect the topology once, save it to an XML file, and quickly reload it later through the XML backend, but still having binding functions actually
+       do bind.
+
+       HWLOC_TOPOLOGY_FLAG_THISSYSTEM_ALLOWED_RESOURCES
+              Get the set of allowed resources from the local operating system even if the topology was loaded from XML or synthetic description. If the topology was loaded from XML or from a synthetic
+              string, restrict it by applying the current process restrictions such as Linux Cgroup/Cpuset.
+
+       This is useful when the topology is not loaded directly from the local machine (e.g. for performance reason) and it comes with all resources, while the running process is restricted to only parts
+       of the machine.
+
+       This flag is ignored unless HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM is also set since the loaded topology must match the underlying machine where restrictions will be gathered from.
+
+       Setting the environment variable HWLOC_THISSYSTEM_ALLOWED_RESOURCES would result in the same behavior.
+
+       HWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT
+              Import support from the imported topology. When importing a XML topology from a remote machine, binding is disabled by default (see HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM). This disabling is
+              also marked by putting zeroes in the corresponding supported feature bits reported by hwloc_topology_get_support().
+
+       The flag HWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT actually imports support bits from the remote machine. It also sets the flag imported_support in the struct hwloc_topology_misc_support array. If the
+       imported XML did not contain any support information (exporter hwloc is too old), this flag is not set.
+
+       Note that these supported features are only relevant for the hwloc installation that actually exported the XML topology (it may vary with the operating system, or with how hwloc was compiled).
+
+       Note that setting this flag however does not enable binding for the locally imported hwloc topology, it only reports what the remote hwloc and machine support.
+
+       HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_CPUBINDING
+              Do not consider resources outside of the process CPU binding. If the binding of the process is limited to a subset of cores, ignore the other cores during discovery.
+
+       The resulting topology is identical to what a call to hwloc_topology_restrict() would generate, but this flag also prevents hwloc from ever touching other resources during the discovery.
+
+       This flag especially tells the x86 backend to never temporarily rebind a thread on any excluded core. This is useful on Windows because such temporary rebinding can change the process binding.
+       Another use-case is to avoid cores that would not be able to perform the hwloc discovery anytime soon because they are busy executing some high-priority real-time tasks.
+
+       If process CPU binding is not supported, the thread CPU binding is considered instead if supported, or the flag is ignored.
+
+       This flag requires HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM as well since binding support is required.
+
+       HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_MEMBINDING
+              Do not consider resources outside of the process memory binding. If the binding of the process is limited to a subset of NUMA nodes, ignore the other NUMA nodes during discovery.
+
+       The resulting topology is identical to what a call to hwloc_topology_restrict() would generate, but this flag also prevents hwloc from ever touching other resources during the discovery.
+
+       This flag is meant to be used together with HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_CPUBINDING when both cores and NUMA nodes should be ignored outside of the process binding.
+
+       If process memory binding is not supported, the thread memory binding is considered instead if supported, or the flag is ignored.
+
+       This flag requires HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM as well since binding support is required.
+
+       HWLOC_TOPOLOGY_FLAG_DONT_CHANGE_BINDING
+              Do not ever modify the process or thread binding during discovery. This flag disables all hwloc discovery steps that require a change of the process or thread binding. This currently only
+              affects the x86 backend which gets entirely disabled.
+
+       This is useful when hwloc_topology_load() is called while the application also creates additional threads or modifies the binding.
+
+       This flag is also a strict way to make sure the process binding will not change to due thread binding changes on Windows (see HWLOC_TOPOLOGY_FLAG_RESTRICT_TO_CPUBINDING).
+
+       HWLOC_TOPOLOGY_FLAG_NO_DISTANCES
+              Ignore distances. Ignore distance information from the operating systems (and from XML) and hence do not use distances for grouping.
+
+       HWLOC_TOPOLOGY_FLAG_NO_MEMATTRS
+              Ignore memory attributes. Ignore memory attribues from the operating systems (and from XML).
+
+       HWLOC_TOPOLOGY_FLAG_NO_CPUKINDS
+              Ignore CPU Kinds. Ignore CPU kind information from the operating systems (and from XML).
+
+   enum hwloc_type_filter_e
+       Type filtering flags. By default, most objects are kept (HWLOC_TYPE_FILTER_KEEP_ALL). Instruction caches, I/O and Misc objects are ignored by default (HWLOC_TYPE_FILTER_KEEP_NONE). Die and Group
+       levels are ignored unless they bring structure (HWLOC_TYPE_FILTER_KEEP_STRUCTURE).
+
+       Note that group objects are also ignored individually (without the entire level) when they do not bring structure.
+
+       Enumerator
+
+       HWLOC_TYPE_FILTER_KEEP_ALL
+              Keep all objects of this type. Cannot be set for HWLOC_OBJ_GROUP (groups are designed only to add more structure to the topology).
+
+       HWLOC_TYPE_FILTER_KEEP_NONE
+              Ignore all objects of this type. The bottom-level type HWLOC_OBJ_PU, the HWLOC_OBJ_NUMANODE type, and the top-level type HWLOC_OBJ_MACHINE may not be ignored.
+
+       HWLOC_TYPE_FILTER_KEEP_STRUCTURE
+              Only ignore objects if their entire level does not bring any structure. Keep the entire level of objects if at least one of these objects adds structure to the topology. An object brings
+              structure when it has multiple children and it is not the only child of its parent.
+
+       If all objects in the level are the only child of their parent, and if none of them has multiple children, the entire level is removed.
+
+       Cannot be set for I/O and Misc objects since the topology structure does not matter there.
+
+       HWLOC_TYPE_FILTER_KEEP_IMPORTANT
+              Only keep likely-important objects of the given type. It is only useful for I/O object types. For HWLOC_OBJ_PCI_DEVICE and HWLOC_OBJ_OS_DEVICE, it means that only objects of major/common
+              kinds are kept (storage, network, OpenFabrics, CUDA, OpenCL, RSMI, NVML, and displays). Also, only OS devices directly attached on PCI (e.g. no USB) are reported. For HWLOC_OBJ_BRIDGE, it
+              means that bridges are kept only if they have children.
+
+       This flag equivalent to HWLOC_TYPE_FILTER_KEEP_ALL for Normal, Memory and Misc types since they are likely important.
+
+Function Documentation
+   unsigned long hwloc_topology_get_flags (hwloc_topology_t topology)
+       Get OR'ed flags of a topology. Get the OR'ed set of hwloc_topology_flags_e of a topology.
+
+       If hwloc_topology_set_flags() was not called earlier, no flags are set (0 is returned).
+
+       Returns
+           the flags previously set with hwloc_topology_set_flags().
+
+   const struct hwloc_topology_support* hwloc_topology_get_support (hwloc_topology_t restrict topology)
+       Retrieve the topology support. Each flag indicates whether a feature is supported. If set to 0, the feature is not supported. If set to 1, the feature is supported, but the corresponding call may
+       still fail in some corner cases.
+
+       These features are also listed by hwloc-info --support
+
+       The reported features are what the current topology supports on the current machine. If the topology was exported to XML from another machine and later imported here, support still describes what
+       is supported for this imported topology after import. By default, binding will be reported as unsupported in this case (see HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM).
+
+       Topology flag HWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT may be used to report the supported features of the original remote machine instead. If it was successfully imported, imported_support will be set
+       in the struct hwloc_topology_misc_support array.
+
+   int hwloc_topology_get_type_filter (hwloc_topology_t topology, hwloc_obj_type_t type, enum hwloc_type_filter_e * filter)
+       Get the current filtering for the given object type.
+
+   void* hwloc_topology_get_userdata (hwloc_topology_t topology)
+       Retrieve the topology-specific userdata pointer. Retrieve the application-given private data pointer that was previously set with hwloc_topology_set_userdata().
+
+   int hwloc_topology_is_thissystem (hwloc_topology_t restrict topology)
+       Does the topology context come from this system?
+
+       Returns
+           1 if this topology context was built using the system running this program.
+
+           0 instead (for instance if using another file-system root, a XML topology file, or a synthetic topology).
+
+   int hwloc_topology_set_all_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       Set the filtering for all object types. If some types do not support this filtering, they are silently ignored.
+
+   int hwloc_topology_set_cache_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       Set the filtering for all CPU cache object types. Memory-side caches are not involved since they are not CPU caches.
+
+   int hwloc_topology_set_flags (hwloc_topology_t topology, unsigned long flags)
+       Set OR'ed flags to non-yet-loaded topology. Set a OR'ed set of hwloc_topology_flags_e onto a topology that was not yet loaded.
+
+       If this function is called multiple times, the last invocation will erase and replace the set of flags that was previously set.
+
+       By default, no flags are set (0).
+
+       The flags set in a topology may be retrieved with hwloc_topology_get_flags().
+
+   int hwloc_topology_set_icache_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       Set the filtering for all CPU instruction cache object types. Memory-side caches are not involved since they are not CPU caches.
+
+   int hwloc_topology_set_io_types_filter (hwloc_topology_t topology, enum hwloc_type_filter_e filter)
+       Set the filtering for all I/O object types.
+
+   int hwloc_topology_set_type_filter (hwloc_topology_t topology, hwloc_obj_type_t type, enum hwloc_type_filter_e filter)
+       Set the filtering for the given object type.
+
+   void hwloc_topology_set_userdata (hwloc_topology_t topology, const void * userdata)
+       Set the topology-specific userdata pointer. Each topology may store one application-given private data pointer. It is initialized to NULL. hwloc will never modify it.
+
+       Use it as you wish, after hwloc_topology_init() and until hwloc_topolog_destroy().
+
+       This pointer is not exported to XML.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                  hwlocality_configuration(3)

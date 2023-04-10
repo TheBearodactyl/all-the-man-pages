@@ -1,0 +1,213 @@
+SETSOCKOPT(3P)             POSIX Programmer's Manual            SETSOCKOPT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       setsockopt — set the socket options
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int setsockopt(int socket, int level, int option_name,
+           const void *option_value, socklen_t option_len);
+
+DESCRIPTION
+       The setsockopt() function shall set the option  specified  by  the  op‐
+       tion_name  argument, at the protocol level specified by the level argu‐
+       ment, to the value pointed to by  the  option_value  argument  for  the
+       socket  associated with the file descriptor specified by the socket ar‐
+       gument.
+
+       The level argument specifies the protocol level at which the option re‐
+       sides.  To  set options at the socket level, specify the level argument
+       as SOL_SOCKET. To set options at other levels, supply  the  appropriate
+       level  identifier for the protocol controlling the option. For example,
+       to indicate that an option is interpreted by the TCP (Transport Control
+       Protocol),  set  level  to IPPROTO_TCP as defined in the <netinet/in.h>
+       header.
+
+       The option_name argument specifies a single option to set.  It  can  be
+       one of the socket-level options defined in <sys_socket.h> and described
+       in Section 2.10.16, Use of Options.  If option_name is equal to SO_RCV‐
+       TIMEO  or  SO_SNDTIMEO  and the implementation supports setting the op‐
+       tion, it is unspecified whether the struct timeval pointed  to  by  op‐
+       tion_value  is  stored as provided by this function or is rounded up to
+       align with the resolution of the clock being used. If  setsockopt()  is
+       called  with  option_name equal to SO_ACCEPTCONN, SO_ERROR, or SO_TYPE,
+       the behavior is unspecified.
+
+RETURN VALUE
+       Upon successful completion, setsockopt() shall return 0. Otherwise,  -1
+       shall be returned and errno set to indicate the error.
+
+ERRORS
+       The setsockopt() function shall fail if:
+
+       EBADF  The socket argument is not a valid file descriptor.
+
+       EDOM   The  send and receive timeout values are too big to fit into the
+              timeout fields in the socket structure.
+
+       EINVAL The specified option is invalid at the specified socket level or
+              the socket has been shut down.
+
+       EISCONN
+              The  socket  is already connected, and a specified option cannot
+              be set while the socket is connected.
+
+       ENOPROTOOPT
+              The option is not supported by the protocol.
+
+       ENOTSOCK
+              The socket argument does not refer to a socket.
+
+       The setsockopt() function may fail if:
+
+       ENOMEM There was insufficient memory available  for  the  operation  to
+              complete.
+
+       ENOBUFS
+              Insufficient  resources  are available in the system to complete
+              the call.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The setsockopt() function provides  an  application  program  with  the
+       means  to  control socket behavior. An application program can use set‐
+       sockopt() to allocate buffer space, control timeouts, or permit  socket
+       data broadcasts. The <sys/socket.h> header defines the socket-level op‐
+       tions available to setsockopt().
+
+       Options may exist at multiple protocol levels. The SO_ options are  al‐
+       ways present at the uppermost socket level.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.10, Sockets, bind(), endprotoent(), getsockopt(), socket()
+
+       The   Base   Definitions   volume   of   POSIX.1‐2017,  <netinet_in.h>,
+       <sys_socket.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                       SETSOCKOPT(3P)
+getsockopt(2)                 System Calls Manual                getsockopt(2)
+
+NAME
+       getsockopt, setsockopt - get and set options on sockets
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int getsockopt(int sockfd, int level, int optname,
+                      void optval[restrict *.optlen],
+                      socklen_t *restrict optlen);
+       int setsockopt(int sockfd, int level, int optname,
+                      const void optval[.optlen],
+                      socklen_t optlen);
+
+DESCRIPTION
+       getsockopt()  and  setsockopt()  manipulate  options for the socket re‐
+       ferred to by the file descriptor sockfd.  Options may exist at multiple
+       protocol levels; they are always present at the uppermost socket level.
+
+       When manipulating socket options, the level at which the option resides
+       and the name of the option must be specified.  To manipulate options at
+       the sockets API level, level is specified as SOL_SOCKET.  To manipulate
+       options at any other level the protocol number of the appropriate  pro‐
+       tocol  controlling  the  option  is supplied.  For example, to indicate
+       that an option is to be interpreted by the TCP protocol,  level  should
+       be set to the protocol number of TCP; see getprotoent(3).
+
+       The  arguments  optval  and optlen are used to access option values for
+       setsockopt().  For getsockopt() they identify a  buffer  in  which  the
+       value  for  the  requested  option(s) are to be returned.  For getsock‐
+       opt(), optlen is a value-result argument, initially containing the size
+       of  the buffer pointed to by optval, and modified on return to indicate
+       the actual size of the value returned.  If no option  value  is  to  be
+       supplied or returned, optval may be NULL.
+
+       Optname  and  any specified options are passed uninterpreted to the ap‐
+       propriate  protocol  module  for  interpretation.   The  include   file
+       <sys/socket.h> contains definitions for socket level options, described
+       below.  Options at other protocol levels vary in format and name;  con‐
+       sult the appropriate entries in section 4 of the manual.
+
+       Most socket-level options utilize an int argument for optval.  For set‐
+       sockopt(), the argument should be nonzero to enable a  boolean  option,
+       or zero if the option is to be disabled.
+
+       For a description of the available socket options see socket(7) and the
+       appropriate protocol man pages.
+
+RETURN VALUE
+       On success, zero is returned for the standard options.  On error, -1 is
+       returned, and errno is set to indicate the error.
+
+       Netfilter  allows  the  programmer to define custom socket options with
+       associated handlers; for such options, the return value on  success  is
+       the value returned by the handler.
+
+ERRORS
+       EBADF  The argument sockfd is not a valid file descriptor.
+
+       EFAULT The  address  pointed to by optval is not in a valid part of the
+              process address space.  For getsockopt(), this error may also be
+              returned if optlen is not in a valid part of the process address
+              space.
+
+       EINVAL optlen invalid in setsockopt().  In some cases  this  error  can
+              also  occur  for  an  invalid  value  in  optval  (e.g., for the
+              IP_ADD_MEMBERSHIP option described in ip(7)).
+
+       ENOPROTOOPT
+              The option is unknown at the level indicated.
+
+       ENOTSOCK
+              The file descriptor sockfd does not refer to a socket.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.4BSD (first appeared in 4.2BSD).
+
+BUGS
+       Several of the socket options should be handled at lower levels of  the
+       system.
+
+SEE ALSO
+       ioctl(2),  socket(2),  getprotoent(3),  protocols(5), ip(7), packet(7),
+       socket(7), tcp(7), udp(7), unix(7)
+
+Linux man-pages 6.04              2023-04-03                     getsockopt(2)

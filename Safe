@@ -1,0 +1,641 @@
+Safe(3perl)            Perl Programmers Reference Guide            Safe(3perl)
+
+NAME
+       Safe - Compile and execute code in restricted compartments
+
+SYNOPSIS
+         use Safe;
+
+         $compartment = new Safe;
+
+         $compartment->permit(qw(time sort :browse));
+
+         $result = $compartment->reval($unsafe_code);
+
+DESCRIPTION
+       The Safe extension module allows the creation of compartments in which
+       perl code can be evaluated. Each compartment has
+
+       a new namespace
+               The "root" of the namespace (i.e. "main::") is changed to a
+               different package and code evaluated in the compartment cannot
+               refer to variables outside this namespace, even with run-time
+               glob lookups and other tricks.
+
+               Code which is compiled outside the compartment can choose to
+               place variables into (or share variables with) the
+               compartment's namespace and only that data will be visible to
+               code evaluated in the compartment.
+
+               By default, the only variables shared with compartments are the
+               "underscore" variables $_ and @_ (and, technically, the less
+               frequently used %_, the _ filehandle and so on). This is
+               because otherwise perl operators which default to $_ will not
+               work and neither will the assignment of arguments to @_ on
+               subroutine entry.
+
+       an operator mask
+               Each compartment has an associated "operator mask". Recall that
+               perl code is compiled into an internal format before execution.
+               Evaluating perl code (e.g. via "eval" or "do 'file'") causes
+               the code to be compiled into an internal format and then,
+               provided there was no error in the compilation, executed.  Code
+               evaluated in a compartment compiles subject to the
+               compartment's operator mask. Attempting to evaluate code in a
+               compartment which contains a masked operator will cause the
+               compilation to fail with an error. The code will not be
+               executed.
+
+               The default operator mask for a newly created compartment is
+               the ':default' optag.
+
+               It is important that you read the Opcode module documentation
+               for more information, especially for detailed definitions of
+               opnames, optags and opsets.
+
+               Since it is only at the compilation stage that the operator
+               mask applies, controlled access to potentially unsafe
+               operations can be achieved by having a handle to a wrapper
+               subroutine (written outside the compartment) placed into the
+               compartment. For example,
+
+                   $cpt = new Safe;
+                   sub wrapper {
+                     # vet arguments and perform potentially unsafe operations
+                   }
+                   $cpt->share('&wrapper');
+
+WARNING
+       The Safe module does not implement an effective sandbox for evaluating
+       untrusted code with the perl interpreter.
+
+       Bugs in the perl interpreter that could be abused to bypass Safe
+       restrictions are not treated as vulnerabilities. See perlsecpolicy for
+       additional information.
+
+       The authors make no warranty, implied or otherwise, about the
+       suitability of this software for safety or security purposes.
+
+       The authors shall not in any case be liable for special, incidental,
+       consequential, indirect or other similar damages arising from the use
+       of this software.
+
+       Your mileage will vary. If in any doubt do not use it.
+
+METHODS
+       To create a new compartment, use
+
+           $cpt = new Safe;
+
+       Optional argument is (NAMESPACE), where NAMESPACE is the root namespace
+       to use for the compartment (defaults to "Safe::Root0", incremented for
+       each new compartment).
+
+       Note that version 1.00 of the Safe module supported a second optional
+       parameter, MASK.  That functionality has been withdrawn pending deeper
+       consideration. Use the permit and deny methods described below.
+
+       The following methods can then be used on the compartment object
+       returned by the above constructor. The object argument is implicit in
+       each case.
+
+   permit (OP, ...)
+       Permit the listed operators to be used when compiling code in the
+       compartment (in addition to any operators already permitted).
+
+       You can list opcodes by names, or use a tag name; see "Predefined
+       Opcode Tags" in Opcode.
+
+   permit_only (OP, ...)
+       Permit only the listed operators to be used when compiling code in the
+       compartment (no other operators are permitted).
+
+   deny (OP, ...)
+       Deny the listed operators from being used when compiling code in the
+       compartment (other operators may still be permitted).
+
+   deny_only (OP, ...)
+       Deny only the listed operators from being used when compiling code in
+       the compartment (all other operators will be permitted, so you probably
+       don't want to use this method).
+
+   trap (OP, ...), untrap (OP, ...)
+       The trap and untrap methods are synonyms for deny and permit
+       respectfully.
+
+   share (NAME, ...)
+       This shares the variable(s) in the argument list with the compartment.
+       This is almost identical to exporting variables using the Exporter
+       module.
+
+       Each NAME must be the name of a non-lexical variable, typically with
+       the leading type identifier included. A bareword is treated as a
+       function name.
+
+       Examples of legal names are '$foo' for a scalar, '@foo' for an array,
+       '%foo' for a hash, '&foo' or 'foo' for a subroutine and '*foo' for a
+       glob (i.e.  all symbol table entries associated with "foo", including
+       scalar, array, hash, sub and filehandle).
+
+       Each NAME is assumed to be in the calling package. See share_from for
+       an alternative method (which "share" uses).
+
+   share_from (PACKAGE, ARRAYREF)
+       This method is similar to share() but allows you to explicitly name the
+       package that symbols should be shared from. The symbol names (including
+       type characters) are supplied as an array reference.
+
+           $safe->share_from('main', [ '$foo', '%bar', 'func' ]);
+
+       Names can include package names, which are relative to the specified
+       PACKAGE.  So these two calls have the same effect:
+
+           $safe->share_from('Scalar::Util', [ 'reftype' ]);
+           $safe->share_from('main', [ 'Scalar::Util::reftype' ]);
+
+   varglob (VARNAME)
+       This returns a glob reference for the symbol table entry of VARNAME in
+       the package of the compartment. VARNAME must be the name of a variable
+       without any leading type marker. For example:
+
+           ${$cpt->varglob('foo')} = "Hello world";
+
+       has the same effect as:
+
+           $cpt = new Safe 'Root';
+           $Root::foo = "Hello world";
+
+       but avoids the need to know $cpt's package name.
+
+   reval (STRING, STRICT)
+       This evaluates STRING as perl code inside the compartment.
+
+       The code can only see the compartment's namespace (as returned by the
+       root method). The compartment's root package appears to be the "main::"
+       package to the code inside the compartment.
+
+       Any attempt by the code in STRING to use an operator which is not
+       permitted by the compartment will cause an error (at run-time of the
+       main program but at compile-time for the code in STRING).  The error is
+       of the form "'%s' trapped by operation mask...".
+
+       If an operation is trapped in this way, then the code in STRING will
+       not be executed. If such a trapped operation occurs or any other
+       compile-time or return error, then $@ is set to the error message, just
+       as with an eval().
+
+       If there is no error, then the method returns the value of the last
+       expression evaluated, or a return statement may be used, just as with
+       subroutines and eval(). The context (list or scalar) is determined by
+       the caller as usual.
+
+       If the return value of reval() is (or contains) any code reference,
+       those code references are wrapped to be themselves executed always in
+       the compartment. See "wrap_code_refs_within".
+
+       The formerly undocumented STRICT argument sets strictness: if true 'use
+       strict;' is used, otherwise it uses 'no strict;'. Note: if STRICT is
+       omitted 'no strict;' is the default.
+
+       Some points to note:
+
+       If the entereval op is permitted then the code can use eval "..." to
+       'hide' code which might use denied ops. This is not a major problem
+       since when the code tries to execute the eval it will fail because the
+       opmask is still in effect. However this technique would allow clever,
+       and possibly harmful, code to 'probe' the boundaries of what is
+       possible.
+
+       Any string eval which is executed by code executing in a compartment,
+       or by code called from code executing in a compartment, will be eval'd
+       in the namespace of the compartment. This is potentially a serious
+       problem.
+
+       Consider a function foo() in package pkg compiled outside a compartment
+       but shared with it. Assume the compartment has a root package called
+       'Root'. If foo() contains an eval statement like eval '$foo = 1' then,
+       normally, $pkg::foo will be set to 1.  If foo() is called from the
+       compartment (by whatever means) then instead of setting $pkg::foo, the
+       eval will actually set $Root::pkg::foo.
+
+       This can easily be demonstrated by using a module, such as the Socket
+       module, which uses eval "..." as part of an AUTOLOAD function. You can
+       'use' the module outside the compartment and share an (autoloaded)
+       function with the compartment. If an autoload is triggered by code in
+       the compartment, or by any code anywhere that is called by any means
+       from the compartment, then the eval in the Socket module's AUTOLOAD
+       function happens in the namespace of the compartment. Any variables
+       created or used by the eval'd code are now under the control of the
+       code in the compartment.
+
+       A similar effect applies to all runtime symbol lookups in code called
+       from a compartment but not compiled within it.
+
+   rdo (FILENAME)
+       This evaluates the contents of file FILENAME inside the compartment.
+       It uses the same rules as perl's built-in "do" to locate the file,
+       poossibly using @INC.
+
+       See above documentation on the reval method for further details.
+
+   root (NAMESPACE)
+       This method returns the name of the package that is the root of the
+       compartment's namespace.
+
+       Note that this behaviour differs from version 1.00 of the Safe module
+       where the root module could be used to change the namespace. That
+       functionality has been withdrawn pending deeper consideration.
+
+   mask (MASK)
+       This is a get-or-set method for the compartment's operator mask.
+
+       With no MASK argument present, it returns the current operator mask of
+       the compartment.
+
+       With the MASK argument present, it sets the operator mask for the
+       compartment (equivalent to calling the deny_only method).
+
+   wrap_code_ref (CODEREF)
+       Returns a reference to an anonymous subroutine that, when executed,
+       will call CODEREF with the Safe compartment 'in effect'.  In other
+       words, with the package namespace adjusted and the opmask enabled.
+
+       Note that the opmask doesn't affect the already compiled code, it only
+       affects any further compilation that the already compiled code may try
+       to perform.
+
+       This is particularly useful when applied to code references returned
+       from reval().
+
+       (It also provides a kind of workaround for RT#60374: "Safe.pm sort {}
+       bug with -Dusethreads". See
+       <https://rt.perl.org/rt3//Public/Bug/Display.html?id=60374> for much
+       more detail.)
+
+   wrap_code_refs_within (...)
+       Wraps any CODE references found within the arguments by replacing each
+       with the result of calling "wrap_code_ref" on the CODE reference. Any
+       ARRAY or HASH references in the arguments are inspected recursively.
+
+       Returns nothing.
+
+RISKS
+       This section is just an outline of some of the things code in a
+       compartment might do (intentionally or unintentionally) which can have
+       an effect outside the compartment.
+
+       Memory  Consuming all (or nearly all) available memory.
+
+       CPU     Causing infinite loops etc.
+
+       Snooping
+               Copying private information out of your system. Even something
+               as simple as your user name is of value to others. Much useful
+               information could be gleaned from your environment variables
+               for example.
+
+       Signals Causing signals (especially SIGFPE and SIGALARM) to affect your
+               process.
+
+               Setting up a signal handler will need to be carefully
+               considered and controlled.  What mask is in effect when a
+               signal handler gets called?  If a user can get an imported
+               function to get an exception and call the user's signal
+               handler, does that user's restricted mask get re-instated
+               before the handler is called?  Does an imported handler get
+               called with its original mask or the user's one?
+
+       State Changes
+               Ops such as chdir obviously effect the process as a whole and
+               not just the code in the compartment. Ops such as rand and
+               srand have a similar but more subtle effect.
+
+AUTHOR
+       Originally designed and implemented by Malcolm Beattie.
+
+       Reworked to use the Opcode module and other changes added by Tim Bunce.
+
+       Currently maintained by the Perl 5 Porters, <perl5-porters@perl.org>.
+
+perl v5.36.0                      2022-12-12                       Safe(3perl)
+Safe Tcl(n)                  Tcl Built-In Commands                 Safe Tcl(n)
+
+______________________________________________________________________________
+
+NAME
+       safe - Creating and manipulating safe interpreters
+
+SYNOPSIS
+       ::safe::interpCreate ?child? ?options...?
+
+       ::safe::interpInit child ?options...?
+
+       ::safe::interpConfigure child ?options...?
+
+       ::safe::interpDelete child
+
+       ::safe::interpAddToAccessPath child directory
+
+       ::safe::interpFindInAccessPath child directory
+
+       ::safe::setLogCmd ?cmd arg...?
+
+   OPTIONS
+       ?-accessPath pathList?  ?-statics boolean? ?-noStatics?  ?-nested bool‐
+       ean? ?-nestedLoadOk?  ?-deleteHook script?
+______________________________________________________________________________
+
+DESCRIPTION
+       Safe Tcl is a mechanism for executing untrusted Tcl scripts safely  and
+       for  providing mediated access by such scripts to potentially dangerous
+       functionality.
+
+       Safe Tcl ensures that untrusted Tcl scripts cannot harm the hosting ap‐
+       plication.   It  prevents  integrity and privacy attacks. Untrusted Tcl
+       scripts are prevented from corrupting the state of the hosting applica‐
+       tion  or computer. Untrusted scripts are also prevented from disclosing
+       information stored on the hosting computer or in the  hosting  applica‐
+       tion to any party.
+
+       Safe  Tcl allows a parent interpreter to create safe, restricted inter‐
+       preters that contain a set of predefined aliases for the source,  load,
+       file,  encoding, and exit commands and are able to use the auto-loading
+       and package mechanisms.
+
+       No knowledge of the file system structure is leaked to the safe  inter‐
+       preter, because it has access only to a virtualized path containing to‐
+       kens. When the safe interpreter requests to source a file, it uses  the
+       token  in the virtual path as part of the file name to source; the par‐
+       ent interpreter transparently translates the token into a  real  direc‐
+       tory  name  and executes the requested operation (see the section SECU‐
+       RITY below for details).  Different levels of security can be  selected
+       by using the optional flags of the commands described below.
+
+       All  commands  provided in the parent interpreter by Safe Tcl reside in
+       the safe namespace.
+
+COMMANDS
+       The following commands are provided in the parent interpreter:
+
+       ::safe::interpCreate ?child? ?options...?
+              Creates a safe interpreter, installs the  aliases  described  in
+              the section ALIASES and initializes the auto-loading and package
+              mechanism as specified by the supplied options.  See the OPTIONS
+              section  below  for a description of the optional arguments.  If
+              the child  argument  is  omitted,  a  name  will  be  generated.
+              ::safe::interpCreate always returns the interpreter name.
+
+              The interpreter name child may include namespace separators, but
+              may not have leading or trailing namespace separators, or excess
+              colon  characters in namespace separators.  The interpreter name
+              is qualified relative to the global namespace ::, not the  name‐
+              space in which the ::safe::interpCreate command is evaluated.
+
+       ::safe::interpInit child ?options...?
+              This  command is similar to interpCreate except it that does not
+              create the safe interpreter. child must  have  been  created  by
+              some  other  means,  like  interp create -safe.  The interpreter
+              name child may include namespace separators, subject to the same
+              restrictions as for interpCreate.
+
+       ::safe::interpConfigure child ?options...?
+              If  no  options  are given, returns the settings for all options
+              for the named safe interpreter as a list of  options  and  their
+              current  values for that child.  If a single additional argument
+              is provided, it will return a list of 2 elements name and  value
+              where name is the full name of that option and value the current
+              value for that option and the child.  If  more  than  two  addi‐
+              tional  arguments are provided, it will reconfigure the safe in‐
+              terpreter and change each and only the  provided  options.   See
+              the  section  on OPTIONS below for options description.  Example
+              of use:
+
+                     # Create new interp with the same configuration as "$i0":
+                     set i1 [safe::interpCreate {*}[safe::interpConfigure $i0]]
+
+                     # Get the current deleteHook
+                     set dh [safe::interpConfigure $i0  -del]
+
+                     # Change (only) the statics loading ok attribute of an
+                     # interp and its deleteHook (leaving the rest unchanged):
+                     safe::interpConfigure $i0  -delete {foo bar} -statics 0
+
+       ::safe::interpDelete child
+              Deletes the safe interpreter and  cleans  up  the  corresponding
+              parent  interpreter data structures.  If a deleteHook script was
+              specified for this interpreter it is evaluated before the inter‐
+              preter  is deleted, with the name of the interpreter as an addi‐
+              tional argument.
+
+       ::safe::interpFindInAccessPath child directory
+              This command finds and returns the token for the real  directory
+              directory in the safe interpreter's current virtual access path.
+              It generates an error if the directory is not found.  Example of
+              use:
+
+                     $child eval [list set tk_library \
+                           [::safe::interpFindInAccessPath $name $tk_library]]
+
+       ::safe::interpAddToAccessPath child directory
+              This  command  adds directory to the virtual path maintained for
+              the safe interpreter in the parent, and returns the  token  that
+              can be used in the safe interpreter to obtain access to files in
+              that directory.  If the directory  is  already  in  the  virtual
+              path,  it only returns the token without adding the directory to
+              the virtual path again.  Example of use:
+
+                     $child eval [list set tk_library \
+                           [::safe::interpAddToAccessPath $name $tk_library]]
+
+       ::safe::setLogCmd ?cmd arg...?
+              This command installs a script that will be called  when  inter‐
+              esting  life  cycle  events  occur for a safe interpreter.  When
+              called with no arguments, it  returns  the  currently  installed
+              script.   When  called  with  one argument, an empty string, the
+              currently installed script is removed and logging is turned off.
+              The  script  will  be  invoked  with  one additional argument, a
+              string describing the event of interest.  The main purpose is to
+              help  in  debugging  safe interpreters.  Using this facility you
+              can get complete error messages while the safe interpreter  gets
+              only  generic  error messages.  This prevents a safe interpreter
+              from seeing messages about failures and other events that  might
+              contain sensitive information such as real directory names.
+
+              Example of use:
+
+                     ::safe::setLogCmd puts stderr
+
+              Below  is  the output of a sample session in which a safe inter‐
+              preter attempted to source a file not found in its  virtual  ac‐
+              cess  path.  Note that the safe interpreter only received an er‐
+              ror message saying that the file was not found:
+
+                     NOTICE for child interp10 : Created
+                     NOTICE for child interp10 : Setting accessPath=(/foo/bar) staticsok=1 nestedok=0 deletehook=()
+                     NOTICE for child interp10 : auto_path in interp10 has been set to {$p(:0:)}
+                     ERROR for child interp10 : /foo/bar/init.tcl: no such file or directory
+
+   OPTIONS
+       The following options are common to  ::safe::interpCreate,  ::safe::in‐
+       terpInit, and ::safe::interpConfigure.  Any option name can be abbrevi‐
+       ated to its minimal non-ambiguous name.  Option names are not case sen‐
+       sitive.
+
+       -accessPath directoryList
+              This option sets the list of directories from which the safe in‐
+              terpreter can source and load files.   If  this  option  is  not
+              specified,  or if it is given as the empty list, the safe inter‐
+              preter will use the same directories as  its  parent  for  auto-
+              loading.   See  the section SECURITY below for more detail about
+              virtual paths, tokens and access control.
+
+       -statics boolean
+              This option specifies if the safe interpreter will be allowed to
+              load  statically linked packages (like load {} Tk).  The default
+              value is true : safe interpreters are allowed to load statically
+              linked packages.
+
+       -noStatics
+              This  option  is  a  convenience shortcut for -statics false and
+              thus specifies that the safe interpreter will not be allowed  to
+              load statically linked packages.
+
+       -nested boolean
+              This option specifies if the safe interpreter will be allowed to
+              load packages into its own sub-interpreters.  The default  value
+              is  false  :  safe interpreters are not allowed to load packages
+              into their own sub-interpreters.
+
+       -nestedLoadOk
+              This option is a convenience shortcut for -nested true and  thus
+              specifies  the safe interpreter will be allowed to load packages
+              into its own sub-interpreters.
+
+       -deleteHook script
+              When this option is given a non-empty script, it will be  evalu‐
+              ated  in  the parent with the name of the safe interpreter as an
+              additional argument just before actually deleting the  safe  in‐
+              terpreter.   Giving  an  empty  value  removes any currently in‐
+              stalled deletion hook script for that safe interpreter.  The de‐
+              fault value ({}) is not to have any deletion call back.
+
+ALIASES
+       The following aliases are provided in a safe interpreter:
+
+       source fileName
+              The  requested file, a Tcl source file, is sourced into the safe
+              interpreter if it is found.  The source alias  can  only  source
+              files  from  directories in the virtual path for the safe inter‐
+              preter. The source alias requires the safe  interpreter  to  use
+              one  of the token names in its virtual path to denote the direc‐
+              tory in which the file to be sourced can be found.  See the sec‐
+              tion  on  SECURITY  for more discussion of restrictions on valid
+              filenames.
+
+       load fileName
+              The requested file, a shared object file, is dynamically  loaded
+              into  the  safe  interpreter  if it is found.  The filename must
+              contain a token name mentioned in the virtual path for the  safe
+              interpreter  for it to be found successfully.  Additionally, the
+              shared object file must contain a safe entry point; see the man‐
+              ual page for the load command for more details.
+
+       file ?subCmd args...?
+              The  file  alias provides access to a safe subset of the subcom‐
+              mands of the file command; it allows only dirname, join,  exten‐
+              sion,  root,  tail, pathname and split subcommands. For more de‐
+              tails on what these subcommands do see the manual page  for  the
+              file command.
+
+       encoding ?subCmd args...?
+              The  encoding alias provides access to a safe subset of the sub‐
+              commands of the encoding command;  it disallows setting  of  the
+              system encoding, but allows all other subcommands including sys‐
+              tem to check the current encoding.
+
+       exit   The calling  interpreter  is  deleted  and  its  computation  is
+              stopped, but the Tcl process in which this interpreter exists is
+              not terminated.
+
+SECURITY
+       Safe Tcl does not attempt to completely prevent annoyance and denial of
+       service  attacks. These forms of attack prevent the application or user
+       from temporarily using the computer to perform useful work, for example
+       by  consuming  all  available CPU time or all available screen real es‐
+       tate.  These attacks, while aggravating, are deemed to be of lesser im‐
+       portance in general than integrity and privacy attacks that Safe Tcl is
+       to prevent.
+
+       The commands available in a safe interpreter, in addition to  the  safe
+       set  as defined in interp manual page, are mediated aliases for source,
+       load, exit, and safe subsets of file and encoding. The safe interpreter
+       can also auto-load code and it can request that packages be loaded.
+
+       Because some of these commands access the local file system, there is a
+       potential for information leakage about its  directory  structure.   To
+       prevent  this, commands that take file names as arguments in a safe in‐
+       terpreter use tokens instead of the real directory names.  These tokens
+       are  translated  to  the  real directory name while a request to, e.g.,
+       source a file is mediated by the parent interpreter.  This virtual path
+       system  is  maintained  in  the parent interpreter for each safe inter‐
+       preter created by ::safe::interpCreate or initialized by ::safe::inter‐
+       pInit  and the path maps tokens accessible in the safe interpreter into
+       real path names on the local file system thus  preventing  safe  inter‐
+       preters  from  gaining knowledge about the structure of the file system
+       of the host on which the interpreter is executing.  The only valid file
+       names  arguments  for the source and load aliases provided to the child
+       are path in the form of [file join token filename] (i.e. when using the
+       native  file path formats: token/filename on Unix and token\filename on
+       Windows), where token is representing one of the directories of the ac‐
+       cessPath list and filename is one file in that directory (no sub direc‐
+       tories access are allowed).
+
+       When a token is used in a safe interpreter in a request  to  source  or
+       load  a  file,  the token is checked and translated to a real path name
+       and the file to be sourced or loaded is located  on  the  file  system.
+       The  safe interpreter never gains knowledge of the actual path name un‐
+       der which the file is stored on the file system.
+
+       To further prevent potential information leakage from  sensitive  files
+       that  are accidentally included in the set of files that can be sourced
+       by a safe interpreter, the source alias restricts access to files meet‐
+       ing  the  following constraints: the file name must fourteen characters
+       or shorter, must not contain more than one dot (“.”), must end up  with
+       the extension (“.tcl”) or be called (“tclIndex”.)
+
+       Each  element  of the initial access path list will be assigned a token
+       that will be set in the child auto_path and the first element  of  that
+       list will be set as the tcl_library for that child.
+
+       If  the access path argument is not given or is the empty list, the de‐
+       fault behavior is to let the child access the same packages as the par‐
+       ent  has access to (Or to be more precise: only packages written in Tcl
+       (which by definition cannot be dangerous as they run in the  child  in‐
+       terpreter) and C extensions that provides a _SafeInit entry point). For
+       that purpose, the parent's auto_path will  be  used  to  construct  the
+       child  access path.  In order that the child successfully loads the Tcl
+       library files (which includes the auto-loading  mechanism  itself)  the
+       tcl_library  will be added or moved to the first position if necessary,
+       in the child access path, so the child tcl_library will be the same  as
+       the  parent's  (its  real  path  will  still  be invisible to the child
+       though).  In order that auto-loading works the same for the  child  and
+       the  parent in this by default case, the first-level sub directories of
+       each directory in the parent auto_path will also be added (if  not  al‐
+       ready  included)  to  the  child access path.  You can always specify a
+       more restrictive path for which sub directories will never be  searched
+       by  explicitly specifying your directory list with the -accessPath flag
+       instead of relying on this default mechanism.
+
+       When the accessPath is changed after the first creation or  initializa‐
+       tion  (i.e. through interpConfigure -accessPath list), an auto_reset is
+       automatically evaluated in the  safe  interpreter  to  synchronize  its
+       auto_index with the new token list.
+
+SEE ALSO
+       interp(n), library(n), load(n), package(n), source(n), unknown(n)
+
+KEYWORDS
+       alias,  auto-loading,  auto_mkindex, load, parent interpreter, safe in‐
+       terpreter, child interpreter, source
+
+Tcl                                   8.0                          Safe Tcl(n)

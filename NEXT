@@ -1,0 +1,563 @@
+NEXT(3perl)            Perl Programmers Reference Guide            NEXT(3perl)
+
+NAME
+       NEXT - Provide a pseudo-class NEXT (et al) that allows method
+       redispatch
+
+SYNOPSIS
+           use NEXT;
+
+           package P;
+           sub P::method   { print "$_[0]: P method\n";   $_[0]->NEXT::method() }
+           sub P::DESTROY  { print "$_[0]: P dtor\n";     $_[0]->NEXT::DESTROY() }
+
+           package Q;
+           use base qw( P );
+           sub Q::AUTOLOAD { print "$_[0]: Q AUTOLOAD\n"; $_[0]->NEXT::AUTOLOAD() }
+           sub Q::DESTROY  { print "$_[0]: Q dtor\n";     $_[0]->NEXT::DESTROY() }
+
+           package R;
+           sub R::method   { print "$_[0]: R method\n";   $_[0]->NEXT::method() }
+           sub R::AUTOLOAD { print "$_[0]: R AUTOLOAD\n"; $_[0]->NEXT::AUTOLOAD() }
+           sub R::DESTROY  { print "$_[0]: R dtor\n";     $_[0]->NEXT::DESTROY() }
+
+           package S;
+           use base qw( Q R );
+           sub S::method   { print "$_[0]: S method\n";   $_[0]->NEXT::method() }
+           sub S::AUTOLOAD { print "$_[0]: S AUTOLOAD\n"; $_[0]->NEXT::AUTOLOAD() }
+           sub S::DESTROY  { print "$_[0]: S dtor\n";     $_[0]->NEXT::DESTROY() }
+
+           package main;
+
+           my $obj = bless {}, "S";
+
+           $obj->method();             # Calls S::method, P::method, R::method
+           $obj->missing_method(); # Calls S::AUTOLOAD, Q::AUTOLOAD, R::AUTOLOAD
+
+           # Clean-up calls S::DESTROY, Q::DESTROY, P::DESTROY, R::DESTROY
+
+DESCRIPTION
+       The "NEXT" module adds a pseudoclass named "NEXT" to any program that
+       uses it. If a method "m" calls "$self->NEXT::m()", the call to "m" is
+       redispatched as if the calling method had not originally been found.
+
+       Note: before using this module, you should look at next::method
+       <https://metacpan.org/pod/mro#next::method> in the core mro module.
+       "mro" has been a core module since Perl 5.9.5.
+
+       In other words, a call to "$self->NEXT::m()" resumes the depth-first,
+       left-to-right search of $self's class hierarchy that resulted in the
+       original call to "m".
+
+       Note that this is not the same thing as "$self->SUPER::m()", which
+       begins a new dispatch that is restricted to searching the ancestors of
+       the current class. "$self->NEXT::m()" can backtrack past the current
+       class -- to look for a suitable method in other ancestors of $self --
+       whereas "$self->SUPER::m()" cannot.
+
+       A typical use would be in the destructors of a class hierarchy, as
+       illustrated in the SYNOPSIS above. Each class in the hierarchy has a
+       DESTROY method that performs some class-specific action and then
+       redispatches the call up the hierarchy. As a result, when an object of
+       class S is destroyed, the destructors of all its parent classes are
+       called (in depth-first, left-to-right order).
+
+       Another typical use of redispatch would be in "AUTOLOAD"'ed methods.
+       If such a method determined that it was not able to handle a particular
+       call, it might choose to redispatch that call, in the hope that some
+       other "AUTOLOAD" (above it, or to its left) might do better.
+
+       By default, if a redispatch attempt fails to find another method
+       elsewhere in the objects class hierarchy, it quietly gives up and does
+       nothing (but see "Enforcing redispatch"). This gracious acquiescence is
+       also unlike the (generally annoying) behaviour of "SUPER", which throws
+       an exception if it cannot redispatch.
+
+       Note that it is a fatal error for any method (including "AUTOLOAD") to
+       attempt to redispatch any method that does not have the same name. For
+       example:
+
+               sub S::oops { print "oops!\n"; $_[0]->NEXT::other_method() }
+
+   Enforcing redispatch
+       It is possible to make "NEXT" redispatch more demandingly (i.e. like
+       "SUPER" does), so that the redispatch throws an exception if it cannot
+       find a "next" method to call.
+
+       To do this, simple invoke the redispatch as:
+
+               $self->NEXT::ACTUAL::method();
+
+       rather than:
+
+               $self->NEXT::method();
+
+       The "ACTUAL" tells "NEXT" that there must actually be a next method to
+       call, or it should throw an exception.
+
+       "NEXT::ACTUAL" is most commonly used in "AUTOLOAD" methods, as a means
+       to decline an "AUTOLOAD" request, but preserve the normal exception-on-
+       failure semantics:
+
+               sub AUTOLOAD {
+                       if ($AUTOLOAD =~ /foo|bar/) {
+                               # handle here
+                       }
+                       else {  # try elsewhere
+                               shift()->NEXT::ACTUAL::AUTOLOAD(@_);
+                       }
+               }
+
+       By using "NEXT::ACTUAL", if there is no other "AUTOLOAD" to handle the
+       method call, an exception will be thrown (as usually happens in the
+       absence of a suitable "AUTOLOAD").
+
+   Avoiding repetitions
+       If "NEXT" redispatching is used in the methods of a "diamond" class
+       hierarchy:
+
+               #     A   B
+               #    / \ /
+               #   C   D
+               #    \ /
+               #     E
+
+               use NEXT;
+
+               package A;
+               sub foo { print "called A::foo\n"; shift->NEXT::foo() }
+
+               package B;
+               sub foo { print "called B::foo\n"; shift->NEXT::foo() }
+
+               package C; @ISA = qw( A );
+               sub foo { print "called C::foo\n"; shift->NEXT::foo() }
+
+               package D; @ISA = qw(A B);
+               sub foo { print "called D::foo\n"; shift->NEXT::foo() }
+
+               package E; @ISA = qw(C D);
+               sub foo { print "called E::foo\n"; shift->NEXT::foo() }
+
+               E->foo();
+
+       then derived classes may (re-)inherit base-class methods through two or
+       more distinct paths (e.g. in the way "E" inherits "A::foo" twice --
+       through "C" and "D"). In such cases, a sequence of "NEXT" redispatches
+       will invoke the multiply inherited method as many times as it is
+       inherited. For example, the above code prints:
+
+               called E::foo
+               called C::foo
+               called A::foo
+               called D::foo
+               called A::foo
+               called B::foo
+
+       (i.e. "A::foo" is called twice).
+
+       In some cases this may be the desired effect within a diamond
+       hierarchy, but in others (e.g. for destructors) it may be more
+       appropriate to call each method only once during a sequence of
+       redispatches.
+
+       To cover such cases, you can redispatch methods via:
+
+               $self->NEXT::DISTINCT::method();
+
+       rather than:
+
+               $self->NEXT::method();
+
+       This causes the redispatcher to only visit each distinct "method"
+       method once. That is, to skip any classes in the hierarchy that it has
+       already visited during redispatch. So, for example, if the previous
+       example were rewritten:
+
+               package A;
+               sub foo { print "called A::foo\n"; shift->NEXT::DISTINCT::foo() }
+
+               package B;
+               sub foo { print "called B::foo\n"; shift->NEXT::DISTINCT::foo() }
+
+               package C; @ISA = qw( A );
+               sub foo { print "called C::foo\n"; shift->NEXT::DISTINCT::foo() }
+
+               package D; @ISA = qw(A B);
+               sub foo { print "called D::foo\n"; shift->NEXT::DISTINCT::foo() }
+
+               package E; @ISA = qw(C D);
+               sub foo { print "called E::foo\n"; shift->NEXT::DISTINCT::foo() }
+
+               E->foo();
+
+       then it would print:
+
+               called E::foo
+               called C::foo
+               called A::foo
+               called D::foo
+               called B::foo
+
+       and omit the second call to "A::foo" (since it would not be distinct
+       from the first call to "A::foo").
+
+       Note that you can also use:
+
+               $self->NEXT::DISTINCT::ACTUAL::method();
+
+       or:
+
+               $self->NEXT::ACTUAL::DISTINCT::method();
+
+       to get both unique invocation and exception-on-failure.
+
+       Note that, for historical compatibility, you can also use
+       "NEXT::UNSEEN" instead of "NEXT::DISTINCT".
+
+   Invoking all versions of a method with a single call
+       Yet another pseudo-class that "NEXT" provides is "EVERY".  Its
+       behaviour is considerably simpler than that of the "NEXT" family.  A
+       call to:
+
+               $obj->EVERY::foo();
+
+       calls every method named "foo" that the object in $obj has inherited.
+       That is:
+
+               use NEXT;
+
+               package A; @ISA = qw(B D X);
+               sub foo { print "A::foo " }
+
+               package B; @ISA = qw(D X);
+               sub foo { print "B::foo " }
+
+               package X; @ISA = qw(D);
+               sub foo { print "X::foo " }
+
+               package D;
+               sub foo { print "D::foo " }
+
+               package main;
+
+               my $obj = bless {}, 'A';
+               $obj->EVERY::foo();        # prints" A::foo B::foo X::foo D::foo
+
+       Prefixing a method call with "EVERY::" causes every method in the
+       object's hierarchy with that name to be invoked. As the above example
+       illustrates, they are not called in Perl's usual "left-most-depth-
+       first" order. Instead, they are called "breadth-first-dependency-wise".
+
+       That means that the inheritance tree of the object is traversed
+       breadth-first and the resulting order of classes is used as the
+       sequence in which methods are called. However, that sequence is
+       modified by imposing a rule that the appropriate method of a derived
+       class must be called before the same method of any ancestral class.
+       That's why, in the above example, "X::foo" is called before "D::foo",
+       even though "D" comes before "X" in @B::ISA.
+
+       In general, there's no need to worry about the order of calls. They
+       will be left-to-right, breadth-first, most-derived-first. This works
+       perfectly for most inherited methods (including destructors), but is
+       inappropriate for some kinds of methods (such as constructors, cloners,
+       debuggers, and initializers) where it's more appropriate that the
+       least-derived methods be called first (as more-derived methods may rely
+       on the behaviour of their "ancestors"). In that case, instead of using
+       the "EVERY" pseudo-class:
+
+               $obj->EVERY::foo();        # prints" A::foo B::foo X::foo D::foo
+
+       you can use the "EVERY::LAST" pseudo-class:
+
+               $obj->EVERY::LAST::foo();  # prints" D::foo X::foo B::foo A::foo
+
+       which reverses the order of method call.
+
+       Whichever version is used, the actual methods are called in the same
+       context (list, scalar, or void) as the original call via "EVERY", and
+       return:
+
+       •   A hash of array references in list context. Each entry of the hash
+           has the fully qualified method name as its key and a reference to
+           an array containing the method's list-context return values as its
+           value.
+
+       •   A reference to a hash of scalar values in scalar context. Each
+           entry of the hash has the fully qualified method name as its key
+           and the method's scalar-context return values as its value.
+
+       •   Nothing in void context (obviously).
+
+   Using "EVERY" methods
+       The typical way to use an "EVERY" call is to wrap it in another base
+       method, that all classes inherit. For example, to ensure that every
+       destructor an object inherits is actually called (as opposed to just
+       the left-most-depth-first-est one):
+
+               package Base;
+               sub DESTROY { $_[0]->EVERY::Destroy }
+
+               package Derived1;
+               use base 'Base';
+               sub Destroy {...}
+
+               package Derived2;
+               use base 'Base', 'Derived1';
+               sub Destroy {...}
+
+       et cetera. Every derived class than needs its own clean-up behaviour
+       simply adds its own "Destroy" method (not a "DESTROY" method), which
+       the call to "EVERY::LAST::Destroy" in the inherited destructor then
+       correctly picks up.
+
+       Likewise, to create a class hierarchy in which every initializer
+       inherited by a new object is invoked:
+
+               package Base;
+               sub new {
+                       my ($class, %args) = @_;
+                       my $obj = bless {}, $class;
+                       $obj->EVERY::LAST::Init(\%args);
+               }
+
+               package Derived1;
+               use base 'Base';
+               sub Init {
+                       my ($argsref) = @_;
+                       ...
+               }
+
+               package Derived2;
+               use base 'Base', 'Derived1';
+               sub Init {
+                       my ($argsref) = @_;
+                       ...
+               }
+
+       et cetera. Every derived class than needs some additional
+       initialization behaviour simply adds its own "Init" method (not a "new"
+       method), which the call to "EVERY::LAST::Init" in the inherited
+       constructor then correctly picks up.
+
+SEE ALSO
+       mro (in particular next::method
+       <https://metacpan.org/pod/mro#next::method>), which has been a core
+       module since Perl 5.9.5.
+
+AUTHOR
+       Damian Conway (damian@conway.org)
+
+BUGS AND IRRITATIONS
+       Because it's a module, not an integral part of the interpreter, "NEXT"
+       has to guess where the surrounding call was found in the method look-up
+       sequence. In the presence of diamond inheritance patterns it
+       occasionally guesses wrong.
+
+       It's also too slow (despite caching).
+
+       Comment, suggestions, and patches welcome.
+
+COPYRIGHT
+        Copyright (c) 2000-2001, Damian Conway. All Rights Reserved.
+        This module is free software. It may be used, redistributed
+           and/or modified under the same terms as Perl itself.
+
+perl v5.36.0                      2022-12-12                       NEXT(3perl)
+next(n)                         TclOO Commands                         next(n)
+
+______________________________________________________________________________
+
+NAME
+       next, nextto - invoke superclass method implementations
+
+SYNOPSIS
+       package require TclOO
+
+       next ?arg ...?
+       nextto class ?arg ...?
+______________________________________________________________________________
+
+DESCRIPTION
+       The  next  command  is  used  to  call implementations of a method by a
+       class, superclass or mixin that are overridden by the  current  method.
+       It  can  only be used from within a method. It is also used within fil‐
+       ters to indicate the point where a filter calls the actual  implementa‐
+       tion  (the filter may decide to not go along the chain, and may process
+       the results of going along the chain of methods as it chooses). The re‐
+       sult of the next command is the result of the next method in the method
+       chain; if there are no further methods in the method chain, the  result
+       of next will be an error. The arguments, arg, to next are the arguments
+       to pass to the next method in the chain.
+
+       The nextto command is the same as the  next  command,  except  that  it
+       takes an additional class argument that identifies a class whose imple‐
+       mentation of the current method chain (see info object call) should  be
+       used;  the  method  implementation selected will be the one provided by
+       the given class, and it must refer to an existing non-filter invocation
+       that lies further along the chain than the current implementation.
+
+THE METHOD CHAIN
+       When a method of an object is invoked, things happen in several stages:
+
+       [1]    The  structure  of the object, its class, superclasses, filters,
+              and mixins, are examined to build a method chain, which contains
+              a list of method implementations to invoke.
+
+       [2]    The first method implementation on the chain is invoked.
+
+       [3]    If that method implementation invokes the next command, the next
+              method implementation is invoked (with its arguments being those
+              that were passed to next).
+
+       [4]    The  result  from the overall method call is the result from the
+              outermost method implementation;  inner  method  implementations
+              return their results through next.
+
+       [5]    The method chain is cached for future use.
+
+   METHOD SEARCH ORDER
+       When constructing the method chain, method implementations are searched
+       for in the following order:
+
+       [1]    In the classes mixed into the object, in class traversal  order.
+              The list of mixins is checked in natural order.
+
+       [2]    In  the  classes  mixed  into  the  classes  of the object, with
+              sources of mixing in being searched in  class  traversal  order.
+              Within  each  class,  the list of mixins is processed in natural
+              order.
+
+       [3]    In the object itself.
+
+       [4]    In the object's class.
+
+       [5]    In the superclasses of the class, following each superclass in a
+              depth-first fashion in the natural order of the superclass list.
+
+       Any  particular  method  implementation always comes as late in the re‐
+       sulting list of implementations as possible; this means  that  if  some
+       class, A, is both mixed into a class, B, and is also a superclass of B,
+       the instances of B will always treat A as a superclass  from  the  per‐
+       spective  of  inheritance.  This is true even when the multiple inheri‐
+       tance is processed indirectly.
+
+   FILTERS
+       When an object has a list of filter names set upon it,  or  is  an  in‐
+       stance  of  a class (or has mixed in a class) that has a list of filter
+       names set upon it, before every invocation of any  method  the  filters
+       are  processed. Filter implementations are found in class traversal or‐
+       der, as are the lists of filter names (each of which  is  traversed  in
+       natural list order). Explicitly invoking a method used as a filter will
+       cause that method to be invoked twice, once as a filter and once  as  a
+       normal method.
+
+       Each filter should decide for itself whether to permit the execution to
+       go forward to the proper implementation of the method (which it does by
+       invoking the next command as filters are inserted into the front of the
+       method call chain) and is responsible for returning the result of next.
+
+       Filters are invoked when processing an invokation of the unknown method
+       because  of  a  failure to locate a method implementation, but not when
+       invoking either constructors or destructors. (Note however that the de‐
+       stroy  method is a conventional method, and filters are invoked as nor‐
+       mal when it is called.)
+
+EXAMPLES
+       This example demonstrates how to use the next command to call the  (su‐
+       per)class's implementation of a method. The script:
+
+              oo::class create theSuperclass {
+                  method example {args} {
+                      puts "in the superclass, args = $args"
+                  }
+              }
+              oo::class create theSubclass {
+                  superclass theSuperclass
+                  method example {args} {
+                      puts "before chaining from subclass, args = $args"
+                      next a {*}$args b
+                      next pureSynthesis
+                      puts "after chaining from subclass"
+                  }
+              }
+              theSubclass create obj
+              oo::objdefine obj method example args {
+                  puts "per-object method, args = $args"
+                  next x {*}$args y
+                  next
+              }
+              obj example 1 2 3
+
+       prints the following:
+
+              per-object method, args = 1 2 3
+              before chaining from subclass, args = x 1 2 3 y
+              in the superclass, args = a x 1 2 3 y b
+              in the superclass, args = pureSynthesis
+              after chaining from subclass
+              before chaining from subclass, args =
+              in the superclass, args = a b
+              in the superclass, args = pureSynthesis
+              after chaining from subclass
+
+       This  example  demonstrates  how to build a simple cache class that ap‐
+       plies memoization to all the method calls of the objects  it  is  mixed
+       into, and shows how it can make a difference to computation times:
+
+              oo::class create cache {
+                  filter Memoize
+                  method Memoize args {
+                      # Do not filter the core method implementations
+                      if {[lindex [self target] 0] eq "::oo::object"} {
+                          return [next {*}$args]
+                      }
+
+                      # Check if the value is already in the cache
+                      my variable ValueCache
+                      set key [self target],$args
+                      if {[info exist ValueCache($key)]} {
+                          return $ValueCache($key)
+                      }
+
+                      # Compute value, insert into cache, and return it
+                      return [set ValueCache($key) [next {*}$args]]
+                  }
+                  method flushCache {} {
+                      my variable ValueCache
+                      unset ValueCache
+                      # Skip the caching
+                      return -level 2 ""
+                  }
+              }
+
+              oo::object create demo
+              oo::objdefine demo {
+                  mixin cache
+                  method compute {a b c} {
+                      after 3000 ;# Simulate deep thought
+                      return [expr {$a + $b * $c}]
+                  }
+                  method compute2 {a b c} {
+                      after 3000 ;# Simulate deep thought
+                      return [expr {$a * $b + $c}]
+                  }
+              }
+
+              puts [demo compute  1 2 3]      → prints "7" after delay
+              puts [demo compute2 4 5 6]      → prints "26" after delay
+              puts [demo compute  1 2 3]      → prints "7" instantly
+              puts [demo compute2 4 5 6]      → prints "26" instantly
+              puts [demo compute  4 5 6]      → prints "34" after delay
+              puts [demo compute  4 5 6]      → prints "34" instantly
+              puts [demo compute  1 2 3]      → prints "7" instantly
+              demo flushCache
+              puts [demo compute  1 2 3]      → prints "7" after delay
+
+SEE ALSO
+       oo::class(n), oo::define(n), oo::object(n), self(n)
+
+KEYWORDS
+       call, method, method chain
+
+TclOO                                 0.1                              next(n)

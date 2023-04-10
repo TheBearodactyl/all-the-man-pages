@@ -1,0 +1,92 @@
+strtou(3bsd)                         LOCAL                        strtou(3bsd)
+
+NAME
+     strtou — convert a string to an uintmax_t integer
+
+LIBRARY
+     Utility functions from BSD systems (libbsd, -lbsd)
+
+SYNOPSIS
+     #include <inttypes.h>
+     (See libbsd(7) for include usage.)
+
+     uintmax_t
+     strtou(const char * restrict nptr, char ** restrict endptr, int base,
+         uintmax_t lo, uintmax_t hi, int *rstatus);
+
+DESCRIPTION
+     The strtou() function converts the string in nptr to an uintmax_t value.
+     The strtou() function uses internally strtoumax(3) and ensures that the
+     result is always in the range [ lo .. hi ].  In adddition it always
+     places 0 on success or a conversion status in the rstatus argument,
+     avoiding the errno gymnastics the other functions require.  The rstatus
+     argument can be NULL if conversion status is to be ignored.
+
+     The string may begin with an arbitrary amount of white space (as deter‐
+     mined by isspace(3)) followed by a single optional ‘+’ or ‘-’ sign.  If
+     base is zero or 16, the string may then include a ‘0x’ or ‘0X’ prefix,
+     and the number will be read in base 16; otherwise, a zero base is taken
+     as 10 (decimal) unless the next character is ‘0’, in which case it is
+     taken as 8 (octal).
+
+     The remainder of the string is converted to an uintmax_t value in the ob‐
+     vious manner, stopping at the end of the string or at the first character
+     that does not produce a valid digit in the given base.  (In bases above
+     10, the letter ‘A’ in either upper or lower case represents 10, ‘B’ rep‐
+     resents 11, and so forth, with ‘Z’ representing 35.)
+
+     If endptr is non-nil, strtou() stores the address of the first invalid
+     character in *endptr.  If there were no digits at all, however, strtou()
+     stores the original value of nptr in *endptr.  (Thus, if *nptr is not
+     ‘\0’ but **endptr is ‘\0’ on return, the entire string was valid.)
+
+RETURN VALUES
+     The strtou() function always returns the closest value in the range spec‐
+     ified by the lo and hi arguments.
+
+     The errno value is guaranteed to be left unchanged.
+
+     Errors are stored as the conversion status in the rstatus argument.
+
+EXAMPLES
+     The following example will always return a number in [1..99] range no
+     matter what the input is, and warn if the conversion failed.
+
+           int e;
+           uintmax_t lval = strtou(buf, NULL, 0, 1, 99, &e);
+           if (e)
+                   warnc(e, "conversion of `%s' to a number failed, using %ju",
+                       buf, lval);
+
+ERRORS
+     [ECANCELED]        The string did not contain any characters that were
+                        converted.
+
+     [EINVAL]           The base is not between 2 and 36 and does not contain
+                        the special value 0.
+
+     [ENOTSUP]          The string contained non-numeric characters that did
+                        not get converted.  In this case, endptr points to the
+                        first unconverted character.
+
+     [ERANGE]           The given string was out of range; the value converted
+                        has been clamped; or the range given was invalid, i.e.
+                        lo > hi.
+
+SEE ALSO
+     atof(3), atoi(3), atol(3), atoll(3), strtod(3), strtoi(3bsd),
+     strtoimax(3), strtol(3), strtoll(3), strtoul(3), strtoull(3),
+     strtoumax(3)
+
+STANDARDS
+     The strtou() function is a NetBSD extension.
+
+HISTORY
+     The strtou() function first appeared in NetBSD 7.0.  OpenBSD introduced
+     the strtonum(3bsd) function for the same purpose, but the interface makes
+     it impossible to properly differentiate illegal returns.
+
+BUGS
+     Ignores the current locale.
+
+BSD                            November 13, 2015                           BSD

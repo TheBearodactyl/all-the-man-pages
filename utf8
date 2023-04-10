@@ -1,0 +1,291 @@
+utf8(3perl)                                                                          Perl Programmers Reference Guide                                                                          utf8(3perl)
+
+NAME
+       utf8 - Perl pragma to enable/disable UTF-8 (or UTF-EBCDIC) in source code
+
+SYNOPSIS
+        use utf8;
+        no utf8;
+
+        # Convert the internal representation of a Perl scalar to/from UTF-8.
+
+        $num_octets = utf8::upgrade($string);
+        $success    = utf8::downgrade($string[, $fail_ok]);
+
+        # Change each character of a Perl scalar to/from a series of
+        # characters that represent the UTF-8 bytes of each original character.
+
+        utf8::encode($string);  # "\x{100}"  becomes "\xc4\x80"
+        utf8::decode($string);  # "\xc4\x80" becomes "\x{100}"
+
+        # Convert a code point from the platform native character set to
+        # Unicode, and vice-versa.
+        $unicode = utf8::native_to_unicode(ord('A')); # returns 65 on both
+                                                      # ASCII and EBCDIC
+                                                      # platforms
+        $native = utf8::unicode_to_native(65);        # returns 65 on ASCII
+                                                      # platforms; 193 on
+                                                      # EBCDIC
+
+        $flag = utf8::is_utf8($string); # since Perl 5.8.1
+        $flag = utf8::valid($string);
+
+DESCRIPTION
+       The "use utf8" pragma tells the Perl parser to allow UTF-8 in the program text in the current lexical scope.  The "no utf8" pragma tells Perl to switch back to treating the source text as literal
+       bytes in the current lexical scope.  (On EBCDIC platforms, technically it is allowing UTF-EBCDIC, and not UTF-8, but this distinction is academic, so in this document the term UTF-8 is used to
+       mean both).
+
+       Do not use this pragma for anything else than telling Perl that your script is written in UTF-8. The utility functions described below are directly usable without "use utf8;".
+
+       Because it is not possible to reliably tell UTF-8 from native 8 bit encodings, you need either a Byte Order Mark at the beginning of your source code, or "use utf8;", to instruct perl.
+
+       When UTF-8 becomes the standard source format, this pragma will effectively become a no-op.
+
+       See also the effects of the "-C" switch and its cousin, the "PERL_UNICODE" environment variable, in perlrun.
+
+       Enabling the "utf8" pragma has the following effect:
+
+       •   Bytes in the source text that are not in the ASCII character set will be treated as being part of a literal UTF-8 sequence.  This includes most literals such as identifier names, string
+           constants, and constant regular expression patterns.
+
+       Note that if you have non-ASCII, non-UTF-8 bytes in your script (for example embedded Latin-1 in your string literals), "use utf8" will be unhappy.  If you want to have such bytes under "use
+       utf8", you can disable this pragma until the end the block (or file, if at top level) by "no utf8;".
+
+   Utility functions
+       The following functions are defined in the "utf8::" package by the Perl core.  You do not need to say "use utf8" to use these and in fact you should not say that unless you really want to have
+       UTF-8 source code.
+
+       •   "$num_octets = utf8::upgrade($string)"
+
+           (Since Perl v5.8.0) Converts in-place the internal representation of the string from an octet sequence in the native encoding (Latin-1 or EBCDIC) to UTF-8. The logical character sequence
+           itself is unchanged.  If $string is already upgraded, then this is a no-op. Returns the number of octets necessary to represent the string as UTF-8.
+
+           If your code needs to be compatible with versions of perl without "use feature 'unicode_strings';", you can force Unicode semantics on a given string:
+
+             # force unicode semantics for $string without the
+             # "unicode_strings" feature
+             utf8::upgrade($string);
+
+           For example:
+
+             # without explicit or implicit use feature 'unicode_strings'
+             my $x = "\xDF";    # LATIN SMALL LETTER SHARP S
+             $x =~ /ss/i;       # won't match
+             my $y = uc($x);    # won't convert
+             utf8::upgrade($x);
+             $x =~ /ss/i;       # matches
+             my $z = uc($x);    # converts to "SS"
+
+           Note that this function does not handle arbitrary encodings; use Encode instead.
+
+       •   "$success = utf8::downgrade($string[, $fail_ok])"
+
+           (Since Perl v5.8.0) Converts in-place the internal representation of the string from UTF-8 to the equivalent octet sequence in the native encoding (Latin-1 or EBCDIC). The logical character
+           sequence itself is unchanged. If $string is already stored as native 8 bit, then this is a no-op.  Can be used to make sure that the UTF-8 flag is off, e.g. when you want to make sure that
+           the substr() or length() function works with the usually faster byte algorithm.
+
+           Fails if the original UTF-8 sequence cannot be represented in the native 8 bit encoding. On failure dies or, if the value of $fail_ok is true, returns false.
+
+           Returns true on success.
+
+           If your code expects an octet sequence this can be used to validate that you've received one:
+
+             # throw an exception if not representable as octets
+             utf8::downgrade($string)
+
+             # or do your own error handling
+             utf8::downgrade($string, 1) or die "string must be octets";
+
+           Note that this function does not handle arbitrary encodings; use Encode instead.
+
+       •   "utf8::encode($string)"
+
+           (Since Perl v5.8.0) Converts in-place the character sequence to the corresponding octet sequence in Perl's extended UTF-8. That is, every (possibly wide) character gets replaced with a
+           sequence of one or more characters that represent the individual UTF-8 bytes of the character.  The UTF8 flag is turned off.  Returns nothing.
+
+            my $x = "\x{100}"; # $x contains one character, with ord 0x100
+            utf8::encode($x);  # $x contains two characters, with ords (on
+                               # ASCII platforms) 0xc4 and 0x80.  On EBCDIC
+                               # 1047, this would instead be 0x8C and 0x41.
+
+           Similar to:
+
+             use Encode;
+             $x = Encode::encode("utf8", $x);
+
+           Note that this function does not handle arbitrary encodings; use Encode instead.
+
+       •   "$success = utf8::decode($string)"
+
+           (Since Perl v5.8.0) Attempts to convert in-place the octet sequence encoded in Perl's extended UTF-8 to the corresponding character sequence. That is, it replaces each sequence of characters
+           in the string whose ords represent a valid (extended) UTF-8 byte sequence, with the corresponding single character.  The UTF-8 flag is turned on only if the source string contains multiple-
+           byte UTF-8 characters.  If $string is invalid as extended UTF-8, returns false; otherwise returns true.
+
+            my $x = "\xc4\x80"; # $x contains two characters, with ords
+                                # 0xc4 and 0x80
+            utf8::decode($x);   # On ASCII platforms, $x contains one char,
+                                # with ord 0x100.   Since these bytes aren't
+                                # legal UTF-EBCDIC, on EBCDIC platforms, $x is
+                                # unchanged and the function returns FALSE.
+            my $y = "\xc3\x83\xc2\xab"; This has been encoded twice; this
+                                # example is only for ASCII platforms
+            utf8::decode($y);   # Converts $y to \xc3\xab, returns TRUE;
+            utf8::decode($y);   # Further converts to \xeb, returns TRUE;
+            utf8::decode($y);   # Returns FALSE, leaves $y unchanged
+
+           Note that this function does not handle arbitrary encodings; use Encode instead.
+
+       •   "$unicode = utf8::native_to_unicode($code_point)"
+
+           (Since Perl v5.8.0) This takes an unsigned integer (which represents the ordinal number of a character (or a code point) on the platform the program is being run on) and returns its Unicode
+           equivalent value.  Since ASCII platforms natively use the Unicode code points, this function returns its input on them.  On EBCDIC platforms it converts from EBCDIC to Unicode.
+
+           A meaningless value will currently be returned if the input is not an unsigned integer.
+
+           Since Perl v5.22.0, calls to this function are optimized out on ASCII platforms, so there is no performance hit in using it there.
+
+       •   "$native = utf8::unicode_to_native($code_point)"
+
+           (Since Perl v5.8.0) This is the inverse of "utf8::native_to_unicode()", converting the other direction.  Again, on ASCII platforms, this returns its input, but on EBCDIC platforms it will
+           find the native platform code point, given any Unicode one.
+
+           A meaningless value will currently be returned if the input is not an unsigned integer.
+
+           Since Perl v5.22.0, calls to this function are optimized out on ASCII platforms, so there is no performance hit in using it there.
+
+       •   "$flag = utf8::is_utf8($string)"
+
+           (Since Perl 5.8.1)  Test whether $string is marked internally as encoded in UTF-8.  Functionally the same as "Encode::is_utf8($string)".
+
+           Typically only necessary for debugging and testing, if you need to dump the internals of an SV, Devel::Peek's Dump() provides more detail in a compact form.
+
+           If you still think you need this outside of debugging, testing or dealing with filenames, you should probably read perlunitut and "What is "the UTF8 flag"?" in perlunifaq.
+
+           Don't use this flag as a marker to distinguish character and binary data: that should be decided for each variable when you write your code.
+
+           To force unicode semantics in code portable to perl 5.8 and 5.10, call "utf8::upgrade($string)" unconditionally.
+
+       •   "$flag = utf8::valid($string)"
+
+           [INTERNAL] Test whether $string is in a consistent state regarding UTF-8.  Will return true if it is well-formed Perl extended UTF-8 and has the UTF-8 flag on or if $string is held as bytes
+           (both these states are 'consistent').  The main reason for this routine is to allow Perl's test suite to check that operations have left strings in a consistent state.
+
+       "utf8::encode" is like "utf8::upgrade", but the UTF8 flag is cleared.  See perlunicode, and the C API functions "sv_utf8_upgrade", ""sv_utf8_downgrade" in perlapi", ""sv_utf8_encode" in perlapi",
+       and ""sv_utf8_decode" in perlapi", which are wrapped by the Perl functions "utf8::upgrade", "utf8::downgrade", "utf8::encode" and "utf8::decode".  Also, the functions "utf8::is_utf8",
+       "utf8::valid", "utf8::encode", "utf8::decode", "utf8::upgrade", and "utf8::downgrade" are actually internal, and thus always available, without a "require utf8" statement.
+
+BUGS
+       Some filesystems may not support UTF-8 file names, or they may be supported incompatibly with Perl.  Therefore UTF-8 names that are visible to the filesystem, such as module names may not work.
+
+SEE ALSO
+       perlunitut, perluniintro, perlrun, bytes, perlunicode
+
+perl v5.36.0                                                                                    2022-12-12                                                                                     utf8(3perl)
+UTF-8(7)                                                                             Miscellaneous Information Manual                                                                             UTF-8(7)
+
+NAME
+       UTF-8 - an ASCII compatible multibyte Unicode encoding
+
+DESCRIPTION
+       The  Unicode  3.0 character set occupies a 16-bit code space.  The most obvious Unicode encoding (known as UCS-2) consists of a sequence of 16-bit words.  Such strings can contain—as part of many
+       16-bit characters—bytes such as '\0' or '/', which have a special meaning in filenames and other C library function arguments.  In addition, the majority of UNIX  tools  expect  ASCII  files  and
+       can't read 16-bit words as characters without major modifications.  For these reasons, UCS-2 is not a suitable external encoding of Unicode in filenames, text files, environment variables, and so
+       on.  The ISO/IEC 10646 Universal Character Set (UCS), a superset of Unicode, occupies an even larger code space—31 bits—and the obvious UCS-4 encoding for it (a sequence of 32-bit words) has  the
+       same problems.
+
+       The UTF-8 encoding of Unicode and UCS does not have these problems and is the common way in which Unicode is used on UNIX-style operating systems.
+
+   Properties
+       The UTF-8 encoding has the following nice properties:
+
+       * UCS  characters  0x00000000 to 0x0000007f (the classic US-ASCII characters) are encoded simply as bytes 0x00 to 0x7f (ASCII compatibility).  This means that files and strings which contain only
+         7-bit ASCII characters have the same encoding under both ASCII and UTF-8 .
+
+       * All UCS characters greater than 0x7f are encoded as a multibyte sequence consisting only of bytes in the range 0x80 to 0xfd, so no ASCII byte can appear as part of another character  and  there
+         are no problems with, for example,  '\0' or '/'.
+
+       * The lexicographic sorting order of UCS-4 strings is preserved.
+
+       * All possible 2^31 UCS codes can be encoded using UTF-8.
+
+       * The bytes 0xc0, 0xc1, 0xfe, and 0xff are never used in the UTF-8 encoding.
+
+       * The  first  byte  of  a  multibyte sequence which represents a single non-ASCII UCS character is always in the range 0xc2 to 0xfd and indicates how long this multibyte sequence is.  All further
+         bytes in a multibyte sequence are in the range 0x80 to 0xbf.  This allows easy resynchronization and makes the encoding stateless and robust against missing bytes.
+
+       * UTF-8 encoded UCS characters may be up to six bytes long, however the Unicode standard specifies no characters above 0x10ffff, so Unicode characters can be only up to four bytes long in UTF-8.
+
+   Encoding
+       The following byte sequences are used to represent a character.  The sequence to be used depends on the UCS code number of the character:
+
+       0x00000000 - 0x0000007F:
+           0xxxxxxx
+
+       0x00000080 - 0x000007FF:
+           110xxxxx 10xxxxxx
+
+       0x00000800 - 0x0000FFFF:
+           1110xxxx 10xxxxxx 10xxxxxx
+
+       0x00010000 - 0x001FFFFF:
+           11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+
+       0x00200000 - 0x03FFFFFF:
+           111110xx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
+
+       0x04000000 - 0x7FFFFFFF:
+           1111110x 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx 10xxxxxx
+
+       The xxx bit positions are filled with the bits of the character code number in binary representation, most significant bit first (big-endian).  Only the shortest possible multibyte sequence which
+       can represent the code number of the character can be used.
+
+       The  UCS  code  values  0xd800–0xdfff  (UTF-16  surrogates)  as  well as 0xfffe and 0xffff (UCS noncharacters) should not appear in conforming UTF-8 streams.  According to RFC 3629 no point above
+       U+10FFFF should be used, which limits characters to four bytes.
+
+   Example
+       The Unicode character 0xa9 = 1010 1001 (the copyright sign) is encoded in UTF-8 as
+
+              11000010 10101001 = 0xc2 0xa9
+
+       and character 0x2260 = 0010 0010 0110 0000 (the "not equal" symbol) is encoded as:
+
+              11100010 10001001 10100000 = 0xe2 0x89 0xa0
+
+   Application notes
+       Users have to select a UTF-8 locale, for example with
+
+              export LANG=en_GB.UTF-8
+
+       in order to activate the UTF-8 support in applications.
+
+       Application software that has to be aware of the used character encoding should always set the locale with for example
+
+              setlocale(LC_CTYPE, "")
+
+       and programmers can then test the expression
+
+              strcmp(nl_langinfo(CODESET), "UTF-8") == 0
+
+       to determine whether a UTF-8 locale has been selected and whether therefore all plaintext standard input and output, terminal communication, plaintext file  content,  filenames,  and  environment
+       variables are encoded in UTF-8.
+
+       Programmers  accustomed  to single-byte encodings such as US-ASCII or ISO 8859 have to be aware that two assumptions made so far are no longer valid in UTF-8 locales.  Firstly, a single byte does
+       not necessarily correspond any more to a single character.  Secondly, since modern terminal emulators in UTF-8 mode also support Chinese, Japanese, and Korean double-width characters as  well  as
+       nonspacing  combining characters, outputting a single character does not necessarily advance the cursor by one position as it did in ASCII.  Library functions such as mbsrtowcs(3) and wcswidth(3)
+       should be used today to count characters and cursor positions.
+
+       The official ESC sequence to switch from an ISO 2022 encoding scheme (as used for instance by VT100 terminals) to UTF-8 is ESC % G ("\x1b%G").  The corresponding return sequence from UTF-8 to ISO
+       2022 is ESC % @ ("\x1b%@").  Other ISO 2022 sequences (such as for switching the G0 and G1 sets) are not applicable in UTF-8 mode.
+
+   Security
+       The  Unicode and UCS standards require that producers of UTF-8 shall use the shortest form possible, for example, producing a two-byte sequence with first byte 0xc0 is nonconforming.  Unicode 3.1
+       has added the requirement that conforming programs must not accept non-shortest forms in their input.  This is for security reasons: if user input is checked for possible security  violations,  a
+       program might check only for the ASCII version of "/../" or ";" or NUL and overlook that there are many non-ASCII ways to represent these things in a non-shortest UTF-8 encoding.
+
+   Standards
+       ISO/IEC 10646-1:2000, Unicode 3.1, RFC 3629, Plan 9.
+
+SEE ALSO
+       locale(1), nl_langinfo(3), setlocale(3), charsets(7), unicode(7)
+
+Linux man-pages 6.04                                                                            2023-03-12                                                                                        UTF-8(7)

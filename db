@@ -1,0 +1,363 @@
+dbopen(3)                                                                                Library Functions Manual                                                                                dbopen(3)
+
+NAME
+       dbopen - database access methods
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/types.h>
+       #include <limits.h>
+       #include <db.h>
+       #include <fcntl.h>
+
+       DB *dbopen(const char *file, int flags, int mode, DBTYPE type,
+                  const void *openinfo);
+
+DESCRIPTION
+       Note  well:  This page documents interfaces provided up until glibc 2.1.  Since glibc 2.2, glibc no longer provides these interfaces.  Probably, you are looking for the APIs provided by the libdb
+       library instead.
+
+       dbopen() is the library interface to database files.  The supported file formats are btree, hashed, and UNIX file oriented.  The btree format is a representation of a sorted, balanced tree struc‐
+       ture.   The hashed format is an extensible, dynamic hashing scheme.  The flat-file format is a byte stream file with fixed or variable length records.  The formats and file-format-specific infor‐
+       mation are described in detail in their respective manual pages btree(3), hash(3), and recno(3).
+
+       dbopen() opens file for reading and/or writing.  Files never intended to be preserved on disk may be created by setting the file argument to NULL.
+
+       The flags and mode arguments are as specified to the open(2) routine, however, only the O_CREAT, O_EXCL, O_EXLOCK, O_NONBLOCK, O_RDONLY,  O_RDWR,  O_SHLOCK,  and  O_TRUNC  flags  are  meaningful.
+       (Note, opening a database file O_WRONLY is not possible.)
+
+       The type argument is of type DBTYPE (as defined in the <db.h> include file) and may be set to DB_BTREE, DB_HASH, or DB_RECNO.
+
+       The  openinfo argument is a pointer to an access-method-specific structure described in the access method's manual page.  If openinfo is NULL, each access method will use defaults appropriate for
+       the system and the access method.
+
+       dbopen() returns a pointer to a DB structure on success and NULL on error.  The DB structure is defined in the <db.h> include file, and contains at least the following fields:
+
+           typedef struct {
+               DBTYPE type;
+               int (*close)(const DB *db);
+               int (*del)(const DB *db, const DBT *key, unsigned int flags);
+               int (*fd)(const DB *db);
+               int (*get)(const DB *db, DBT *key, DBT *data,
+                          unsigned int flags);
+               int (*put)(const DB *db, DBT *key, const DBT *data,
+                          unsigned int flags);
+               int (*sync)(const DB *db, unsigned int flags);
+               int (*seq)(const DB *db, DBT *key, DBT *data,
+                          unsigned int flags);
+           } DB;
+
+       These elements describe a database type and a set of functions performing various actions.  These functions take a pointer to a structure as returned by dbopen(), and sometimes one or more point‐
+       ers to key/data structures and a flag value.
+
+       type   The type of the underlying access method (and file format).
+
+       close  A  pointer  to  a routine to flush any cached information to disk, free any allocated resources, and close the underlying file(s).  Since key/data pairs may be cached in memory, failing to
+              sync the file with a close or sync function may result in inconsistent or lost information.  close routines return -1 on error (setting errno) and 0 on success.
+
+       del    A pointer to a routine to remove key/data pairs from the database.
+
+              The argument flag may be set to the following value:
+
+              R_CURSOR
+                     Delete the record referenced by the cursor.  The cursor must have previously been initialized.
+
+              delete routines return -1 on error (setting errno), 0 on success, and 1 if the specified key was not in the file.
+
+       fd     A pointer to a routine which returns a file descriptor representative of the underlying database.  A file descriptor referencing the same file will be returned to all processes which  call
+              dbopen() with the same file name.  This file descriptor may be safely used as an argument to the fcntl(2) and flock(2) locking functions.  The file descriptor is not necessarily associated
+              with any of the underlying files used by the access method.  No file descriptor is available for in memory databases.  fd routines return -1 on error (setting errno), and the file descrip‐
+              tor on success.
+
+       get    A  pointer  to  a  routine which is the interface for keyed retrieval from the database.  The address and length of the data associated with the specified key are returned in the structure
+              referenced by data.  get routines return -1 on error (setting errno), 0 on success, and 1 if the key was not in the file.
+
+       put    A pointer to a routine to store key/data pairs in the database.
+
+              The argument flag may be set to one of the following values:
+
+              R_CURSOR
+                     Replace the key/data pair referenced by the cursor.  The cursor must have previously been initialized.
+
+              R_IAFTER
+                     Append the data immediately after the data referenced by key, creating a new key/data pair.  The record number of the appended key/data pair is returned in the key structure.   (Ap‐
+                     plicable only to the DB_RECNO access method.)
+
+              R_IBEFORE
+                     Insert the data immediately before the data referenced by key, creating a new key/data pair.  The record number of the inserted key/data pair is returned in the key structure.  (Ap‐
+                     plicable only to the DB_RECNO access method.)
+
+              R_NOOVERWRITE
+                     Enter the new key/data pair only if the key does not previously exist.
+
+              R_SETCURSOR
+                     Store the key/data pair, setting or initializing the position of the cursor to reference it.  (Applicable only to the DB_BTREE and DB_RECNO access methods.)
+
+              R_SETCURSOR is available only for the DB_BTREE and DB_RECNO access methods because it implies that the keys have an inherent order which does not change.
+
+              R_IAFTER and R_IBEFORE are available only for the DB_RECNO access method because they each imply that the access method is able to create new keys.  This is true only if the keys  are  or‐
+              dered and independent, record numbers for example.
+
+              The default behavior of the put routines is to enter the new key/data pair, replacing any previously existing key.
+
+              put routines return -1 on error (setting errno), 0 on success, and 1 if the R_NOOVERWRITE flag was set and the key already exists in the file.
+
+       seq    A  pointer  to  a routine which is the interface for sequential retrieval from the database.  The address and length of the key are returned in the structure referenced by key, and the ad‐
+              dress and length of the data are returned in the structure referenced by data.
+
+              Sequential key/data pair retrieval may begin at any time, and the position of the "cursor" is not affected by calls to the del, get, put, or sync routines.  Modifications to  the  database
+              during a sequential scan will be reflected in the scan, that is, records inserted behind the cursor will not be returned while records inserted in front of the cursor will be returned.
+
+              The flag value must be set to one of the following values:
+
+              R_CURSOR
+                     The data associated with the specified key is returned.  This differs from the get routines in that it sets or initializes the cursor to the location of the key as well.  (Note, for
+                     the DB_BTREE access method, the returned key is not necessarily an exact match for the specified key.  The returned key is the smallest key greater than or equal  to  the  specified
+                     key, permitting partial key matches and range searches.)
+
+              R_FIRST
+                     The first key/data pair of the database is returned, and the cursor is set or initialized to reference it.
+
+              R_LAST The last key/data pair of the database is returned, and the cursor is set or initialized to reference it.  (Applicable only to the DB_BTREE and DB_RECNO access methods.)
+
+              R_NEXT Retrieve the key/data pair immediately after the cursor.  If the cursor is not yet set, this is the same as the R_FIRST flag.
+
+              R_PREV Retrieve  the  key/data pair immediately before the cursor.  If the cursor is not yet set, this is the same as the R_LAST flag.  (Applicable only to the DB_BTREE and DB_RECNO access
+                     methods.)
+
+              R_LAST and R_PREV are available only for the DB_BTREE and DB_RECNO access methods because they each imply that the keys have an inherent order which does not change.
+
+              seq routines return -1 on error (setting errno), 0 on success and 1 if there are no key/data pairs less than or greater than the specified or current key.  If the DB_RECNO access method is
+              being used, and if the database file is a character special file and no complete key/data pairs are currently available, the seq routines return 2.
+
+       sync   A pointer to a routine to flush any cached information to disk.  If the database is in memory only, the sync routine has no effect and will always succeed.
+
+              The flag value may be set to the following value:
+
+              R_RECNOSYNC
+                     If the DB_RECNO access method is being used, this flag causes the sync routine to apply to the btree file which underlies the recno file, not the recno file itself.  (See the bfname
+                     field of the recno(3) manual page for more information.)
+
+              sync routines return -1 on error (setting errno) and 0 on success.
+
+   Key/data pairs
+       Access to all file types is based on key/data pairs.  Both keys and data are represented by the following data structure:
+
+           typedef struct {
+               void  *data;
+               size_t size;
+           } DBT;
+
+       The elements of the DBT structure are defined as follows:
+
+       data   A pointer to a byte string.
+
+       size   The length of the byte string.
+
+       Key and data byte strings may reference strings of essentially unlimited length although any two of them must fit into available memory at the same time.  It should be noted that the access meth‐
+       ods provide no guarantees about byte string alignment.
+
+ERRORS
+       The dbopen() routine may fail and set errno for any of the errors specified for the library routines open(2) and malloc(3) or the following:
+
+       EFTYPE A file is incorrectly formatted.
+
+       EINVAL A parameter has been specified (hash function, pad byte, etc.) that is incompatible with the current file specification or which is not meaningful for the function (for example, use of the
+              cursor without prior initialization) or there is a mismatch between the version number of file and the software.
+
+       The close routines may fail and set errno for any of the errors specified for the library routines close(2), read(2), write(2), free(3), or fsync(2).
+
+       The del, get, put, and seq routines may fail and set errno for any of the errors specified for the library routines read(2), write(2), free(3), or malloc(3).
+
+       The fd routines will fail and set errno to ENOENT for in memory databases.
+
+       The sync routines may fail and set errno for any of the errors specified for the library routine fsync(2).
+
+BUGS
+       The typedef DBT is a mnemonic for "data base thang", and was used because no one could think of a reasonable name that wasn't already used.
+
+       The file descriptor interface is a kludge and will be deleted in a future version of the interface.
+
+       None of the access methods provide any form of concurrent access, locking, or transactions.
+
+SEE ALSO
+       btree(3), hash(3), mpool(3), recno(3)
+
+       LIBTP: Portable, Modular Transactions for UNIX, Margo Seltzer, Michael Olson, USENIX proceedings, Winter 1992.
+
+4.4 Berkeley Distribution                                                                       2022-12-04                                                                                       dbopen(3)
+DB(3perl)                                                                            Perl Programmers Reference Guide                                                                            DB(3perl)
+
+NAME
+       DB - programmatic interface to the Perl debugging API
+
+SYNOPSIS
+           package CLIENT;
+           use DB;
+           @ISA = qw(DB);
+
+           # these (inherited) methods can be called by the client
+
+           CLIENT->register()      # register a client package name
+           CLIENT->done()          # de-register from the debugging API
+           CLIENT->skippkg('hide::hide')  # ask DB not to stop in this package
+           CLIENT->cont([WHERE])       # run some more (until BREAK or
+                                       # another breakpointt)
+           CLIENT->step()              # single step
+           CLIENT->next()              # step over
+           CLIENT->ret()               # return from current subroutine
+           CLIENT->backtrace()         # return the call stack description
+           CLIENT->ready()             # call when client setup is done
+           CLIENT->trace_toggle()      # toggle subroutine call trace mode
+           CLIENT->subs([SUBS])        # return subroutine information
+           CLIENT->files()             # return list of all files known to DB
+           CLIENT->lines()             # return lines in currently loaded file
+           CLIENT->loadfile(FILE,LINE) # load a file and let other clients know
+           CLIENT->lineevents()        # return info on lines with actions
+           CLIENT->set_break([WHERE],[COND])
+           CLIENT->set_tbreak([WHERE])
+           CLIENT->clr_breaks([LIST])
+           CLIENT->set_action(WHERE,ACTION)
+           CLIENT->clr_actions([LIST])
+           CLIENT->evalcode(STRING)  # eval STRING in executing code's context
+           CLIENT->prestop([STRING]) # execute in code context before stopping
+           CLIENT->poststop([STRING])# execute in code context before resuming
+
+           # These methods will be called at the appropriate times.
+           # Stub versions provided do nothing.
+           # None of these can block.
+
+           CLIENT->init()          # called when debug API inits itself
+           CLIENT->stop(FILE,LINE) # when execution stops
+           CLIENT->idle()          # while stopped (can be a client event loop)
+           CLIENT->cleanup()       # just before exit
+           CLIENT->output(LIST)    # called to print any output that
+                                   # the API must show
+
+DESCRIPTION
+       Perl debug information is frequently required not just by debuggers, but also by modules that need some "special" information to do their job properly, like profilers.
+
+       This module abstracts and provides all of the hooks into Perl internal debugging functionality, so that various implementations of Perl debuggers (or packages that want to simply get at the
+       "privileged" debugging data) can all benefit from the development of this common code.  Currently used by Swat, the perl/Tk GUI debugger.
+
+       Note that multiple "front-ends" can latch into this debugging API simultaneously.  This is intended to facilitate things like debugging with a command line and GUI at the same time, debugging
+       debuggers etc.  [Sounds nice, but this needs some serious support -- GSAR]
+
+       In particular, this API does not provide the following functions:
+
+       •   data display
+
+       •   command processing
+
+       •   command alias management
+
+       •   user interface (tty or graphical)
+
+       These are intended to be services performed by the clients of this API.
+
+       This module attempts to be squeaky clean w.r.t "use strict;" and when warnings are enabled.
+
+   Global Variables
+       The following "public" global names can be read by clients of this API.  Beware that these should be considered "readonly".
+
+       $DB::sub
+               Name of current executing subroutine.
+
+       %DB::sub
+               The keys of this hash are the names of all the known subroutines.  Each value is an encoded string that has the sprintf(3) format "("%s:%d-%d", filename, fromline, toline)".
+
+       $DB::single
+               Single-step flag.  Will be true if the API will stop at the next statement.
+
+       $DB::signal
+               Signal flag. Will be set to a true value if a signal was caught.  Clients may check for this flag to abort time-consuming operations.
+
+       $DB::trace
+               This flag is set to true if the API is tracing through subroutine calls.
+
+       @DB::args
+               Contains the arguments of current subroutine, or the @ARGV array if in the toplevel context.
+
+       @DB::dbline
+               List of lines in currently loaded file.
+
+       %DB::dbline
+               Actions in current file (keys are line numbers).  The values are strings that have the sprintf(3) format "("%s\000%s", breakcondition, actioncode)".
+
+       $DB::package
+               Package namespace of currently executing code.
+
+       $DB::filename
+               Currently loaded filename.
+
+       $DB::subname
+               Fully qualified name of currently executing subroutine.
+
+       $DB::lineno
+               Line number that will be executed next.
+
+   API Methods
+       The following are methods in the DB base class.  A client must access these methods by inheritance (*not* by calling them directly), since the API keeps track of clients through the inheritance
+       mechanism.
+
+       CLIENT->register()
+               register a client object/package
+
+       CLIENT->evalcode(STRING)
+               eval STRING in executing code context
+
+       CLIENT->skippkg('D::hide')
+               ask DB not to stop in these packages
+
+       CLIENT->run()
+               run some more (until a breakpt is reached)
+
+       CLIENT->step()
+               single step
+
+       CLIENT->next()
+               step over
+
+       CLIENT->done()
+               de-register from the debugging API
+
+   Client Callback Methods
+       The following "virtual" methods can be defined by the client.  They will be called by the API at appropriate points.  Note that unless specified otherwise, the debug API only defines empty, non-
+       functional default versions of these methods.
+
+       CLIENT->init()
+               Called after debug API inits itself.
+
+       CLIENT->prestop([STRING])
+               Usually inherited from DB package.  If no arguments are passed, returns the prestop action string.
+
+       CLIENT->stop()
+               Called when execution stops (w/ args file, line).
+
+       CLIENT->idle()
+               Called while stopped (can be a client event loop).
+
+       CLIENT->poststop([STRING])
+               Usually inherited from DB package.  If no arguments are passed, returns the poststop action string.
+
+       CLIENT->evalcode(STRING)
+               Usually inherited from DB package.  Ask for a STRING to be "eval"-ed in executing code context.
+
+       CLIENT->cleanup()
+               Called just before exit.
+
+       CLIENT->output(LIST)
+               Called when API must show a message (warnings, errors etc.).
+
+BUGS
+       The interface defined by this module is missing some of the later additions to perl's debugging functionality.  As such, this interface should be considered highly experimental and subject to
+       change.
+
+AUTHOR
+       Gurusamy Sarathy    gsar@activestate.com
+
+       This code heavily adapted from an early version of perl5db.pl attributable to Larry Wall and the Perl Porters.
+
+perl v5.36.0                                                                                    2022-12-12                                                                                       DB(3perl)

@@ -1,0 +1,393 @@
+BFS(1)                                                                                    General Commands Manual                                                                                   BFS(1)
+
+NAME
+       bfs - breadth-first search for your files
+
+SYNOPSIS
+       bfs [flags...]  [paths...]  [expression...]
+
+       flags (-H/-L/-P etc.), paths, and expressions may be freely mixed in any order.
+
+DESCRIPTION
+       bfs is a breadth-first version of the UNIX find(1) command.
+
+       bfs  supports almost every feature from every major find(1) implementation, so your existing command lines should work as-is.  It also adds some features of its own, such as a more forgiving com‐
+       mand line parser and some additional options.
+
+       Each path specified on the command line is treated as a starting path to search through.  If no paths are specified, the current directory (.)  is searched by default.
+
+       Like find(1), bfs interprets its arguments as a short-circuiting Boolean expression.  For example,
+
+              bfs \( -name '*.txt' -or -lname '*.txt' \) -and -print
+
+       will print the all the paths that are either .txt files or symbolic links to .txt files.  -and is implied between two consecutive expressions, so this is equivalent:
+
+              bfs \( -name '*.txt' -or -lname '*.txt' \) -print
+
+       Finally, -print is implied if no actions are specified, so this too is equivalent:
+
+              bfs -name '*.txt' -or -lname '*.txt'
+
+       Most options that take a numeric argument N will also accept -N or +N.  -N means "less than N," and +N means "greater than N."
+
+FLAGS
+       -H     Follow symbolic links on the command line, but not while searching.
+
+       -L     Follow all symbolic links.
+
+       -P     Never follow symbolic links (the default).
+
+       -E     Use extended regular expressions (same as -regextype posix-extended).
+
+       -X     Filter out files with non-xargs(1)-safe names.
+
+       -d     Search in post-order (same as -depth).
+
+       -s     Visit directory entries in sorted order.  The sorting takes place within each directory separately, which makes it different from bfs ... | sort, but still provides a deterministic  order‐
+              ing.
+
+       -x     Don't descend into other mount points (same as -xdev).
+
+       -f PATH
+              Treat PATH as a path to search (useful if it begins with a dash).
+
+       -D FLAG
+              Turn on a debugging flag (see -D help).
+
+       -ON
+              Enable optimization level N (default: 3).
+
+              -O0    Disable all optimizations.
+
+              -O1    Basic logical simplifications.
+
+              -O2    All -O1 optimizations, plus dead code elimination and data flow analysis.
+
+              -O3    All -O2 optimizations, plus re-order expressions to reduce expected cost.
+
+              -O4/-Ofast
+                     All optimizations, including aggressive optimizations that may alter the observed behavior in corner cases.
+
+       -S bfs|dfs|ids|eds
+              Choose the search strategy.
+
+              bfs    Breadth-first search (the default).
+
+              dfs    Depth-first search.  Uses less memory than breadth-first search, but is typically slower to return relevant results.
+
+              ids    Iterative deepening search.  Performs repeated depth-first searches with increasing depth limits.  This gives results in the same order as breadth-first search, but with the reduced
+                     memory consumption of depth-first search.  Tends to be very slow in practice, so use it only if you absolutely need breadth-first ordering, but -S bfs consumes too much memory.
+
+              eds    Exponential deepening search.  A compromise between breadth- and depth-first search, which searches exponentially increasing depth ranges (e.g 0-1, 1-2, 2-4, 4-8,  etc.).   Provides
+                     many of the benefits of breadth-first search with depth-first's reduced memory consumption.  Typically far faster than -S ids.
+
+OPERATORS
+       ( expression )
+              Parentheses are used for grouping expressions together.  You'll probably have to write \( expression \) to avoid the parentheses being interpreted by the shell.
+
+       ! expression
+       -not expression
+              The "not" operator: returns the negation of the truth value of the expression.  You may have to write \! expression to avoid ! being interpreted by the shell.
+
+       expression expression
+       expression -a expression
+       expression -and expression
+              Short-circuiting "and" operator: if the left-hand expression is true, returns the right-hand expression; otherwise, returns false.
+
+       expression -o expression
+       expression -or expression
+              Short-circuiting "or" operator: if the left-hand expression is false, returns the right-hand expression; otherwise, returns true.
+
+       expression , expression
+              The "comma" operator: evaluates the left-hand expression but discards the result, returning the right-hand expression.
+
+SPECIAL FORMS
+       -exclude expression
+              Exclude all paths matching the expression from the search.  This is more powerful than -prune, because it applies even when the expression wouldn't otherwise be evaluated, due to -depth or
+              -mindepth for example.  Exclusions are always applied before other expressions, so it may be least confusing to put them first on the command line.
+
+OPTIONS
+       -color
+       -nocolor
+              Turn colors on or off (default: -color if outputting to a terminal, -nocolor otherwise).
+
+       -daystart
+              Measure time relative to the start of today.
+
+       -depth Search in post-order (descendents first).
+
+       -follow
+              Follow all symbolic links (same as -L).
+
+       -files0-from FILE
+              Treat the NUL ('\0')-separated paths in FILE as starting points for the search.  Pass -files0-from - to read the paths from standard input.
+
+       -ignore_readdir_race
+       -noignore_readdir_race
+              Whether to report an error if bfs detects that the file tree is modified during the search (default: -noignore_readdir_race).
+
+       -maxdepth N
+       -mindepth N
+              Ignore files deeper/shallower than N.
+
+       -mount Don't descend into other mount points (same as -xdev for now, but will skip mount points entirely in the future).
+
+       -nohidden
+              Exclude hidden files and directories.
+
+       -noleaf
+              Ignored; for compatibility with GNU find.
+
+       -regextype TYPE
+              Use TYPE-flavored regexes (default: posix-basic; see -regextype help).
+
+       -status
+              Display a status bar while searching.
+
+       -unique
+              Skip any files that have already been seen.  Particularly useful along with -L.
+
+       -warn
+       -nowarn
+              Turn on or off warnings about the command line.
+
+       -xdev  Don't descend into other mount points.
+
+TESTS
+       -acl   Find files with a non-trivial Access Control List (acl(5)).
+
+       -amin [-+]N
+       -Bmin [-+]N
+       -cmin [-+]N
+       -mmin [-+]N
+              Find files accessed/Birthed/changed/modified N minutes ago.
+
+       -anewer FILE
+       -Bnewer FILE
+       -cnewer FILE
+       -mnewer FILE
+              Find files accessed/Birthed/changed/modified more recently than FILE was modified.
+
+       -asince TIME
+       -Bsince TIME
+       -csince TIME
+       -msince TIME
+              Find files accessed/Birthed/changed/modified more recently than the ISO 8601-style timestamp TIME.  See -newerXY for examples of the timestamp format.
+
+       -atime [-+]N
+       -Btime [-+]N
+       -ctime [-+]N
+       -mtime [-+]N
+              Find files accessed/Birthed/changed/modified N days ago.
+
+       -capable
+              Find files with POSIX.1e capabilities(7) set.
+
+       -depth [-+]N
+              Find files with depth N.
+
+       -empty Find empty files/directories.
+
+       -executable
+       -readable
+       -writable
+              Find files the current user can execute/read/write.
+
+       -false
+       -true
+              Always false/true.
+
+       -fstype TYPE
+              Find files on file systems with the given TYPE.
+
+       -gid [-+]N
+       -uid [-+]N
+              Find files owned by group/user ID N.
+
+       -group NAME
+       -user NAME
+              Find files owned by the group/user NAME.
+
+       -hidden
+              Find hidden files (those beginning with .).
+
+       -ilname GLOB
+       -iname GLOB
+       -ipath GLOB
+       -iregex REGEX
+       -iwholename GLOB
+              Case-insensitive versions of -lname/-name/-path/-regex/-wholename.
+
+       -inum [-+]N
+              Find files with inode number N.
+
+       -links [-+]N
+              Find files with N hard links.
+
+       -lname GLOB
+              Find symbolic links whose target matches the GLOB.
+
+       -name GLOB
+              Find files whose name matches the GLOB.
+
+       -newer FILE
+              Find files newer than FILE.
+
+       -newerXY REFERENCE
+              Find files whose X time is newer than the Y time of REFERENCE.  X and Y can be any of [aBcm] (access/Birth/change/modification).  Y may also be t to parse REFERENCE as  an  ISO  8601-style
+              timestamp.  For example:
+
+              1991-12-14
+              1991-12-14T03:00
+              1991-12-14T03:00-07:00
+              1991-12-14T10:00Z
+
+       -nogroup
+       -nouser
+              Find files owned by nonexistent groups/users.
+
+       -path GLOB
+       -wholename GLOB
+              Find files whose entire path matches the GLOB.
+
+       -perm [-]MODE
+              Find files with a matching mode.
+
+       -regex REGEX
+              Find files whose entire path matches the regular expression REGEX.
+
+       -samefile FILE
+              Find hard links to FILE.
+
+       -since TIME
+              Find files modified since the ISO 8601-style timestamp TIME.  See -newerXY for examples of the timestamp format.
+
+       -size [-+]N[cwbkMGTP]
+              Find files with the given size, in 1-byte characters, 2-byte words, 512-byte blocks (default), or kiB/MiB/GiB/TiB/PiB.
+
+       -sparse
+              Find files that occupy fewer disk blocks than expected.
+
+       -type [bcdlpfswD]
+              Find files of the given type.  Possible types are block device, character device, directory, symbolic link, pipe, regular file, socket, whiteout, and Door.
+
+       -used [-+]N
+              Find files last accessed N days after they were changed.
+
+       -xattr Find files with extended attributes (xattr(7)).
+
+       -xattrname NAME
+              Find files with the extended attribute NAME.
+
+       -xtype [bcdlpfswD]
+              Find files of the given type, following links when -type would not, and vice versa.
+
+ACTIONS
+       -delete
+       -rm
+              Delete any found files (implies -depth).
+
+       -exec command ... {} ;
+              Execute a command.
+
+       -exec command ... {} +
+              Execute a command with multiple files at once.
+
+       -ok command ... {} ;
+              Prompt the user whether to execute a command.
+
+       -execdir command ... {} ;
+       -execdir command ... {} +
+       -okdir command ... {} ;
+              Like -exec/-ok, but run the command in the same directory as the found file(s).
+
+       -exit [STATUS]
+              Exit immediately with the given status (0 if unspecified).
+
+       -fls FILE
+       -fprint FILE
+       -fprint0 FILE
+       -fprintf FILE FORMAT
+              Like -ls/-print/-print0/-printf, but write to FILE instead of standard output.
+
+       -ls    List files like ls -dils.
+
+       -print Print the path to the found file.
+
+       -print0
+              Like -print, but use the null character ('\0') as a separator rather than newlines.  Useful in conjunction with xargs -0.
+
+       -printf FORMAT
+              Print according to a format string (see find(1)).  These additional format directives are supported:
+
+              %w     The file's birth time, in the same format as %a/%c/%t.
+
+              %Wk    Field k of the file's birth time, in the same format as %Ak/%Ck/%Tk.
+
+       -printx
+              Like -print, but escape whitespace and quotation characters, to make the output safe for xargs(1).  Consider using -print0 and xargs -0 instead.
+
+       -prune Don't descend into this directory.
+
+       -quit  Quit immediately.
+
+       -version
+              Print version information.
+
+       -help  Print usage information.
+
+ENVIRONMENT
+       Certain environment variables affect the behavior of bfs.
+
+       LANG
+       LC_*
+              Specifies  the  locale(7)  in  use  for various things.  bfs is not (yet) translated to any languages except English, but the locale will still affect the format of printed values.  Yes/no
+              prompts (e.g. from -ok) will also be interpreted according to the current locale.
+
+       LS_COLORS
+       BFS_COLORS
+              Controls the colors used when displaying file paths if -color is enabled.  bfs interprets LS_COLORS the same way GNU ls(1) does (see dir_colors(5)).  BFS_COLORS can be  used  to  customize
+              bfs without affecting other commands.
+
+       NO_COLOR
+              Causes bfs to default to -nocolor if it is set (see https://no-color.org/).
+
+       PAGER  Specifies the pager used for -help output.  Defaults to more(1).
+
+       POSIXLY_CORRECT
+              Makes  bfs conform more strictly to the POSIX.1-2017 specification for find(1).  Currently this just disables warnings by default.  It does not disable bfs's various extensions to the base
+              POSIX functionality.
+
+EXAMPLES
+       bfs    With no arguments, bfs prints all files under the current directory in breadth-first order.
+
+       bfs -name '*.txt'
+              Prints all the .txt files under the current directory.  *.txt is quoted to ensure the glob is processed by bfs rather than the shell.
+
+       bfs -name access_log -L /var
+              Finds all files named access_log under /var, following symbolic links.  bfs allows flags and paths to appear anywhere on the command line.
+
+       bfs ~ -not -user $USER
+              Prints all files in your home directory not owned by you.
+
+       bfs -xtype l
+              Finds broken symbolic links.
+
+       bfs -name config -exclude -name .git
+              Finds all files named config, skipping every .git directory.
+
+       bfs -type f -executable -exec strip '{}' +
+              Runs strip(1) on all executable files it finds, passing it multiple files at a time.
+
+BUGS
+       https://github.com/tavianator/bfs/issues
+
+AUTHOR
+       Tavian Barnes <tavianator@tavianator.com>
+
+       https://tavianator.com/projects/bfs.html
+
+SEE ALSO
+       find(1), locate(1), xargs(1)
+
+                                                                                                                                                                                                    BFS(1)

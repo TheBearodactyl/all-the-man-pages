@@ -1,0 +1,51 @@
+KEYCTL_GET_SECURITY(3)                                                                  Linux Key Management Calls                                                                  KEYCTL_GET_SECURITY(3)
+
+NAME
+       keyctl_get_security - retrieve a key's security context
+
+SYNOPSIS
+       #include <keyutils.h>
+
+       long keyctl_get_security(key_serial_t key, char *buffer,
+       size_t buflen);
+
+       long keyctl_get_security_alloc(key_serial_t key, char **_buffer);
+
+DESCRIPTION
+       keyctl_get_security()  retrieves  the  security  context of a key as a NUL-terminated string.  This will be rendered in a form appropriate to the LSM in force - for instance, with SELinux, it may
+       look like
+
+              unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+
+       The caller must have view permission on a key to be able to get its security context.
+
+       buffer and buflen specify the buffer into which the string will be placed.  If the buffer is too small, the full size of the string will be returned, and no copy will take place.
+
+       keyctl_get_security_alloc() is similar to keyctl_get_security() except that it allocates a buffer big enough to hold the string and copies the string into it.  If successful,  A  pointer  to  the
+       buffer is placed in *_buffer.  The caller must free the buffer.
+
+RETURN VALUE
+       On  success  keyctl_get_security()  returns  the amount of data placed into the buffer.  If the buffer was too small, then the size of buffer required will be returned, but no data will be trans‐
+       ferred.  On error, the value -1 will be returned and errno will have been set to an appropriate error.
+
+       On success keyctl_get_security_alloc() returns the amount of data in the buffer, less the NUL terminator.  On error, the value -1 will be returned and errno will have been set to  an  appropriate
+       error.
+
+ERRORS
+       ENOKEY The key specified is invalid.
+
+       EKEYEXPIRED
+              The key specified has expired.
+
+       EKEYREVOKED
+              The key specified had been revoked.
+
+       EACCES The key exists, but is not viewable by the calling process.
+
+LINKING
+       This is a library function that can be found in libkeyutils.  When linking, -lkeyutils should be specified to the linker.
+
+SEE ALSO
+       keyctl(1), add_key(2), keyctl(2), request_key(2), keyctl(3), keyrings(7), keyutils(7)
+
+Linux                                                                                           26 Feb 2010                                                                         KEYCTL_GET_SECURITY(3)

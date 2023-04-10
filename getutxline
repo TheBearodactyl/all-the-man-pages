@@ -1,0 +1,298 @@
+getutent(3)                                                                              Library Functions Manual                                                                              getutent(3)
+
+NAME
+       getutent, getutid, getutline, pututline, setutent, endutent, utmpname - access utmp file entries
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <utmp.h>
+
+       struct utmp *getutent(void);
+       struct utmp *getutid(const struct utmp *ut);
+       struct utmp *getutline(const struct utmp *ut);
+
+       struct utmp *pututline(const struct utmp *ut);
+
+       void setutent(void);
+       void endutent(void);
+
+       int utmpname(const char *file);
+
+DESCRIPTION
+       New applications should use the POSIX.1-specified "utmpx" versions of these functions; see STANDARDS.
+
+       utmpname()  sets  the  name  of  the  utmp-format  file  for  the  other  utmp functions to access.  If utmpname() is not used to set the filename before the other functions are used, they assume
+       _PATH_UTMP, as defined in <paths.h>.
+
+       setutent() rewinds the file pointer to the beginning of the utmp file.  It is generally a good idea to call it before any of the other functions.
+
+       endutent() closes the utmp file.  It should be called when the user code is done accessing the file with the other functions.
+
+       getutent() reads a line from the current file position in the utmp file.  It returns a pointer to a structure containing the fields of the line.  The definition of  this  structure  is  shown  in
+       utmp(5).
+
+       getutid()  searches forward from the current file position in the utmp file based upon ut.  If ut->ut_type is one of RUN_LVL, BOOT_TIME, NEW_TIME, or OLD_TIME, getutid() will find the first entry
+       whose ut_type field matches ut->ut_type.  If ut->ut_type is one of INIT_PROCESS, LOGIN_PROCESS, USER_PROCESS, or DEAD_PROCESS, getutid() will find  the  first  entry  whose  ut_id  field  matches
+       ut->ut_id.
+
+       getutline()  searches  forward  from  the  current  file  position in the utmp file.  It scans entries whose ut_type is USER_PROCESS or LOGIN_PROCESS and returns the first one whose ut_line field
+       matches ut->ut_line.
+
+       pututline() writes the utmp structure ut into the utmp file.  It uses getutid() to search for the proper place in the file to insert the new entry.  If it cannot find an appropriate slot for  ut,
+       pututline() will append the new entry to the end of the file.
+
+RETURN VALUE
+       getutent(),  getutid(),  and  getutline()  return a pointer to a struct utmp on success, and NULL on failure (which includes the "record not found" case).  This struct utmp is allocated in static
+       storage, and may be overwritten by subsequent calls.
+
+       On success pututline() returns ut; on failure, it returns NULL.
+
+       utmpname() returns 0 if the new name was successfully stored, or -1 on failure.
+
+       On failure, these functions errno set to indicate the error.
+
+ERRORS
+       ENOMEM Out of memory.
+
+       ESRCH  Record not found.
+
+       setutent(), pututline(), and the getut*() functions can also fail for the reasons described in open(2).
+
+FILES
+       /var/run/utmp
+              database of currently logged-in users
+
+       /var/log/wtmp
+              database of past user logins
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌───────────────────────────────────┬───────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface                          │ Attribute     │ Value                                                                                                                                        │
+       ├───────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getutent()                         │ Thread safety │ MT-Unsafe init race:utent race:utentbuf sig:ALRM timer                                                                                       │
+       ├───────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getutid(), getutline()             │ Thread safety │ MT-Unsafe init race:utent sig:ALRM timer                                                                                                     │
+       ├───────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │pututline()                        │ Thread safety │ MT-Unsafe race:utent sig:ALRM timer                                                                                                          │
+       ├───────────────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │setutent(), endutent(), utmpname() │ Thread safety │ MT-Unsafe race:utent                                                                                                                         │
+       └───────────────────────────────────┴───────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+       In the above table, utent in race:utent signifies that if any of the functions setutent(), getutent(), getutid(), getutline(), pututline(), utmpname(), or endutent() are used in parallel in  dif‐
+       ferent threads of a program, then data races could occur.
+
+STANDARDS
+       None.
+
+HISTORY
+       XPG2, SVr4.
+
+       In  XPG2  and SVID 2 the function pututline() is documented to return void, and that is what it does on many systems (AIX, HP-UX).  HP-UX introduces a new function _pututline() with the prototype
+       given above for pututline().
+
+       All these functions are obsolete now on non-Linux systems.  POSIX.1-2001 and POSIX.1-2008, following SUSv1, does not have any of these functions, but instead uses
+
+           #include <utmpx.h>
+
+           struct utmpx *getutxent(void);
+           struct utmpx *getutxid(const struct utmpx *);
+           struct utmpx *getutxline(const struct utmpx *);
+           struct utmpx *pututxline(const struct utmpx *);
+           void setutxent(void);
+           void endutxent(void);
+
+       These functions are provided by glibc, and perform the same task as their equivalents without the "x", but use struct utmpx, defined on Linux to be the same as  struct  utmp.   For  completeness,
+       glibc also provides utmpxname(), although this function is not specified by POSIX.1.
+
+       On  some  other  systems,  the  utmpx  structure  is a superset of the utmp structure, with additional fields, and larger versions of the existing fields, and parallel files are maintained, often
+       /var/*/utmpx and /var/*/wtmpx.
+
+       Linux glibc on the other hand does not use a parallel utmpx file since its utmp structure is already large enough.  The "x" functions listed above are just aliases for their counterparts  without
+       the "x" (e.g., getutxent() is an alias for getutent()).
+
+NOTES
+   glibc notes
+       The above functions are not thread-safe.  glibc adds reentrant versions
+
+       #include <utmp.h>
+
+       int getutent_r(struct utmp *ubuf, struct utmp **ubufp);
+       int getutid_r(struct utmp *ut,
+                     struct utmp *ubuf, struct utmp **ubufp);
+       int getutline_r(struct utmp *ut,
+                       struct utmp *ubuf, struct utmp **ubufp);
+
+       Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       getutent_r(), getutid_r(), getutline_r():
+           _GNU_SOURCE
+               || /* Since glibc 2.19: */ _DEFAULT_SOURCE
+               || /* glibc <= 2.19: */    _SVID_SOURCE || _BSD_SOURCE
+
+       These  functions are GNU extensions, analogs of the functions of the same name without the _r suffix.  The ubuf argument gives these functions a place to store their result.  On success, they re‐
+       turn 0, and a pointer to the result is written in *ubufp.  On error, these functions return -1.  There are no utmpx equivalents of the above functions.  (POSIX.1 does not specify such functions.)
+
+EXAMPLES
+       The following example adds and removes a utmp record, assuming it is run from within a pseudo terminal.  For usage in a real application, you should check the return  values  of  getpwuid(3)  and
+       ttyname(3).
+
+       #include <pwd.h>
+       #include <stdlib.h>
+       #include <string.h>
+       #include <time.h>
+       #include <unistd.h>
+       #include <utmp.h>
+
+       int
+       main(void)
+       {
+           struct utmp entry;
+
+           system("echo before adding entry:;who");
+
+           entry.ut_type = USER_PROCESS;
+           entry.ut_pid = getpid();
+           strcpy(entry.ut_line, ttyname(STDIN_FILENO) + strlen("/dev/"));
+           /* only correct for ptys named /dev/tty[pqr][0-9a-z] */
+           strcpy(entry.ut_id, ttyname(STDIN_FILENO) + strlen("/dev/tty"));
+           time(&entry.ut_time);
+           strcpy(entry.ut_user, getpwuid(getuid())->pw_name);
+           memset(entry.ut_host, 0, UT_HOSTSIZE);
+           entry.ut_addr = 0;
+           setutent();
+           pututline(&entry);
+
+           system("echo after adding entry:;who");
+
+           entry.ut_type = DEAD_PROCESS;
+           memset(entry.ut_line, 0, UT_LINESIZE);
+           entry.ut_time = 0;
+           memset(entry.ut_user, 0, UT_NAMESIZE);
+           setutent();
+           pututline(&entry);
+
+           system("echo after removing entry:;who");
+
+           endutent();
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       getutmp(3), utmp(5)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                     getutent(3)
+ENDUTXENT(3P)                                                                            POSIX Programmer's Manual                                                                           ENDUTXENT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       endutxent, getutxent, getutxid, getutxline, pututxline, setutxent — user accounting database functions
+
+SYNOPSIS
+       #include <utmpx.h>
+
+       void endutxent(void);
+       struct utmpx *getutxent(void);
+       struct utmpx *getutxid(const struct utmpx *id);
+       struct utmpx *getutxline(const struct utmpx *line);
+       struct utmpx *pututxline(const struct utmpx *utmpx);
+       void setutxent(void);
+
+DESCRIPTION
+       These functions shall provide access to the user accounting database.
+
+       The getutxent() function shall read the next entry from the user accounting database.  If the database is not already open, it shall open it. If it reaches the end of the database, it shall fail.
+
+       The getutxid() function shall search forward from the current point in the database.  If the ut_type value of the utmpx structure pointed to by id is BOOT_TIME, OLD_TIME,  or  NEW_TIME,  then  it
+       shall  stop  when  it  finds  an entry with a matching ut_type value. If the ut_type value is INIT_PROCESS, LOGIN_PROCESS, USER_PROCESS, or DEAD_PROCESS, then it shall stop when it finds an entry
+       whose type is one of these four and whose ut_id member matches the ut_id member of the utmpx structure pointed to by id.  If the end of the database is reached without a match,  getutxid()  shall
+       fail.
+
+       The  getutxline()  function  shall  search forward from the current point in the database until it finds an entry of the type LOGIN_PROCESS or USER_PROCESS which also has a ut_line value matching
+       that in the utmpx structure pointed to by line.  If the end of the database is reached without a match, getutxline() shall fail.
+
+       The getutxid() or getutxline() function may cache data. For this reason, to use getutxline() to search for multiple occurrences, the application shall zero out the static data after each success,
+       or getutxline() may return a pointer to the same utmpx structure.
+
+       There  is  one exception to the rule about clearing the structure before further reads are done. The implicit read done by pututxline() (if it finds that it is not already at the correct place in
+       the user accounting database) shall not modify the static structure returned by getutxent(), getutxid(), or getutxline(), if the application has modified this structure  and  passed  the  pointer
+       back to pututxline().
+
+       For all entries that match a request, the ut_type member indicates the type of the entry. Other members of the entry shall contain meaningful data based on the value of the ut_type member as fol‐
+       lows:
+
+                                                             ┌───────────────┬─────────────────────────────────────────────────────────────────────┐
+                                                             │ut_type Member │                 Other Members with Meaningful Data                  │
+                                                             ├───────────────┼─────────────────────────────────────────────────────────────────────┤
+                                                             │EMPTY          │ No others                                                           │
+                                                             │BOOT_TIME      │ ut_tv                                                               │
+                                                             │OLD_TIME       │ ut_tv                                                               │
+                                                             │NEW_TIME       │ ut_tv                                                               │
+                                                             │USER_PROCESS   │ ut_id, ut_user (login name of the user), ut_line, ut_pid, ut_tv     │
+                                                             │INIT_PROCESS   │ ut_id, ut_pid, ut_tv                                                │
+                                                             │LOGIN_PROCESS  │ ut_id, ut_user (implementation-defined name of the login  process), │
+                                                             │               │ ut_line, ut_pid, ut_tv                                              │
+                                                             │DEAD_PROCESS   │ ut_id, ut_pid, ut_tv                                                │
+                                                             └───────────────┴─────────────────────────────────────────────────────────────────────┘
+       An  implementation  that provides extended security controls may impose implementation-defined restrictions on accessing the user accounting database. In particular, the system may deny the exis‐
+       tence of some or all of the user accounting database entries associated with users other than the caller.
+
+       If the process has appropriate privileges, the pututxline() function shall write out the structure into the user accounting database. It shall search for a record as if by getutxid() that  satis‐
+       fies the request. If this search succeeds, then the entry shall be replaced. Otherwise, a new entry shall be made at the end of the user accounting database.
+
+       The endutxent() function shall close the user accounting database.
+
+       The setutxent() function shall reset the input to the beginning of the database. This should be done before each search for a new entry if it is desired that the entire database be examined.
+
+       These functions need not be thread-safe.
+
+RETURN VALUE
+       Upon  successful completion, getutxent(), getutxid(), and getutxline() shall return a pointer to a utmpx structure containing a copy of the requested entry in the user accounting database. Other‐
+       wise, a null pointer shall be returned.
+
+       The return value may point to a static area which is overwritten by a subsequent call to getutxid() or getutxline().
+
+       Upon successful completion, pututxline() shall return a pointer to a utmpx structure containing a copy of the entry added to the user accounting database. Otherwise, a null pointer shall  be  re‐
+       turned.
+
+       The endutxent() and setutxent() functions shall not return a value.
+
+ERRORS
+       No errors are defined for the endutxent(), getutxent(), getutxid(), getutxline(), and setutxent() functions.
+
+       The pututxline() function may fail if:
+
+       EPERM  The process does not have appropriate privileges.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       The sizes of the arrays in the structure can be found using the sizeof operator.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       The Base Definitions volume of POSIX.1‐2017, <utmpx.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                      ENDUTXENT(3P)

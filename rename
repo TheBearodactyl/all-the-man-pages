@@ -1,0 +1,749 @@
+RENAME(1)                        User Commands                       RENAME(1)
+
+NAME
+       rename - rename files
+
+SYNOPSIS
+       rename [options] expression replacement file...
+
+DESCRIPTION
+       rename will rename the specified files by replacing the first
+       occurrence of expression in their name by replacement.
+
+OPTIONS
+       -s, --symlink
+           Do not rename a symlink but its target.
+
+       -v, --verbose
+           Show which files were renamed, if any.
+
+       -n, --no-act
+           Do not make any changes; add --verbose to see what would be made.
+
+       -a, --all
+           Replace all occurrences of expression rather than only the first
+           one.
+
+       -l, --last
+           Replace the last occurrence of expression rather than the first
+           one.
+
+       -o, --no-overwrite
+           Do not overwrite existing files. When --symlink is active, do not
+           overwrite symlinks pointing to existing targets.
+
+       -i, --interactive
+           Ask before overwriting existing files.
+
+       -h, --help
+           Display help text and exit.
+
+       -V, --version
+           Print version and exit.
+
+WARNING
+       The renaming has no safeguards by default or without any one of the
+       options --no-overwrite, --interactive or --no-act. If the user has
+       permission to rewrite file names, the command will perform the action
+       without any questions. For example, the result can be quite drastic
+       when the command is run as root in the /lib directory. Always make a
+       backup before running the command, unless you truly know what you are
+       doing.
+
+INTERACTIVE MODE
+       As most standard utilities rename can be used with a terminal device
+       (tty in short) in canonical mode, where the line is buffered by the tty
+       and you press ENTER to validate the user input. If you put your tty in
+       cbreak mode however, rename requires only a single key press to answer
+       the prompt. To set cbreak mode, run for example:
+
+           sh -c 'stty -icanon min 1; "$0" "$@"; stty icanon' rename -i from to files
+
+EXIT STATUS
+       0
+           all requested rename operations were successful
+
+       1
+           all rename operations failed
+
+       2
+           some rename operations failed
+
+       4
+           nothing was renamed
+
+       64
+           unanticipated error occurred
+
+EXAMPLES
+       Given the files foo1, ..., foo9, foo10, ..., foo278, the commands
+
+           rename foo foo00 foo?
+           rename foo foo0 foo??
+
+       will turn them into foo001, ..., foo009, foo010, ..., foo278. And
+
+           rename .htm .html *.htm
+
+       will fix the extension of your html files. Provide an empty string for
+       shortening:
+
+           rename '_with_long_name' '' file_with_long_name.*
+
+       will remove the substring in the filenames.
+
+SEE ALSO
+       mv(1)
+
+REPORTING BUGS
+       For bug reports, use the issue tracker at
+       https://github.com/util-linux/util-linux/issues.
+
+AVAILABILITY
+       The rename command is part of the util-linux package which can be
+       downloaded from Linux Kernel Archive
+       <https://www.kernel.org/pub/linux/utils/util-linux/>.
+
+util-linux 2.38.1                 2022-05-11                         RENAME(1)
+rename(n)                    Tcl Built-In Commands                   rename(n)
+
+______________________________________________________________________________
+
+NAME
+       rename - Rename or delete a command
+
+SYNOPSIS
+       rename oldName newName
+______________________________________________________________________________
+
+DESCRIPTION
+       Rename  the  command  that  used to be called oldName so that it is now
+       called newName.  If newName is an empty string then oldName is deleted.
+       oldName and newName may include namespace qualifiers (names of contain‐
+       ing namespaces).  If a command is renamed into a  different  namespace,
+       future invocations of it will execute in the new namespace.  The rename
+       command returns an empty string as result.
+
+EXAMPLE
+       The rename command can be used to wrap the standard Tcl  commands  with
+       your  own  monitoring  machinery.  For example, you might wish to count
+       how often the source command is called:
+
+              rename ::source ::theRealSource
+              set sourceCount 0
+              proc ::source args {
+                  global sourceCount
+                  puts "called source for the [incr sourceCount]'th time"
+                  uplevel 1 ::theRealSource $args
+              }
+
+SEE ALSO
+       namespace(n), proc(n)
+
+KEYWORDS
+       command, delete, namespace, rename
+
+Tcl                                                                  rename(n)
+RENAME(3P)                 POSIX Programmer's Manual                RENAME(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       rename, renameat — rename file
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int rename(const char *old, const char *new);
+
+       #include <fcntl.h>
+
+       int renameat(int oldfd, const char *old, int newfd,
+           const char *new);
+
+DESCRIPTION
+       For rename(): The functionality described on  this  reference  page  is
+       aligned  with the ISO C standard. Any conflict between the requirements
+       described here and the ISO C standard is unintentional. This volume  of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The rename() function shall change the name of a file. The old argument
+       points to the pathname of the file to  be  renamed.  The  new  argument
+       points  to  the new pathname of the file.  If the new argument does not
+       resolve to an existing directory entry for a file of type directory and
+       the  new  argument contains at least one non-<slash> character and ends
+       with one or more trailing <slash> characters after all  symbolic  links
+       have been processed, rename() shall fail.
+
+       If either the old or new argument names a symbolic link, rename() shall
+       operate on the symbolic link itself, and shall  not  resolve  the  last
+       component of the argument. If the old argument and the new argument re‐
+       solve to either the same existing directory entry or  different  direc‐
+       tory entries for the same existing file, rename() shall return success‐
+       fully and perform no other action.
+
+       If the old argument points to the pathname of a file that is not a  di‐
+       rectory,  the  new argument shall not point to the pathname of a direc‐
+       tory. If the link named by the new argument exists, it shall be removed
+       and  old  renamed  to new.  In this case, a link named new shall remain
+       visible to other threads throughout the renaming  operation  and  refer
+       either  to  the file referred to by new or old before the operation be‐
+       gan. Write access permission is required for both  the  directory  con‐
+       taining old and the directory containing new.
+
+       If  the old argument points to the pathname of a directory, the new ar‐
+       gument shall not point to the pathname of a file that is not  a  direc‐
+       tory.  If  the  directory named by the new argument exists, it shall be
+       removed and old renamed to new.  In this case, a link named  new  shall
+       exist  throughout  the renaming operation and shall refer either to the
+       directory referred to by new or old before the operation began. If  new
+       names an existing directory, it shall be required to be an empty direc‐
+       tory.
+
+       If either pathname argument refers to a path whose final  component  is
+       either dot or dot-dot, rename() shall fail.
+
+       If  the  old argument points to a pathname of a symbolic link, the sym‐
+       bolic link shall be renamed. If the new argument points to  a  pathname
+       of a symbolic link, the symbolic link shall be removed.
+
+       The  old pathname shall not name an ancestor directory of the new path‐
+       name. Write access permission is required for the directory  containing
+       old  and  the  directory containing new.  If the old argument points to
+       the pathname of a directory, write access permission  may  be  required
+       for  the directory named by old, and, if it exists, the directory named
+       by new.
+
+       If the link named by the new argument exists and the file's link  count
+       becomes  0  when  it  is  removed and no process has the file open, the
+       space occupied by the file shall be freed and the file shall no  longer
+       be  accessible.  If  one  or more processes have the file open when the
+       last link is removed, the link shall be  removed  before  rename()  re‐
+       turns,  but  the  removal of the file contents shall be postponed until
+       all references to the file are closed.
+
+       Upon successful completion, rename() shall mark  for  update  the  last
+       data  modification and last file status change timestamps of the parent
+       directory of each file.
+
+       If the rename() function fails for any reason  other  than  [EIO],  any
+       file named by new shall be unaffected.
+
+       The  renameat()  function  shall be equivalent to the rename() function
+       except in the case where either old or new specifies a  relative  path.
+       If  old  is a relative path, the file to be renamed is located relative
+       to the directory associated with the file descriptor oldfd  instead  of
+       the current working directory. If new is a relative path, the same hap‐
+       pens only relative to the directory associated with newfd.  If the  ac‐
+       cess  mode  of  the  open file description associated with the file de‐
+       scriptor is not O_SEARCH, the function shall  check  whether  directory
+       searches  are  permitted using the current permissions of the directory
+       underlying the file descriptor. If the access  mode  is  O_SEARCH,  the
+       function shall not perform the check.
+
+       If  renameat()  is  passed  the  special value AT_FDCWD in the oldfd or
+       newfd parameter, the current working directory shall be used in the de‐
+       termination of the file for the respective path parameter.
+
+RETURN VALUE
+       Upon  successful completion, the rename() function shall return 0. Oth‐
+       erwise, it shall return -1, errno shall be set to indicate  the  error,
+       and  neither  the  file named by old nor the file named by new shall be
+       changed or created.
+
+       Upon successful completion, the renameat()  function  shall  return  0.
+       Otherwise, it shall return -1 and set errno to indicate the error.
+
+ERRORS
+       The rename() and renameat() functions shall fail if:
+
+       EACCES A  component  of either path prefix denies search permission; or
+              one of the directories containing old or new denies  write  per‐
+              missions;  or,  write permission is required and is denied for a
+              directory pointed to by the old or new arguments.
+
+       EBUSY  The directory named by old or new is currently  in  use  by  the
+              system or another process, and the implementation considers this
+              an error.
+
+       [EEXIST] or [ENOTEMPTY]
+                   The link named by new is a directory that is not  an  empty
+                   directory.
+
+       EINVAL      The  old  pathname  names  an ancestor directory of the new
+                   pathname, or either pathname argument contains a final com‐
+                   ponent that is dot or dot-dot.
+
+       EIO         A physical I/O error has occurred.
+
+       EISDIR      The new argument points to a directory and the old argument
+                   points to a file that is not a directory.
+
+       ELOOP       A loop exists in symbolic links encountered during  resolu‐
+                   tion of the path argument.
+
+       EMLINK      The file named by old is a directory, and the link count of
+                   the parent directory of new would exceed {LINK_MAX}.
+
+       ENAMETOOLONG
+                   The length of a component of  a  pathname  is  longer  than
+                   {NAME_MAX}.
+
+       ENOENT      The  link  named  by  old does not name an existing file, a
+                   component of the path prefix of new does not exist, or  ei‐
+                   ther old or new points to an empty string.
+
+       ENOSPC      The directory that would contain new cannot be extended.
+
+       ENOTDIR     A  component  of  either path prefix names an existing file
+                   that is neither a directory nor a symbolic link to a direc‐
+                   tory; or the old argument names a directory and the new ar‐
+                   gument names a non-directory file; or the old argument con‐
+                   tains  at least one non-<slash> character and ends with one
+                   or more trailing <slash> characters and the  last  pathname
+                   component  names  an existing file that is neither a direc‐
+                   tory nor a symbolic link to a directory; or the  old  argu‐
+                   ment names an existing non-directory file and the new argu‐
+                   ment names  a  nonexistent  file,  contains  at  least  one
+                   non-<slash>  character,  and ends with one or more trailing
+                   <slash> characters; or the new argument names  an  existing
+                   non-directory file, contains at least one non-<slash> char‐
+                   acter, and ends with one or more trailing  <slash>  charac‐
+                   ters.
+
+       EPERM or EACCES
+                   The  S_ISVTX  flag  is  set on the directory containing the
+                   file referred to by old and the process  does  not  satisfy
+                   the  criteria  specified  in the Base Definitions volume of
+                   POSIX.1‐2017, Section 4.3, Directory  Protection  with  re‐
+                   spect  to  old;  or  new  refers  to  an existing file, the
+                   S_ISVTX flag is set on the directory containing this  file,
+                   and  the process does not satisfy the criteria specified in
+                   the Base Definitions volume of POSIX.1‐2017,  Section  4.3,
+                   Directory Protection with respect to this file.
+
+       EROFS       The  requested operation requires writing in a directory on
+                   a read-only file system.
+
+       EXDEV       The links named by new and old are on different  file  sys‐
+                   tems  and the implementation does not support links between
+                   file systems.
+
+       In addition, the renameat() function shall fail if:
+
+       EACCES The access mode of the open  file  description  associated  with
+              oldfd or newfd is not O_SEARCH and the permissions of the direc‐
+              tory underlying oldfd or newfd, respectively, do not permit  di‐
+              rectory searches.
+
+       EBADF  The old argument does not specify an absolute path and the oldfd
+              argument is neither AT_FDCWD nor a valid  file  descriptor  open
+              for  reading  or searching, or the new argument does not specify
+              an absolute path and the newfd argument is neither AT_FDCWD  nor
+              a valid file descriptor open for reading or searching.
+
+       ENOTDIR
+              The  old  or  new  argument is not an absolute path and oldfd or
+              newfd, respectively, is a file descriptor associated with a non-
+              directory file.
+
+       The rename() and renameat() functions may fail if:
+
+       EBUSY  The file named by the old or new arguments is a named STREAM.
+
+       ELOOP  More  than  {SYMLOOP_MAX} symbolic links were encountered during
+              resolution of the path argument.
+
+       ENAMETOOLONG
+              The length of a pathname exceeds {PATH_MAX}, or pathname resolu‐
+              tion  of  a symbolic link produced an intermediate result with a
+              length that exceeds {PATH_MAX}.
+
+       ETXTBSY
+              The file named by new exists and is the last directory entry  to
+              a pure procedure (shared text) file that is being executed.
+
+       The following sections are informative.
+
+EXAMPLES
+   Renaming a File
+       The  following  example shows how to rename a file named /home/cnd/mod1
+       to /home/cnd/mod2.
+
+           #include <stdio.h>
+
+           int status;
+           ...
+           status = rename("/home/cnd/mod1", "/home/cnd/mod2");
+
+APPLICATION USAGE
+       Some implementations mark for update the last file status change  time‐
+       stamp  of renamed files and some do not. Applications which make use of
+       the last file status change timestamp may behave differently  with  re‐
+       spect to renamed files unless they are designed to allow for either be‐
+       havior.
+
+RATIONALE
+       This rename() function is equivalent for regular files to that  defined
+       by  the  ISO C standard.  Its inclusion here expands that definition to
+       include actions on directories and specifies behavior when the new  pa‐
+       rameter  names  a file that already exists. That specification requires
+       that the action of the function be atomic.
+
+       One of the reasons for introducing this function was to have a means of
+       renaming  directories  while permitting implementations to prohibit the
+       use of link() and unlink() with directories, thus constraining links to
+       directories to those made by mkdir().
+
+       The  specification  that  if  old and new refer to the same file is in‐
+       tended to guarantee that:
+
+           rename("x", "x");
+
+       does not remove the file.
+
+       Renaming dot or dot-dot is prohibited in order to prevent cyclical file
+       system paths.
+
+       See  also the descriptions of [ENOTEMPTY] and [ENAMETOOLONG] in rmdir()
+       and [EBUSY] in unlink().  For a discussion of [EXDEV], see link().
+
+       The purpose of the renameat() function is to rename files  in  directo‐
+       ries  other than the current working directory without exposure to race
+       conditions. Any part of the path of a file could be changed in parallel
+       to  a  call  to rename(), resulting in unspecified behavior. By opening
+       file descriptors for the source and target directories  and  using  the
+       renameat()  function it can be guaranteed that that renamed file is lo‐
+       cated correctly and the resulting file is in the desired directory.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       link(), rmdir(), symlink(), unlink()
+
+       The Base Definitions volume of  POSIX.1‐2017,  Section  4.3,  Directory
+       Protection, <fcntl.h>, <stdio.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           RENAME(3P)
+rename(2)                     System Calls Manual                    rename(2)
+
+NAME
+       rename, renameat, renameat2 - change the name or location of a file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int rename(const char *oldpath, const char *newpath);
+
+       #include <fcntl.h>           /* Definition of AT_* constants */
+       #include <stdio.h>
+
+       int renameat(int olddirfd, const char *oldpath,
+                    int newdirfd, const char *newpath);
+       int renameat2(int olddirfd, const char *oldpath,
+                    int newdirfd, const char *newpath, unsigned int flags);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       renameat():
+           Since glibc 2.10:
+               _POSIX_C_SOURCE >= 200809L
+           Before glibc 2.10:
+               _ATFILE_SOURCE
+
+       renameat2():
+           _GNU_SOURCE
+
+DESCRIPTION
+       rename()  renames  a  file,  moving it between directories if required.
+       Any other hard links to the file (as created using link(2))  are  unaf‐
+       fected.  Open file descriptors for oldpath are also unaffected.
+
+       Various restrictions determine whether or not the rename operation suc‐
+       ceeds: see ERRORS below.
+
+       If newpath already exists, it will  be  atomically  replaced,  so  that
+       there is no point at which another process attempting to access newpath
+       will find it missing.  However, there will  probably  be  a  window  in
+       which both oldpath and newpath refer to the file being renamed.
+
+       If  oldpath  and  newpath are existing hard links referring to the same
+       file, then rename() does nothing, and returns a success status.
+
+       If newpath exists but the operation fails  for  some  reason,  rename()
+       guarantees to leave an instance of newpath in place.
+
+       oldpath can specify a directory.  In this case, newpath must either not
+       exist, or it must specify an empty directory.
+
+       If oldpath refers to a symbolic link, the link is renamed;  if  newpath
+       refers to a symbolic link, the link will be overwritten.
+
+   renameat()
+       The  renameat()  system  call  operates  in exactly the same way as re‐
+       name(), except for the differences described here.
+
+       If the pathname given in oldpath is relative, then  it  is  interpreted
+       relative  to  the directory referred to by the file descriptor olddirfd
+       (rather than relative to the current working directory of  the  calling
+       process, as is done by rename() for a relative pathname).
+
+       If oldpath is relative and olddirfd is the special value AT_FDCWD, then
+       oldpath is interpreted relative to the current working directory of the
+       calling process (like rename()).
+
+       If oldpath is absolute, then olddirfd is ignored.
+
+       The interpretation of newpath is as for oldpath, except that a relative
+       pathname is interpreted relative to the directory referred  to  by  the
+       file descriptor newdirfd.
+
+       See openat(2) for an explanation of the need for renameat().
+
+   renameat2()
+       renameat2()  has an additional flags argument.  A renameat2() call with
+       a zero flags argument is equivalent to renameat().
+
+       The flags argument is a bit mask consisting of zero or more of the fol‐
+       lowing flags:
+
+       RENAME_EXCHANGE
+              Atomically  exchange  oldpath  and newpath.  Both pathnames must
+              exist but may be of different types (e.g., one could be  a  non-
+              empty directory and the other a symbolic link).
+
+       RENAME_NOREPLACE
+              Don't  overwrite newpath of the rename.  Return an error if new‐
+              path already exists.
+
+              RENAME_NOREPLACE can't  be  employed  together  with  RENAME_EX‐
+              CHANGE.
+
+              RENAME_NOREPLACE  requires  support from the underlying filesys‐
+              tem.  Support for various filesystems was added as follows:
+
+              •  ext4 (Linux 3.15);
+
+              •  btrfs, tmpfs, and cifs (Linux 3.17);
+
+              •  xfs (Linux 4.0);
+
+              •  Support for many other filesystems was added  in  Linux  4.9,
+                 including ext2, minix, reiserfs, jfs, vfat, and bpf.
+
+       RENAME_WHITEOUT (since Linux 3.18)
+              This operation makes sense only for overlay/union filesystem im‐
+              plementations.
+
+              Specifying RENAME_WHITEOUT creates a "whiteout"  object  at  the
+              source  of the rename at the same time as performing the rename.
+              The whole operation is atomic, so that if  the  rename  succeeds
+              then the whiteout will also have been created.
+
+              A   "whiteout"   is  an  object  that  has  special  meaning  in
+              union/overlay filesystem constructs.  In these constructs,  mul‐
+              tiple  layers  exist  and  only the top one is ever modified.  A
+              whiteout on an upper layer will effectively hide a matching file
+              in  the  lower layer, making it appear as if the file didn't ex‐
+              ist.
+
+              When a file that exists on the lower layer is renamed, the  file
+              is  first copied up (if not already on the upper layer) and then
+              renamed on the upper, read-write layer.  At the same  time,  the
+              source file needs to be "whiteouted" (so that the version of the
+              source file in the lower  layer  is  rendered  invisible).   The
+              whole operation needs to be done atomically.
+
+              When  not  part  of  a  union/overlay, the whiteout appears as a
+              character device with a {0,0} device number.  (Note  that  other
+              union/overlay  implementations  may employ different methods for
+              storing whiteout entries; specifically, BSD union mount  employs
+              a  separate  inode  type, DT_WHT, which, while supported by some
+              filesystems available in Linux, such as CODA and XFS, is ignored
+              by  the  kernel's  whiteout  support  code, as of Linux 4.19, at
+              least.)
+
+              RENAME_WHITEOUT requires the same privileges as creating  a  de‐
+              vice node (i.e., the CAP_MKNOD capability).
+
+              RENAME_WHITEOUT can't be employed together with RENAME_EXCHANGE.
+
+              RENAME_WHITEOUT requires support from the underlying filesystem.
+              Among the filesystems that support it  are  tmpfs  (since  Linux
+              3.18),  ext4  (since  Linux  3.18),  XFS (since Linux 4.1), f2fs
+              (since Linux 4.2), btrfs (since Linux  4.7),  and  ubifs  (since
+              Linux 4.9).
+
+RETURN VALUE
+       On  success,  zero is returned.  On error, -1 is returned, and errno is
+       set to indicate the error.
+
+ERRORS
+       EACCES Write permission is denied for the directory containing  oldpath
+              or  newpath,  or, search permission is denied for one of the di‐
+              rectories in the path prefix of oldpath or newpath,  or  oldpath
+              is  a  directory  and does not allow write permission (needed to
+              update the ..  entry).  (See also path_resolution(7).)
+
+       EBUSY  The rename fails because oldpath or newpath is a directory  that
+              is in use by some process (perhaps as current working directory,
+              or as root directory, or because it was open for reading) or  is
+              in  use  by the system (for example as a mount point), while the
+              system considers this an error.  (Note that there is no require‐
+              ment  to  return EBUSY in such cases—there is nothing wrong with
+              doing the rename anyway—but it is allowed to return EBUSY if the
+              system cannot otherwise handle such situations.)
+
+       EDQUOT The  user's  quota of disk blocks on the filesystem has been ex‐
+              hausted.
+
+       EFAULT oldpath or newpath points outside your accessible address space.
+
+       EINVAL The new pathname contained a path prefix of the  old,  or,  more
+              generally,  an  attempt was made to make a directory a subdirec‐
+              tory of itself.
+
+       EISDIR newpath is an existing directory, but oldpath is  not  a  direc‐
+              tory.
+
+       ELOOP  Too many symbolic links were encountered in resolving oldpath or
+              newpath.
+
+       EMLINK oldpath already has the maximum number of links to it, or it was
+              a directory and the directory containing newpath has the maximum
+              number of links.
+
+       ENAMETOOLONG
+              oldpath or newpath was too long.
+
+       ENOENT The link named by oldpath does not exist; or, a directory compo‐
+              nent  in  newpath  does  not exist; or, oldpath or newpath is an
+              empty string.
+
+       ENOMEM Insufficient kernel memory was available.
+
+       ENOSPC The device containing the file has no room for the new directory
+              entry.
+
+       ENOTDIR
+              A component used as a directory in oldpath or newpath is not, in
+              fact, a directory.  Or, oldpath is a directory, and newpath  ex‐
+              ists but is not a directory.
+
+       ENOTEMPTY or EEXIST
+              newpath is a nonempty directory, that is, contains entries other
+              than "." and "..".
+
+       EPERM or EACCES
+              The directory containing oldpath has the  sticky  bit  (S_ISVTX)
+              set  and  the process's effective user ID is neither the user ID
+              of the file to be deleted nor that of the  directory  containing
+              it,  and the process is not privileged (Linux: does not have the
+              CAP_FOWNER capability); or newpath is an existing file  and  the
+              directory containing it has the sticky bit set and the process's
+              effective user ID is neither the user ID of the file to  be  re‐
+              placed  nor that of the directory containing it, and the process
+              is not privileged (Linux: does not have the CAP_FOWNER  capabil‐
+              ity);  or the filesystem containing oldpath does not support re‐
+              naming of the type requested.
+
+       EROFS  The file is on a read-only filesystem.
+
+       EXDEV  oldpath and newpath are not  on  the  same  mounted  filesystem.
+              (Linux  permits  a  filesystem to be mounted at multiple points,
+              but rename() does not work across different mount  points,  even
+              if the same filesystem is mounted on both.)
+
+       The  following  additional  errors  can  occur  for  renameat() and re‐
+       nameat2():
+
+       EBADF  oldpath (newpath) is relative but olddirfd (newdirfd) is  not  a
+              valid file descriptor.
+
+       ENOTDIR
+              oldpath  is relative and olddirfd is a file descriptor referring
+              to a file other than a directory; or  similar  for  newpath  and
+              newdirfd
+
+       The following additional errors can occur for renameat2():
+
+       EEXIST flags contains RENAME_NOREPLACE and newpath already exists.
+
+       EINVAL An invalid flag was specified in flags.
+
+       EINVAL Both  RENAME_NOREPLACE  and  RENAME_EXCHANGE  were  specified in
+              flags.
+
+       EINVAL Both  RENAME_WHITEOUT  and  RENAME_EXCHANGE  were  specified  in
+              flags.
+
+       EINVAL The filesystem does not support one of the flags in flags.
+
+       ENOENT flags contains RENAME_EXCHANGE and newpath does not exist.
+
+       EPERM  RENAME_WHITEOUT  was specified in flags, but the caller does not
+              have the CAP_MKNOD capability.
+
+STANDARDS
+       rename()
+              C11, POSIX.1-2008.
+
+       renameat()
+              POSIX.1-2008.
+
+       renameat2()
+              Linux.
+
+HISTORY
+       rename()
+              4.3BSD, C89, POSIX.1-2001.
+
+       renameat()
+              Linux 2.6.16, glibc 2.4.
+
+       renameat2()
+              Linux 3.15, glibc 2.28.
+
+   glibc notes
+       On older kernels where renameat() is  unavailable,  the  glibc  wrapper
+       function  falls  back to the use of rename().  When oldpath and newpath
+       are relative pathnames, glibc constructs pathnames based  on  the  sym‐
+       bolic  links  in  /proc/self/fd  that  correspond  to  the olddirfd and
+       newdirfd arguments.
+
+BUGS
+       On NFS filesystems, you can not assume that if  the  operation  failed,
+       the  file was not renamed.  If the server does the rename operation and
+       then crashes, the retransmitted RPC which will be  processed  when  the
+       server  is  up  again causes a failure.  The application is expected to
+       deal with this.  See link(2) for a similar problem.
+
+SEE ALSO
+       mv(1), rename(1), chmod(2), link(2), symlink(2), unlink(2),  path_reso‐
+       lution(7), symlink(7)
+
+Linux man-pages 6.04              2023-03-30                         rename(2)

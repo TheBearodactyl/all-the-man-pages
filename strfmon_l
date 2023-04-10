@@ -1,0 +1,378 @@
+strfmon(3)                 Library Functions Manual                 strfmon(3)
+
+NAME
+       strfmon, strfmon_l - convert monetary value to a string
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <monetary.h>
+
+       ssize_t strfmon(char s[restrict .max], size_t max,
+                       const char *restrict format, ...);
+       ssize_t strfmon_l(char s[restrict .max], size_t max, locale_t locale,
+                       const char *restrict format, ...);
+
+DESCRIPTION
+       The  strfmon() function formats the specified monetary amount according
+       to the current locale and format specification format  and  places  the
+       result in the character array s of size max.
+
+       The  strfmon_l()  function  performs the same task, but uses the locale
+       specified by locale.  The behavior of strfmon_l() is undefined  if  lo‐
+       cale  is  the special locale object LC_GLOBAL_LOCALE (see duplocale(3))
+       or is not a valid locale object handle.
+
+       Ordinary characters in format are copied to s without conversion.  Con‐
+       version specifiers are introduced by a '%' character.  Immediately fol‐
+       lowing it there can be zero or more of the following flags:
+
+       =f     The single-byte character f is used as the numeric fill  charac‐
+              ter  (to  be  used  with a left precision, see below).  When not
+              specified, the space character is used.
+
+       ^      Do not use any grouping characters that might be defined for the
+              current locale.  By default, grouping is enabled.
+
+       ( or + The  (  flag  indicates that negative amounts should be enclosed
+              between parentheses.  The + flag indicates that signs should  be
+              handled in the default way, that is, amounts are preceded by the
+              locale's sign indication, for example, nothing for positive, "-"
+              for negative.
+
+       !      Omit the currency symbol.
+
+       -      Left justify all fields.  The default is right justification.
+
+       Next,  there  may be a field width: a decimal digit string specifying a
+       minimum field width in bytes.  The default is 0.  A result smaller than
+       this  width is padded with spaces (on the left, unless the left-justify
+       flag was given).
+
+       Next, there may be a left precision of the form "#" followed by a deci‐
+       mal  digit string.  If the number of digits left of the radix character
+       is smaller than this, the representation is padded on the left with the
+       numeric  fill  character.   Grouping characters are not counted in this
+       field width.
+
+       Next, there may be a right precision of the form "." followed by a dec‐
+       imal digit string.  The amount being formatted is rounded to the speci‐
+       fied number of digits prior to formatting.  The default is specified in
+       the  frac_digits  and  int_frac_digits items of the current locale.  If
+       the right precision is 0, no radix character is  printed.   (The  radix
+       character  here  is determined by LC_MONETARY, and may differ from that
+       specified by LC_NUMERIC.)
+
+       Finally, the conversion specification must be ended with  a  conversion
+       character.  The three conversion characters are
+
+       %      (In  this  case, the entire specification must be exactly "%%".)
+              Put a '%' character in the result string.
+
+       i      One argument of type double is converted using the locale's  in‐
+              ternational currency format.
+
+       n      One  argument of type double is converted using the locale's na‐
+              tional currency format.
+
+RETURN VALUE
+       The strfmon() function returns the number of characters placed  in  the
+       array  s, not including the terminating null byte, provided the string,
+       including the terminating null byte, fits.  Otherwise, it sets errno to
+       E2BIG, returns -1, and the contents of the array is undefined.
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌─────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                            │ Attribute     │ Value          │
+       ├─────────────────────────────────────┼───────────────┼────────────────┤
+       │strfmon()                            │ Thread safety │ MT-Safe locale │
+       ├─────────────────────────────────────┼───────────────┼────────────────┤
+       │strfmon_l()                          │ Thread safety │ MT-Safe        │
+       └─────────────────────────────────────┴───────────────┴────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+EXAMPLES
+       The call
+
+           strfmon(buf, sizeof(buf), "[%^=*#6n] [%=*#6i]",
+                   1234.567, 1234.567);
+
+       outputs
+
+           [€ **1234,57] [EUR **1 234,57]
+
+       in the nl_NL locale.  The de_DE, de_CH, en_AU, and en_GB locales yield
+
+           [ **1234,57 €] [ **1.234,57 EUR]
+           [ Fr. **1234.57] [ CHF **1'234.57]
+           [ $**1234.57] [ AUD**1,234.57]
+           [ £**1234.57] [ GBP**1,234.57]
+
+SEE ALSO
+       duplocale(3), setlocale(3), sprintf(3), locale(7)
+
+Linux man-pages 6.04              2023-03-30                        strfmon(3)
+STRFMON(3P)                POSIX Programmer's Manual               STRFMON(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       strfmon, strfmon_l — convert monetary value to a string
+
+SYNOPSIS
+       #include <monetary.h>
+
+       ssize_t strfmon(char *restrict s, size_t maxsize,
+           const char *restrict format, ...);
+       ssize_t strfmon_l(char *restrict s, size_t maxsize,
+           locale_t locale, const char *restrict format, ...);
+
+DESCRIPTION
+       The strfmon() function shall place characters into the array pointed to
+       by  s  as  controlled by the string pointed to by format.  No more than
+       maxsize bytes are placed into the array.
+
+       The format is a character string, beginning and ending in  its  initial
+       state,  if  any,  that contains two types of objects: plain characters,
+       which are simply copied to the output stream, and conversion specifica‐
+       tions, each of which shall result in the fetching of zero or more argu‐
+       ments which are converted and formatted. The results are  undefined  if
+       there  are  insufficient arguments for the format. If the format is ex‐
+       hausted while arguments remain, the excess  arguments  are  simply  ig‐
+       nored.
+
+       The  application  shall ensure that a conversion specification consists
+       of the following sequence:
+
+        *  A '%' character
+
+        *  Optional flags
+
+        *  Optional field width
+
+        *  Optional left precision
+
+        *  Optional right precision
+
+        *  A required conversion specifier character that determines the  con‐
+           version to be performed
+
+       The strfmon_l() function shall be equivalent to the strfmon() function,
+       except that the locale data used is from the locale represented by  lo‐
+       cale.
+
+   Flags
+       One or more of the following optional flags can be specified to control
+       the conversion:
+
+       =f      An '=' followed by a single character f which is  used  as  the
+               numeric  fill  character.  In  order  to work with precision or
+               width counts, the fill character shall be a single byte charac‐
+               ter;  if  not,  the  behavior is undefined. The default numeric
+               fill character is the <space>.  This flag does not affect field
+               width  filling which always uses the <space>.  This flag is ig‐
+               nored unless a left precision (see below) is specified.
+
+       ^       Do not format the currency amount with grouping characters. The
+               default is to insert the grouping characters if defined for the
+               current locale.
+
+       + or (  Specify the style of representing positive  and  negative  cur‐
+               rency  amounts. Only one of '+' or '(' may be specified. If '+'
+               is specified, the locale's equivalent of '+' and '-'  are  used
+               (for example, in many locales, the empty string if positive and
+               '-' if negative). If '(' is specified, negative amounts are en‐
+               closed  within  parentheses.  If neither flag is specified, the
+               '+' style is used.
+
+       !       Suppress the currency symbol from the output conversion.
+
+       -       Specify the alignment. If this flag is present  the  result  of
+               the  conversion  is left-justified (padded to the right) rather
+               than right-justified. This flag shall be ignored unless a field
+               width (see below) is specified.
+
+   Field Width
+       w       A  decimal  digit  string w specifying a minimum field width in
+               bytes in which the result of the conversion is  right-justified
+               (or  left-justified  if the flag '-' is specified). The default
+               is 0.
+
+   Left Precision
+       #n      A '#' followed by a decimal digit string n specifying a maximum
+               number  of  digits  expected to be formatted to the left of the
+               radix character. This option can be used to keep the  formatted
+               output from multiple calls to the strfmon() function aligned in
+               the same columns. It can also be used to fill unused  positions
+               with  a  special  character  as  in  "$***123.45".  This option
+               causes an amount to be formatted as if it  has  the  number  of
+               digits  specified by n.  If more than n digit positions are re‐
+               quired, this conversion specification is ignored.  Digit  posi‐
+               tions  in excess of those actually required are filled with the
+               numeric fill character (see the =f flag above).
+
+               If grouping has not been suppressed with the '^' flag,  and  it
+               is  defined for the current locale, grouping separators are in‐
+               serted before the fill characters (if any) are added.  Grouping
+               separators  are not applied to fill characters even if the fill
+               character is a digit.
+
+               To ensure alignment, any characters appearing before  or  after
+               the  number  in  the  formatted output such as currency or sign
+               symbols are padded as necessary with <space> characters to make
+               their positive and negative formats an equal length.
+
+   Right Precision
+       .p      A  <period> followed by a decimal digit string p specifying the
+               number of digits after the radix character. If the value of the
+               right  precision p is 0, no radix character appears. If a right
+               precision is not included, a default specified by  the  current
+               locale  is  used.  The amount being formatted is rounded to the
+               specified number of digits prior to formatting.
+
+   Conversion Specifier Characters
+       The conversion specifier characters and their meanings are:
+
+       i       The double argument is formatted according to the locale's  in‐
+               ternational  currency  format  (for  example,  in  the  US: USD
+               1,234.56). If the argument is ±Inf or NaN, the  result  of  the
+               conversion is unspecified.
+
+       n       The  double argument is formatted according to the locale's na‐
+               tional currency format (for example, in the US: $1,234.56).  If
+               the  argument  is  ±Inf or NaN, the result of the conversion is
+               unspecified.
+
+       %       Convert to a '%'; no argument is converted. The entire  conver‐
+               sion specification shall be %%.
+
+   Locale Information
+       The  LC_MONETARY category of the current locale affects the behavior of
+       this function including the monetary radix character (which may be dif‐
+       ferent from the numeric radix character affected by the LC_NUMERIC cat‐
+       egory), the grouping separator, the currency symbols, and formats.  The
+       international   currency   symbol   should   be   conformant  with  the
+       ISO 4217:2001 standard.
+
+       If the value of maxsize is greater than {SSIZE_MAX}, the result is  im‐
+       plementation-defined.
+
+       The  behavior is undefined if the locale argument to strfmon_l() is the
+       special locale object LC_GLOBAL_LOCALE or is not a valid locale  object
+       handle.
+
+RETURN VALUE
+       If  the  total number of resulting bytes including the terminating null
+       byte is not more than maxsize, these functions shall return the  number
+       of  bytes placed into the array pointed to by s, not including the ter‐
+       minating NUL character. Otherwise, -1 shall be returned,  the  contents
+       of  the  array  are unspecified, and errno shall be set to indicate the
+       error.
+
+ERRORS
+       These functions shall fail if:
+
+       E2BIG  Conversion stopped due to lack of space in the buffer.
+
+       The following sections are informative.
+
+EXAMPLES
+       Given a locale for the US and the values 123.45, -123.45, and 3456.781,
+       the following output might be produced. Square brackets ("[]") are used
+       in this example to delimit the output.
+
+           %n         [$123.45]         Default formatting
+                      [-$123.45]
+                      [$3,456.78]
+
+           %11n       [    $123.45]     Right align within an 11-character field
+                      [   -$123.45]
+                      [  $3,456.78]
+
+           %#5n       [ $   123.45]     Aligned columns for values up to 99999
+                      [-$   123.45]
+                      [ $ 3,456.78]
+
+           %=*#5n     [ $***123.45]     Specify a fill character
+                      [-$***123.45]
+                      [ $*3,456.78]
+
+           %=0#5n     [ $000123.45]     Fill characters do not use grouping
+                      [-$000123.45]     even if the fill character is a digit
+                      [ $03,456.78]
+
+           %^#5n      [ $  123.45]      Disable the grouping separator
+                      [-$  123.45]
+                      [ $ 3456.78]
+
+           %^#5.0n    [ $  123]         Round off to whole units
+                      [-$  123]
+                      [ $ 3457]
+
+           %^#5.4n    [ $  123.4500]    Increase the precision
+                      [-$  123.4500]
+                      [ $ 3456.7810]
+
+           %(#5n      [ $   123.45 ]    Use an alternative pos/neg style
+                      [($   123.45)]
+                      [ $ 3,456.78 ]
+
+           %!(#5n     [    123.45 ]     Disable the currency symbol
+                      [(   123.45)]
+                      [  3,456.78 ]
+
+           %-14#5.4n  [ $   123.4500 ]  Left-justify the output
+                      [-$   123.4500 ]
+                      [ $ 3,456.7810 ]
+
+           %14#5.4n   [  $   123.4500]  Corresponding right-justified output
+                      [ -$   123.4500]
+                      [  $ 3,456.7810]
+
+       See also the EXAMPLES section in fprintf().
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       Lowercase conversion characters are reserved for future  standards  use
+       and uppercase for implementation-defined use.
+
+SEE ALSO
+       fprintf(), localeconv()
+
+       The Base Definitions volume of POSIX.1‐2017, <monetary.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                          STRFMON(3P)

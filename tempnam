@@ -1,0 +1,163 @@
+tempnam(3)                                                                               Library Functions Manual                                                                               tempnam(3)
+
+NAME
+       tempnam - create a name for a temporary file
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       char *tempnam(const char *dir, const char *pfx);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       tempnam():
+           Since glibc 2.19:
+               _DEFAULT_SOURCE
+           glibc 2.19 and earlier:
+               _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       Never use this function.  Use mkstemp(3) or tmpfile(3) instead.
+
+       The  tempnam() function returns a pointer to a string that is a valid filename, and such that a file with this name did not exist when tempnam() checked.  The filename suffix of the pathname gen‐
+       erated will start with pfx in case pfx is a non-NULL string of at most five bytes.  The directory prefix part of the pathname generated is required to be "appropriate" (often that  at  least  im‐
+       plies writable).
+
+       Attempts to find an appropriate directory go through the following steps:
+
+       a) In case the environment variable TMPDIR exists and contains the name of an appropriate directory, that is used.
+
+       b) Otherwise, if the dir argument is non-NULL and appropriate, it is used.
+
+       c) Otherwise, P_tmpdir (as defined in <stdio.h>) is used when appropriate.
+
+       d) Finally an implementation-defined directory may be used.
+
+       The string returned by tempnam() is allocated using malloc(3) and hence should be freed by free(3).
+
+RETURN VALUE
+       On success, the tempnam() function returns a pointer to a unique temporary filename.  It returns NULL if a unique name cannot be generated, with errno set to indicate the error.
+
+ERRORS
+       ENOMEM Allocation of storage failed.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────────┐
+       │Interface                                                                                                                                                           │ Attribute     │ Value       │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────────┤
+       │tempnam()                                                                                                                                                           │ Thread safety │ MT-Safe env │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       SVr4, 4.3BSD, POSIX.1-2001.  Obsoleted in POSIX.1-2008.
+
+NOTES
+       Although tempnam() generates names that are difficult to guess, it is nevertheless possible that between the time that tempnam() returns a pathname, and the time that the program opens it, anoth‐
+       er program might create that pathname using open(2), or create it as a symbolic link.  This can lead to security holes.  To avoid such possibilities, use the open(2) O_EXCL flag to open the path‐
+       name.  Or better yet, use mkstemp(3) or tmpfile(3).
+
+       SUSv2 does not mention the use of TMPDIR; glibc will use it only when the program is not set-user-ID.  On SVr4, the directory used under d) is /tmp (and this is what glibc does).
+
+       Because it dynamically allocates memory used to return the pathname, tempnam() is reentrant, and thus thread safe, unlike tmpnam(3).
+
+       The  tempnam()  function  generates a different string each time it is called, up to TMP_MAX (defined in <stdio.h>) times.  If it is called more than TMP_MAX times, the behavior is implementation
+       defined.
+
+       tempnam() uses at most the first five bytes from pfx.
+
+       The glibc implementation of tempnam() fails with the error EEXIST upon failure to find a unique name.
+
+BUGS
+       The precise meaning of "appropriate" is undefined; it is unspecified how accessibility of a directory is determined.
+
+SEE ALSO
+       mkstemp(3), mktemp(3), tmpfile(3), tmpnam(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                      tempnam(3)
+TEMPNAM(3P)                                                                              POSIX Programmer's Manual                                                                             TEMPNAM(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       tempnam — create a name for a temporary file
+
+SYNOPSIS
+       #include <stdio.h>
+
+       char *tempnam(const char *dir, const char *pfx);
+
+DESCRIPTION
+       The tempnam() function shall generate a pathname that may be used for a temporary file.
+
+       The tempnam() function allows the user to control the choice of a directory. The dir argument points to the name of the directory in which the file is to be created. If dir is a null  pointer  or
+       points to a string which is not a name for an appropriate directory, the path prefix defined as P_tmpdir in the <stdio.h> header shall be used. If that directory is not accessible, an implementa‐
+       tion-defined directory may be used.
+
+       Many applications prefer their temporary files to have certain initial letter sequences in their names. The pfx argument should be used for this. This argument may be a null pointer or point to a
+       string of up to five bytes to be used as the beginning of the filename.
+
+       Some implementations of tempnam() may use tmpnam() internally. On such implementations, if called more than {TMP_MAX} times in a single process, the behavior is implementation-defined.
+
+RETURN VALUE
+       Upon  successful  completion,  tempnam() shall allocate space for a string, put the generated pathname in that space, and return a pointer to it. The pointer shall be suitable for use in a subse‐
+       quent call to free().  Otherwise, it shall return a null pointer and set errno to indicate the error.
+
+ERRORS
+       The tempnam() function shall fail if:
+
+       ENOMEM Insufficient storage space is available.
+
+       The following sections are informative.
+
+EXAMPLES
+   Generating a Pathname
+       The following example generates a pathname for a temporary file in directory /tmp, with the prefix file.  After the pathname has been created, the call to free() deallocates  the  space  used  to
+       store the pathname.
+
+           #include <stdio.h>
+           #include <stdlib.h>
+           ...
+           const char *directory = "/tmp";
+           const char *fileprefix = "file";
+           char *file;
+
+           file = tempnam(directory, fileprefix);
+           free(file);
+
+APPLICATION USAGE
+       This function only creates pathnames. It is the application's responsibility to create and remove the files. Between the time a pathname is created and the file is opened, it is possible for some
+       other process to create a file with the same name. Applications may find tmpfile() more useful.
+
+       Applications should use the tmpfile(), mkdtemp(), or mkstemp() functions instead of the obsolescent tempnam() function.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       The tempnam() function may be removed in a future version.
+
+SEE ALSO
+       fopen(), free(), mkdtemp(), open(), tmpfile(), tmpnam(), unlink()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                        TEMPNAM(3P)

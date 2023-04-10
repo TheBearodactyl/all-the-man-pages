@@ -1,0 +1,121 @@
+PREAD(3P)                  POSIX Programmer's Manual                 PREAD(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pread — read from a file
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset);
+
+DESCRIPTION
+       Refer to read().
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                            PREAD(3P)
+pread(2)                      System Calls Manual                     pread(2)
+
+NAME
+       pread, pwrite - read from or write to a file descriptor at a given off‐
+       set
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t pread(int fd, void buf[.count], size_t count,
+                     off_t offset);
+       ssize_t pwrite(int fd, const void buf[.count], size_t count,
+                     off_t offset);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       pread(), pwrite():
+           _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809L
+
+DESCRIPTION
+       pread() reads up to count bytes from file descriptor fd at offset  off‐
+       set  (from the start of the file) into the buffer starting at buf.  The
+       file offset is not changed.
+
+       pwrite() writes up to count bytes from the buffer starting  at  buf  to
+       the  file  descriptor  fd  at  offset  offset.   The file offset is not
+       changed.
+
+       The file referenced by fd must be capable of seeking.
+
+RETURN VALUE
+       On success, pread() returns the number of bytes read (a return of  zero
+       indicates  end  of file) and pwrite() returns the number of bytes writ‐
+       ten.
+
+       Note that it is not an error for a successful call  to  transfer  fewer
+       bytes than requested (see read(2) and write(2)).
+
+       On error, -1 is returned and errno is set to indicate the error.
+
+ERRORS
+       pread()  can  fail  and set errno to any error specified for read(2) or
+       lseek(2).  pwrite() can fail and set errno to any error  specified  for
+       write(2) or lseek(2).
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+       Added  in  Linux 2.1.60; the entries in the i386 system call table were
+       added in Linux 2.1.69.  C library support  (including  emulation  using
+       lseek(2)  on older kernels without the system calls) was added in glibc
+       2.1.
+
+   C library/kernel differences
+       On Linux, the underlying  system  calls  were  renamed  in  Linux  2.6:
+       pread()  became  pread64(), and pwrite() became pwrite64().  The system
+       call numbers remained the same.  The glibc pread() and pwrite() wrapper
+       functions transparently deal with the change.
+
+       On  some  32-bit  architectures, the calling signature for these system
+       calls differ, for the reasons described in syscall(2).
+
+NOTES
+       The pread() and pwrite() system calls are especially useful  in  multi‐
+       threaded  applications.   They allow multiple threads to perform I/O on
+       the same file descriptor without being affected by changes to the  file
+       offset by other threads.
+
+BUGS
+       POSIX  requires  that opening a file with the O_APPEND flag should have
+       no effect on the location at which pwrite() writes data.   However,  on
+       Linux,  if a file is opened with O_APPEND, pwrite() appends data to the
+       end of the file, regardless of the value of offset.
+
+SEE ALSO
+       lseek(2), read(2), readv(2), write(2)
+
+Linux man-pages 6.04              2023-03-30                          pread(2)

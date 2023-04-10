@@ -1,0 +1,252 @@
+system_data_types(7)   Miscellaneous Information Manual   system_data_types(7)
+
+NAME
+       system_data_types - overview of system data types
+
+DESCRIPTION
+       sigevent
+              Include:  <signal.h>.   Alternatively,  <aio.h>,  <mqueue.h>, or
+              <time.h>.
+
+              struct sigevent {
+                  int             sigev_notify; /* Notification type */
+                  int             sigev_signo;  /* Signal number */
+                  union sigval    sigev_value;  /* Signal value */
+                  void          (*sigev_notify_function)(union sigval);
+                                                /* Notification function */
+                  pthread_attr_t *sigev_notify_attributes;
+                                                /* Notification attributes */
+              };
+
+              For further details about this type, see sigevent(7).
+
+              Versions:   <aio.h>   and   <time.h>   define   sigevent   since
+              POSIX.1-2008.
+
+              Conforming to: POSIX.1-2001 and later.
+
+              See   also:  timer_create(2),  getaddrinfo_a(3),  lio_listio(3),
+              mq_notify(3)
+
+              See also the aiocb structure in this page.
+
+       siginfo_t
+              Include: <signal.h>.  Alternatively, <sys/wait.h>.
+
+              typedef struct {
+                  int      si_signo;  /* Signal number */
+                  int      si_code;   /* Signal code */
+                  pid_t    si_pid;    /* Sending process ID */
+                  uid_t    si_uid;    /* Real user ID of sending process */
+                  void    *si_addr;   /* Address of faulting instruction */
+                  int      si_status; /* Exit value or signal */
+                  union sigval si_value;  /* Signal value */
+              } siginfo_t;
+
+              Information associated with a signal.  For  further  details  on
+              this  structure  (including  additional, Linux-specific fields),
+              see sigaction(2).
+
+              Conforming to: POSIX.1-2001 and later.
+
+              See  also:  pidfd_send_signal(2),   rt_sigqueueinfo(2),   sigac‐
+              tion(2), sigwaitinfo(2), psiginfo(3)
+
+       sigset_t
+              Include:  <signal.h>.   Alternatively,  <spawn.h>,  or  <sys/se‐
+              lect.h>.
+
+              This is a type that represents a set of signals.   According  to
+              POSIX, this shall be an integer or structure type.
+
+              Conforming to: POSIX.1-2001 and later.
+
+              See  also:  epoll_pwait(2),  ppoll(2), pselect(2), sigaction(2),
+              signalfd(2), sigpending(2), sigprocmask(2), sigsuspend(2),  sig‐
+              waitinfo(2), signal(7)
+
+       sigval
+              Include: <signal.h>.
+
+              union sigval {
+                  int     sigval_int; /* Integer value */
+                  void   *sigval_ptr; /* Pointer value */
+              };
+
+              Data passed with a signal.
+
+              Conforming to: POSIX.1-2001 and later.
+
+              See also: pthread_sigqueue(3), sigqueue(3), sigevent(7)
+
+              See  also  the sigevent structure and the siginfo_t type in this
+              page.
+
+NOTES
+       The structures described in this manual page shall contain,  at  least,
+       the members shown in their definition, in no particular order.
+
+       Most  of  the  integer types described in this page don't have a corre‐
+       sponding length modifier for the printf(3) and the scanf(3) families of
+       functions.   To  print  a  value of an integer type that doesn't have a
+       length modifier, it should be converted to intmax_t or uintmax_t by  an
+       explicit cast.  To scan into a variable of an integer type that doesn't
+       have a length modifier, an intermediate temporary variable of type int‐
+       max_t  or  uintmax_t  should  be used.  When copying from the temporary
+       variable to the destination variable, the value could overflow.  If the
+       type  has  upper and lower limits, the user should check that the value
+       is within those limits, before actually copying the value.  The example
+       below shows how these conversions should be done.
+
+   Conventions used in this page
+       In  "Conforming  to"  we  only concern ourselves with C99 and later and
+       POSIX.1-2001 and later.  Some types may be specified  in  earlier  ver‐
+       sions  of one of these standards, but in the interests of simplicity we
+       omit details from earlier standards.
+
+       In "Include", we first note the "primary"  header(s)  that  define  the
+       type  according  to either the C or POSIX.1 standards.  Under "Alterna‐
+       tively", we note additional headers that the  standards  specify  shall
+       define the type.
+
+EXAMPLES
+       The  program  shown below scans from a string and prints a value stored
+       in a variable of an integer type that doesn't have a  length  modifier.
+       The  appropriate  conversions from and to intmax_t, and the appropriate
+       range checks, are used as explained in the notes section above.
+
+       #include <stdint.h>
+       #include <stdio.h>
+       #include <stdlib.h>
+       #include <sys/types.h>
+
+       int
+       main (void)
+       {
+           static const char *const str = "500000 us in half a second";
+           suseconds_t us;
+           intmax_t    tmp;
+
+           /* Scan the number from the string into the temporary variable. */
+
+           sscanf(str, "%jd", &tmp);
+
+           /* Check that the value is within the valid range of suseconds_t. */
+
+           if (tmp < -1 || tmp > 1000000) {
+               fprintf(stderr, "Scanned value outside valid range!\n");
+               exit(EXIT_FAILURE);
+           }
+
+           /* Copy the value to the suseconds_t variable 'us'. */
+
+           us = tmp;
+
+           /* Even though suseconds_t can hold the value -1, this isn't
+              a sensible number of microseconds. */
+
+           if (us < 0) {
+               fprintf(stderr, "Scanned value shouldn't be negative!\n");
+               exit(EXIT_FAILURE);
+           }
+
+           /* Print the value. */
+
+           printf("There are %jd microseconds in half a second.\n",
+                   (intmax_t) us);
+
+           exit(EXIT_SUCCESS);
+       }
+
+SEE ALSO
+       feature_test_macros(7), standards(7)
+
+Linux man-pages 6.04              2023-02-05              system_data_types(7)
+sigevent(7)            Miscellaneous Information Manual            sigevent(7)
+
+NAME
+       sigevent - structure for notification from asynchronous routines
+
+SYNOPSIS
+       #include <signal.h>
+
+       union sigval {            /* Data passed with notification */
+           int     sival_int;    /* Integer value */
+           void   *sival_ptr;    /* Pointer value */
+       };
+
+       struct sigevent {
+           int    sigev_notify;  /* Notification method */
+           int    sigev_signo;   /* Notification signal */
+           union sigval sigev_value;
+                                 /* Data passed with notification */
+           void (*sigev_notify_function)(union sigval);
+                                 /* Function used for thread
+                                    notification (SIGEV_THREAD) */
+           void  *sigev_notify_attributes;
+                                 /* Attributes for notification thread
+                                    (SIGEV_THREAD) */
+           pid_t  sigev_notify_thread_id;
+                                 /* ID of thread to signal
+                                    (SIGEV_THREAD_ID); Linux-specific */
+       };
+
+DESCRIPTION
+       The  sigevent  structure  is used by various APIs to describe the way a
+       process is to be notified about an event (e.g., completion of an  asyn‐
+       chronous request, expiration of a timer, or the arrival of a message).
+
+       The definition shown in the SYNOPSIS is approximate: some of the fields
+       in the sigevent structure may be defined as part of a union.   Programs
+       should  employ  only  those  fields  relevant to the value specified in
+       sigev_notify.
+
+       The sigev_notify field specifies how notification is to  be  performed.
+       This field can have one of the following values:
+
+       SIGEV_NONE
+              A "null" notification: don't do anything when the event occurs.
+
+       SIGEV_SIGNAL
+              Notify   the   process   by  sending  the  signal  specified  in
+              sigev_signo.
+
+              If the signal is caught with a signal handler  that  was  regis‐
+              tered using the sigaction(2) SA_SIGINFO flag, then the following
+              fields are set in the siginfo_t structure that is passed as  the
+              second argument of the handler:
+
+              si_code   This  field  is set to a value that depends on the API
+                        delivering the notification.
+
+              si_signo  This field is set to the signal number (i.e., the same
+                        value as in sigev_signo).
+
+              si_value  This   field   is   set  to  the  value  specified  in
+                        sigev_value.
+
+              Depending on the API, other fields may also be set in  the  sig‐
+              info_t structure.
+
+              The same information is also available if the signal is accepted
+              using sigwaitinfo(2).
+
+       SIGEV_THREAD
+              Notify the process by invoking sigev_notify_function "as if"  it
+              were the start function of a new thread.  (Among the implementa‐
+              tion possibilities here are that each timer  notification  could
+              result  in the creation of a new thread, or that a single thread
+              is created to receive all notifications.)  The function  is  in‐
+              voked  with  sigev_value  as  its  sole  argument.  If sigev_no‐
+              tify_attributes is not NULL, it should point to a pthread_attr_t
+              structure  that  defines  attributes  for  the  new  thread (see
+              pthread_attr_init(3)).
+
+       SIGEV_THREAD_ID (Linux-specific)
+              Currently used only by POSIX timers; see timer_create(2).
+
+SEE ALSO
+       timer_create(2),  aio_fsync(3),   aio_read(3),   aio_write(3),   getad‐
+       drinfo_a(3), lio_listio(3), mq_notify(3), aio(7), pthreads(7)
+
+Linux man-pages 6.04              2022-10-30                       sigevent(7)

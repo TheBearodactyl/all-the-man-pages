@@ -1,0 +1,330 @@
+opus_custom(3)                       Opus                       opus_custom(3)
+
+NAME
+       opus_custom - Opus Custom
+
+        - Opus Custom is an optional part of the Opus specification and
+       reference implementation which uses a distinct API from the regular API
+       and supports frame sizes that are not normally supported. Use of Opus
+       Custom is discouraged for all but very special applications for which a
+       frame size different from 2.5, 5, 10, or 20 ms is needed (for either
+       complexity or latency reasons) and where interoperability is less
+       important.
+
+SYNOPSIS
+   Typedefs
+       typedef struct OpusCustomEncoder OpusCustomEncoder
+           Contains the state of an encoder.
+       typedef struct OpusCustomDecoder OpusCustomDecoder
+           State of the decoder.
+       typedef struct OpusCustomMode OpusCustomMode
+           The mode contains all the information necessary to create an
+           encoder.
+
+   Functions
+       OpusCustomMode * opus_custom_mode_create (opus_int32 Fs, int
+           frame_size, int *error)
+           Creates a new mode struct.
+       void opus_custom_mode_destroy (OpusCustomMode *mode)
+           Destroys a mode struct.
+       int opus_custom_encoder_get_size (const OpusCustomMode *mode, int
+           channels)
+           Gets the size of an OpusCustomEncoder structure.
+       OpusCustomEncoder * opus_custom_encoder_create (const OpusCustomMode
+           *mode, int channels, int *error)
+           Creates a new encoder state.
+       void opus_custom_encoder_destroy (OpusCustomEncoder *st)
+           Destroys a an encoder state.
+       int opus_custom_encode_float (OpusCustomEncoder *st, const float *pcm,
+           int frame_size, unsigned char *compressed, int maxCompressedBytes)
+           Encodes a frame of audio.
+       int opus_custom_encode (OpusCustomEncoder *st, const opus_int16 *pcm,
+           int frame_size, unsigned char *compressed, int maxCompressedBytes)
+           Encodes a frame of audio.
+       int opus_custom_encoder_ctl (OpusCustomEncoder *OPUS_RESTRICT st, int
+           request,...)
+           Perform a CTL function on an Opus custom encoder.
+       int opus_custom_decoder_get_size (const OpusCustomMode *mode, int
+           channels)
+           Gets the size of an OpusCustomDecoder structure.
+       int opus_custom_decoder_init (OpusCustomDecoder *st, const
+           OpusCustomMode *mode, int channels)
+           Initializes a previously allocated decoder state The memory pointed
+           to by st must be the size returned by opus_custom_decoder_get_size.
+       OpusCustomDecoder * opus_custom_decoder_create (const OpusCustomMode
+           *mode, int channels, int *error)
+           Creates a new decoder state.
+       void opus_custom_decoder_destroy (OpusCustomDecoder *st)
+           Destroys a an decoder state.
+       int opus_custom_decode_float (OpusCustomDecoder *st, const unsigned
+           char *data, int len, float *pcm, int frame_size)
+           Decode an opus custom frame with floating point output.
+       int opus_custom_decode (OpusCustomDecoder *st, const unsigned char
+           *data, int len, opus_int16 *pcm, int frame_size)
+           Decode an opus custom frame.
+       int opus_custom_decoder_ctl (OpusCustomDecoder *OPUS_RESTRICT st, int
+           request,...)
+           Perform a CTL function on an Opus custom decoder.
+
+Detailed Description
+       Opus Custom is an optional part of the Opus specification and reference
+       implementation which uses a distinct API from the regular API and
+       supports frame sizes that are not normally supported. Use of Opus
+       Custom is discouraged for all but very special applications for which a
+       frame size different from 2.5, 5, 10, or 20 ms is needed (for either
+       complexity or latency reasons) and where interoperability is less
+       important.
+
+       In addition to the interoperability limitations the use of Opus custom
+       disables a substantial chunk of the codec and generally lowers the
+       quality available at a given bitrate. Normally when an application
+       needs a different frame size from the codec it should buffer to match
+       the sizes but this adds a small amount of delay which may be important
+       in some very low latency applications. Some transports (especially
+       constant rate RF transports) may also work best with frames of
+       particular durations.
+
+       Libopus only supports custom modes if they are enabled at compile time.
+
+       The Opus Custom API is similar to the regular API but the
+       opus_encoder_create and opus_decoder_create calls take an additional
+       mode parameter which is a structure produced by a call to
+       opus_custom_mode_create. Both the encoder and decoder must create a
+       mode using the same sample rate (fs) and frame size (frame size) so
+       these parameters must either be signaled out of band or fixed in a
+       particular implementation.
+
+       Similar to regular Opus the custom modes support on the fly frame size
+       switching, but the sizes available depend on the particular frame size
+       in use. For some initial frame sizes on a single on the fly size is
+       available.
+
+Typedef Documentation
+   typedef struct OpusCustomDecoder OpusCustomDecoder
+       State of the decoder. One decoder state is needed for each stream. It
+       is initialized once at the beginning of the stream. Do not re-
+       initialize the state for every frame.
+
+       Decoder state
+
+   typedef struct OpusCustomEncoder OpusCustomEncoder
+       Contains the state of an encoder. One encoder state is needed for each
+       stream. It is initialized once at the beginning of the stream. Do not
+       re-initialize the state for every frame.
+
+       Encoder state
+
+   typedef struct OpusCustomMode OpusCustomMode
+       The mode contains all the information necessary to create an encoder.
+       Both the encoder and decoder need to be initialized with exactly the
+       same mode, otherwise the output will be corrupted.
+
+       Mode configuration
+
+Function Documentation
+   int opus_custom_decode (OpusCustomDecoder * st, const unsigned char * data,
+       int len, opus_int16 * pcm, int frame_size)
+       Decode an opus custom frame.
+
+       Parameters
+           st OpusCustomDecoder*: Decoder state
+           data char*: Input payload. Use a NULL pointer to indicate packet
+           loss
+           len int: Number of bytes in payload
+           pcm opus_int16*: Output signal (interleaved if 2 channels). length
+           is frame_size*channels*sizeof(opus_int16)
+           frame_size Number of samples per channel of available space in
+           *pcm.
+
+       Returns
+           Number of decoded samples or Error codes
+
+   int opus_custom_decode_float (OpusCustomDecoder * st, const unsigned char *
+       data, int len, float * pcm, int frame_size)
+       Decode an opus custom frame with floating point output.
+
+       Parameters
+           st OpusCustomDecoder*: Decoder state
+           data char*: Input payload. Use a NULL pointer to indicate packet
+           loss
+           len int: Number of bytes in payload
+           pcm float*: Output signal (interleaved if 2 channels). length is
+           frame_size*channels*sizeof(float)
+           frame_size Number of samples per channel of available space in
+           *pcm.
+
+       Returns
+           Number of decoded samples or Error codes
+
+   OpusCustomDecoder * opus_custom_decoder_create (const OpusCustomMode *
+       mode, int channels, int * error)
+       Creates a new decoder state. Each stream needs its own decoder state
+       (can't be shared across simultaneous streams).
+
+       Parameters
+           mode OpusCustomMode: Contains all the information about the
+           characteristics of the stream (must be the same characteristics as
+           used for the encoder)
+           channels int: Number of channels
+           error int*: Returns an error code
+
+       Returns
+           Newly created decoder state.
+
+   int opus_custom_decoder_ctl (OpusCustomDecoder *OPUS_RESTRICT st, int
+       request,  ...)
+       Perform a CTL function on an Opus custom decoder. Generally the request
+       and subsequent arguments are generated by a convenience macro.
+
+       See also
+           Generic CTLs
+
+   void opus_custom_decoder_destroy (OpusCustomDecoder * st)
+       Destroys a an decoder state.
+
+       Parameters
+           st OpusCustomDecoder*: State to be freed.
+
+   int opus_custom_decoder_get_size (const OpusCustomMode * mode, int
+       channels)
+       Gets the size of an OpusCustomDecoder structure.
+
+       Parameters
+           mode OpusCustomMode *: Mode configuration
+           channels int: Number of channels
+
+       Returns
+           size
+
+   int opus_custom_decoder_init (OpusCustomDecoder * st, const OpusCustomMode
+       * mode, int channels)
+       Initializes a previously allocated decoder state The memory pointed to
+       by st must be the size returned by opus_custom_decoder_get_size. This
+       is intended for applications which use their own allocator instead of
+       malloc.
+
+       See also
+           opus_custom_decoder_create(),opus_custom_decoder_get_size() To
+           reset a previously initialized state use the OPUS_RESET_STATE CTL.
+
+       Parameters
+           st OpusCustomDecoder*: Decoder state
+           mode OpusCustomMode *: Contains all the information about the
+           characteristics of the stream (must be the same characteristics as
+           used for the encoder)
+           channels int: Number of channels
+
+       Returns
+           OPUS_OK Success or Error codes
+
+   int opus_custom_encode (OpusCustomEncoder * st, const opus_int16 * pcm, int
+       frame_size, unsigned char * compressed, int maxCompressedBytes)
+       Encodes a frame of audio.
+
+       Parameters
+           st OpusCustomEncoder*: Encoder state
+           pcm opus_int16*: PCM audio in signed 16-bit format (native endian).
+           There must be exactly frame_size samples per channel.
+           frame_size int: Number of samples per frame of input signal
+           compressed char *: The compressed data is written here. This may
+           not alias pcm and must be at least maxCompressedBytes long.
+           maxCompressedBytes int: Maximum number of bytes to use for
+           compressing the frame (can change from one frame to another)
+
+       Returns
+           Number of bytes written to 'compressed'. If negative, an error has
+           occurred (see error codes). It is IMPORTANT that the length
+           returned be somehow transmitted to the decoder. Otherwise, no
+           decoding is possible.
+
+   int opus_custom_encode_float (OpusCustomEncoder * st, const float * pcm,
+       int frame_size, unsigned char * compressed, int maxCompressedBytes)
+       Encodes a frame of audio.
+
+       Parameters
+           st OpusCustomEncoder*: Encoder state
+           pcm float*: PCM audio in float format, with a normal range of
+           +/-1.0. Samples with a range beyond +/-1.0 are supported but will
+           be clipped by decoders using the integer API and should only be
+           used if it is known that the far end supports extended dynamic
+           range. There must be exactly frame_size samples per channel.
+           frame_size int: Number of samples per frame of input signal
+           compressed char *: The compressed data is written here. This may
+           not alias pcm and must be at least maxCompressedBytes long.
+           maxCompressedBytes int: Maximum number of bytes to use for
+           compressing the frame (can change from one frame to another)
+
+       Returns
+           Number of bytes written to 'compressed'. If negative, an error has
+           occurred (see error codes). It is IMPORTANT that the length
+           returned be somehow transmitted to the decoder. Otherwise, no
+           decoding is possible.
+
+   OpusCustomEncoder * opus_custom_encoder_create (const OpusCustomMode *
+       mode, int channels, int * error)
+       Creates a new encoder state. Each stream needs its own encoder state
+       (can't be shared across simultaneous streams).
+
+       Parameters
+           mode OpusCustomMode*: Contains all the information about the
+           characteristics of the stream (must be the same characteristics as
+           used for the decoder)
+           channels int: Number of channels
+           error int*: Returns an error code
+
+       Returns
+           Newly created encoder state.
+
+   int opus_custom_encoder_ctl (OpusCustomEncoder *OPUS_RESTRICT st, int
+       request,  ...)
+       Perform a CTL function on an Opus custom encoder. Generally the request
+       and subsequent arguments are generated by a convenience macro.
+
+       See also
+           Encoder related CTLs
+
+   void opus_custom_encoder_destroy (OpusCustomEncoder * st)
+       Destroys a an encoder state.
+
+       Parameters
+           st OpusCustomEncoder*: State to be freed.
+
+   int opus_custom_encoder_get_size (const OpusCustomMode * mode, int
+       channels)
+       Gets the size of an OpusCustomEncoder structure.
+
+       Parameters
+           mode OpusCustomMode *: Mode configuration
+           channels int: Number of channels
+
+       Returns
+           size
+
+   OpusCustomMode * opus_custom_mode_create (opus_int32 Fs, int frame_size,
+       int * error)
+       Creates a new mode struct. This will be passed to an encoder or
+       decoder. The mode MUST NOT BE DESTROYED until the encoders and decoders
+       that use it are destroyed as well.
+
+       Parameters
+           Fs int: Sampling rate (8000 to 96000 Hz)
+           frame_size int: Number of samples (per channel) to encode in each
+           packet (64 - 1024, prime factorization must contain zero or more
+           2s, 3s, or 5s and no other primes)
+           error int*: Returned error code (if NULL, no error will be
+           returned)
+
+       Returns
+           A newly created mode
+
+   void opus_custom_mode_destroy (OpusCustomMode * mode)
+       Destroys a mode struct. Only call this after all encoders and decoders
+       using this mode are destroyed as well.
+
+       Parameters
+           mode OpusCustomMode*: Mode to be freed.
+
+Author
+       Generated automatically by Doxygen for Opus from the source code.
+
+Version 1.3.1                   Fri Feb 11 2022                 opus_custom(3)

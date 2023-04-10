@@ -1,0 +1,251 @@
+SHA256_INIT(3ssl)                   OpenSSL                  SHA256_INIT(3ssl)
+
+NAME
+       SHA1, SHA1_Init, SHA1_Update, SHA1_Final, SHA224, SHA224_Init,
+       SHA224_Update, SHA224_Final, SHA256, SHA256_Init, SHA256_Update,
+       SHA256_Final, SHA384, SHA384_Init, SHA384_Update, SHA384_Final, SHA512,
+       SHA512_Init, SHA512_Update, SHA512_Final - Secure Hash Algorithm
+
+SYNOPSIS
+        #include <openssl/sha.h>
+
+        unsigned char *SHA1(const unsigned char *data, size_t count, unsigned char *md_buf);
+        unsigned char *SHA224(const unsigned char *data, size_t count, unsigned char *md_buf);
+        unsigned char *SHA256(const unsigned char *data, size_t count, unsigned char *md_buf);
+        unsigned char *SHA384(const unsigned char *data, size_t count, unsigned char *md_buf);
+        unsigned char *SHA512(const unsigned char *data, size_t count, unsigned char *md_buf);
+
+       The following functions have been deprecated since OpenSSL 3.0, and can
+       be hidden entirely by defining OPENSSL_API_COMPAT with a suitable
+       version value, see openssl_user_macros(7):
+
+        int SHA1_Init(SHA_CTX *c);
+        int SHA1_Update(SHA_CTX *c, const void *data, size_t len);
+        int SHA1_Final(unsigned char *md, SHA_CTX *c);
+
+        int SHA224_Init(SHA256_CTX *c);
+        int SHA224_Update(SHA256_CTX *c, const void *data, size_t len);
+        int SHA224_Final(unsigned char *md, SHA256_CTX *c);
+
+        int SHA256_Init(SHA256_CTX *c);
+        int SHA256_Update(SHA256_CTX *c, const void *data, size_t len);
+        int SHA256_Final(unsigned char *md, SHA256_CTX *c);
+
+        int SHA384_Init(SHA512_CTX *c);
+        int SHA384_Update(SHA512_CTX *c, const void *data, size_t len);
+        int SHA384_Final(unsigned char *md, SHA512_CTX *c);
+
+        int SHA512_Init(SHA512_CTX *c);
+        int SHA512_Update(SHA512_CTX *c, const void *data, size_t len);
+        int SHA512_Final(unsigned char *md, SHA512_CTX *c);
+
+DESCRIPTION
+       All of the functions described on this page except for SHA1(),
+       SHA224(), SHA256(), SHA384() and SHA512() are deprecated.  Applications
+       should instead use EVP_DigestInit_ex(3), EVP_DigestUpdate(3) and
+       EVP_DigestFinal_ex(3), or the quick one-shot function EVP_Q_digest(3).
+       SHA1(), SHA224(), SHA256(), SHA384(), and SHA256() can continue to be
+       used. They can also be replaced by, e.g.,
+
+           (EVP_Q_digest(d, n, md, NULL, NULL, "SHA256", NULL) ? md : NULL)
+
+       SHA-1 (Secure Hash Algorithm) is a cryptographic hash function with a
+       160 bit output.
+
+       SHA1() computes the SHA-1 message digest of the n bytes at d and places
+       it in md (which must have space for SHA_DIGEST_LENGTH == 20 bytes of
+       output). If md is NULL, the digest is placed in a static array. Note:
+       setting md to NULL is not thread safe.
+
+       The following functions may be used if the message is not completely
+       stored in memory:
+
+       SHA1_Init() initializes a SHA_CTX structure.
+
+       SHA1_Update() can be called repeatedly with chunks of the message to be
+       hashed (len bytes at data).
+
+       SHA1_Final() places the message digest in md, which must have space for
+       SHA_DIGEST_LENGTH == 20 bytes of output, and erases the SHA_CTX.
+
+       The SHA224, SHA256, SHA384 and SHA512 families of functions operate in
+       the same way as for the SHA1 functions. Note that SHA224 and SHA256 use
+       a SHA256_CTX object instead of SHA_CTX. SHA384 and SHA512 use
+       SHA512_CTX.  The buffer md must have space for the output from the SHA
+       variant being used (defined by SHA224_DIGEST_LENGTH,
+       SHA256_DIGEST_LENGTH, SHA384_DIGEST_LENGTH and SHA512_DIGEST_LENGTH).
+       Also note that, as for the SHA1() function above, the SHA224(),
+       SHA256(), SHA384() and SHA512() functions are not thread safe if md is
+       NULL.
+
+RETURN VALUES
+       SHA1(), SHA224(), SHA256(), SHA384() and SHA512() return a pointer to
+       the hash value.
+
+       SHA1_Init(), SHA1_Update() and SHA1_Final() and equivalent SHA224,
+       SHA256, SHA384 and SHA512 functions return 1 for success, 0 otherwise.
+
+CONFORMING TO
+       US Federal Information Processing Standard FIPS PUB 180-4 (Secure Hash
+       Standard), ANSI X9.30
+
+SEE ALSO
+       EVP_Q_digest(3), EVP_DigestInit(3)
+
+HISTORY
+       All of these functions except SHA*() were deprecated in OpenSSL 3.0.
+
+COPYRIGHT
+       Copyright 2000-2021 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use
+       this file except in compliance with the License.  You can obtain a copy
+       in the file LICENSE in the source distribution or at
+       <https://www.openssl.org/source/license.html>.
+
+3.0.8                             2023-02-07                 SHA256_INIT(3ssl)
+SHA1(3)                  BSD Library Functions Manual                  SHA1(3)
+
+NAME
+     SHA1Init, SHA1Update, SHA1Pad, SHA1Final, SHA1Transform, SHA1End,
+     SHA1File, SHA1FileChunk, SHA1Data — calculate the NIST Secure Hash Algo‐
+     rithm
+
+LIBRARY
+     Message Digest (MD4, MD5, etc.) Support Library (libmd, -lmd)
+
+SYNOPSIS
+     #include <sys/types.h>
+     #include <sha1.h>
+
+     void
+     SHA1Init(SHA1_CTX *context);
+
+     void
+     SHA1Update(SHA1_CTX *context, const uint8_t *data, size_t len);
+
+     void
+     SHA1Pad(SHA1_CTX *context);
+
+     void
+     SHA1Final(uint8_t digest[SHA1_DIGEST_LENGTH], SHA1_CTX *context);
+
+     void
+     SHA1Transform(uint32_t state[5],
+         const uint8_t buffer[SHA1_BLOCK_LENGTH]);
+
+     char *
+     SHA1End(SHA1_CTX *context, char *buf);
+
+     char *
+     SHA1File(const char *filename, char *buf);
+
+     char *
+     SHA1FileChunk(const char *filename, char *buf, off_t offset,
+         off_t length);
+
+     char *
+     SHA1Data(const uint8_t *data, size_t len, char *buf);
+
+DESCRIPTION
+     The SHA1 functions implement the NIST Secure Hash Algorithm (SHA-1), FIPS
+     PUB 180-1.  SHA-1 is used to generate a condensed representation of a
+     message called a message digest.  The algorithm takes a message less than
+     2^64 bits as input and produces a 160-bit digest suitable for use as a
+     digital signature.
+
+     While the SHA1 functions are considered to be more secure than the md4(3)
+     and md5(3) functions with which they share a similar interface, they are
+     considered insecure as of 2005, and as of 2020 chosen-prefix attacks have
+     become practical, thus these must not be used in cryptographic contexts.
+
+     The SHA1Init() function initializes a SHA1_CTX context for use with
+     SHA1Update(), and SHA1Final().  The SHA1Update() function adds data of
+     length len to the SHA1_CTX specified by context.  SHA1Final() is called
+     when all data has been added via SHA1Update() and stores a message digest
+     in the digest parameter.
+
+     The SHA1Pad() function can be used to apply padding to the message digest
+     as in SHA1Final(), but the current context can still be used with
+     SHA1Update().
+
+     The SHA1Transform() function is used by SHA1Update() to hash 512-bit
+     blocks and forms the core of the algorithm.  Most programs should use the
+     interface provided by SHA1Init(), SHA1Update() and SHA1Final() instead of
+     calling SHA1Transform() directly.
+
+     The SHA1End() function is a front end for SHA1Final() which converts the
+     digest into an ASCII representation of the 160 bit digest in hexadecimal.
+
+     The SHA1File() function calculates the digest for a file and returns the
+     result via SHA1End().  If SHA1File() is unable to open the file a NULL
+     pointer is returned.
+
+     SHA1FileChunk() behaves like SHA1File() but calculates the digest only
+     for that portion of the file starting at offset and continuing for length
+     bytes or until end of file is reached, whichever comes first.  A zero
+     length can be specified to read until end of file.  A negative length or
+     offset will be ignored.
+
+     The SHA1Data() function calculates the digest of an arbitrary string and
+     returns the result via SHA1End().
+
+     For each of the SHA1End(), SHA1File(), and SHA1Data() functions the buf
+     parameter should either be a string of at least 41 characters in size or
+     a NULL pointer.  In the latter case, space will be dynamically allocated
+     via malloc(3) and should be freed using free(3) when it is no longer
+     needed.
+
+EXAMPLES
+     The follow code fragment will calculate the digest for the string "abc"
+     which is ``0xa9993e364706816aba3e25717850c26c9cd0d89d''.
+
+           SHA1_CTX sha;
+           uint8_t results[SHA1_DIGEST_LENGTH];
+           char *buf;
+           int n;
+
+           buf = "abc";
+           n = strlen(buf);
+           SHA1Init(&sha);
+           SHA1Update(&sha, (uint8_t *)buf, n);
+           SHA1Final(results, &sha);
+
+           /* Print the digest as one long hex value */
+           printf("0x");
+           for (n = 0; n < SHA1_DIGEST_LENGTH; n++)
+                   printf("%02x", results[n]);
+           putchar('\n');
+
+     Alternately, the helper functions could be used in the following way:
+
+           uint8_t output[SHA1_DIGEST_STRING_LENGTH];
+           char *buf = "abc";
+
+           printf("0x%s\n", SHA1Data(buf, strlen(buf), output));
+
+SEE ALSO
+     cksum(1), sha1(1), md4(3), md5(3), rmd160(3), sha2(3)
+
+     J. Burrows, The Secure Hash Standard, FIPS PUB 180-1.
+
+     D. Eastlake and P. Jones, US Secure Hash Algorithm 1, RFC 3174.
+
+HISTORY
+     The SHA-1 functions appeared in OpenBSD 2.0.
+
+AUTHORS
+     This implementation of SHA-1 was written by Steve Reid.
+
+     The SHA1End(), SHA1File(), SHA1FileChunk(), and SHA1Data() helper func‐
+     tions are derived from code written by Poul-Henning Kamp.
+
+CAVEATS
+     This implementation of SHA-1 has not been validated by NIST and as such
+     is not in official compliance with the standard.
+
+     If a message digest is to be copied to a multi-byte type (ie: an array of
+     five 32-bit integers) it will be necessary to perform byte swapping on
+     little endian machines such as the i386, alpha, and vax.
+
+BSD                            February 13, 2008                           BSD

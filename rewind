@@ -1,0 +1,169 @@
+fseek(3)                   Library Functions Manual                   fseek(3)
+
+NAME
+       fgetpos, fseek, fsetpos, ftell, rewind - reposition a stream
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdio.h>
+
+       int fseek(FILE *stream, long offset, int whence);
+       long ftell(FILE *stream);
+
+       void rewind(FILE *stream);
+
+       int fgetpos(FILE *restrict stream, fpos_t *restrict pos);
+       int fsetpos(FILE *stream, const fpos_t *pos);
+
+DESCRIPTION
+       The  fseek()  function  sets the file position indicator for the stream
+       pointed to by stream.  The new position, measured in bytes, is obtained
+       by  adding offset bytes to the position specified by whence.  If whence
+       is set to SEEK_SET, SEEK_CUR, or SEEK_END, the offset  is  relative  to
+       the  start of the file, the current position indicator, or end-of-file,
+       respectively.  A successful call to the  fseek()  function  clears  the
+       end-of-file  indicator  for  the  stream  and undoes any effects of the
+       ungetc(3) function on the same stream.
+
+       The ftell() function obtains the current value of the file position in‐
+       dicator for the stream pointed to by stream.
+
+       The  rewind()  function sets the file position indicator for the stream
+       pointed to by stream to the beginning of the file.   It  is  equivalent
+       to:
+
+              (void) fseek(stream, 0L, SEEK_SET)
+
+       except  that  the  error  indicator for the stream is also cleared (see
+       clearerr(3)).
+
+       The fgetpos() and fsetpos() functions are alternate interfaces  equiva‐
+       lent  to ftell() and fseek() (with whence set to SEEK_SET), setting and
+       storing the current value of the file offset into or  from  the  object
+       referenced by pos.  On some non-UNIX systems, an fpos_t object may be a
+       complex object and these routines may be the only way to portably repo‐
+       sition a text stream.
+
+       If  the stream refers to a regular file and the resulting stream offset
+       is beyond the size of the file, subsequent writes will extend the  file
+       with  a  hole,  up  to  the  offset,  before  committing any data.  See
+       lseek(2) for details on file seeking semantics.
+
+RETURN VALUE
+       The rewind() function returns no value.   Upon  successful  completion,
+       fgetpos(), fseek(), fsetpos() return 0, and ftell() returns the current
+       offset.  Otherwise, -1 is returned and errno is set to indicate the er‐
+       ror.
+
+ERRORS
+       EINVAL The  whence  argument  to fseek() was not SEEK_SET, SEEK_END, or
+              SEEK_CUR.  Or: the resulting file offset would be negative.
+
+       ESPIPE The file descriptor underlying stream is not seekable (e.g.,  it
+              refers to a pipe, FIFO, or socket).
+
+       The  functions fgetpos(), fseek(), fsetpos(), and ftell() may also fail
+       and set errno  for  any  of  the  errors  specified  for  the  routines
+       fflush(3), fstat(2), lseek(2), and malloc(3).
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │fseek(), ftell(), rewind(), fgetpos(),      │ Thread safety │ MT-Safe │
+       │fsetpos()                                   │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, C89.
+
+SEE ALSO
+       lseek(2), fseeko(3)
+
+Linux man-pages 6.04              2023-03-30                          fseek(3)
+REWIND(3P)                 POSIX Programmer's Manual                REWIND(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       rewind — reset the file position indicator in a stream
+
+SYNOPSIS
+       #include <stdio.h>
+
+       void rewind(FILE *stream);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with  the
+       ISO C  standard.  Any  conflict between the requirements described here
+       and the ISO C standard is unintentional. This  volume  of  POSIX.1‐2017
+       defers to the ISO C standard.
+
+       The call:
+
+           rewind(stream)
+
+       shall be equivalent to:
+
+           (void) fseek(stream, 0L, SEEK_SET)
+
+       except that rewind() shall also clear the error indicator.
+
+       Since  rewind()  does not return a value, an application wishing to de‐
+       tect errors should clear errno, then call rewind(),  and  if  errno  is
+       non-zero, assume an error has occurred.
+
+RETURN VALUE
+       The rewind() function shall not return a value.
+
+ERRORS
+       Refer to fseek() with the exception of [EINVAL] which does not apply.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.5, Standard I/O Streams, fseek()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdio.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           REWIND(3P)

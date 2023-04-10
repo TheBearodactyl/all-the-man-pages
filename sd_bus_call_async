@@ -1,0 +1,110 @@
+SD_BUS_CALL(3)                    sd_bus_call                   SD_BUS_CALL(3)
+
+NAME
+       sd_bus_call, sd_bus_call_async - Invoke a D-Bus method call
+
+SYNOPSIS
+       #include <systemd/sd-bus.h>
+
+       typedef int (*sd_bus_message_handler_t)(sd_bus_message *m,
+                                               void *userdata,
+                                               sd_bus_error *ret_error);
+
+       int sd_bus_call(sd_bus *bus, sd_bus_message *m, uint64_t usec,
+                       sd_bus_error *ret_error, sd_bus_message **reply);
+
+       int sd_bus_call_async(sd_bus *bus, sd_bus_slot **slot,
+                             sd_bus_message *m,
+                             sd_bus_message_handler_t callback,
+                             void *userdata, uint64_t usec);
+
+DESCRIPTION
+       sd_bus_call() takes a complete bus message object and calls the
+       corresponding D-Bus method. On success, the response is stored in
+       reply.  usec indicates the timeout in microseconds. If ret_error is not
+       NULL and sd_bus_call() fails (either because of an internal error or
+       because it received a D-Bus error reply), ret_error is initialized to
+       an instance of sd_bus_error describing the error.
+
+       sd_bus_call_async() is like sd_bus_call() but works asynchronously. The
+       callback indicates the function to call when the response arrives. The
+       userdata pointer will be passed to the callback function, and may be
+       chosen freely by the caller. If slot is not NULL and
+       sd_bus_call_async() succeeds, slot is set to a slot object which can be
+       used to cancel the method call at a later time using
+       sd_bus_slot_unref(3). If slot is NULL, the lifetime of the method call
+       is bound to the lifetime of the bus object itself, and it cannot be
+       cancelled independently. See sd_bus_slot_set_floating(3) for details.
+       callback is called when a reply arrives with the reply, userdata and an
+       sd_bus_error output parameter as its arguments. Unlike sd_bus_call(),
+       the sd_bus_error output parameter passed to the callback will be empty.
+       To determine whether the method call succeeded, use
+       sd_bus_message_is_method_error(3) on the reply message passed to the
+       callback instead. If the callback returns zero and the sd_bus_error
+       output parameter is still empty when the callback finishes, other
+       handlers registered with functions such as sd_bus_add_filter(3) or
+       sd_bus_add_match(3) are given a chance to process the message. If the
+       callback returns a non-zero value or the sd_bus_error output parameter
+       is not empty when the callback finishes, no further processing of the
+       message is done. Generally, you want to return zero from the callback
+       to give other registered handlers a chance to process the reply as
+       well. (Note that the sd_bus_error parameter is an output parameter of
+       the callback function, not an input parameter; it can be used to
+       propagate errors from the callback handler, it will not receive any
+       error that was received as method reply.)
+
+       The message m passed to the callback is only borrowed, that is, the
+       callback should not call sd_bus_message_unref(3) on it. If the callback
+       wants to hold on to the message beyond the lifetime of the callback, it
+       needs to call sd_bus_message_ref(3) to create a new reference.
+
+       If usec is zero, the default D-Bus method call timeout is used. See
+       sd_bus_get_method_call_timeout(3).
+
+RETURN VALUE
+       On success, these functions return a non-negative integer. On failure,
+       they return a negative errno-style error code.
+
+   Errors
+       When sd_bus_call() internally receives a D-Bus error reply, it will set
+       ret_error if it is not NULL, and will return a negative value mapped
+       from the error reply, see sd_bus_error_get_errno(3).
+
+       Returned errors may indicate the following problems:
+
+       -EINVAL
+           The input parameter m is NULL.  The input parameter m is not a
+           D-Bus method call. To create a new D-Bus method call, use
+           sd_bus_message_new_method_call(3).  The input parameter m has the
+           BUS_MESSAGE_NO_REPLY_EXPECTED flag set.  The input parameter error
+           is non-NULL but was not set to SD_BUS_ERROR_NULL.
+
+       -ECHILD
+           The bus connection was allocated in a parent process and is being
+           reused in a child process after fork().
+
+       -ENOTCONN
+           The input parameter bus is NULL or the bus is not connected.
+
+       -ECONNRESET
+           The bus connection was closed while waiting for the response.
+
+       -ETIMEDOUT
+           A response was not received within the given timeout.
+
+       -ELOOP
+           The message m is addressed to its own client.
+
+       -ENOMEM
+           Memory allocation failed.
+
+NOTES
+       These APIs are implemented as a shared library, which can be compiled
+       and linked to with the libsystemd pkg-config(1) file.
+
+SEE ALSO
+       systemd(1), sd-bus(3), sd_bus_call_method(3),
+       sd_bus_call_method_async(3), sd_bus_message_new_method_call(3),
+       sd_bus_message_append(3), sd_bus_error(3)
+
+systemd 253                                                     SD_BUS_CALL(3)

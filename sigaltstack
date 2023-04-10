@@ -1,0 +1,373 @@
+SIGALTSTACK(3P)            POSIX Programmer's Manual           SIGALTSTACK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       sigaltstack — set and get signal alternate stack context
+
+SYNOPSIS
+       #include <signal.h>
+
+       int sigaltstack(const stack_t *restrict ss, stack_t *restrict oss);
+
+DESCRIPTION
+       The sigaltstack() function allows a process to define and  examine  the
+       state of an alternate stack for signal handlers for the current thread.
+       Signals that have been explicitly declared to execute on the  alternate
+       stack shall be delivered on the alternate stack.
+
+       If  ss  is  not  a  null pointer, it points to a stack_t structure that
+       specifies the alternate signal stack that shall take effect upon return
+       from sigaltstack().  The ss_flags member specifies the new stack state.
+       If it is set to SS_DISABLE, the stack is disabled and ss_sp and ss_size
+       are  ignored.  Otherwise, the stack shall be enabled, and the ss_sp and
+       ss_size members specify the new address and size of the stack.
+
+       The range of addresses starting  at  ss_sp  up  to  but  not  including
+       ss_sp+ss_size  is available to the implementation for use as the stack.
+       This function makes no assumptions regarding which  end  is  the  stack
+       base and in which direction the stack grows as items are pushed.
+
+       If oss is not a null pointer, upon successful completion it shall point
+       to a stack_t structure that specifies the alternate signal  stack  that
+       was  in  effect  prior  to  the  call  to sigaltstack().  The ss_sp and
+       ss_size members specify  the  address  and  size  of  that  stack.  The
+       ss_flags member specifies the stack's state, and may contain one of the
+       following values:
+
+       SS_ONSTACK  The process is currently executing on the alternate  signal
+                   stack.  Attempts to modify the alternate signal stack while
+                   the process is executing on it fail. This flag shall not be
+                   modified by processes.
+
+       SS_DISABLE  The alternate signal stack is currently disabled.
+
+       The  value  SIGSTKSZ is a system default specifying the number of bytes
+       that would be used to cover the usual case when manually allocating  an
+       alternate  stack area. The value MINSIGSTKSZ is defined to be the mini‐
+       mum stack size for a signal handler. In computing  an  alternate  stack
+       size, a program should add that amount to its stack requirements to al‐
+       low for the system implementation overhead. The  constants  SS_ONSTACK,
+       SS_DISABLE, SIGSTKSZ, and MINSIGSTKSZ are defined in <signal.h>.
+
+       After  a successful call to one of the exec functions, there are no al‐
+       ternate signal stacks in the new process image.
+
+       In some implementations, a signal (whether or not indicated to  execute
+       on  the alternate stack) shall always execute on the alternate stack if
+       it is delivered while another signal is being caught using  the  alter‐
+       nate stack.
+
+       Use  of  this function by library threads that are not bound to kernel-
+       scheduled entities results in undefined behavior.
+
+RETURN VALUE
+       Upon successful completion, sigaltstack() shall return 0; otherwise, it
+       shall return -1 and set errno to indicate the error.
+
+ERRORS
+       The sigaltstack() function shall fail if:
+
+       EINVAL The  ss  argument is not a null pointer, and the ss_flags member
+              pointed to by ss contains flags other than SS_DISABLE.
+
+       ENOMEM The size of the alternate stack area is less than MINSIGSTKSZ.
+
+       EPERM  An attempt was made to modify an active stack.
+
+       The following sections are informative.
+
+EXAMPLES
+   Allocating Memory for an Alternate Stack
+       The following example illustrates a method for allocating memory for an
+       alternate stack.
+
+           #include <signal.h>
+           ...
+           if ((sigstk.ss_sp = malloc(SIGSTKSZ)) == NULL)
+               /* Error return. */
+           sigstk.ss_size = SIGSTKSZ;
+           sigstk.ss_flags = 0;
+           if (sigaltstack(&sigstk,(stack_t *)0) < 0)
+               perror("sigaltstack");
+
+APPLICATION USAGE
+       On  some  implementations,  stack  space  is  automatically extended as
+       needed. On those implementations, automatic extension is typically  not
+       available  for an alternate stack. If the stack overflows, the behavior
+       is undefined.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.4, Signal Concepts, exec, sigaction(), sigsetjmp()
+
+       The Base Definitions volume of POSIX.1‐2017, <signal.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                      SIGALTSTACK(3P)
+sigaltstack(2)                System Calls Manual               sigaltstack(2)
+
+NAME
+       sigaltstack - set and/or get signal stack context
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <signal.h>
+
+       int sigaltstack(const stack_t *_Nullable restrict ss,
+                       stack_t *_Nullable restrict old_ss);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       sigaltstack():
+           _XOPEN_SOURCE >= 500
+               || /* Since glibc 2.12: */ _POSIX_C_SOURCE >= 200809L
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+DESCRIPTION
+       sigaltstack()  allows  a  thread to define a new alternate signal stack
+       and/or retrieve the state of an existing alternate  signal  stack.   An
+       alternate signal stack is used during the execution of a signal handler
+       if the establishment of that handler (see sigaction(2)) requested it.
+
+       The normal sequence of events for using an alternate  signal  stack  is
+       the following:
+
+       1. Allocate  an  area  of  memory  to  be used for the alternate signal
+          stack.
+
+       2. Use sigaltstack() to inform the system of the existence and location
+          of the alternate signal stack.
+
+       3. When  establishing  a  signal handler using sigaction(2), inform the
+          system that the signal handler should be executed on  the  alternate
+          signal stack by specifying the SA_ONSTACK flag.
+
+       The  ss argument is used to specify a new alternate signal stack, while
+       the old_ss argument is used to retrieve information about the currently
+       established  signal stack.  If we are interested in performing just one
+       of these tasks, then the other argument can be specified as NULL.
+
+       The stack_t type used to type the arguments of this function is defined
+       as follows:
+
+           typedef struct {
+               void  *ss_sp;     /* Base address of stack */
+               int    ss_flags;  /* Flags */
+               size_t ss_size;   /* Number of bytes in stack */
+           } stack_t;
+
+       To establish a new alternate signal stack, the fields of this structure
+       are set as follows:
+
+       ss.ss_flags
+              This field contains either 0, or the following flag:
+
+              SS_AUTODISARM (since Linux 4.7)
+                     Clear the alternate signal stack settings on entry to the
+                     signal  handler.   When  the  signal handler returns, the
+                     previous alternate signal stack settings are restored.
+
+                     This flag was added in order to make it  safe  to  switch
+                     away  from the signal handler with swapcontext(3).  With‐
+                     out this flag, a subsequently handled signal will corrupt
+                     the  state  of the switched-away signal handler.  On ker‐
+                     nels where this  flag  is  not  supported,  sigaltstack()
+                     fails with the error EINVAL when this flag is supplied.
+
+       ss.ss_sp
+              This  field specifies the starting address of the stack.  When a
+              signal handler is invoked on the alternate stack, the kernel au‐
+              tomatically  aligns  the address given in ss.ss_sp to a suitable
+              address boundary for the underlying hardware architecture.
+
+       ss.ss_size
+              This field specifies  the  size  of  the  stack.   The  constant
+              SIGSTKSZ  is  defined to be large enough to cover the usual size
+              requirements for an alternate signal  stack,  and  the  constant
+              MINSIGSTKSZ  defines the minimum size required to execute a sig‐
+              nal handler.
+
+       To disable an existing stack, specify ss.ss_flags  as  SS_DISABLE.   In
+       this  case,  the  kernel ignores any other flags in ss.ss_flags and the
+       remaining fields in ss.
+
+       If old_ss is not NULL, then it is used to return information about  the
+       alternate signal stack which was in effect prior to the call to sigalt‐
+       stack().  The old_ss.ss_sp and old_ss.ss_size fields return the  start‐
+       ing address and size of that stack.  The old_ss.ss_flags may return ei‐
+       ther of the following values:
+
+       SS_ONSTACK
+              The thread is currently executing on the alternate signal stack.
+              (Note  that  it  is  not possible to change the alternate signal
+              stack if the thread is currently executing on it.)
+
+       SS_DISABLE
+              The alternate signal stack is currently disabled.
+
+              Alternatively, this value is returned if the thread is currently
+              executing  on an alternate signal stack that was established us‐
+              ing the SS_AUTODISARM flag.  In this case, it is safe to  switch
+              away  from  the  signal handler with swapcontext(3).  It is also
+              possible to set up a different alternative signal stack using  a
+              further call to sigaltstack().
+
+       SS_AUTODISARM
+              The alternate signal stack has been marked to be autodisarmed as
+              described above.
+
+       By specifying ss as NULL, and old_ss as a non-NULL value, one  can  ob‐
+       tain the current settings for the alternate signal stack without chang‐
+       ing them.
+
+RETURN VALUE
+       sigaltstack() returns 0 on success, or -1 on failure with errno set  to
+       indicate the error.
+
+ERRORS
+       EFAULT Either ss or old_ss is not NULL and points to an area outside of
+              the process's address space.
+
+       EINVAL ss is not NULL and the ss_flags field contains an invalid flag.
+
+       ENOMEM The specified size of the new alternate signal stack  ss.ss_size
+              was less than MINSIGSTKSZ.
+
+       EPERM  An  attempt  was made to change the alternate signal stack while
+              it was active (i.e., the thread was  already  executing  on  the
+              current alternate signal stack).
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │sigaltstack()                               │ Thread safety │ MT-Safe │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+       SS_AUTODISARM is a Linux extension.
+
+HISTORY
+       POSIX.1-2001, SUSv2, SVr4.
+
+NOTES
+       The most common usage of an alternate signal stack  is  to  handle  the
+       SIGSEGV  signal  that is generated if the space available for the stan‐
+       dard stack is exhausted: in this case, a  signal  handler  for  SIGSEGV
+       cannot  be  invoked  on the standard stack; if we wish to handle it, we
+       must use an alternate signal stack.
+
+       Establishing an alternate signal stack is useful if  a  thread  expects
+       that  it  may exhaust its standard stack.  This may occur, for example,
+       because the stack grows so large that it encounters the upwardly  grow‐
+       ing  heap,  or  it  reaches  a  limit established by a call to setrlim‐
+       it(RLIMIT_STACK, &rlim).  If the standard stack is exhausted, the  ker‐
+       nel sends the thread a SIGSEGV signal.  In these circumstances the only
+       way to catch this signal is on an alternate signal stack.
+
+       On most hardware architectures supported by Linux,  stacks  grow  down‐
+       ward.   sigaltstack()  automatically  takes account of the direction of
+       stack growth.
+
+       Functions called from a signal handler executing on an alternate signal
+       stack  will also use the alternate signal stack.  (This also applies to
+       any handlers invoked for other signals while the thread is executing on
+       the  alternate  signal  stack.)   Unlike the standard stack, the system
+       does not automatically extend the alternate  signal  stack.   Exceeding
+       the  allocated  size  of the alternate signal stack will lead to unpre‐
+       dictable results.
+
+       A successful call to execve(2) removes any  existing  alternate  signal
+       stack.  A child process created via fork(2) inherits a copy of its par‐
+       ent's alternate signal stack settings.  The same is  also  true  for  a
+       child  process  created  using clone(2), unless the clone flags include
+       CLONE_VM and do not include CLONE_VFORK, in which  case  any  alternate
+       signal  stack  that  was  established  in the parent is disabled in the
+       child process.
+
+       sigaltstack() supersedes the older sigstack() call.  For backward  com‐
+       patibility,  glibc  also  provides  sigstack().   All  new applications
+       should be written using sigaltstack().
+
+   History
+       4.2BSD had a sigstack() system call.   It  used  a  slightly  different
+       struct,  and had the major disadvantage that the caller had to know the
+       direction of stack growth.
+
+BUGS
+       In Linux 2.2 and earlier, the only flag  that  could  be  specified  in
+       ss.sa_flags was SS_DISABLE.  In the lead up to the release of the Linux
+       2.4  kernel,  a  change  was  made  to  allow  sigaltstack()  to  allow
+       ss.ss_flags==SS_ONSTACK  with the same meaning as ss.ss_flags==0 (i.e.,
+       the inclusion of SS_ONSTACK in ss.ss_flags is a no-op).  On  other  im‐
+       plementations,  and  according to POSIX.1, SS_ONSTACK appears only as a
+       reported flag in old_ss.ss_flags.  On Linux, there is no need  ever  to
+       specify SS_ONSTACK in ss.ss_flags, and indeed doing so should be avoid‐
+       ed on portability grounds: various  other  systems  give  an  error  if
+       SS_ONSTACK is specified in ss.ss_flags.
+
+EXAMPLES
+       The  following  code segment demonstrates the use of sigaltstack() (and
+       sigaction(2)) to install an alternate signal stack that is employed  by
+       a handler for the SIGSEGV signal:
+
+           stack_t ss;
+
+           ss.ss_sp = malloc(SIGSTKSZ);
+           if (ss.ss_sp == NULL) {
+               perror("malloc");
+               exit(EXIT_FAILURE);
+           }
+
+           ss.ss_size = SIGSTKSZ;
+           ss.ss_flags = 0;
+           if (sigaltstack(&ss, NULL) == -1) {
+               perror("sigaltstack");
+               exit(EXIT_FAILURE);
+           }
+
+           sa.sa_flags = SA_ONSTACK;
+           sa.sa_handler = handler();      /* Address of a signal handler */
+           sigemptyset(&sa.sa_mask);
+           if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+               perror("sigaction");
+               exit(EXIT_FAILURE);
+           }
+
+SEE ALSO
+       execve(2),  setrlimit(2),  sigaction(2),  siglongjmp(3),  sigsetjmp(3),
+       signal(7)
+
+Linux man-pages 6.04              2023-03-30                    sigaltstack(2)

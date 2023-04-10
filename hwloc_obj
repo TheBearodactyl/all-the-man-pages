@@ -1,0 +1,205 @@
+hwloc_obj(3)                                                                             Hardware Locality (hwloc)                                                                            hwloc_obj(3)
+
+NAME
+       hwloc_obj
+
+SYNOPSIS
+       #include <hwloc.h>
+
+   Data Fields
+       hwloc_obj_type_t type
+       char * subtype
+       unsigned os_index
+       char * name
+       hwloc_uint64_t total_memory
+       union hwloc_obj_attr_u * attr
+       int depth
+       unsigned logical_index
+       struct hwloc_obj * next_cousin
+       struct hwloc_obj * prev_cousin
+       struct hwloc_obj * parent
+       unsigned sibling_rank
+       struct hwloc_obj * next_sibling
+       struct hwloc_obj * prev_sibling
+       int symmetric_subtree
+       hwloc_cpuset_t cpuset
+       hwloc_cpuset_t complete_cpuset
+       hwloc_nodeset_t nodeset
+       hwloc_nodeset_t complete_nodeset
+       struct hwloc_info_s * infos
+       unsigned infos_count
+       void * userdata
+       hwloc_uint64_t gp_index
+
+       List and array of normal children below this object (except Memory, I/O and Misc children).
+
+           unsigned arity
+           struct hwloc_obj ** children
+           struct hwloc_obj * first_child
+           struct hwloc_obj * last_child
+
+       List of Memory children below this object.
+
+           unsigned memory_arity
+           struct hwloc_obj * memory_first_child
+
+       List of I/O children below this object.
+
+           unsigned io_arity
+           struct hwloc_obj * io_first_child
+
+       List of Misc children below this object.
+
+           unsigned misc_arity
+           struct hwloc_obj * misc_first_child
+
+Detailed Description
+       Structure of a topology object.
+
+       Applications must not modify any field except hwloc_obj.userdata.
+
+Field Documentation
+   unsigned hwloc_obj::arity
+       Number of normal children. Memory, Misc and I/O children are not listed here but rather in their dedicated children list.
+
+   union hwloc_obj_attr_u* hwloc_obj::attr
+       Object type-specific Attributes, may be NULL if no attribute value was found.
+
+   struct hwloc_obj** hwloc_obj::children
+       Normal children, children[0 .. arity -1].
+
+   hwloc_cpuset_t hwloc_obj::complete_cpuset
+       The complete CPU set of processors of this object,. This may include not only the same as the cpuset field, but also some CPUs for which topology information is unknown or incomplete, some
+       offlines CPUs, and the CPUs that are ignored when the HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED flag is not set. Thus no corresponding PU object may be found in the topology, because the precise
+       position is undefined. It is however known that it would be somewhere under this object.
+
+       Note
+           Its value must not be changed, hwloc_bitmap_dup() must be used instead.
+
+   hwloc_nodeset_t hwloc_obj::complete_nodeset
+       The complete NUMA node set of this object,. This may include not only the same as the nodeset field, but also some NUMA nodes for which topology information is unknown or incomplete, some
+       offlines nodes, and the nodes that are ignored when the HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED flag is not set. Thus no corresponding NUMA node object may be found in the topology, because the
+       precise position is undefined. It is however known that it would be somewhere under this object.
+
+       If there are no NUMA nodes in the machine, all the memory is close to this object, so only the first bit is set in complete_nodeset.
+
+       Note
+           Its value must not be changed, hwloc_bitmap_dup() must be used instead.
+
+   hwloc_cpuset_t hwloc_obj::cpuset
+       CPUs covered by this object. This is the set of CPUs for which there are PU objects in the topology under this object, i.e. which are known to be physically contained in this object and known how
+       (the children path between this object and the PU objects).
+
+       If the HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED configuration flag is set, some of these CPUs may be online but not allowed for binding, see hwloc_topology_get_allowed_cpuset().
+
+       Note
+           All objects have non-NULL CPU and node sets except Misc and I/O objects.
+
+           Its value must not be changed, hwloc_bitmap_dup() must be used instead.
+
+   int hwloc_obj::depth
+       Vertical index in the hierarchy. For normal objects, this is the depth of the horizontal level that contains this object and its cousins of the same type. If the topology is symmetric, this is
+       equal to the parent depth plus one, and also equal to the number of parent/child links from the root object to here.
+
+       For special objects (NUMA nodes, I/O and Misc) that are not in the main tree, this is a special negative value that corresponds to their dedicated level, see hwloc_get_type_depth() and
+       hwloc_get_type_depth_e. Those special values can be passed to hwloc functions such hwloc_get_nbobjs_by_depth() as usual.
+
+   struct hwloc_obj* hwloc_obj::first_child
+       First normal child.
+
+   hwloc_uint64_t hwloc_obj::gp_index
+       Global persistent index. Generated by hwloc, unique across the topology (contrary to os_index) and persistent across topology changes (contrary to logical_index). Mostly used internally, but
+       could also be used by application to identify objects.
+
+   struct hwloc_info_s* hwloc_obj::infos
+       Array of stringified info type=name.
+
+   unsigned hwloc_obj::infos_count
+       Size of infos array.
+
+   unsigned hwloc_obj::io_arity
+       Number of I/O children. These children are listed in io_first_child.
+
+   struct hwloc_obj* hwloc_obj::io_first_child
+       First I/O child. Bridges, PCI and OS devices are listed here (io_arity and io_first_child) instead of in the normal children list. See also hwloc_obj_type_is_io().
+
+   struct hwloc_obj* hwloc_obj::last_child
+       Last normal child.
+
+   unsigned hwloc_obj::logical_index
+       Horizontal index in the whole list of similar objects, hence guaranteed unique across the entire machine. Could be a 'cousin_rank' since it's the rank within the 'cousin' list below Note that
+       this index may change when restricting the topology or when inserting a group.
+
+   unsigned hwloc_obj::memory_arity
+       Number of Memory children. These children are listed in memory_first_child.
+
+   struct hwloc_obj* hwloc_obj::memory_first_child
+       First Memory child. NUMA nodes and Memory-side caches are listed here (memory_arity and memory_first_child) instead of in the normal children list. See also hwloc_obj_type_is_memory(). A memory
+       hierarchy starts from a normal CPU-side object (e.g. Package) and ends with NUMA nodes as leaves. There might exist some memory-side caches between them in the middle of the memory subtree.
+
+   unsigned hwloc_obj::misc_arity
+       Number of Misc children. These children are listed in misc_first_child.
+
+   struct hwloc_obj* hwloc_obj::misc_first_child
+       First Misc child. Misc objects are listed here (misc_arity and misc_first_child) instead of in the normal children list.
+
+   char* hwloc_obj::name
+       Object-specific name if any. Mostly used for identifying OS devices and Misc objects where a name string is more useful than numerical indexes.
+
+   struct hwloc_obj* hwloc_obj::next_cousin
+       Next object of same type and depth.
+
+   struct hwloc_obj* hwloc_obj::next_sibling
+       Next object below the same parent (inside the same list of children).
+
+   hwloc_nodeset_t hwloc_obj::nodeset
+       NUMA nodes covered by this object or containing this object. This is the set of NUMA nodes for which there are NUMA node objects in the topology under or above this object, i.e. which are known
+       to be physically contained in this object or containing it and known how (the children path between this object and the NUMA node objects).
+
+       In the end, these nodes are those that are close to the current object. Function hwloc_get_local_numanode_objs() may be used to list those NUMA nodes more precisely.
+
+       If the HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED configuration flag is set, some of these nodes may be online but not allowed for allocation, see hwloc_topology_get_allowed_nodeset().
+
+       If there are no NUMA nodes in the machine, all the memory is close to this object, so only the first bit may be set in nodeset.
+
+       Note
+           All objects have non-NULL CPU and node sets except Misc and I/O objects.
+
+           Its value must not be changed, hwloc_bitmap_dup() must be used instead.
+
+   unsigned hwloc_obj::os_index
+       OS-provided physical index number. It is not guaranteed unique across the entire machine, except for PUs and NUMA nodes. Set to HWLOC_UNKNOWN_INDEX if unknown or irrelevant for this object.
+
+   struct hwloc_obj* hwloc_obj::parent
+       Parent, NULL if root (Machine object)
+
+   struct hwloc_obj* hwloc_obj::prev_cousin
+       Previous object of same type and depth.
+
+   struct hwloc_obj* hwloc_obj::prev_sibling
+       Previous object below the same parent (inside the same list of children).
+
+   unsigned hwloc_obj::sibling_rank
+       Index in parent's children[] array. Or the index in parent's Memory, I/O or Misc children list.
+
+   char* hwloc_obj::subtype
+       Subtype string to better describe the type field.
+
+   int hwloc_obj::symmetric_subtree
+       Set if the subtree of normal objects below this object is symmetric, which means all normal children and their children have identical subtrees. Memory, I/O and Misc children are ignored.
+
+       If set in the topology root object, lstopo may export the topology as a synthetic string.
+
+   hwloc_uint64_t hwloc_obj::total_memory
+       Total memory (in bytes) in NUMA nodes below this object.
+
+   hwloc_obj_type_t hwloc_obj::type
+       Type of object.
+
+   void* hwloc_obj::userdata
+       Application-given private data pointer, initialized to NULL, use it as you wish. See hwloc_topology_set_userdata_export_callback() in hwloc/export.h if you wish to export this field to XML.
+
+Author
+       Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code.
+
+Version 2.9.0                                                                                 Wed Dec 14 2022                                                                                 hwloc_obj(3)

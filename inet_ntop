@@ -1,0 +1,152 @@
+inet_ntop(3)                                                                             Library Functions Manual                                                                             inet_ntop(3)
+
+NAME
+       inet_ntop - convert IPv4 and IPv6 addresses from binary to text form
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <arpa/inet.h>
+
+       const char *inet_ntop(int af, const void *restrict src,
+                             char dst[restrict .size], socklen_t size);
+
+DESCRIPTION
+       This  function  converts  the network address structure src in the af address family into a character string.  The resulting string is copied to the buffer pointed to by dst, which must be a non-
+       null pointer.  The caller specifies the number of bytes available in this buffer in the argument size.
+
+       inet_ntop() extends the inet_ntoa(3) function to support multiple address families, inet_ntoa(3) is now considered to be deprecated in favor of inet_ntop().  The following  address  families  are
+       currently supported:
+
+       AF_INET
+              src  points  to  a  struct  in_addr  (in network byte order) which is converted to an IPv4 network address in the dotted-decimal format, "ddd.ddd.ddd.ddd".  The buffer dst must be at least
+              INET_ADDRSTRLEN bytes long.
+
+       AF_INET6
+              src points to a struct in6_addr (in network byte order) which is converted to a representation of this address in the most appropriate IPv6 network address format for  this  address.   The
+              buffer dst must be at least INET6_ADDRSTRLEN bytes long.
+
+RETURN VALUE
+       On success, inet_ntop() returns a non-null pointer to dst.  NULL is returned if there was an error, with errno set to indicate the error.
+
+ERRORS
+       EAFNOSUPPORT
+              af was not a valid address family.
+
+       ENOSPC The converted address string would exceed the size given by size.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                                                                                                                                                        │ Attribute     │ Value          │
+       ├─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼────────────────┤
+       │inet_ntop()                                                                                                                                                      │ Thread safety │ MT-Safe locale │
+       └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴────────────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+       Note that RFC 2553 defines a prototype where the last argument size is of type size_t.  Many systems follow RFC 2553.  glibc 2.0 and 2.1 have size_t, but 2.2 and later have socklen_t.
+
+BUGS
+       AF_INET6 converts IPv4-mapped IPv6 addresses into an IPv6 format.
+
+EXAMPLES
+       See inet_pton(3).
+
+SEE ALSO
+       getnameinfo(3), inet(3), inet_pton(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                    inet_ntop(3)
+INET_NTOP(3P)                                                                            POSIX Programmer's Manual                                                                           INET_NTOP(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       inet_ntop, inet_pton — convert IPv4 and IPv6 addresses between binary and text form
+
+SYNOPSIS
+       #include <arpa/inet.h>
+
+       const char *inet_ntop(int af, const void *restrict src,
+           char *restrict dst, socklen_t size);
+       int inet_pton(int af, const char *restrict src, void *restrict dst);
+
+DESCRIPTION
+       The inet_ntop() function shall convert a numeric address into a text string suitable for presentation. The af argument shall specify the family of the address. This can be  AF_INET  or  AF_INET6.
+       The  src  argument  points to a buffer holding an IPv4 address if the af argument is AF_INET, or an IPv6 address if the af argument is AF_INET6; the address must be in network byte order. The dst
+       argument points to a buffer where the function stores the resulting text string; it shall not be NULL. The size argument specifies the size of this buffer, which shall be large enough to hold the
+       text string (INET_ADDRSTRLEN characters for IPv4, INET6_ADDRSTRLEN characters for IPv6).
+
+       The  inet_pton()  function  shall  convert an address in its standard text presentation form into its numeric binary form. The af argument shall specify the family of the address. The AF_INET and
+       AF_INET6 address families shall be supported. The src argument points to the string being passed in. The dst argument points to a buffer into which the function stores the numeric  address;  this
+       shall be large enough to hold the numeric address (32 bits for AF_INET, 128 bits for AF_INET6).
+
+       If the af argument of inet_pton() is AF_INET, the src string shall be in the standard IPv4 dotted-decimal form:
+
+           ddd.ddd.ddd.ddd
+
+       where  "ddd"  is  a one to three digit decimal number between 0 and 255 (see inet_addr()).  The inet_pton() function does not accept other formats (such as the octal numbers, hexadecimal numbers,
+       and fewer than four numbers that inet_addr() accepts).
+
+       If the af argument of inet_pton() is AF_INET6, the src string shall be in one of the following standard IPv6 text forms:
+
+        1. The preferred form is "x:x:x:x:x:x:x:x", where the 'x's are the hexadecimal values of the eight 16-bit pieces of the address.  Leading zeros in individual fields can  be  omitted,  but  there
+           shall be one to four hexadecimal digits in every field.
+
+        2. A  string of contiguous zero fields in the preferred form can be shown as "::".  The "::" can only appear once in an address. Unspecified addresses ("0:0:0:0:0:0:0:0") may be represented sim‐
+           ply as "::".
+
+        3. A third form that is sometimes more convenient when dealing with a mixed environment of IPv4 and IPv6 nodes is "x:x:x:x:x:x:d.d.d.d", where the 'x's are the  hexadecimal  values  of  the  six
+           high-order 16-bit pieces of the address, and the 'd's are the decimal values of the four low-order 8-bit pieces of the address (standard IPv4 representation).
+
+       Note:     A more extensive description of the standard representations of IPv6 addresses can be found in RFC 2373.
+
+RETURN VALUE
+       The inet_ntop() function shall return a pointer to the buffer containing the text string if the conversion succeeds, and NULL otherwise, and set errno to indicate the error.
+
+       The  inet_pton()  function  shall  return 1 if the conversion succeeds, with the address pointed to by dst in network byte order. It shall return 0 if the input is not a valid IPv4 dotted-decimal
+       string or a valid IPv6 address string, or -1 with errno set to [EAFNOSUPPORT] if the af argument is unknown.
+
+ERRORS
+       The inet_ntop() and inet_pton() functions shall fail if:
+
+       EAFNOSUPPORT
+              The af argument is invalid.
+
+       ENOSPC The size of the inet_ntop() result buffer is inadequate.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       The Base Definitions volume of POSIX.1‐2017, <arpa_inet.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                      INET_NTOP(3P)

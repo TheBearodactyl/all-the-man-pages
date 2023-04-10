@@ -1,0 +1,145 @@
+HWLOC-PS(1)                                                                                        hwloc                                                                                       HWLOC-PS(1)
+
+NAME
+       hwloc-ps - List currently-running processes or threads that are bound
+
+SYNOPSIS
+       hwloc-ps [options]
+
+OPTIONS
+       -a        List all processes, even those that are not bound to any specific part of the machine.
+
+       --pid <pid>
+                 Only show process of PID <pid>, even if it is not bound to any specific part of the machine.
+
+       --name <name>
+                 Only show processes whose name contains <name>, even if they are not bound to any specific part of the machine.  This is not supported on all operating systems.
+
+       --uid <uid>
+                 Only  show  processes  of  the user whose UID is <uid>, or processes of all users if all is given.  By default, only processes of the current user are displayed.  This is currently only
+                 supported on Linux.
+
+       -p --physical
+                 Report OS/physical indexes instead of logical indexes
+
+       -l --logical
+                 Report logical indexes instead of physical/OS indexes (default)
+
+       -c --cpuset
+                 Show process bindings as cpusets instead of objects.
+
+       -t --threads
+                 Show threads inside processes.  If -a is given as well, list all threads within each process.  Otherwise, show all threads inside each process where at least one thread is bound.   This
+                 is currently only supported on Linux.
+
+       --single-ancestor
+                 When the object is bound to different objects, report their common ancestor (even if it may be larger than the actual binding).
+
+       -e --get-last-cpu-location
+                 Report   the  last processors where the process/thread ran.  Note that the result may already be outdated when reported since the operating system may move the tasks to other processors
+                 at any time according to the binding.
+
+       --disallowed
+                 Include objects disallowed by administrative limitations.
+
+       --pid-cmd <cmd>
+                 Append the output of the given command to each PID line.  For each displayed process ID, execute the command <cmd> <pid> and append the first line of its output to the regular  hwloc-ps
+                 line.
+
+       --pid-cmd env=<name>
+                 On Linux, try to read the value of environment variable name in each process and display it at the end of the line.
+
+       --pid-cmd mpirank
+                 On Linux, try to find the process MPI rank (by querying some widespread environment variables) and display it at the end of the line.
+
+       --json-server
+                 Run the tool as a JSON server that waits for other process' requests on a port and sends back binding information.  See contrib/hwloc-ps.www/ for details.
+
+       --json-port <port>
+                 Use the given port number instead of the default 8888.
+
+       -v --verbose
+                 Increase verbosity of the JSON server.
+
+       --short-name
+                 Show only the process short name instead of the path.
+
+       --version Report version and exit.
+
+       -h --help Display help message and exit.
+
+DESCRIPTION
+       By default, hwloc-ps lists only those currently-running processes that are bound. If -t is given, processes that are not bound but contain at least one bound thread are also displayed, as well as
+       all their threads.
+
+       hwloc-ps displays process identifier, command-line and binding.  The binding may be reported as objects or cpusets.
+
+       By default, process bindings are restricted to the currently available topology. If some processes are bound to processors that are not available to the current process, they are  ignored  unless
+       --disallowed is given.
+
+       The output is a plain list. If you wish to annotate the hierarchical topology with processes so as to see how they are actual distributed on the machine, you might want to use lstopo --ps instead
+       (which also only shows processes that are bound).
+
+       The -a switch can be used to show all processes, if desired.
+
+EXAMPLES
+       If a process is bound, it appears in the default output:
+
+           $ hwloc-ps
+           4759  Core:0         myprogram
+
+       If a process is bound on two cores of a larger package, the output will show these cores.  Option --single-ancestor will rather return the package even if it is actually larger than  the  binding
+       here (the process is not bound to Core:0 of Package:0):
+
+           $ hwloc-ps
+           4863        Core:1 Core:2   myprogram
+           $ hwloc-ps --single-ancestor
+           4863        Package:0       myprogram
+
+       If a process is not bound but 3 of his 4 threads are bound, it only appears in the thread-aware output (or if explicitly selected):
+
+           $ hwloc-ps
+
+           $ hwloc-ps -t
+           4759  Machine:0      myprogram
+            4759 Machine:0
+            4761 PU:0
+            4762 PU:2
+            4765 PU:1
+
+           $ hwloc-ps --pid 4759
+           4759  Machine:0      myprogram
+
+       On Linux, hwloc-ps may also display some process specific environment variable at the end of the line. This is for instance useful for identify MPI ranks among processes:
+
+           $ hwloc-ps --pid-cmd env=OMPI_COMM_WORLD_RANK
+           29093 PU:0 myprogram OMPI_COMM_WORLD_RANK=0
+           29094 PU:2 myprogram OMPI_COMM_WORLD_RANK=1
+           29095 PU:1 myprogram OMPI_COMM_WORLD_RANK=2
+           29096 PU:3 myprogram OMPI_COMM_WORLD_RANK=3
+
+       Some widespread MPI specific environment variables (OMPI_COMM_WORLD_RANK, PMIX_RANK, PMI_RANK and SLURM_PROCID) are actually directly recognized by hwloc-ps when requesting the mpirank command:
+
+           $ hwloc-ps --pid-cmd mpirank
+           29093 PU:0 myprogram PMIX_RANK=0
+           29094 PU:2 myprogram PMIX_RANK=1
+           29095 PU:1 myprogram PMIX_RANK=2
+           29096 PU:3 myprogram PMIX_RANK=3
+
+       Beside reading environment variables, hwloc-ps may also append the output of a custom program. Again, for reading the Open MPI process rank:
+
+           $ hwloc-ps --pid-cmd myscript
+           29093 PU:0 myprogram OMPI_COMM_WORLD_RANK=0
+           29094 PU:2 myprogram OMPI_COMM_WORLD_RANK=1
+           29095 PU:1 myprogram OMPI_COMM_WORLD_RANK=2
+           29096 PU:3 myprogram OMPI_COMM_WORLD_RANK=3
+
+       where myscript is a shell script doing:
+
+           #!/bin/sh
+           cat /proc/$1/environ 2>/dev/null | xargs --null --max-args=1 echo | grep OMPI_COMM_WORLD_RANK
+
+SEE ALSO
+       hwloc(7), lstopo(1), hwloc-calc(1), hwloc-distrib(1), and hwloc-ps.www/README
+
+2.9.0                                                                                          Dec 14, 2022                                                                                    HWLOC-PS(1)

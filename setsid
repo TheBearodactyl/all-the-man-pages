@@ -1,0 +1,207 @@
+SETSID(1)                        User Commands                       SETSID(1)
+
+NAME
+       setsid - run a program in a new session
+
+SYNOPSIS
+       setsid [options] program [arguments]
+
+DESCRIPTION
+       setsid runs a program in a new session. The command calls fork(2) if
+       already a process group leader. Otherwise, it executes a program in the
+       current process. This default behavior is possible to override by the
+       --fork option.
+
+OPTIONS
+       -c, --ctty
+           Set the controlling terminal to the current one.
+
+       -f, --fork
+           Always create a new process.
+
+       -w, --wait
+           Wait for the execution of the program to end, and return the exit
+           status of this program as the exit status of setsid.
+
+       -V, --version
+           Display version information and exit.
+
+       -h, --help
+           Display help text and exit.
+
+AUTHORS
+       Rick Sladkey <jrs@world.std.com>
+
+SEE ALSO
+       setsid(2)
+
+REPORTING BUGS
+       For bug reports, use the issue tracker at
+       https://github.com/util-linux/util-linux/issues.
+
+AVAILABILITY
+       The setsid command is part of the util-linux package which can be
+       downloaded from Linux Kernel Archive
+       <https://www.kernel.org/pub/linux/utils/util-linux/>.
+
+util-linux 2.38.1                 2022-05-11                         SETSID(1)
+SETSID(3P)                 POSIX Programmer's Manual                SETSID(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       setsid — create session and set process group ID
+
+SYNOPSIS
+       #include <unistd.h>
+
+       pid_t setsid(void);
+
+DESCRIPTION
+       The setsid() function shall  create  a  new  session,  if  the  calling
+       process  is not a process group leader. Upon return the calling process
+       shall be the session leader of this new session, shall be  the  process
+       group leader of a new process group, and shall have no controlling ter‐
+       minal. The process group ID of the calling process shall be  set  equal
+       to  the process ID of the calling process. The calling process shall be
+       the only process in the new process group and the only process  in  the
+       new session.
+
+RETURN VALUE
+       Upon  successful completion, setsid() shall return the value of the new
+       process group ID of the calling process. Otherwise, it shall return  -1
+       and set errno to indicate the error.
+
+ERRORS
+       The setsid() function shall fail if:
+
+       EPERM  The  calling  process  is already a process group leader, or the
+              process group ID of a process other  than  the  calling  process
+              matches the process ID of the calling process.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       The setsid() function is similar to the setpgrp() function of System V.
+       System V, without job control, groups processes into process groups and
+       creates new process groups via setpgrp(); only one process group may be
+       part of a login session.
+
+       Job control allows multiple process groups within a login  session.  In
+       order  to  limit  job control actions so that they can only affect pro‐
+       cesses in the same login session, this volume of POSIX.1‐2017 adds  the
+       concept  of a session that is created via setsid().  The setsid() func‐
+       tion also creates the initial process group contained in  the  session.
+       Additional  process groups can be created via the setpgid() function. A
+       System V process group would correspond to a  POSIX  System  Interfaces
+       session  containing  a single POSIX process group. Note that this func‐
+       tion requires that the calling process not be a process  group  leader.
+       The  usual  way  to ensure this is true is to create a new process with
+       fork() and have it call setsid().  The fork() function guarantees  that
+       the  process  ID of the new process does not match any existing process
+       group ID.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       getsid(), setpgid(), setpgrp()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_types.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           SETSID(3P)
+setsid(2)                     System Calls Manual                    setsid(2)
+
+NAME
+       setsid - creates a session and sets the process group ID
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       pid_t setsid(void);
+
+DESCRIPTION
+       setsid()  creates a new session if the calling process is not a process
+       group leader.  The calling process is the leader  of  the  new  session
+       (i.e., its session ID is made the same as its process ID).  The calling
+       process also becomes the process group leader of a new process group in
+       the session (i.e., its process group ID is made the same as its process
+       ID).
+
+       The calling process will be the only process in the new  process  group
+       and in the new session.
+
+       Initially, the new session has no controlling terminal.  For details of
+       how a session acquires a controlling terminal, see credentials(7).
+
+RETURN VALUE
+       On success, the (new) session ID of the calling  process  is  returned.
+       On  error, (pid_t) -1 is returned, and errno is set to indicate the er‐
+       ror.
+
+ERRORS
+       EPERM  The process group ID of any process equals the PID of the  call‐
+              ing process.  Thus, in particular, setsid() fails if the calling
+              process is already a process group leader.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4.
+
+NOTES
+       A child created via fork(2) inherits its parent's session ID.  The ses‐
+       sion ID is preserved across an execve(2).
+
+       A  process  group leader is a process whose process group ID equals its
+       PID.  Disallowing a process group leader from calling setsid() prevents
+       the possibility that a process group leader places itself in a new ses‐
+       sion while other processes in the process group remain in the  original
+       session;  such a scenario would break the strict two-level hierarchy of
+       sessions and process groups.  In order to be sure  that  setsid()  will
+       succeed,  call  fork(2)  and  have the parent _exit(2), while the child
+       (which by definition can't be a process group leader) calls setsid().
+
+       If a session has a controlling terminal, and the CLOCAL flag  for  that
+       terminal  is  not  set,  and a terminal hangup occurs, then the session
+       leader is sent a SIGHUP signal.
+
+       If a process that is a session leader terminates, then a SIGHUP  signal
+       is sent to each process in the foreground process group of the control‐
+       ling terminal.
+
+SEE ALSO
+       setsid(1),  getsid(2),  setpgid(2),  setpgrp(2),  tcgetsid(3),  creden‐
+       tials(7), sched(7)
+
+Linux man-pages 6.04              2023-03-30                         setsid(2)

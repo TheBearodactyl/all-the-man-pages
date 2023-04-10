@@ -1,0 +1,420 @@
+EVP_RAND(3ssl)                                                                                    OpenSSL                                                                                   EVP_RAND(3ssl)
+
+NAME
+       EVP_RAND, EVP_RAND_fetch, EVP_RAND_free, EVP_RAND_up_ref, EVP_RAND_CTX, EVP_RAND_CTX_new, EVP_RAND_CTX_free, EVP_RAND_instantiate, EVP_RAND_uninstantiate, EVP_RAND_generate, EVP_RAND_reseed,
+       EVP_RAND_nonce, EVP_RAND_enable_locking, EVP_RAND_verify_zeroization, EVP_RAND_get_strength, EVP_RAND_get_state, EVP_RAND_get0_provider, EVP_RAND_CTX_get0_rand, EVP_RAND_is_a, EVP_RAND_get0_name,
+       EVP_RAND_names_do_all, EVP_RAND_get0_description, EVP_RAND_CTX_get_params, EVP_RAND_CTX_set_params, EVP_RAND_do_all_provided, EVP_RAND_get_params, EVP_RAND_gettable_ctx_params,
+       EVP_RAND_settable_ctx_params, EVP_RAND_CTX_gettable_params, EVP_RAND_CTX_settable_params, EVP_RAND_gettable_params, EVP_RAND_STATE_UNINITIALISED, EVP_RAND_STATE_READY, EVP_RAND_STATE_ERROR - EVP
+       RAND routines
+
+SYNOPSIS
+        #include <openssl/evp.h>
+
+        typedef struct evp_rand_st EVP_RAND;
+        typedef struct evp_rand_ctx_st EVP_RAND_CTX;
+
+        EVP_RAND *EVP_RAND_fetch(OSSL_LIB_CTX *libctx, const char *algorithm,
+                               const char *properties);
+        int EVP_RAND_up_ref(EVP_RAND *rand);
+        void EVP_RAND_free(EVP_RAND *rand);
+        EVP_RAND_CTX *EVP_RAND_CTX_new(EVP_RAND *rand, EVP_RAND_CTX *parent);
+        void EVP_RAND_CTX_free(EVP_RAND_CTX *ctx);
+        EVP_RAND *EVP_RAND_CTX_get0_rand(EVP_RAND_CTX *ctx);
+        int EVP_RAND_get_params(EVP_RAND *rand, OSSL_PARAM params[]);
+        int EVP_RAND_CTX_get_params(EVP_RAND_CTX *ctx, OSSL_PARAM params[]);
+        int EVP_RAND_CTX_set_params(EVP_RAND_CTX *ctx, const OSSL_PARAM params[]);
+        const OSSL_PARAM *EVP_RAND_gettable_params(const EVP_RAND *rand);
+        const OSSL_PARAM *EVP_RAND_gettable_ctx_params(const EVP_RAND *rand);
+        const OSSL_PARAM *EVP_RAND_settable_ctx_params(const EVP_RAND *rand);
+        const OSSL_PARAM *EVP_RAND_CTX_gettable_params(EVP_RAND_CTX *ctx);
+        const OSSL_PARAM *EVP_RAND_CTX_settable_params(EVP_RAND_CTX *ctx);
+        const char *EVP_RAND_get0_name(const EVP_RAND *rand);
+        const char *EVP_RAND_get0_description(const EVP_RAND *rand);
+        int EVP_RAND_is_a(const EVP_RAND *rand, const char *name);
+        const OSSL_PROVIDER *EVP_RAND_get0_provider(const EVP_RAND *rand);
+        void EVP_RAND_do_all_provided(OSSL_LIB_CTX *libctx,
+                                      void (*fn)(EVP_RAND *rand, void *arg),
+                                      void *arg);
+        int EVP_RAND_names_do_all(const EVP_RAND *rand,
+                                  void (*fn)(const char *name, void *data),
+                                  void *data);
+
+        int EVP_RAND_instantiate(EVP_RAND_CTX *ctx, unsigned int strength,
+                                 int prediction_resistance,
+                                 const unsigned char *pstr, size_t pstr_len,
+                                 const OSSL_PARAM params[]);
+        int EVP_RAND_uninstantiate(EVP_RAND_CTX *ctx);
+        int EVP_RAND_generate(EVP_RAND_CTX *ctx, unsigned char *out, size_t outlen,
+                              unsigned int strength, int prediction_resistance,
+                              const unsigned char *addin, size_t addin_len);
+        int EVP_RAND_reseed(EVP_RAND_CTX *ctx, int prediction_resistance,
+                            const unsigned char *ent, size_t ent_len,
+                            const unsigned char *addin, size_t addin_len);
+        int EVP_RAND_nonce(EVP_RAND_CTX *ctx, unsigned char *out, size_t outlen);
+        int EVP_RAND_enable_locking(EVP_RAND_CTX *ctx);
+        int EVP_RAND_verify_zeroization(EVP_RAND_CTX *ctx);
+        unsigned int EVP_RAND_get_strength(EVP_RAND_CTX *ctx);
+        int EVP_RAND_get_state(EVP_RAND_CTX *ctx);
+
+        #define EVP_RAND_STATE_UNINITIALISED    0
+        #define EVP_RAND_STATE_READY            1
+        #define EVP_RAND_STATE_ERROR            2
+
+DESCRIPTION
+       The EVP RAND routines are a high-level interface to random number generators both deterministic and not.  If you just want to generate random bytes then you don't need to use these functions:
+       just call RAND_bytes() or RAND_priv_bytes().  If you want to do more, these calls should be used instead of the older RAND and RAND_DRBG functions.
+
+       After creating a EVP_RAND_CTX for the required algorithm using EVP_RAND_CTX_new(), inputs to the algorithm are supplied either by passing them as part of the EVP_RAND_instantiate() call or using
+       calls to EVP_RAND_CTX_set_params() before calling EVP_RAND_instantiate().  Finally, call EVP_RAND_generate() to produce cryptographically secure random bytes.
+
+   Types
+       EVP_RAND is a type that holds the implementation of a RAND.
+
+       EVP_RAND_CTX is a context type that holds the algorithm inputs.  EVP_RAND_CTX structures are reference counted.
+
+   Algorithm implementation fetching
+       EVP_RAND_fetch() fetches an implementation of a RAND algorithm, given a library context libctx and a set of properties.  See "ALGORITHM FETCHING" in crypto(7) for further information.
+
+       The returned value must eventually be freed with EVP_RAND_free(3).
+
+       EVP_RAND_up_ref() increments the reference count of an already fetched RAND.
+
+       EVP_RAND_free() frees a fetched algorithm.  NULL is a valid parameter, for which this function is a no-op.
+
+   Context manipulation functions
+       EVP_RAND_CTX_new() creates a new context for the RAND implementation rand.  If not NULL, parent specifies the seed source for this implementation.  Not all random number generators need to have a
+       seed source specified.  If a parent is required, a NULL parent will utilise the operating system entropy sources.  It is recommended to minimise the number of random number generators that rely
+       on the operating system for their randomness because this is often scarce.
+
+       EVP_RAND_CTX_free() frees up the context ctx.  If ctx is NULL, nothing is done.
+
+       EVP_RAND_CTX_get0_rand() returns the EVP_RAND associated with the context ctx.
+
+   Random Number Generator Functions
+       EVP_RAND_instantiate() processes any parameters in params and then instantiates the RAND ctx with a minimum security strength of <strength> and personalisation string pstr of length <pstr_len>.
+       If prediction_resistance is specified, fresh entropy from a live source will be sought.  This call operates as per NIST SP 800-90A and SP 800-90C.
+
+       EVP_RAND_uninstantiate() uninstantiates the RAND ctx as per NIST SP 800-90A and SP 800-90C.  Subsequent to this call, the RAND cannot be used to generate bytes.  It can only be freed or
+       instantiated again.
+
+       EVP_RAND_generate() produces random bytes from the RAND ctx with the additional input addin of length addin_len.  The bytes produced will meet the security strength.  If prediction_resistance is
+       specified, fresh entropy from a live source will be sought.  This call operates as per NIST SP 800-90A and SP 800-90C.
+
+       EVP_RAND_reseed() reseeds the RAND with new entropy.  Entropy ent of length ent_len bytes can be supplied as can additional input addin of length addin_len bytes.  In the FIPS provider, both are
+       treated as additional input as per NIST SP-800-90Ar1, Sections 9.1 and 9.2.  Additional seed material is also drawn from the RAND's parent or the operating system.  If prediction_resistance is
+       specified, fresh entropy from a live source will be sought.  This call operates as per NIST SP 800-90A and SP 800-90C.
+
+       EVP_RAND_nonce() creates a nonce in out of maximum length outlen bytes from the RAND ctx. The function returns the length of the generated nonce. If out is NULL, the length is still returned but
+       no generation takes place. This allows a caller to dynamically allocate a buffer of the appropriate size.
+
+       EVP_RAND_enable_locking() enables locking for the RAND ctx and all of its parents.  After this ctx will operate in a thread safe manner, albeit more slowly. This function is not itself thread
+       safe if called with the same ctx from multiple threads. Typically locking should be enabled before a ctx is shared across multiple threads.
+
+       EVP_RAND_get_params() retrieves details about the implementation rand.  The set of parameters given with params determine exactly what parameters should be retrieved.  Note that a parameter that
+       is unknown in the underlying context is simply ignored.
+
+       EVP_RAND_CTX_get_params() retrieves chosen parameters, given the context ctx and its underlying context.  The set of parameters given with params determine exactly what parameters should be
+       retrieved.  Note that a parameter that is unknown in the underlying context is simply ignored.
+
+       EVP_RAND_CTX_set_params() passes chosen parameters to the underlying context, given a context ctx.  The set of parameters given with params determine exactly what parameters are passed down.
+       Note that a parameter that is unknown in the underlying context is simply ignored.  Also, what happens when a needed parameter isn't passed down is defined by the implementation.
+
+       EVP_RAND_gettable_params() returns an OSSL_PARAM(3) array that describes the retrievable and settable parameters.  EVP_RAND_gettable_params() returns parameters that can be used with
+       EVP_RAND_get_params().
+
+       EVP_RAND_gettable_ctx_params() and EVP_RAND_CTX_gettable_params() return constant OSSL_PARAM(3) arrays that describe the retrievable parameters that can be used with EVP_RAND_CTX_get_params().
+       EVP_RAND_gettable_ctx_params() returns the parameters that can be retrieved from the algorithm, whereas EVP_RAND_CTX_gettable_params() returns the parameters that can be retrieved in the
+       context's current state.
+
+       EVP_RAND_settable_ctx_params() and EVP_RAND_CTX_settable_params() return constant OSSL_PARAM(3) arrays that describe the settable parameters that can be used with EVP_RAND_CTX_set_params().
+       EVP_RAND_settable_ctx_params() returns the parameters that can be retrieved from the algorithm, whereas EVP_RAND_CTX_settable_params() returns the parameters that can be retrieved in the
+       context's current state.
+
+   Information functions
+       EVP_RAND_get_strength() returns the security strength of the RAND ctx.
+
+       EVP_RAND_get_state() returns the current state of the RAND ctx.  States defined by the OpenSSL RNGs are:
+
+       •   EVP_RAND_STATE_UNINITIALISED: this RNG is currently uninitialised.  The instantiate call will change this to the ready state.
+
+       •   EVP_RAND_STATE_READY: this RNG is currently ready to generate output.
+
+       •   EVP_RAND_STATE_ERROR: this RNG is in an error state.
+
+       EVP_RAND_is_a() returns 1 if rand is an implementation of an algorithm that's identifiable with name, otherwise 0.
+
+       EVP_RAND_get0_provider() returns the provider that holds the implementation of the given rand.
+
+       EVP_RAND_do_all_provided() traverses all RAND implemented by all activated providers in the given library context libctx, and for each of the implementations, calls the given function fn with the
+       implementation method and the given arg as argument.
+
+       EVP_RAND_get0_name() returns the canonical name of rand.
+
+       EVP_RAND_names_do_all() traverses all names for rand, and calls fn with each name and data.
+
+       EVP_RAND_get0_description() returns a description of the rand, meant for display and human consumption.  The description is at the discretion of the rand implementation.
+
+       EVP_RAND_verify_zeroization() confirms if the internal DRBG state is currently zeroed.  This is used by the FIPS provider to support the mandatory self tests.
+
+PARAMETERS
+       The standard parameter names are:
+
+       "state" (OSSL_RAND_PARAM_STATE) <integer>
+           Returns the state of the random number generator.
+
+       "strength" (OSSL_RAND_PARAM_STRENGTH) <unsigned integer>
+           Returns the bit strength of the random number generator.
+
+       For rands that are also deterministic random bit generators (DRBGs), these additional parameters are recognised. Not all parameters are relevant to, or are understood by all DRBG rands:
+
+       "reseed_requests" (OSSL_DRBG_PARAM_RESEED_REQUESTS) <unsigned integer>
+           Reads or set the number of generate requests before reseeding the associated RAND ctx.
+
+       "reseed_time_interval" (OSSL_DRBG_PARAM_RESEED_TIME_INTERVAL) <integer>
+           Reads or set the number of elapsed seconds before reseeding the associated RAND ctx.
+
+       "max_request" (OSSL_DRBG_PARAM_RESEED_REQUESTS) <unsigned integer>
+           Specifies the maximum number of bytes that can be generated in a single call to OSSL_FUNC_rand_generate.
+
+       "min_entropylen" (OSSL_DRBG_PARAM_MIN_ENTROPYLEN) <unsigned integer>
+       "max_entropylen" (OSSL_DRBG_PARAM_MAX_ENTROPYLEN) <unsigned integer>
+           Specify the minimum and maximum number of bytes of random material that can be used to seed the DRBG.
+
+       "min_noncelen" (OSSL_DRBG_PARAM_MIN_NONCELEN) <unsigned integer>
+       "max_noncelen" (OSSL_DRBG_PARAM_MAX_NONCELEN) <unsigned integer>
+           Specify the minimum and maximum number of bytes of nonce that can be used to seed the DRBG.
+
+       "max_perslen" (OSSL_DRBG_PARAM_MAX_PERSLEN) <unsigned integer>
+       "max_adinlen" (OSSL_DRBG_PARAM_MAX_ADINLEN) <unsigned integer>
+           Specify the minimum and maximum number of bytes of personalisation string that can be used with the DRBG.
+
+       "reseed_counter" (OSSL_DRBG_PARAM_RESEED_COUNTER) <unsigned integer>
+           Specifies the number of times the DRBG has been seeded or reseeded.
+
+       "properties" (OSSL_RAND_PARAM_PROPERTIES) <UTF8 string>
+       "mac" (OSSL_RAND_PARAM_MAC) <UTF8 string>
+       "digest" (OSSL_RAND_PARAM_DIGEST) <UTF8 string>
+       "cipher" (OSSL_RAND_PARAM_CIPHER) <UTF8 string>
+           For RAND implementations that use an underlying computation MAC, digest or cipher, these parameters set what the algorithm should be.
+
+           The value is always the name of the intended algorithm, or the properties in the case of OSSL_RAND_PARAM_PROPERTIES.
+
+NOTES
+       An EVP_RAND_CTX needs to have locking enabled if it acts as the parent of more than one child and the children can be accessed concurrently.  This must be done by explicitly calling
+       EVP_RAND_enable_locking().
+
+       The RAND life-cycle is described in life_cycle-rand(7).  In the future, the transitions described there will be enforced.  When this is done, it will not be considered a breaking change to the
+       API.
+
+RETURN VALUES
+       EVP_RAND_fetch() returns a pointer to a newly fetched EVP_RAND, or NULL if allocation failed.
+
+       EVP_RAND_get0_provider() returns a pointer to the provider for the RAND, or NULL on error.
+
+       EVP_RAND_CTX_get0_rand() returns a pointer to the EVP_RAND associated with the context.
+
+       EVP_RAND_get0_name() returns the name of the random number generation algorithm.
+
+       EVP_RAND_up_ref() returns 1 on success, 0 on error.
+
+       EVP_RAND_names_do_all() returns 1 if the callback was called for all names. A return value of 0 means that the callback was not called for any names.
+
+       EVP_RAND_CTX_new() returns either the newly allocated EVP_RAND_CTX structure or NULL if an error occurred.
+
+       EVP_RAND_CTX_free() does not return a value.
+
+       EVP_RAND_nonce() returns the length of the nonce.
+
+       EVP_RAND_get_strength() returns the strength of the random number generator in bits.
+
+       EVP_RAND_gettable_params(), EVP_RAND_gettable_ctx_params() and EVP_RAND_settable_ctx_params() return an array of OSSL_PARAMs.
+
+       EVP_RAND_verify_zeroization() returns 1 if the internal DRBG state is currently zeroed, and 0 if not.
+
+       The remaining functions return 1 for success and 0 or a negative value for failure.
+
+SEE ALSO
+       RAND_bytes(3), EVP_RAND-CTR-DRBG(7), EVP_RAND-HASH-DRBG(7), EVP_RAND-HMAC-DRBG(7), EVP_RAND-TEST-RAND(7), provider-rand(7), life_cycle-rand(7)
+
+HISTORY
+       This functionality was added to OpenSSL 3.0.
+
+COPYRIGHT
+       Copyright 2020-2021 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use this file except in compliance with the License.  You can obtain a copy in the file LICENSE in the source distribution or
+       at <https://www.openssl.org/source/license.html>.
+
+3.0.8                                                                                           2023-02-07                                                                                  EVP_RAND(3ssl)
+EVP_RAND(7ssl)                                                                                    OpenSSL                                                                                   EVP_RAND(7ssl)
+
+NAME
+       EVP_RAND - the random bit generator
+
+SYNOPSIS
+        #include <openssl/evp.h>
+        #include <rand.h>
+
+DESCRIPTION
+       The default OpenSSL RAND method is based on the EVP_RAND classes to provide non-deterministic inputs to other cryptographic algorithms.
+
+       While the RAND API is the 'frontend' which is intended to be used by application developers for obtaining random bytes, the EVP_RAND API serves as the 'backend', connecting the former with the
+       operating systems's entropy sources and providing access to deterministic random bit generators (DRBG) and their configuration parameters.  A DRBG is a certain type of cryptographically-secure
+       pseudo-random number generator (CSPRNG), which is described in [NIST SP 800-90A Rev. 1].
+
+   Disclaimer
+       Unless you have very specific requirements for your random generator, it is in general not necessary to utilize the EVP_RAND API directly.  The usual way to obtain random bytes is to use
+       RAND_bytes(3) or RAND_priv_bytes(3), see also RAND(7).
+
+   Typical Use Cases
+       Typical examples for such special use cases are the following:
+
+       • You want to use your own private DRBG instances.  Multiple DRBG instances which are accessed only by a single thread provide additional security (because their internal states are independent)
+         and better scalability in multithreaded applications (because they don't need to be locked).
+
+       • You need to integrate a previously unsupported entropy source.  Refer to provider-rand(7) for the implementation details to support adding randomness sources to EVP_RAND.
+
+       • You need to change the default settings of the standard OpenSSL RAND implementation to meet specific requirements.
+
+EVP_RAND CHAINING
+       An EVP_RAND instance can be used as the entropy source of another EVP_RAND instance, provided it has itself access to a valid entropy source.  The EVP_RAND instance which acts as entropy source
+       is called the parent, the other instance the child.  Typically, the child will be a DRBG because it does not make sense for the child to be an entropy source.
+
+       This is called chaining. A chained EVP_RAND instance is created by passing a pointer to the parent EVP_RAND_CTX as argument to the EVP_RAND_CTX_new() call.  It is possible to create chains of
+       more than two DRBG in a row.  It is also possible to use any EVP_RAND_CTX class as the parent, however, only a live entropy source may ignore and not use its parent.
+
+THE THREE SHARED DRBG INSTANCES
+       Currently, there are three shared DRBG instances, the <primary>, <public>, and <private> DRBG.  While the <primary> DRBG is a single global instance, the <public> and <private> DRBG are created
+       per thread and accessed through thread-local storage.
+
+       By default, the functions RAND_bytes(3) and RAND_priv_bytes(3) use the thread-local <public> and <private> DRBG instance, respectively.
+
+   The <primary> DRBG instance
+       The <primary> DRBG is not used directly by the application, only for reseeding the two other two DRBG instances. It reseeds itself by obtaining randomness either from os entropy sources or by
+       consuming randomness which was added previously by RAND_add(3).
+
+   The <public> DRBG instance
+       This instance is used per default by RAND_bytes(3).
+
+   The <private> DRBG instance
+       This instance is used per default by RAND_priv_bytes(3)
+
+LOCKING
+       The <primary> DRBG is intended to be accessed concurrently for reseeding by its child DRBG instances. The necessary locking is done internally.  It is not thread-safe to access the <primary> DRBG
+       directly via the EVP_RAND interface.  The <public> and <private> DRBG are thread-local, i.e. there is an instance of each per thread. So they can safely be accessed without locking via the
+       EVP_RAND interface.
+
+       Pointers to these DRBG instances can be obtained using RAND_get0_primary(), RAND_get0_public() and RAND_get0_private(), respectively.  Note that it is not allowed to store a pointer to one of the
+       thread-local DRBG instances in a variable or other memory location where it will be accessed and used by multiple threads.
+
+       All other DRBG instances created by an application don't support locking, because they are intended to be used by a single thread.  Instead of accessing a single DRBG instance concurrently from
+       different threads, it is recommended to instantiate a separate DRBG instance per thread. Using the <primary> DRBG as entropy source for multiple DRBG instances on different threads is thread-
+       safe, because the DRBG instance will lock the <primary> DRBG automatically for obtaining random input.
+
+THE OVERALL PICTURE
+       The following picture gives an overview over how the DRBG instances work together and are being used.
+
+                      +--------------------+
+                      | os entropy sources |
+                      +--------------------+
+                               |
+                               v           +-----------------------------+
+            RAND_add() ==> <primary>     <-| shared DRBG (with locking)  |
+                             /   \         +-----------------------------+
+                            /     \              +---------------------------+
+                     <public>     <private>   <- | per-thread DRBG instances |
+                        |             |          +---------------------------+
+                        v             v
+                      RAND_bytes()   RAND_priv_bytes()
+                           |               ^
+                           |               |
+           +------------------+      +------------------------------------+
+           | general purpose  |      | used for secrets like session keys |
+           | random generator |      | and private keys for certificates  |
+           +------------------+      +------------------------------------+
+
+       The usual way to obtain random bytes is to call RAND_bytes(...) or RAND_priv_bytes(...). These calls are roughly equivalent to calling EVP_RAND_generate(<public>, ...) and
+       EVP_RAND_generate(<private>, ...), respectively.
+
+RESEEDING
+       A DRBG instance seeds itself automatically, pulling random input from its entropy source. The entropy source can be either a trusted operating system entropy source, or another DRBG with access
+       to such a source.
+
+       Automatic reseeding occurs after a predefined number of generate requests.  The selection of the trusted entropy sources is configured at build time using the --with-rand-seed option. The
+       following sections explain the reseeding process in more detail.
+
+   Automatic Reseeding
+       Before satisfying a generate request (EVP_RAND_generate(3)), the DRBG reseeds itself automatically, if one of the following conditions holds:
+
+       - the DRBG was not instantiated (=seeded) yet or has been uninstantiated.
+
+       - the number of generate requests since the last reseeding exceeds a certain threshold, the so called reseed_interval.  This behaviour can be disabled by setting the reseed_interval to 0.
+
+       - the time elapsed since the last reseeding exceeds a certain time interval, the so called reseed_time_interval.  This can be disabled by setting the reseed_time_interval to 0.
+
+       - the DRBG is in an error state.
+
+       Note: An error state is entered if the entropy source fails while the DRBG is seeding or reseeding.  The last case ensures that the DRBG automatically recovers from the error as soon as the
+       entropy source is available again.
+
+   Manual Reseeding
+       In addition to automatic reseeding, the caller can request an immediate reseeding of the DRBG with fresh entropy by setting the prediction resistance parameter to 1 when calling
+       EVP_RAND_generate(3).
+
+       The document [NIST SP 800-90C] describes prediction resistance requests in detail and imposes strict conditions on the entropy sources that are approved for providing prediction resistance.  A
+       request for prediction resistance can only be satisfied by pulling fresh entropy from a live entropy source (section 5.5.2 of [NIST SP 800-90C]).  It is up to the user to ensure that a live
+       entropy source is configured and is being used.
+
+       For the three shared DRBGs (and only for these) there is another way to reseed them manually: If RAND_add(3) is called with a positive randomness argument (or RAND_seed(3)), then this will
+       immediately reseed the <primary> DRBG.  The <public> and <private> DRBG will detect this on their next generate call and reseed, pulling randomness from <primary>.
+
+       The last feature has been added to support the common practice used with previous OpenSSL versions to call RAND_add() before calling RAND_bytes().
+
+   Entropy Input and Additional Data
+       The DRBG distinguishes two different types of random input: entropy, which comes from a trusted source, and additional input', which can optionally be added by the user and is considered
+       untrusted.  It is possible to add additional input not only during reseeding, but also for every generate request.
+
+   Configuring the Random Seed Source
+       In most cases OpenSSL will automatically choose a suitable seed source for automatically seeding and reseeding its <primary> DRBG. In some cases however, it will be necessary to explicitly
+       specify a seed source during configuration, using the --with-rand-seed option. For more information, see the INSTALL instructions. There are also operating systems where no seed source is
+       available and automatic reseeding is disabled by default.
+
+       The following two sections describe the reseeding process of the primary DRBG, depending on whether automatic reseeding is available or not.
+
+   Reseeding the primary DRBG with automatic seeding enabled
+       Calling RAND_poll() or RAND_add() is not necessary, because the DRBG pulls the necessary entropy from its source automatically.  However, both calls are permitted, and do reseed the RNG.
+
+       RAND_add() can be used to add both kinds of random input, depending on the value of the randomness argument:
+
+       randomness == 0:
+           The random bytes are mixed as additional input into the current state of the DRBG.  Mixing in additional input is not considered a full reseeding, hence the reseed counter is not reset.
+
+       randomness > 0:
+           The random bytes are used as entropy input for a full reseeding (resp. reinstantiation) if the DRBG is instantiated (resp. uninstantiated or in an error state).  The number of random bits
+           required for reseeding is determined by the security strength of the DRBG. Currently it defaults to 256 bits (32 bytes).  It is possible to provide less randomness than required.  In this
+           case the missing randomness will be obtained by pulling random input from the trusted entropy sources.
+
+       NOTE: Manual reseeding is *not allowed* in FIPS mode, because [NIST SP-800-90Ar1] mandates that entropy *shall not* be provided by the consuming application for instantiation (Section 9.1) or
+       reseeding (Section 9.2). For that reason, the randomness argument is ignored and the random bytes provided by the RAND_add(3) and RAND_seed(3) calls are treated as additional data.
+
+   Reseeding the primary DRBG with automatic seeding disabled
+       Calling RAND_poll() will always fail.
+
+       RAND_add() needs to be called for initial seeding and periodic reseeding.  At least 48 bytes (384 bits) of randomness have to be provided, otherwise the (re-)seeding of the DRBG will fail. This
+       corresponds to one and a half times the security strength of the DRBG. The extra half is used for the nonce during instantiation.
+
+       More precisely, the number of bytes needed for seeding depend on the security strength of the DRBG, which is set to 256 by default.
+
+SEE ALSO
+       RAND(7), EVP_RAND(3)
+
+HISTORY
+       This functionality was added in OpenSSL 3.0.
+
+COPYRIGHT
+       Copyright 2017-2020 The OpenSSL Project Authors. All Rights Reserved.
+
+       Licensed under the Apache License 2.0 (the "License").  You may not use this file except in compliance with the License.  You can obtain a copy in the file LICENSE in the source distribution or
+       at <https://www.openssl.org/source/license.html>.
+
+3.0.8                                                                                           2023-02-07                                                                                  EVP_RAND(7ssl)

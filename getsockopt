@@ -1,0 +1,153 @@
+GETSOCKOPT(3P)                                                                           POSIX Programmer's Manual                                                                          GETSOCKOPT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       getsockopt — get the socket options
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int getsockopt(int socket, int level, int option_name,
+           void *restrict option_value, socklen_t *restrict option_len);
+
+DESCRIPTION
+       The getsockopt() function manipulates options associated with a socket.
+
+       The getsockopt() function shall retrieve the value for the option specified by the option_name argument for the socket specified by the socket argument. If the size of the option value is greater
+       than  option_len, the value stored in the object pointed to by the option_value argument shall be silently truncated. Otherwise, the object pointed to by the option_len argument shall be modified
+       to indicate the actual length of the value.
+
+       The level argument specifies the protocol level at which the option resides. To retrieve options at the socket level, specify the level argument as SOL_SOCKET. To retrieve options at  other  lev‐
+       els, supply the appropriate level identifier for the protocol controlling the option.  For example, to indicate that an option is interpreted by the TCP (Transmission Control Protocol), set level
+       to IPPROTO_TCP as defined in the <netinet/in.h> header.
+
+       The socket in use may require the process to have appropriate privileges to use the getsockopt() function.
+
+       The option_name argument specifies a single option to be retrieved. It can be one of the socket-level options defined in <sys_socket.h> and described in Section 2.10.16, Use of Options.
+
+RETURN VALUE
+       Upon successful completion, getsockopt() shall return 0; otherwise, -1 shall be returned and errno set to indicate the error.
+
+ERRORS
+       The getsockopt() function shall fail if:
+
+       EBADF  The socket argument is not a valid file descriptor.
+
+       EINVAL The specified option is invalid at the specified socket level.
+
+       ENOPROTOOPT
+              The option is not supported by the protocol.
+
+       ENOTSOCK
+              The socket argument does not refer to a socket.
+
+       The getsockopt() function may fail if:
+
+       EACCES The calling process does not have appropriate privileges.
+
+       EINVAL The socket has been shut down.
+
+       ENOBUFS
+              Insufficient resources are available in the system to complete the function.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.10.16, Use of Options, bind(), close(), endprotoent(), setsockopt(), socket()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_socket.h>, <netinet_in.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                     GETSOCKOPT(3P)
+getsockopt(2)                                                                               System Calls Manual                                                                              getsockopt(2)
+
+NAME
+       getsockopt, setsockopt - get and set options on sockets
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/socket.h>
+
+       int getsockopt(int sockfd, int level, int optname,
+                      void optval[restrict *.optlen],
+                      socklen_t *restrict optlen);
+       int setsockopt(int sockfd, int level, int optname,
+                      const void optval[.optlen],
+                      socklen_t optlen);
+
+DESCRIPTION
+       getsockopt() and setsockopt() manipulate options for the socket referred to by the file descriptor sockfd.  Options may exist at multiple protocol levels; they are always present at the uppermost
+       socket level.
+
+       When manipulating socket options, the level at which the option resides and the name of the option must be specified.  To manipulate options at the  sockets  API  level,  level  is  specified  as
+       SOL_SOCKET.   To manipulate options at any other level the protocol number of the appropriate protocol controlling the option is supplied.  For example, to indicate that an option is to be inter‐
+       preted by the TCP protocol, level should be set to the protocol number of TCP; see getprotoent(3).
+
+       The arguments optval and optlen are used to access option values for setsockopt().  For getsockopt() they identify a buffer in which the value for the requested option(s) are to be returned.  For
+       getsockopt(), optlen is a value-result argument, initially containing the size of the buffer pointed to by optval, and modified on return to indicate the actual size of the value returned.  If no
+       option value is to be supplied or returned, optval may be NULL.
+
+       Optname and any specified options are passed uninterpreted to the appropriate protocol module for interpretation.  The include file <sys/socket.h> contains definitions for socket  level  options,
+       described below.  Options at other protocol levels vary in format and name; consult the appropriate entries in section 4 of the manual.
+
+       Most socket-level options utilize an int argument for optval.  For setsockopt(), the argument should be nonzero to enable a boolean option, or zero if the option is to be disabled.
+
+       For a description of the available socket options see socket(7) and the appropriate protocol man pages.
+
+RETURN VALUE
+       On success, zero is returned for the standard options.  On error, -1 is returned, and errno is set to indicate the error.
+
+       Netfilter allows the programmer to define custom socket options with associated handlers; for such options, the return value on success is the value returned by the handler.
+
+ERRORS
+       EBADF  The argument sockfd is not a valid file descriptor.
+
+       EFAULT The address pointed to by optval is not in a valid part of the process address space.  For getsockopt(), this error may also be returned if optlen is not in a valid part of the process ad‐
+              dress space.
+
+       EINVAL optlen invalid in setsockopt().  In some cases this error can also occur for an invalid value in optval (e.g., for the IP_ADD_MEMBERSHIP option described in ip(7)).
+
+       ENOPROTOOPT
+              The option is unknown at the level indicated.
+
+       ENOTSOCK
+              The file descriptor sockfd does not refer to a socket.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.4BSD (first appeared in 4.2BSD).
+
+BUGS
+       Several of the socket options should be handled at lower levels of the system.
+
+SEE ALSO
+       ioctl(2), socket(2), getprotoent(3), protocols(5), ip(7), packet(7), socket(7), tcp(7), udp(7), unix(7)
+
+Linux man-pages 6.04                                                                            2023-04-03                                                                                   getsockopt(2)

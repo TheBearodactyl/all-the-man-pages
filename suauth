@@ -1,0 +1,90 @@
+SUAUTH(5)               File Formats and Configuration               SUAUTH(5)
+
+NAME
+       suauth - detailed su control file
+
+SYNOPSIS
+       /etc/suauth
+
+DESCRIPTION
+       The file /etc/suauth is referenced whenever the su command is called.
+       It can change the behaviour of the su command, based upon:
+
+                 1) the user su is targeting
+
+       2) the user executing the su command (or any groups he might be a
+       member of)
+
+       The file is formatted like this, with lines starting with a # being
+       treated as comment lines and ignored;
+
+                 to-id:from-id:ACTION
+
+       Where to-id is either the word ALL, a list of usernames delimited by
+       "," or the words ALL EXCEPT followed by a list of usernames delimited
+       by ",".
+
+       from-id is formatted the same as to-id except the extra word GROUP is
+       recognized.  ALL EXCEPT GROUP is perfectly valid too. Following GROUP
+       appears one or more group names, delimited by ",". It is not sufficient
+       to have primary group id of the relevant group, an entry in
+       /etc/group(5) is necessary.
+
+       Action can be one only of the following currently supported options.
+
+       DENY
+           The attempt to su is stopped before a password is even asked for.
+
+       NOPASS
+           The attempt to su is automatically successful; no password is asked
+           for.
+
+       OWNPASS
+           For the su command to be successful, the user must enter his or her
+           own password. They are told this.
+
+       Note there are three separate fields delimited by a colon. No
+       whitespace must surround this colon. Also note that the file is
+       examined sequentially line by line, and the first applicable rule is
+       used without examining the file further. This makes it possible for a
+       system administrator to exercise as fine control as he or she wishes.
+
+EXAMPLE
+                 # sample /etc/suauth file
+                 #
+                 # A couple of privileged usernames may
+                 # su to root with their own password.
+                 #
+                 root:chris,birddog:OWNPASS
+                 #
+                 # Anyone else may not su to root unless in
+                 # group wheel. This is how BSD does things.
+                 #
+                 root:ALL EXCEPT GROUP wheel:DENY
+                 #
+                 # Perhaps terry and birddog are accounts
+                 # owned by the same person.
+                 # Access can be arranged between them
+                 # with no password.
+                 #
+                 terry:birddog:NOPASS
+                 birddog:terry:NOPASS
+                 #
+
+FILES
+       /etc/suauth
+
+BUGS
+       There could be plenty lurking. The file parser is particularly
+       unforgiving about syntax errors, expecting no spurious whitespace
+       (apart from beginning and end of lines), and a specific token
+       delimiting different things.
+
+DIAGNOSTICS
+       An error parsing the file is reported using syslogd(8) as level ERR on
+       facility AUTH.
+
+SEE ALSO
+       su(1).
+
+shadow-utils 4.13                 01/25/2023                         SUAUTH(5)

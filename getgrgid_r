@@ -1,0 +1,244 @@
+getgrnam(3)                                                                              Library Functions Manual                                                                              getgrnam(3)
+
+NAME
+       getgrnam, getgrnam_r, getgrgid, getgrgid_r - get group file entry
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <sys/types.h>
+       #include <grp.h>
+
+       struct group *getgrnam(const char *name);
+       struct group *getgrgid(gid_t gid);
+
+       int getgrnam_r(const char *restrict name, struct group *restrict grp,
+                      char buf[restrict .buflen], size_t buflen,
+                      struct group **restrict result);
+       int getgrgid_r(gid_t gid, struct group *restrict grp,
+                      char buf[restrict .buflen], size_t buflen,
+                      struct group **restrict result);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       getgrnam_r(), getgrgid_r():
+           _POSIX_C_SOURCE
+               || /* glibc <= 2.19: */ _BSD_SOURCE || _SVID_SOURCE
+
+DESCRIPTION
+       The  getgrnam()  function returns a pointer to a structure containing the broken-out fields of the record in the group database (e.g., the local group file /etc/group, NIS, and LDAP) that matches
+       the group name name.
+
+       The getgrgid() function returns a pointer to a structure containing the broken-out fields of the record in the group database that matches the group ID gid.
+
+       The group structure is defined in <grp.h> as follows:
+
+           struct group {
+               char   *gr_name;        /* group name */
+               char   *gr_passwd;      /* group password */
+               gid_t   gr_gid;         /* group ID */
+               char  **gr_mem;         /* NULL-terminated array of pointers
+                                          to names of group members */
+           };
+
+       For more information about the fields of this structure, see group(5).
+
+       The getgrnam_r() and getgrgid_r() functions obtain the same information as getgrnam() and getgrgid(), but store the retrieved group structure in the space pointed to by grp.   The  string  fields
+       pointed  to  by  the  members of the group structure are stored in the buffer buf of size buflen.  A pointer to the result (in case of success) or NULL (in case no entry was found or an error oc‐
+       curred) is stored in *result.
+
+       The call
+
+           sysconf(_SC_GETGR_R_SIZE_MAX)
+
+       returns either -1, without changing errno, or an initial suggested size for buf.  (If this size is too small, the call fails with ERANGE, in which case the caller can retry with a larger buffer.)
+
+RETURN VALUE
+       The getgrnam() and getgrgid() functions return a pointer to a group structure, or NULL if the matching entry is not found or an error occurs.  If an error occurs, errno is set to indicate the er‐
+       ror.  If one wants to check errno after the call, it should be set to zero before the call.
+
+       The return value may point to a static area, and may be overwritten by subsequent calls to getgrent(3), getgrgid(), or getgrnam().  (Do not pass the returned pointer to free(3).)
+
+       On  success,  getgrnam_r()  and getgrgid_r() return zero, and set *result to grp.  If no matching group record was found, these functions return 0 and store NULL in *result.  In case of error, an
+       error number is returned, and NULL is stored in *result.
+
+ERRORS
+       0 or ENOENT or ESRCH or EBADF or EPERM or ...
+              The given name or gid was not found.
+
+       EINTR  A signal was caught; see signal(7).
+
+       EIO    I/O error.
+
+       EMFILE The per-process limit on the number of open file descriptors has been reached.
+
+       ENFILE The system-wide limit on the total number of open files has been reached.
+
+       ENOMEM Insufficient memory to allocate group structure.
+
+       ERANGE Insufficient buffer space supplied.
+
+FILES
+       /etc/group
+              local group database file
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌───────────────────────────┬───────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+       │Interface                  │ Attribute     │ Value                                                                                                                                                │
+       ├───────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getgrnam()                 │ Thread safety │ MT-Unsafe race:grnam locale                                                                                                                          │
+       ├───────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getgrgid()                 │ Thread safety │ MT-Unsafe race:grgid locale                                                                                                                          │
+       ├───────────────────────────┼───────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+       │getgrnam_r(), getgrgid_r() │ Thread safety │ MT-Safe locale                                                                                                                                       │
+       └───────────────────────────┴───────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+VERSIONS
+       The formulation given above under "RETURN VALUE" is from POSIX.1.  It does not call "not found" an error, hence does not specify what value errno might have in this situation.  But that makes  it
+       impossible  to recognize errors.  One might argue that according to POSIX errno should be left unchanged if an entry is not found.  Experiments on various UNIX-like systems show that lots of dif‐
+       ferent values occur in this situation: 0, ENOENT, EBADF, ESRCH, EWOULDBLOCK, EPERM, and probably others.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+SEE ALSO
+       endgrent(3), fgetgrent(3), getgrent(3), getpwnam(3), setgrent(3), group(5)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                     getgrnam(3)
+GETGRGID(3P)                                                                             POSIX Programmer's Manual                                                                            GETGRGID(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       getgrgid, getgrgid_r — get group database entry for a group ID
+
+SYNOPSIS
+       #include <grp.h>
+
+       struct group *getgrgid(gid_t gid);
+       int getgrgid_r(gid_t gid, struct group *grp, char *buffer,
+           size_t bufsize, struct group **result);
+
+DESCRIPTION
+       The getgrgid() function shall search the group database for an entry with a matching gid.
+
+       The getgrgid() function need not be thread-safe.
+
+       Applications wishing to check for error situations should set errno to 0 before calling getgrgid().  If getgrgid() returns a null pointer and errno is set to non-zero, an error occurred.
+
+       The getgrgid_r() function shall update the group structure pointed to by grp and store a pointer to that structure at the location pointed to by result.  The structure shall contain an entry from
+       the  group  database  with  a  matching  gid.  Storage referenced by the group structure is allocated from the memory provided with the buffer parameter, which is bufsize bytes in size. A call to
+       sysconf(_SC_GETGR_R_SIZE_MAX) returns either -1 without changing errno or an initial value suggested for the size of this buffer.  A null pointer shall be returned at the location pointed  to  by
+       result on error or if the requested entry is not found.
+
+RETURN VALUE
+       Upon successful completion, getgrgid() shall return a pointer to a struct group with the structure defined in <grp.h> with a matching entry if one is found. The getgrgid() function shall return a
+       null pointer if either the requested entry was not found, or an error occurred. If the requested entry was not found, errno shall not be changed. On error, errno shall be set to indicate the  er‐
+       ror.
+
+       The  application  shall not modify the structure to which the return value points, nor any storage areas pointed to by pointers within the structure. The returned pointer, and pointers within the
+       structure, might be invalidated or the structure or the storage areas might be overwritten by a subsequent call to getgrent(), getgrgid(), or  getgrnam().   The  returned  pointer,  and  pointers
+       within the structure, might also be invalidated if the calling thread is terminated.
+
+       If successful, the getgrgid_r() function shall return zero; otherwise, an error number shall be returned to indicate the error.
+
+ERRORS
+       The getgrgid() and getgrgid_r() functions may fail if:
+
+       EIO    An I/O error has occurred.
+
+       EINTR  A signal was caught during getgrgid().
+
+       EMFILE All file descriptors available to the process are currently open.
+
+       ENFILE The maximum allowable number of files is currently open in the system.
+
+       The getgrgid_r() function may fail if:
+
+       ERANGE Insufficient storage was supplied via buffer and bufsize to contain the data to be referenced by the resulting group structure.
+
+       The following sections are informative.
+
+EXAMPLES
+       Note  that sysconf(_SC_GETGR_R_SIZE_MAX) may return -1 if there is no hard limit on the size of the buffer needed to store all the groups returned. This example shows how an application can allo‐
+       cate a buffer of sufficient size to work with getgrid_r().
+
+           long int initlen = sysconf(_SC_GETGR_R_SIZE_MAX);
+           size_t len;
+           if (initlen == -1)
+               /* Default initial length. */
+               len = 1024;
+           else
+               len = (size_t) initlen;
+           struct group result;
+           struct group *resultp;
+           char *buffer = malloc(len);
+           if (buffer == NULL)
+               ...handle error...
+           int e;
+           while ((e = getgrgid_r(42, &result, buffer, len, &resultp)) == ERANGE)
+               {
+               size_t newlen = 2 * len;
+               if (newlen < len)
+                   ...handle error...
+               len = newlen;
+               char *newbuffer = realloc(buffer, len);
+               if (newbuffer == NULL)
+                   ...handle error...
+               buffer = newbuffer;
+               }
+           if (e != 0)
+               ...handle error...
+           free (buffer);
+
+   Finding an Entry in the Group Database
+       The following example uses getgrgid() to search the group database for a group ID that was previously stored in a stat structure, then prints out the group name if it is found. If  the  group  is
+       not found, the program prints the numeric value of the group for the entry.
+
+           #include <sys/types.h>
+           #include <grp.h>
+           #include <stdio.h>
+           ...
+           struct stat statbuf;
+           struct group *grp;
+           ...
+           if ((grp = getgrgid(statbuf.st_gid)) != NULL)
+               printf(" %-8.8s", grp->gr_name);
+           else
+               printf(" %-8d", statbuf.st_gid);
+           ...
+
+APPLICATION USAGE
+       The getgrgid_r() function is thread-safe and shall return values in a user-supplied buffer instead of possibly using a static data area that may be overwritten by each call.
+
+       Portable applications should take into account that it is usual for an implementation to return -1 from sysconf() indicating that there is no maximum for _SC_GETGR_R_SIZE_MAX.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       endgrent(), getgrnam(), sysconf()
+
+       The Base Definitions volume of POSIX.1‐2017, <grp.h>, <sys_types.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this  ver‐
+       sion  and  the  original  IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be obtained online at http://www.open‐
+       group.org/unix/online.html .
+
+       Any typographical or formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report  such  errors,  see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                       GETGRGID(3P)

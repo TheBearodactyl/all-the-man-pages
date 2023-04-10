@@ -1,0 +1,208 @@
+pthread_attr_setdetachstateLibrary Functions Manpthread_attr_setdetachstate(3)
+
+NAME
+       pthread_attr_setdetachstate,  pthread_attr_getdetachstate - set/get de‐
+       tach state attribute in thread attributes object
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+       int pthread_attr_getdetachstate(const pthread_attr_t *attr,
+                                       int *detachstate);
+
+DESCRIPTION
+       The pthread_attr_setdetachstate() function sets the detach state attri‐
+       bute  of  the thread attributes object referred to by attr to the value
+       specified  in  detachstate.   The  detach  state  attribute  determines
+       whether  a  thread created using the thread attributes object attr will
+       be created in a joinable or a detached state.
+
+       The following values may be specified in detachstate:
+
+       PTHREAD_CREATE_DETACHED
+              Threads that are created using attr will be  created  in  a  de‐
+              tached state.
+
+       PTHREAD_CREATE_JOINABLE
+              Threads  that  are created using attr will be created in a join‐
+              able state.
+
+       The default setting of the detach state attribute in a  newly  initial‐
+       ized thread attributes object is PTHREAD_CREATE_JOINABLE.
+
+       The pthread_attr_getdetachstate() returns the detach state attribute of
+       the thread attributes object attr in the buffer pointed to  by  detach‐
+       state.
+
+RETURN VALUE
+       On  success,  these functions return 0; on error, they return a nonzero
+       error number.
+
+ERRORS
+       pthread_attr_setdetachstate() can fail with the following error:
+
+       EINVAL An invalid value was specified in detachstate.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_attr_setdetachstate(),              │ Thread safety │ MT-Safe │
+       │pthread_attr_getdetachstate()               │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001.
+
+NOTES
+       See  pthread_create(3)  for  more  details  on  detached  and  joinable
+       threads.
+
+       A  thread  that is created in a joinable state should eventually either
+       be joined using pthread_join(3) or  detached  using  pthread_detach(3);
+       see pthread_create(3).
+
+       It is an error to specify the thread ID of a thread that was created in
+       a  detached  state  in   a   later   call   to   pthread_detach(3)   or
+       pthread_join(3).
+
+EXAMPLES
+       See pthread_attr_init(3).
+
+SEE ALSO
+       pthread_attr_init(3),       pthread_create(3),       pthread_detach(3),
+       pthread_join(3), pthreads(7)
+
+Linux man-pages 6.04              2023-03-30    pthread_attr_setdetachstate(3)
+PTHREAD_ATTR_GETDETACHSTATEPOSIX Programmer's MPTHREAD_ATTR_GETDETACHSTATE(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_attr_getdetachstate, pthread_attr_setdetachstate — get and set
+       the detachstate attribute
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_attr_getdetachstate(const pthread_attr_t *attr,
+           int *detachstate);
+       int pthread_attr_setdetachstate(pthread_attr_t *attr, int detachstate);
+
+DESCRIPTION
+       The  detachstate  attribute controls whether the thread is created in a
+       detached state.  If the thread is created detached, then use of the  ID
+       of  the  newly created thread by the pthread_detach() or pthread_join()
+       function is an error.
+
+       The  pthread_attr_getdetachstate()  and   pthread_attr_setdetachstate()
+       functions, respectively, shall get and set the detachstate attribute in
+       the attr object.
+
+       For pthread_attr_getdetachstate(), detachstate shall be set  to  either
+       PTHREAD_CREATE_DETACHED or PTHREAD_CREATE_JOINABLE.
+
+       For  pthread_attr_setdetachstate(),  the  application shall set detach‐
+       state to either PTHREAD_CREATE_DETACHED or PTHREAD_CREATE_JOINABLE.
+
+       A value of PTHREAD_CREATE_DETACHED shall cause all threads created with
+       attr to be in the detached state, whereas using a value of PTHREAD_CRE‐
+       ATE_JOINABLE shall cause all threads created with attr  to  be  in  the
+       joinable state. The default value of the detachstate attribute shall be
+       PTHREAD_CREATE_JOINABLE.
+
+       The behavior is undefined if the value specified by the  attr  argument
+       to  pthread_attr_getdetachstate() or pthread_attr_setdetachstate() does
+       not refer to an initialized thread attributes object.
+
+RETURN VALUE
+       Upon   successful   completion,    pthread_attr_getdetachstate()    and
+       pthread_attr_setdetachstate()  shall return a value of 0; otherwise, an
+       error number shall be returned to indicate the error.
+
+       The pthread_attr_getdetachstate() function stores the value of the  de‐
+       tachstate attribute in detachstate if successful.
+
+ERRORS
+       The pthread_attr_setdetachstate() function shall fail if:
+
+       EINVAL The value of detachstate was not valid
+
+       These functions shall not return an error code of [EINTR].
+
+       The following sections are informative.
+
+EXAMPLES
+   Retrieving the detachstate Attribute
+       This  example shows how to obtain the detachstate attribute of a thread
+       attribute object.
+
+           #include <pthread.h>
+
+           pthread_attr_t thread_attr;
+           int            detachstate;
+           int            rc;
+
+           /* code initializing thread_attr */
+           ...
+
+           rc = pthread_attr_getdetachstate (&thread_attr, &detachstate);
+           if (rc!=0) {
+               /* handle error */
+               ...
+           }
+           else {
+               /* legal values for detachstate are:
+                * PTHREAD_CREATE_DETACHED or PTHREAD_CREATE_JOINABLE
+                */
+                ...
+           }
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       If an implementation detects that the value specified by the attr argu‐
+       ment  to pthread_attr_getdetachstate() or pthread_attr_setdetachstate()
+       does not refer to an initialized thread attributes object, it is recom‐
+       mended that the function should fail and report an [EINVAL] error.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       pthread_attr_destroy(), pthread_attr_getstacksize(), pthread_create()
+
+       The Base Definitions volume of POSIX.1‐2017, <pthread.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017      PTHREAD_ATTR_GETDETACHSTATE(3P)

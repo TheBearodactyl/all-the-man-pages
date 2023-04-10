@@ -1,0 +1,155 @@
+SETEUID(3P)                POSIX Programmer's Manual               SETEUID(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       seteuid — set effective user ID
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int seteuid(uid_t uid);
+
+DESCRIPTION
+       If uid is equal to the real user ID or the saved set-user-ID, or if the
+       process  has  appropriate privileges, seteuid() shall set the effective
+       user ID of the calling process to uid; the real user ID and saved  set-
+       user-ID shall remain unchanged.
+
+       The seteuid() function shall not affect the supplementary group list in
+       any way.
+
+RETURN VALUE
+       Upon successful completion, 0 shall be returned; otherwise, -1 shall be
+       returned and errno set to indicate the error.
+
+ERRORS
+       The seteuid() function shall fail if:
+
+       EINVAL The value of the uid argument is invalid and is not supported by
+              the implementation.
+
+       EPERM  The process does not have appropriate privileges  and  uid  does
+              not match the real user ID or the saved set-user-ID.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       Refer to the RATIONALE section in setuid().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       exec,  getegid(),  geteuid(),  getgid(), getuid(), setegid(), setgid(),
+       setregid(), setreuid(), setuid()
+
+       The Base Definitions volume of POSIX.1‐2017, <sys_types.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                          SETEUID(3P)
+seteuid(2)                    System Calls Manual                   seteuid(2)
+
+NAME
+       seteuid, setegid - set effective user or group ID
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       int seteuid(uid_t euid);
+       int setegid(gid_t egid);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       seteuid(), setegid():
+           _POSIX_C_SOURCE >= 200112L
+               || /* glibc <= 2.19: */ _BSD_SOURCE
+
+DESCRIPTION
+       seteuid()  sets the effective user ID of the calling process.  Unprivi‐
+       leged processes may only set the effective user ID to the real user ID,
+       the effective user ID or the saved set-user-ID.
+
+       Precisely the same holds for setegid() with "group" instead of "user".
+
+RETURN VALUE
+       On  success,  zero is returned.  On error, -1 is returned, and errno is
+       set to indicate the error.
+
+       Note: there are cases where seteuid() can fail even when the caller  is
+       UID  0; it is a grave security error to omit checking for a failure re‐
+       turn from seteuid().
+
+ERRORS
+       EINVAL The target user or group ID is not valid in this user namespace.
+
+       EPERM  In the case of seteuid(): the calling process is not  privileged
+              (does  not have the CAP_SETUID capability in its user namespace)
+              and euid does not match the current real user ID, current effec‐
+              tive user ID, or current saved set-user-ID.
+
+              In  the case of setegid(): the calling process is not privileged
+              (does not have the CAP_SETGID capability in its user  namespace)
+              and  egid  does not match the current real group ID, current ef‐
+              fective group ID, or current saved set-group-ID.
+
+VERSIONS
+       Setting the effective user (group) ID to the saved  set-user-ID  (saved
+       set-group-ID) is possible since Linux 1.1.37 (1.1.38).  On an arbitrary
+       system one should check _POSIX_SAVED_IDS.
+
+       Under glibc 2.0, seteuid(euid) is equivalent to setreuid(-1, euid)  and
+       hence  may change the saved set-user-ID.  Under glibc 2.1 and later, it
+       is equivalent to setresuid(-1, euid, -1) and hence does not change  the
+       saved set-user-ID.  Analogous remarks hold for setegid(), with the dif‐
+       ference that the change in implementation from  setregid(-1,  egid)  to
+       setresgid(-1,  egid, -1) occurred in glibc 2.2 or 2.3 (depending on the
+       hardware architecture).
+
+       According to POSIX.1, seteuid() (setegid()) need not permit euid (egid)
+       to be the same value as the current effective user (group) ID, and some
+       implementations do not permit this.
+
+   C library/kernel differences
+       On Linux, seteuid() and setegid() are implemented as library  functions
+       that call, respectively, setreuid(2) and setregid(2).
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, 4.3BSD.
+
+SEE ALSO
+       geteuid(2), setresuid(2), setreuid(2), setuid(2), capabilities(7), cre‐
+       dentials(7), user_namespaces(7)
+
+Linux man-pages 6.04              2023-03-30                        seteuid(2)

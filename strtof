@@ -1,0 +1,343 @@
+strtod(3)                  Library Functions Manual                  strtod(3)
+
+NAME
+       strtod, strtof, strtold - convert ASCII string to floating-point number
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       double strtod(const char *restrict nptr, char **restrict endptr);
+       float strtof(const char *restrict nptr, char **restrict endptr);
+       long double strtold(const char *restrict nptr, char **restrict endptr);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       strtof(), strtold():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       The  strtod(),  strtof(),  and  strtold() functions convert the initial
+       portion of the string pointed to by nptr to  double,  float,  and  long
+       double representation, respectively.
+
+       The  expected  form  of the (initial portion of the) string is optional
+       leading white space as recognized by isspace(3), an optional plus ('+')
+       or  minus  sign  ('-')  and then either (i) a decimal number, or (ii) a
+       hexadecimal number, or (iii) an infinity, or (iv) a NAN (not-a-number).
+
+       A decimal number consists of a nonempty sequence of decimal digits pos‐
+       sibly  containing  a  radix character (decimal point, locale-dependent,
+       usually '.'), optionally followed by a decimal exponent.  A decimal ex‐
+       ponent consists of an 'E' or 'e', followed by an optional plus or minus
+       sign, followed by a nonempty sequence of decimal digits, and  indicates
+       multiplication by a power of 10.
+
+       A  hexadecimal number consists of a "0x" or "0X" followed by a nonempty
+       sequence of hexadecimal digits possibly containing a  radix  character,
+       optionally  followed  by a binary exponent.  A binary exponent consists
+       of a 'P' or 'p', followed by an optional plus or minus  sign,  followed
+       by  a nonempty sequence of decimal digits, and indicates multiplication
+       by a power of 2.  At least one of radix character and  binary  exponent
+       must be present.
+
+       An infinity is either "INF" or "INFINITY", disregarding case.
+
+       A NAN is "NAN" (disregarding case) optionally followed by a string, (n-
+       char-sequence), where n-char-sequence specifies in  an  implementation-
+       dependent way the type of NAN (see NOTES).
+
+RETURN VALUE
+       These functions return the converted value, if any.
+
+       If  endptr is not NULL, a pointer to the character after the last char‐
+       acter used in the conversion is stored in the  location  referenced  by
+       endptr.
+
+       If  no  conversion is performed, zero is returned and (unless endptr is
+       null) the value of nptr is stored in the location referenced by endptr.
+
+       If the correct value would cause  overflow,  plus  or  minus  HUGE_VAL,
+       HUGE_VALF,  or  HUGE_VALL is returned (according to the return type and
+       sign of the value), and ERANGE is stored in errno.
+
+       If the correct value would cause underflow, a value with  magnitude  no
+       larger  than  DBL_MIN,  FLT_MIN,  or LDBL_MIN is returned and ERANGE is
+       stored in errno.
+
+ERRORS
+       ERANGE Overflow or underflow occurred.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌─────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                            │ Attribute     │ Value          │
+       ├─────────────────────────────────────┼───────────────┼────────────────┤
+       │strtod(), strtof(), strtold()        │ Thread safety │ MT-Safe locale │
+       └─────────────────────────────────────┴───────────────┴────────────────┘
+
+VERSIONS
+       In  the  glibc implementation, the n-char-sequence that optionally fol‐
+       lows "NAN" is interpreted as an integer number (with an optional '0' or
+       '0x' prefix to select base 8 or 16) that is to be placed in the mantis‐
+       sa component of the returned value.
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       strtod()
+              C89, POSIX.1-2001.
+
+       strtof()
+       strtold()
+              C99, POSIX.1-2001.
+
+NOTES
+       Since 0 can legitimately be returned on both success and  failure,  the
+       calling  program should set errno to 0 before the call, and then deter‐
+       mine if an error occurred by checking whether errno has a nonzero value
+       after the call.
+
+EXAMPLES
+       See  the example on the strtol(3) manual page; the use of the functions
+       described in this manual page is similar.
+
+SEE ALSO
+       atof(3), atoi(3), atol(3), nan(3), nanf(3), nanl(3), strfromd(3),  str‐
+       tol(3), strtoul(3)
+
+Linux man-pages 6.04              2023-03-30                         strtod(3)
+STRTOD(3P)                 POSIX Programmer's Manual                STRTOD(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       strtod, strtof, strtold — convert a string to a double-precision number
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       double strtod(const char *restrict nptr, char **restrict endptr);
+       float strtof(const char *restrict nptr, char **restrict endptr);
+       long double strtold(const char *restrict nptr, char **restrict endptr);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with  the
+       ISO C  standard.  Any  conflict between the requirements described here
+       and the ISO C standard is unintentional. This  volume  of  POSIX.1‐2017
+       defers to the ISO C standard.
+
+       These functions shall convert the initial portion of the string pointed
+       to by nptr to double, float, and long  double  representation,  respec‐
+       tively. First, they decompose the input string into three parts:
+
+        1. An  initial, possibly empty, sequence of white-space characters (as
+           specified by isspace())
+
+        2. A subject sequence interpreted as a floating-point constant or rep‐
+           resenting infinity or NaN
+
+        3. A  final  string  of one or more unrecognized characters, including
+           the terminating NUL character of the input string
+
+       Then they shall attempt to convert the subject sequence to a  floating-
+       point number, and return the result.
+
+       The  expected  form  of  the subject sequence is an optional '+' or '-'
+       sign, then one of the following:
+
+        *  A non-empty sequence of  decimal  digits  optionally  containing  a
+           radix  character;  then an optional exponent part consisting of the
+           character 'e' or the character 'E', optionally followed by a '+' or
+           '-' character, and then followed by one or more decimal digits
+
+        *  A 0x or 0X, then a non-empty sequence of hexadecimal digits option‐
+           ally containing a radix character; then an optional binary exponent
+           part  consisting of the character 'p' or the character 'P', option‐
+           ally followed by a '+' or '-' character, and then followed  by  one
+           or more decimal digits
+
+        *  One of INF or INFINITY, ignoring case
+
+        *  One  of  NAN  or  NAN(n-char-sequenceopt), ignoring case in the NAN
+           part, where:
+
+               n-char-sequence:
+                   digit
+                   nondigit
+                   n-char-sequence digit
+                   n-char-sequence nondigit
+
+       The subject sequence is defined as the longest initial  subsequence  of
+       the  input  string,  starting with the first non-white-space character,
+       that is of the expected form. The subject sequence contains no  charac‐
+       ters if the input string is not of the expected form.
+
+       If the subject sequence has the expected form for a floating-point num‐
+       ber, the sequence of characters starting with the first  digit  or  the
+       decimal-point  character  (whichever occurs first) shall be interpreted
+       as a floating constant of the C language, except that the radix charac‐
+       ter shall be used in place of a period, and that if neither an exponent
+       part nor a radix character appears in a decimal floating-point  number,
+       or if a binary exponent part does not appear in a hexadecimal floating-
+       point number, an exponent part of the appropriate type with value  zero
+       is  assumed  to follow the last digit in the string. If the subject se‐
+       quence begins with a <hyphen-minus>, the sequence shall be  interpreted
+       as  negated.  A character sequence INF or INFINITY shall be interpreted
+       as an infinity, if representable in the return type, else as if it were
+       a floating constant that is too large for the range of the return type.
+       A character sequence NAN or  NAN(n-char-sequenceopt)  shall  be  inter‐
+       preted  as  a quiet NaN, if supported in the return type, else as if it
+       were a subject sequence part that does not have the expected form;  the
+       meaning of the n-char sequences is implementation-defined. A pointer to
+       the final string is stored in the object pointed to by endptr, provided
+       that endptr is not a null pointer.
+
+       If  the  subject  sequence  has the hexadecimal form and FLT_RADIX is a
+       power of 2, the  value  resulting  from  the  conversion  is  correctly
+       rounded.
+
+       The  radix  character is defined in the current locale (category LC_NU‐
+       MERIC).  In the POSIX locale, or in a locale where the radix  character
+       is not defined, the radix character shall default to a <period> ('.').
+
+       In other than the C or POSIX locale, additional locale-specific subject
+       sequence forms may be accepted.
+
+       If the subject sequence is empty or does not have the expected form, no
+       conversion  shall  be performed; the value of nptr is stored in the ob‐
+       ject pointed to by endptr, provided that endptr is not a null pointer.
+
+       These functions shall not change the setting of errno if successful.
+
+       Since 0 is returned on error and is also a valid return on success,  an
+       application  wishing  to check for error situations should set errno to
+       0, then call strtod(), strtof(), or strtold(), then check errno.
+
+RETURN VALUE
+       Upon successful completion, these functions shall return the  converted
+       value.  If  no  conversion could be performed, 0 shall be returned, and
+       errno may be set to [EINVAL].
+
+       If the correct value is outside  the  range  of  representable  values,
+       ±HUGE_VAL,  ±HUGE_VALF,  or  ±HUGE_VALL shall be returned (according to
+       the sign of the value), and errno shall be set to [ERANGE].
+
+       If the correct value would cause an underflow, a value whose  magnitude
+       is  no  greater than the smallest normalized positive number in the re‐
+       turn type shall be returned and errno set to [ERANGE].
+
+ERRORS
+       These functions shall fail if:
+
+       ERANGE The value to be returned would cause overflow or underflow.
+
+       These functions may fail if:
+
+       EINVAL No conversion could be performed.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       If the subject sequence has the hexadecimal form and FLT_RADIX is not a
+       power  of  2,  and  the result is not exactly representable, the result
+       should be one of the two numbers in  the  appropriate  internal  format
+       that  are  adjacent  to the hexadecimal floating source value, with the
+       extra stipulation that the error should have a  correct  sign  for  the
+       current rounding direction.
+
+       If  the  subject  sequence has the decimal form and at most DECIMAL_DIG
+       (defined in <float.h>) significant digits, the result  should  be  cor‐
+       rectly rounded. If the subject sequence D has the decimal form and more
+       than DECIMAL_DIG significant digits, consider the two  bounding,  adja‐
+       cent  decimal strings L and U, both having DECIMAL_DIG significant dig‐
+       its, such that the values of L, D, and U satisfy L <= D <= U.  The  re‐
+       sult  should be one of the (equal or adjacent) values that would be ob‐
+       tained by correctly rounding L and U according to the current  rounding
+       direction,  with the extra stipulation that the error with respect to D
+       should have a correct sign for the current rounding direction.
+
+       The changes to strtod() introduced by  the  ISO/IEC 9899:1999  standard
+       can  alter  the behavior of well-formed applications complying with the
+       ISO/IEC 9899:1990 standard and thus earlier versions of this  standard.
+       One such example would be:
+
+           int
+           what_kind_of_number (char *s)
+           {
+               char *endp;
+               double d;
+               long l;
+
+               d = strtod(s, &endp);
+               if (s != endp && *endp == `\0')
+                   printf("It's a float with value %g\n", d);
+               else
+               {
+                   l = strtol(s, &endp, 0);
+                   if (s != endp && *endp == `\0')
+                       printf("It's an integer with value %ld\n", 1);
+                   else
+                       return 1;
+               }
+               return 0;
+           }
+
+       If the function is called with:
+
+           what_kind_of_number ("0x10")
+
+       an  ISO/IEC 9899:1990  standard-compliant  library  will  result in the
+       function printing:
+
+           It's an integer with value 16
+
+       With the ISO/IEC 9899:1999 standard, the result is:
+
+           It's a float with value 16
+
+       The change in behavior is due to the inclusion of  floating-point  num‐
+       bers  in  hexadecimal  notation without requiring that either a decimal
+       point or the binary exponent be present.
+
+RATIONALE
+       None.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fscanf(), isspace(), localeconv(), setlocale(), strtol()
+
+       The  Base  Definitions  volume  of  POSIX.1‐2017,  Chapter  7,  Locale,
+       <float.h>, <stdlib.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                           STRTOD(3P)

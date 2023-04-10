@@ -1,0 +1,647 @@
+shm_open(3)                Library Functions Manual                shm_open(3)
+
+NAME
+       shm_open,  shm_unlink  -  create/open or unlink POSIX shared memory ob‐
+       jects
+
+LIBRARY
+       Real-time library (librt, -lrt)
+
+SYNOPSIS
+       #include <sys/mman.h>
+       #include <sys/stat.h>        /* For mode constants */
+       #include <fcntl.h>           /* For O_* constants */
+
+       int shm_open(const char *name, int oflag, mode_t mode);
+       int shm_unlink(const char *name);
+
+DESCRIPTION
+       shm_open() creates and opens a new, or opens an existing, POSIX  shared
+       memory  object.   A  POSIX  shared  memory object is in effect a handle
+       which can be used by unrelated processes to mmap(2) the same region  of
+       shared  memory.  The shm_unlink() function performs the converse opera‐
+       tion, removing an object previously created by shm_open().
+
+       The operation of shm_open() is analogous  to  that  of  open(2).   name
+       specifies the shared memory object to be created or opened.  For porta‐
+       ble use, a shared memory object should be identified by a name  of  the
+       form  /somename;  that  is,  a null-terminated string of up to NAME_MAX
+       (i.e., 255) characters consisting of an initial slash, followed by  one
+       or more characters, none of which are slashes.
+
+       oflag  is  a bit mask created by ORing together exactly one of O_RDONLY
+       or O_RDWR and any of the other flags listed here:
+
+       O_RDONLY
+              Open the object for read access.  A shared memory object  opened
+              in this way can be mmap(2)ed only for read (PROT_READ) access.
+
+       O_RDWR Open the object for read-write access.
+
+       O_CREAT
+              Create  the shared memory object if it does not exist.  The user
+              and group ownership of the object are taken from the correspond‐
+              ing  effective IDs of the calling process, and the object's per‐
+              mission bits are set according to the low-order 9 bits of  mode,
+              except  that  those  bits  set in the process file mode creation
+              mask (see umask(2)) are cleared for the new object.   A  set  of
+              macro  constants  which  can be used to define mode is listed in
+              open(2).  (Symbolic definitions of these constants  can  be  ob‐
+              tained by including <sys/stat.h>.)
+
+              A new shared memory object initially has zero length—the size of
+              the object can be set using ftruncate(2).  The  newly  allocated
+              bytes of a shared memory object are automatically initialized to
+              0.
+
+       O_EXCL If O_CREAT was also specified, and a shared memory  object  with
+              the  given  name already exists, return an error.  The check for
+              the existence of the object, and its creation if it does not ex‐
+              ist, are performed atomically.
+
+       O_TRUNC
+              If  the shared memory object already exists, truncate it to zero
+              bytes.
+
+       Definitions of these flag values can  be  obtained  by  including  <fc‐
+       ntl.h>.
+
+       On  successful  completion shm_open() returns a new file descriptor re‐
+       ferring to the shared memory object.  This file descriptor  is  guaran‐
+       teed  to  be  the lowest-numbered file descriptor not previously opened
+       within the process.  The FD_CLOEXEC flag (see fcntl(2)) is set for  the
+       file descriptor.
+
+       The  file  descriptor  is  normally  used in subsequent calls to ftrun‐
+       cate(2) (for a newly created object) and  mmap(2).   After  a  call  to
+       mmap(2)  the file descriptor may be closed without affecting the memory
+       mapping.
+
+       The operation of shm_unlink() is analogous to unlink(2): it  removes  a
+       shared  memory  object  name, and, once all processes have unmapped the
+       object, deallocates and destroys the contents of the associated  memory
+       region.  After a successful shm_unlink(), attempts to shm_open() an ob‐
+       ject with the same name fail (unless O_CREAT was  specified,  in  which
+       case a new, distinct object is created).
+
+RETURN VALUE
+       On  success,  shm_open() returns a file descriptor (a nonnegative inte‐
+       ger).  On success, shm_unlink() returns 0.  On failure, both  functions
+       return -1 and set errno to indicate the error.
+
+ERRORS
+       EACCES Permission to shm_unlink() the shared memory object was denied.
+
+       EACCES Permission  was denied to shm_open() name in the specified mode,
+              or O_TRUNC was specified and the caller does not have write per‐
+              mission on the object.
+
+       EEXIST Both  O_CREAT  and  O_EXCL  were specified to shm_open() and the
+              shared memory object specified by name already exists.
+
+       EINVAL The name argument to shm_open() was invalid.
+
+       EMFILE The per-process limit on the number of open file descriptors has
+              been reached.
+
+       ENAMETOOLONG
+              The length of name exceeds PATH_MAX.
+
+       ENFILE The system-wide limit on the total number of open files has been
+              reached.
+
+       ENOENT An attempt was made to shm_open() a name that did not exist, and
+              O_CREAT was not specified.
+
+       ENOENT An  attempt was to made to shm_unlink() a name that does not ex‐
+              ist.
+
+ATTRIBUTES
+       For an  explanation  of  the  terms  used  in  this  section,  see  at‐
+       tributes(7).
+
+       ┌─────────────────────────────────────┬───────────────┬────────────────┐
+       │Interface                            │ Attribute     │ Value          │
+       ├─────────────────────────────────────┼───────────────┼────────────────┤
+       │shm_open(), shm_unlink()             │ Thread safety │ MT-Safe locale │
+       └─────────────────────────────────────┴───────────────┴────────────────┘
+
+VERSIONS
+       POSIX  leaves  the  behavior of the combination of O_RDONLY and O_TRUNC
+       unspecified.  On Linux, this will  successfully  truncate  an  existing
+       shared memory object—this may not be so on other UNIX systems.
+
+       The  POSIX  shared memory object implementation on Linux makes use of a
+       dedicated tmpfs(5) filesystem that is normally mounted under /dev/shm.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.2.  POSIX.1-2001.
+
+       POSIX.1-2001 says that the group ownership of a  newly  created  shared
+       memory object is set to either the calling process's effective group ID
+       or "a system default group ID".  POSIX.1-2008 says that the group  own‐
+       ership  may  be  set to either the calling process's effective group ID
+       or, if the object is visible in the filesystem, the  group  ID  of  the
+       parent directory.
+
+EXAMPLES
+       The  programs  below employ POSIX shared memory and POSIX unnamed sema‐
+       phores to exchange a piece of data.  The "bounce" program  (which  must
+       be  run  first)  raises  the  case  of a string that is placed into the
+       shared memory by the "send" program.  Once the data has been  modified,
+       the "send" program then prints the contents of the modified shared mem‐
+       ory.  An example execution of the two programs is the following:
+
+           $ ./pshm_ucase_bounce /myshm &
+           [1] 270171
+           $ ./pshm_ucase_send /myshm hello
+           HELLO
+
+       Further detail about these programs is provided below.
+
+   Program source: pshm_ucase.h
+       The following header file is included by both programs below.  Its pri‐
+       mary  purpose is to define a structure that will be imposed on the mem‐
+       ory object that is shared between the two programs.
+
+           #include <fcntl.h>
+           #include <semaphore.h>
+           #include <stdio.h>
+           #include <stdlib.h>
+           #include <sys/mman.h>
+           #include <sys/stat.h>
+           #include <unistd.h>
+
+           #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                                   } while (0)
+
+           #define BUF_SIZE 1024   /* Maximum size for exchanged string */
+
+           /* Define a structure that will be imposed on the shared
+              memory object */
+
+           struct shmbuf {
+               sem_t  sem1;            /* POSIX unnamed semaphore */
+               sem_t  sem2;            /* POSIX unnamed semaphore */
+               size_t cnt;             /* Number of bytes used in 'buf' */
+               char   buf[BUF_SIZE];   /* Data being transferred */
+           };
+
+   Program source: pshm_ucase_bounce.c
+       The "bounce" program creates a new shared memory object with  the  name
+       given  in  its  command-line argument and sizes the object to match the
+       size of the shmbuf structure defined in the header file.  It then  maps
+       the  object into the process's address space, and initializes two POSIX
+       semaphores inside the object to 0.
+
+       After the "send" program has posted the first of  the  semaphores,  the
+       "bounce"  program upper cases the data that has been placed in the mem‐
+       ory by the "send" program and then posts the second semaphore  to  tell
+       the "send" program that it may now access the shared memory.
+
+           /* pshm_ucase_bounce.c
+
+              Licensed under GNU General Public License v2 or later.
+           */
+           #include <ctype.h>
+
+           #include "pshm_ucase.h"
+
+           int
+           main(int argc, char *argv[])
+           {
+               int            fd;
+               char           *shmpath;
+               struct shmbuf  *shmp;
+
+               if (argc != 2) {
+                   fprintf(stderr, "Usage: %s /shm-path\n", argv[0]);
+                   exit(EXIT_FAILURE);
+               }
+
+               shmpath = argv[1];
+
+               /* Create shared memory object and set its size to the size
+                  of our structure. */
+
+               fd = shm_open(shmpath, O_CREAT | O_EXCL | O_RDWR, 0600);
+               if (fd == -1)
+                   errExit("shm_open");
+
+               if (ftruncate(fd, sizeof(struct shmbuf)) == -1)
+                   errExit("ftruncate");
+
+               /* Map the object into the caller's address space. */
+
+               shmp = mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE,
+                           MAP_SHARED, fd, 0);
+               if (shmp == MAP_FAILED)
+                   errExit("mmap");
+
+               /* Initialize semaphores as process-shared, with value 0. */
+
+               if (sem_init(&shmp->sem1, 1, 0) == -1)
+                   errExit("sem_init-sem1");
+               if (sem_init(&shmp->sem2, 1, 0) == -1)
+                   errExit("sem_init-sem2");
+
+               /* Wait for 'sem1' to be posted by peer before touching
+                  shared memory. */
+
+               if (sem_wait(&shmp->sem1) == -1)
+                   errExit("sem_wait");
+
+               /* Convert data in shared memory into upper case. */
+
+               for (size_t j = 0; j < shmp->cnt; j++)
+                   shmp->buf[j] = toupper((unsigned char) shmp->buf[j]);
+
+               /* Post 'sem2' to tell the peer that it can now
+                  access the modified data in shared memory. */
+
+               if (sem_post(&shmp->sem2) == -1)
+                   errExit("sem_post");
+
+               /* Unlink the shared memory object. Even if the peer process
+                  is still using the object, this is okay. The object will
+                  be removed only after all open references are closed. */
+
+               shm_unlink(shmpath);
+
+               exit(EXIT_SUCCESS);
+           }
+
+   Program source: pshm_ucase_send.c
+       The  "send" program takes two command-line arguments: the pathname of a
+       shared memory object previously created by the "bounce" program  and  a
+       string that is to be copied into that object.
+
+       The program opens the shared memory object and maps the object into its
+       address space.  It then copies the data specified in its  second  argu‐
+       ment into the shared memory, and posts the first semaphore, which tells
+       the "bounce" program that it can  now  access  that  data.   After  the
+       "bounce"  program posts the second semaphore, the "send" program prints
+       the contents of the shared memory on standard output.
+
+           /* pshm_ucase_send.c
+
+              Licensed under GNU General Public License v2 or later.
+           */
+           #include <string.h>
+
+           #include "pshm_ucase.h"
+
+           int
+           main(int argc, char *argv[])
+           {
+               int            fd;
+               char           *shmpath, *string;
+               size_t         len;
+               struct shmbuf  *shmp;
+
+               if (argc != 3) {
+                   fprintf(stderr, "Usage: %s /shm-path string\n", argv[0]);
+                   exit(EXIT_FAILURE);
+               }
+
+               shmpath = argv[1];
+               string = argv[2];
+               len = strlen(string);
+
+               if (len > BUF_SIZE) {
+                   fprintf(stderr, "String is too long\n");
+                   exit(EXIT_FAILURE);
+               }
+
+               /* Open the existing shared memory object and map it
+                  into the caller's address space. */
+
+               fd = shm_open(shmpath, O_RDWR, 0);
+               if (fd == -1)
+                   errExit("shm_open");
+
+               shmp = mmap(NULL, sizeof(*shmp), PROT_READ | PROT_WRITE,
+                           MAP_SHARED, fd, 0);
+               if (shmp == MAP_FAILED)
+                   errExit("mmap");
+
+               /* Copy data into the shared memory object. */
+
+               shmp->cnt = len;
+               memcpy(&shmp->buf, string, len);
+
+               /* Tell peer that it can now access shared memory. */
+
+               if (sem_post(&shmp->sem1) == -1)
+                   errExit("sem_post");
+
+               /* Wait until peer says that it has finished accessing
+                  the shared memory. */
+
+               if (sem_wait(&shmp->sem2) == -1)
+                   errExit("sem_wait");
+
+               /* Write modified data in shared memory to standard output. */
+
+               write(STDOUT_FILENO, &shmp->buf, len);
+               write(STDOUT_FILENO, "\n", 1);
+
+               exit(EXIT_SUCCESS);
+           }
+
+SEE ALSO
+       close(2),  fchmod(2),  fchown(2),  fcntl(2),  fstat(2),   ftruncate(2),
+       memfd_create(2), mmap(2), open(2), umask(2), shm_overview(7)
+
+Linux man-pages 6.04              2023-03-30                       shm_open(3)
+SHM_OPEN(3P)               POSIX Programmer's Manual              SHM_OPEN(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       shm_open — open a shared memory object (REALTIME)
+
+SYNOPSIS
+       #include <sys/mman.h>
+
+       int shm_open(const char *name, int oflag, mode_t mode);
+
+DESCRIPTION
+       The shm_open() function shall establish a connection between  a  shared
+       memory  object  and a file descriptor. It shall create an open file de‐
+       scription that refers to the shared memory object and a file descriptor
+       that refers to that open file description. The file descriptor shall be
+       allocated as described in Section 2.14, File Descriptor Allocation, and
+       can  be  used by other functions to refer to that shared memory object.
+       The name argument points to a string naming a shared memory object.  It
+       is unspecified whether the name appears in the file system and is visi‐
+       ble to other functions that take pathnames as arguments. The name argu‐
+       ment conforms to the construction rules for a pathname, except that the
+       interpretation of <slash> characters other  than  the  leading  <slash>
+       character in name is implementation-defined, and that the length limits
+       for the name argument are implementation-defined and need  not  be  the
+       same  as the pathname limits {PATH_MAX} and {NAME_MAX}.  If name begins
+       with the <slash> character, then processes calling shm_open() with  the
+       same  value  of name refer to the same shared memory object, as long as
+       that name has not been removed. If name does not begin with the <slash>
+       character, the effect is implementation-defined.
+
+       If successful, shm_open() shall return a file descriptor for the shared
+       memory object.  The open file description is  new,  and  therefore  the
+       file  descriptor  does not share it with any other processes. It is un‐
+       specified whether the file offset is set. The FD_CLOEXEC file  descrip‐
+       tor flag associated with the new file descriptor is set.
+
+       The  file  status flags and file access modes of the open file descrip‐
+       tion are according to the value of oflag.  The oflag  argument  is  the
+       bitwise-inclusive  OR  of  the following flags defined in the <fcntl.h>
+       header. Applications specify exactly one of the first two  values  (ac‐
+       cess modes) below in the value of oflag:
+
+       O_RDONLY    Open for read access only.
+
+       O_RDWR      Open for read or write access.
+
+       Any combination of the remaining flags may be specified in the value of
+       oflag:
+
+       O_CREAT     If the shared memory object exists, this flag  has  no  ef‐
+                   fect,  except  as  noted under O_EXCL below. Otherwise, the
+                   shared memory object is created. The user ID of the  shared
+                   memory  object shall be set to the effective user ID of the
+                   process. The group ID of the shared memory object shall  be
+                   set  to  the effective group ID of the process; however, if
+                   the name argument is visible in the file system, the  group
+                   ID  may be set to the group ID of the containing directory.
+                   The permission bits of the shared memory  object  shall  be
+                   set  to  the value of the mode argument except those set in
+                   the file mode creation mask of the process.  When  bits  in
+                   mode  other  than the file permission bits are set, the ef‐
+                   fect is unspecified. The  mode  argument  does  not  affect
+                   whether the shared memory object is opened for reading, for
+                   writing, or for both. The shared memory object has  a  size
+                   of zero.
+
+       O_EXCL      If  O_EXCL  and  O_CREAT  are  set, shm_open() fails if the
+                   shared memory object exists. The check for the existence of
+                   the  shared memory object and the creation of the object if
+                   it does not exist is atomic with respect to other processes
+                   executing  shm_open()  naming the same shared memory object
+                   with O_EXCL and O_CREAT set. If O_EXCL is set  and  O_CREAT
+                   is not set, the result is undefined.
+
+       O_TRUNC     If  the shared memory object exists, and it is successfully
+                   opened O_RDWR, the object shall be truncated to zero length
+                   and  the mode and owner shall be unchanged by this function
+                   call. The result of using O_TRUNC with  O_RDONLY  is  unde‐
+                   fined.
+
+       When  a shared memory object is created, the state of the shared memory
+       object, including all data associated with the  shared  memory  object,
+       persists  until the shared memory object is unlinked and all other ref‐
+       erences are gone. It is unspecified whether the name and shared  memory
+       object state remain valid after a system reboot.
+
+RETURN VALUE
+       Upon successful completion, the shm_open() function shall return a non-
+       negative integer representing the file descriptor. Otherwise, it  shall
+       return -1 and set errno to indicate the error.
+
+ERRORS
+       The shm_open() function shall fail if:
+
+       EACCES The shared memory object exists and the permissions specified by
+              oflag are denied, or the shared memory object does not exist and
+              permission  to  create  the  shared  memory object is denied, or
+              O_TRUNC is specified and write permission is denied.
+
+       EEXIST O_CREAT and O_EXCL are set and the named  shared  memory  object
+              already exists.
+
+       EINTR  The shm_open() operation was interrupted by a signal.
+
+       EINVAL The shm_open() operation is not supported for the given name.
+
+       EMFILE All  file  descriptors  available  to  the process are currently
+              open.
+
+       ENFILE Too many shared memory objects are currently open in the system.
+
+       ENOENT O_CREAT is not set and the named shared memory object  does  not
+              exist.
+
+       ENOSPC There  is  insufficient space for the creation of the new shared
+              memory object.
+
+       The shm_open() function may fail if:
+
+       ENAMETOOLONG
+              The length of the name  argument  exceeds  {_POSIX_PATH_MAX}  on
+              systems   that   do  not  support  the  XSI  option  or  exceeds
+              {_XOPEN_PATH_MAX} on XSI systems, or has  a  pathname  component
+              that  is  longer  than  {_POSIX_NAME_MAX} on systems that do not
+              support the XSI option or longer than {_XOPEN_NAME_MAX}  on  XSI
+              systems.
+
+       The following sections are informative.
+
+EXAMPLES
+   Creating and Mapping a Shared Memory Object
+       The following code segment demonstrates the use of shm_open() to create
+       a shared memory object which is then sized using ftruncate() before be‐
+       ing mapped into the process address space using mmap():
+
+           #include <unistd.h>
+           #include <sys/mman.h>
+           ...
+
+           #define MAX_LEN 10000
+           struct region {        /* Defines "structure" of shared memory */
+               int len;
+               char buf[MAX_LEN];
+           };
+           struct region *rptr;
+           int fd;
+
+           /* Create shared memory object and set its size */
+
+           fd = shm_open("/myregion", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+           if (fd == -1)
+               /* Handle error */;
+
+           if (ftruncate(fd, sizeof(struct region)) == -1)
+               /* Handle error */;
+
+           /* Map shared memory object */
+
+           rptr = mmap(NULL, sizeof(struct region),
+                  PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+           if (rptr == MAP_FAILED)
+               /* Handle error */;
+
+           /* Now we can refer to mapped region using fields of rptr;
+              for example, rptr->len */
+           ...
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       When  the  Memory  Mapped  Files option is supported, the normal open()
+       call is used to obtain a descriptor to a file to be mapped according to
+       existing  practice  with mmap().  When the Shared Memory Objects option
+       is supported, the shm_open() function shall obtain a descriptor to  the
+       shared memory object to be mapped.
+
+       There is ample precedent for having a file descriptor represent several
+       types of objects. In the POSIX.1‐1990 standard, a file  descriptor  can
+       represent a file, a pipe, a FIFO, a tty, or a directory. Many implemen‐
+       tations simply have an operations vector, which is indexed by the  file
+       descriptor  type  and does very different operations. Note that in some
+       cases the file descriptor passed to generic operations on file descrip‐
+       tors is returned by open() or creat() and in some cases returned by al‐
+       ternate functions, such as pipe().  The latter  technique  is  used  by
+       shm_open().
+
+       Note  that  such  shared  memory objects can actually be implemented as
+       mapped files. In both cases, the size can be set after the  open  using
+       ftruncate().   The  shm_open() function itself does not create a shared
+       object of a specified size because this would duplicate an extant func‐
+       tion that set the size of an object referenced by a file descriptor.
+
+       On  implementations  where memory objects are implemented using the ex‐
+       isting file system, the shm_open() function may be implemented using  a
+       macro  that invokes open(), and the shm_unlink() function may be imple‐
+       mented using a macro that invokes unlink().
+
+       For implementations without a permanent file system, the definition  of
+       the  name  of the memory objects is allowed not to survive a system re‐
+       boot. Note that this allows systems with a permanent file system to im‐
+       plement  memory  objects as data structures internal to the implementa‐
+       tion as well.
+
+       On implementations that choose to implement memory objects using memory
+       directly,  a  shm_open()  followed by an ftruncate() and close() can be
+       used to preallocate a shared memory area and to set the  size  of  that
+       preallocation. This may be necessary for systems without virtual memory
+       hardware support in order to ensure that the memory is contiguous.
+
+       The set of valid open flags to shm_open() was restricted  to  O_RDONLY,
+       O_RDWR,  O_CREAT, and O_TRUNC because these could be easily implemented
+       on most memory mapping systems. This volume of POSIX.1‐2017  is  silent
+       on  the  results if the implementation cannot supply the requested file
+       access because of implementation-defined  reasons,  including  hardware
+       ones.
+
+       The  error conditions [EACCES] and [ENOTSUP] are provided to inform the
+       application that the implementation cannot complete a request.
+
+       [EACCES] indicates for implementation-defined reasons,  probably  hard‐
+       ware-related,  that  the  implementation cannot comply with a requested
+       mode because it conflicts with another requested mode. An example might
+       be  that an application desires to open a memory object two times, map‐
+       ping different areas with different access modes. If the implementation
+       cannot  map  a  single  area  into a process space in two places, which
+       would be required if different access modes were required for  the  two
+       areas,  then  the implementation may inform the application at the time
+       of the second open.
+
+       [ENOTSUP] indicates for implementation-defined reasons, probably  hard‐
+       ware-related,  that  the  implementation cannot comply with a requested
+       mode at all. An example would be that the hardware of  the  implementa‐
+       tion cannot support write-only shared memory areas.
+
+       On all implementations, it may be desirable to restrict the location of
+       the memory objects to specific file systems for performance (such as  a
+       RAM  disk)  or  implementation-defined reasons (shared memory supported
+       directly only on certain file systems). The shm_open() function may  be
+       used  to  enforce  these  restrictions.  There  are a number of methods
+       available to the application to determine an appropriate  name  of  the
+       file  or  the location of an appropriate directory. One way is from the
+       environment via getenv().  Another would be from a configuration file.
+
+       This volume of POSIX.1‐2017 specifies that memory objects have  initial
+       contents of zero when created. This is consistent with current behavior
+       for both files and newly allocated memory.  For  those  implementations
+       that  use  physical  memory, it would be possible that such implementa‐
+       tions could simply use available memory and  give  it  to  the  process
+       uninitialized.  This, however, is not consistent with standard behavior
+       for the uninitialized data area, the stack, and of course,  files.  Fi‐
+       nally,  it  is highly desirable to set the allocated memory to zero for
+       security reasons. Thus, initializing memory  objects  to  zero  is  re‐
+       quired.
+
+FUTURE DIRECTIONS
+       A  future  version  might require the shm_open() and shm_unlink() func‐
+       tions to have semantics similar to normal file system operations.
+
+SEE ALSO
+       Section 2.14, File Descriptor Allocation,  close(),  dup(),  exec,  fc‐
+       ntl(), mmap(), shmat(), shmctl(), shmdt(), shm_unlink(), umask()
+
+       The Base Definitions volume of POSIX.1‐2017, <fcntl.h>, <sys_mman.h>
+
+COPYRIGHT
+       Portions  of  this text are reprinted and reproduced in electronic form
+       from IEEE Std 1003.1-2017, Standard for Information Technology --  Por‐
+       table  Operating System Interface (POSIX), The Open Group Base Specifi‐
+       cations Issue 7, 2018 Edition, Copyright (C) 2018 by the  Institute  of
+       Electrical  and  Electronics Engineers, Inc and The Open Group.  In the
+       event of any discrepancy between this version and the original IEEE and
+       The  Open Group Standard, the original IEEE and The Open Group Standard
+       is the referee document. The original Standard can be  obtained  online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any  typographical  or  formatting  errors that appear in this page are
+       most likely to have been introduced during the conversion of the source
+       files  to  man page format. To report such errors, see https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                         SHM_OPEN(3P)

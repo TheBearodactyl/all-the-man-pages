@@ -1,0 +1,823 @@
+READ(1P)                   POSIX Programmer's Manual                  READ(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       read — read from standard input into shell variables
+
+SYNOPSIS
+       read [-r] var...
+
+DESCRIPTION
+       The read utility shall read a single logical line from  standard  input
+       into one or more shell variables.
+
+       By default, unless the -r option is specified, <backslash> shall act as
+       an escape character. An unescaped <backslash> shall preserve  the  lit‐
+       eral  value  of  the following character, with the exception of a <new‐
+       line>.  If a <newline> follows the <backslash>, the read utility  shall
+       interpret  this  as  line  continuation.  The <backslash> and <newline>
+       shall be removed before splitting the input into fields. All other  un‐
+       escaped <backslash> characters shall be removed after splitting the in‐
+       put into fields.
+
+       If standard input is a terminal device and the invoking shell is inter‐
+       active,  read shall prompt for a continuation line when it reads an in‐
+       put line ending with a <backslash> <newline>, unless the -r  option  is
+       specified.
+
+       The  terminating <newline> (if any) shall be removed from the input and
+       the results shall be split into fields as in the shell for the  results
+       of  parameter expansion (see Section 2.6.5, Field Splitting); the first
+       field shall be assigned to the first variable var, the second field  to
+       the  second  variable  var,  and  so on. If there are fewer fields than
+       there are var operands, the  remaining  vars  shall  be  set  to  empty
+       strings. If there are fewer vars than fields, the last var shall be set
+       to a value comprising the following elements:
+
+        *  The field that corresponds to the last var in the normal assignment
+           sequence described above
+
+        *  The  delimiter(s)  that  follow the field corresponding to the last
+           var
+
+        *  The remaining fields and their delimiters, with trailing IFS  white
+           space ignored
+
+       The setting of variables specified by the var operands shall affect the
+       current shell execution environment; see Section 2.12, Shell  Execution
+       Environment.   If it is called in a subshell or separate utility execu‐
+       tion environment, such as one of the following:
+
+           (read foo)
+           nohup read ...
+           find . -exec read ... \;
+
+       it shall not affect the shell variables in the caller's environment.
+
+OPTIONS
+       The read utility shall  conform  to  the  Base  Definitions  volume  of
+       POSIX.1‐2017, Section 12.2, Utility Syntax Guidelines.
+
+       The following option is supported:
+
+       -r        Do not treat a <backslash> character in any special way. Con‐
+                 sider each <backslash> to be part of the input line.
+
+OPERANDS
+       The following operand shall be supported:
+
+       var       The name of an existing or nonexisting shell variable.
+
+STDIN
+       The standard input shall be a text file.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       The following environment variables shall affect the execution of read:
+
+       IFS       Determine the  internal  field  separators  used  to  delimit
+                 fields; see Section 2.5.3, Shell Variables.
+
+       LANG      Provide  a  default  value for the internationalization vari‐
+                 ables that are unset or null. (See the Base Definitions  vol‐
+                 ume  of POSIX.1‐2017, Section 8.2, Internationalization Vari‐
+                 ables for the precedence  of  internationalization  variables
+                 used to determine the values of locale categories.)
+
+       LC_ALL    If  set  to  a non-empty string value, override the values of
+                 all the other internationalization variables.
+
+       LC_CTYPE  Determine the locale for the interpretation of  sequences  of
+                 bytes of text data as characters (for example, single-byte as
+                 opposed to multi-byte characters in arguments).
+
+       LC_MESSAGES
+                 Determine the locale that should be used to affect the format
+                 and  contents  of diagnostic messages written to standard er‐
+                 ror.
+
+       NLSPATH   Determine the location of message catalogs for the processing
+                 of LC_MESSAGES.
+
+       PS2       Provide  the  prompt  string  that an interactive shell shall
+                 write to standard error when a line ending with a <backslash>
+                 <newline> is read and the -r option was not specified.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       The  standard  error  shall be used for diagnostic messages and prompts
+       for continued input.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The following exit values shall be returned:
+
+        0    Successful completion.
+
+       >0    End-of-file was detected or an error occurred.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       The -r option is included to enable read to subsume the purpose of  the
+       line utility, which is not included in POSIX.1‐2008.
+
+EXAMPLES
+       The following command:
+
+           while read -r xx yy
+           do
+               printf "%s %s\n$yy$xx"
+           done < input_file
+
+       prints a file with the first field of each line moved to the end of the
+       line.
+
+RATIONALE
+       The read utility historically has been a shell built-in. It  was  sepa‐
+       rated off into its own utility to take advantage of the richer descrip‐
+       tion of functionality introduced by this volume of POSIX.1‐2017.
+
+       Since read affects the current shell execution environment, it is  gen‐
+       erally  provided as a shell regular built-in. If it is called in a sub‐
+       shell or separate utility execution environment, such  as  one  of  the
+       following:
+
+           (read foo)
+           nohup read ...
+           find . -exec read ... \;
+
+       it  does  not  affect  the  shell  variables  in the environment of the
+       caller.
+
+       Although the standard input is required to be a text file,  and  there‐
+       fore will always end with a <newline> (unless it is an empty file), the
+       processing of continuation lines when the -r option is not used can re‐
+       sult in the input not ending with a <newline>.  This occurs if the last
+       line of the input file ends with a <backslash> <newline>.   It  is  for
+       this  reason that ``if any'' is used in ``The terminating <newline> (if
+       any) shall be removed from the input'' in the description.  It is not a
+       relaxation of the requirement for standard input to be a text file.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Chapter 2, Shell Command Language
+
+       The  Base  Definitions  volume  of POSIX.1‐2017, Chapter 8, Environment
+       Variables, Section 12.2, Utility Syntax Guidelines
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                             READ(1P)
+read(n)                      Tcl Built-In Commands                     read(n)
+
+______________________________________________________________________________
+
+NAME
+       read - Read from a channel
+
+SYNOPSIS
+       read ?-nonewline? channelId
+
+       read channelId numChars
+______________________________________________________________________________
+
+DESCRIPTION
+       In  the  first  form, the read command reads all of the data from chan‐
+       nelId up to the end of the file.  If the -nonewline switch is specified
+       then  the  last  character of the file is discarded if it is a newline.
+       In the second form, the extra argument specifies how many characters to
+       read.   Exactly  that many characters will be read and returned, unless
+       there are fewer than numChars left in the file; in this  case  all  the
+       remaining characters are returned.  If the channel is configured to use
+       a multi-byte encoding, then the number of characters read  may  not  be
+       the same as the number of bytes read.
+
+       ChannelId  must  be  an  identifier for an open channel such as the Tcl
+       standard input channel (stdin), the return value from an invocation  of
+       open or socket, or the result of a channel creation command provided by
+       a Tcl extension. The channel must have been opened for input.
+
+       If channelId is in nonblocking mode, the command may not read  as  many
+       characters  as  requested:  once all available input has been read, the
+       command will return the data that is available rather than blocking for
+       more input.  If the channel is configured to use a multi-byte encoding,
+       then there may actually be some bytes remaining in the internal buffers
+       that  do  not  form  a complete character.  These bytes will not be re‐
+       turned until a  complete  character  is  available  or  end-of-file  is
+       reached.   The  -nonewline switch is ignored if the command returns be‐
+       fore reaching the end of the file.
+
+       Read translates end-of-line sequences in the input into newline charac‐
+       ters  according  to  the  -translation option for the channel.  See the
+       fconfigure manual entry for a discussion on ways  in  which  fconfigure
+       will alter input.
+
+USE WITH SERIAL PORTS
+       For  most  applications  a channel connected to a serial port should be
+       configured to be nonblocking: fconfigure channelId -blocking  0.   Then
+       read  behaves much like described above.  Care must be taken when using
+       read on blocking serial ports:
+
+       read channelId numChars
+              In this form read blocks until numChars have been received  from
+              the serial port.
+
+       read channelId
+              In  this form read blocks until the reception of the end-of-file
+              character, see fconfigure  -eofchar.  If  there  no  end-of-file
+              character  has  been  configured for the channel, then read will
+              block forever.
+
+EXAMPLE
+       This example code reads a file all at once, and splits it into a  list,
+       with each line in the file corresponding to an element in the list:
+
+              set fl [open /proc/meminfo]
+              set data [read $fl]
+              close $fl
+              set lines [split $data \n]
+
+SEE ALSO
+       file(n), eof(n), fblocked(n), fconfigure(n), Tcl_StandardChannels(3)
+
+KEYWORDS
+       blocking,  channel, end of line, end of file, nonblocking, read, trans‐
+       lation, encoding
+
+Tcl                                   8.1                              read(n)
+READ(3P)                   POSIX Programmer's Manual                  READ(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pread, read — read from a file
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t pread(int fildes, void *buf, size_t nbyte, off_t offset);
+       ssize_t read(int fildes, void *buf, size_t nbyte);
+
+DESCRIPTION
+       The read() function shall attempt to read nbyte bytes from the file as‐
+       sociated with the open file descriptor, fildes, into the buffer pointed
+       to by buf.  The behavior of multiple concurrent reads on the same pipe,
+       FIFO, or terminal device is unspecified.
+
+       Before  any  action described below is taken, and if nbyte is zero, the
+       read() function may detect and return errors as described below. In the
+       absence  of  errors, or if error detection is not performed, the read()
+       function shall return zero and have no other results.
+
+       On files that support seeking (for example, a regular file), the read()
+       shall  start at a position in the file given by the file offset associ‐
+       ated with fildes.  The file offset shall be incremented by  the  number
+       of bytes actually read.
+
+       Files  that  do  not support seeking—for example, terminals—always read
+       from the current position. The value of a file offset  associated  with
+       such a file is undefined.
+
+       No  data  transfer  shall  occur  past  the current end-of-file. If the
+       starting position is at or after the end-of-file, 0 shall be  returned.
+       If  the  file refers to a device special file, the result of subsequent
+       read() requests is implementation-defined.
+
+       If the value of nbyte is greater than {SSIZE_MAX}, the result is imple‐
+       mentation-defined.
+
+       When attempting to read from an empty pipe or FIFO:
+
+        *  If  no process has the pipe open for writing, read() shall return 0
+           to indicate end-of-file.
+
+        *  If some process has the pipe open for  writing  and  O_NONBLOCK  is
+           set, read() shall return -1 and set errno to [EAGAIN].
+
+        *  If  some  process  has  the pipe open for writing and O_NONBLOCK is
+           clear, read() shall block the calling thread  until  some  data  is
+           written  or  the  pipe is closed by all processes that had the pipe
+           open for writing.
+
+       When attempting to read a file (other than a pipe or  FIFO)  that  sup‐
+       ports non-blocking reads and has no data currently available:
+
+        *  If  O_NONBLOCK is set, read() shall return -1 and set errno to [EA‐
+           GAIN].
+
+        *  If O_NONBLOCK is clear, read() shall block the calling thread until
+           some data becomes available.
+
+        *  The  use of the O_NONBLOCK flag has no effect if there is some data
+           available.
+
+       The read() function reads data previously written to  a  file.  If  any
+       portion  of  a regular file prior to the end-of-file has not been writ‐
+       ten, read() shall return bytes with value 0. For example,  lseek()  al‐
+       lows  the  file offset to be set beyond the end of existing data in the
+       file. If data is later written at this point, subsequent reads  in  the
+       gap  between  the previous end of data and the newly written data shall
+       return bytes with value 0 until data is written into the gap.
+
+       Upon successful completion, where nbyte is greater than 0, read() shall
+       mark  for  update the last data access timestamp of the file, and shall
+       return the number of bytes read.  This number shall  never  be  greater
+       than nbyte.  The value returned may be less than nbyte if the number of
+       bytes left in the file is less than nbyte, if the  read()  request  was
+       interrupted  by  a  signal, or if the file is a pipe or FIFO or special
+       file and has fewer than nbyte bytes immediately available for  reading.
+       For example, a read() from a file associated with a terminal may return
+       one typed line of data.
+
+       If a read() is interrupted by a signal before it  reads  any  data,  it
+       shall return -1 with errno set to [EINTR].
+
+       If  a  read() is interrupted by a signal after it has successfully read
+       some data, it shall return the number of bytes read.
+
+       For regular files, no data transfer shall occur past the offset maximum
+       established in the open file description associated with fildes.
+
+       If fildes refers to a socket, read() shall be equivalent to recv() with
+       no flags set.
+
+       If the O_DSYNC and O_RSYNC bits have been set, read I/O  operations  on
+       the  file descriptor shall complete as defined by synchronized I/O data
+       integrity completion. If the O_SYNC and O_RSYNC  bits  have  been  set,
+       read I/O operations on the file descriptor shall complete as defined by
+       synchronized I/O file integrity completion.
+
+       If fildes refers to a shared memory object, the result  of  the  read()
+       function is unspecified.
+
+       If  fildes  refers  to  a typed memory object, the result of the read()
+       function is unspecified.
+
+       A read() from a STREAMS file can read data in  three  different  modes:
+       byte-stream  mode,  message-nondiscard  mode, and message-discard mode.
+       The default shall be byte-stream mode.  This can be changed  using  the
+       I_SRDOPT  ioctl() request, and can be tested with I_GRDOPT ioctl().  In
+       byte-stream mode, read() shall retrieve data from the STREAM  until  as
+       many bytes as were requested are transferred, or until there is no more
+       data to be retrieved.  Byte-stream mode ignores message boundaries.
+
+       In STREAMS message-nondiscard mode, read() shall retrieve data until as
+       many bytes as were requested are transferred, or until a message bound‐
+       ary is reached. If read() does not retrieve all the data in a  message,
+       the remaining data shall be left on the STREAM, and can be retrieved by
+       the next read() call. Message-discard mode also retrieves data until as
+       many  bytes as were requested are transferred, or a message boundary is
+       reached.  However, unread data remaining in a message after the  read()
+       returns shall be discarded, and shall not be available for a subsequent
+       read(), getmsg(), or getpmsg() call.
+
+       How read() handles zero-byte STREAMS messages is determined by the cur‐
+       rent  read  mode setting. In byte-stream mode, read() shall accept data
+       until it has read nbyte bytes, or until there is no more data to  read,
+       or  until a zero-byte message block is encountered. The read() function
+       shall then return the number of bytes read,  and  place  the  zero-byte
+       message  back  on  the  STREAM  to  be  retrieved  by  the next read(),
+       getmsg(), or getpmsg().  In message-nondiscard mode or  message-discard
+       mode,  a  zero-byte message shall return 0 and the message shall be re‐
+       moved from the STREAM. When a zero-byte message is read  as  the  first
+       message on a STREAM, the message shall be removed from the STREAM and 0
+       shall be returned, regardless of the read mode.
+
+       A read() from a STREAMS file shall return the data in  the  message  at
+       the  front  of  the  STREAM head read queue, regardless of the priority
+       band of the message.
+
+       By default, STREAMs are in control-normal mode, in which a read()  from
+       a  STREAMS  file can only process messages that contain a data part but
+       do not contain a control part. The read() shall fail if a message  con‐
+       taining  a control part is encountered at the STREAM head. This default
+       action can be changed by placing the STREAM in either control-data mode
+       or  control-discard mode with the I_SRDOPT ioctl() command. In control-
+       data mode, read() shall convert any control part to data and pass it to
+       the  application before passing any data part originally present in the
+       same message.  In control-discard mode, read()  shall  discard  message
+       control parts but return to the process any data part in the message.
+
+       In  addition,  read()  shall  fail  if the STREAM head had processed an
+       asynchronous error before the call. In this case, the  value  of  errno
+       shall not reflect the result of read(), but reflect the prior error. If
+       a hangup occurs on the STREAM being read, read() shall continue to  op‐
+       erate  normally  until the STREAM head read queue is empty. Thereafter,
+       it shall return 0.
+
+       The pread() function shall be equivalent  to  read(),  except  that  it
+       shall  read from a given position in the file without changing the file
+       offset. The first three arguments to pread() are  the  same  as  read()
+       with  the addition of a fourth argument offset for the desired position
+       inside the file. An attempt to perform a pread() on a file that is  in‐
+       capable of seeking shall result in an error.
+
+RETURN VALUE
+       Upon successful completion, these functions shall return a non-negative
+       integer indicating the number of bytes actually  read.  Otherwise,  the
+       functions shall return -1 and set errno to indicate the error.
+
+ERRORS
+       These functions shall fail if:
+
+       EAGAIN The file is neither a pipe, nor a FIFO, nor a socket, the O_NON‐
+              BLOCK flag is set for the file descriptor, and the thread  would
+              be delayed in the read operation.
+
+       EBADF  The  fildes  argument  is  not  a valid file descriptor open for
+              reading.
+
+       EBADMSG
+              The file is a STREAM file that is set to control-normal mode and
+              the message waiting to be read includes a control part.
+
+       EINTR  The  read  operation was terminated due to the receipt of a sig‐
+              nal, and no data was transferred.
+
+       EINVAL The STREAM or multiplexer referenced by fildes  is  linked  (di‐
+              rectly or indirectly) downstream from a multiplexer.
+
+       EIO    The process is a member of a background process group attempting
+              to read from its controlling terminal, and  either  the  calling
+              thread is blocking SIGTTIN or the process is ignoring SIGTTIN or
+              the process group of the process is  orphaned.  This  error  may
+              also be generated for implementation-defined reasons.
+
+       EISDIR The fildes argument refers to a directory and the implementation
+              does not allow the directory to be read using read() or pread().
+              The readdir() function should be used instead.
+
+       EOVERFLOW
+              The  file is a regular file, nbyte is greater than 0, the start‐
+              ing position is before the end-of-file, and the  starting  posi‐
+              tion  is greater than or equal to the offset maximum established
+              in the open file description associated with fildes.
+
+       The pread() function shall fail if:
+
+       EINVAL The file is a regular file or block special file, and the offset
+              argument is negative. The file offset shall remain unchanged.
+
+       ESPIPE The file is incapable of seeking.
+
+       The read() function shall fail if:
+
+       EAGAIN The  file  is a pipe or FIFO, the O_NONBLOCK flag is set for the
+              file descriptor, and the thread would be delayed in the read op‐
+              eration.
+
+       EAGAIN or EWOULDBLOCK
+              The  file  is  a socket, the O_NONBLOCK flag is set for the file
+              descriptor, and the thread would be delayed in the  read  opera‐
+              tion.
+
+       ECONNRESET
+              A read was attempted on a socket and the connection was forcibly
+              closed by its peer.
+
+       ENOTCONN
+              A read was attempted on a socket that is not connected.
+
+       ETIMEDOUT
+              A read was attempted on a socket and a transmission timeout  oc‐
+              curred.
+
+       These functions may fail if:
+
+       EIO    A physical I/O error has occurred.
+
+       ENOBUFS
+              Insufficient  resources  were available in the system to perform
+              the operation.
+
+       ENOMEM Insufficient memory was available to fulfill the request.
+
+       ENXIO  A request was made of a nonexistent device, or the  request  was
+              outside the capabilities of the device.
+
+       The following sections are informative.
+
+EXAMPLES
+   Reading Data into a Buffer
+       The following example reads data from the file associated with the file
+       descriptor fd into the buffer pointed to by buf.
+
+           #include <sys/types.h>
+           #include <unistd.h>
+           ...
+           char buf[20];
+           size_t nbytes;
+           ssize_t bytes_read;
+           int fd;
+           ...
+           nbytes = sizeof(buf);
+           bytes_read = read(fd, buf, nbytes);
+           ...
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       This volume of POSIX.1‐2017 does not specify the value of the file off‐
+       set  after an error is returned; there are too many cases. For program‐
+       ming errors, such as [EBADF], the concept is meaningless since no  file
+       is  involved.  For  errors  that are detected immediately, such as [EA‐
+       GAIN], clearly the offset should not  change.  After  an  interrupt  or
+       hardware  error,  however, an updated value would be very useful and is
+       the behavior of many implementations.
+
+       Note that a read() of zero bytes does not modify the last  data  access
+       timestamp.  A  read()  that  requests more than zero bytes, but returns
+       zero, is required to modify the last data access timestamp.
+
+       Implementations are allowed, but not required, to perform error  check‐
+       ing for read() requests of zero bytes.
+
+   Input and Output
+       The  use  of  I/O with large byte counts has always presented problems.
+       Ideas such as lread() and lwrite() (using  and  returning  longs)  were
+       considered  at  one time. The current solution is to use abstract types
+       on the ISO C standard function to read()  and  write().   The  abstract
+       types  can be declared so that existing functions work, but can also be
+       declared so that larger types can be represented in future  implementa‐
+       tions. It is presumed that whatever constraints limit the maximum range
+       of size_t also limit portable I/O requests to the same range. This vol‐
+       ume of POSIX.1‐2017 also limits the range further by requiring that the
+       byte count be limited so that a signed return value remains meaningful.
+       Since  the return type is also a (signed) abstract type, the byte count
+       can be defined by the implementation to be larger than an int can hold.
+
+       The standard developers considered adding atomicity requirements  to  a
+       pipe  or FIFO, but recognized that due to the nature of pipes and FIFOs
+       there could be no guarantee of atomicity of reads of {PIPE_BUF} or  any
+       other size that would be an aid to applications portability.
+
+       This volume of POSIX.1‐2017 requires that no action be taken for read()
+       or write() when nbyte is zero. This is not intended to take  precedence
+       over  detection  of errors (such as invalid buffer pointers or file de‐
+       scriptors). This  is  consistent  with  the  rest  of  this  volume  of
+       POSIX.1‐2017,  but the phrasing here could be misread to require detec‐
+       tion of the zero case before any other errors.  A value of zero  is  to
+       be considered a correct value, for which the semantics are a no-op.
+
+       I/O  is  intended  to  be atomic to ordinary files and pipes and FIFOs.
+       Atomic means that all the bytes from a single  operation  that  started
+       out together end up together, without interleaving from other I/O oper‐
+       ations. It is a known attribute of terminals that this is not  honored,
+       and  terminals  are  explicitly  (and implicitly permanently) excepted,
+       making the behavior unspecified. The behavior for other device types is
+       also left unspecified, but the wording is intended to imply that future
+       standards might choose to specify atomicity (or not).
+
+       There were recommendations to  add  format  parameters  to  read()  and
+       write() in order to handle networked transfers among heterogeneous file
+       system and base hardware types. Such a facility  may  be  required  for
+       support  by the OSI presentation of layer services. However, it was de‐
+       termined that this should correspond with  similar  C-language  facili‐
+       ties,  and that is beyond the scope of this volume of POSIX.1‐2017. The
+       concept was suggested to the developers of the ISO C standard for their
+       consideration as a possible area for future work.
+
+       In  4.3 BSD, a read() or write() that is interrupted by a signal before
+       transferring any data does not by default return an [EINTR] error,  but
+       is  restarted. In 4.2 BSD, 4.3 BSD, and the Eighth Edition, there is an
+       additional function, select(), whose purpose is to pause  until  speci‐
+       fied  activity (data to read, space to write, and so on) is detected on
+       specified file descriptors. It is common in  applications  written  for
+       those systems for select() to be used before read() in situations (such
+       as keyboard input) where interruption of I/O due to  a  signal  is  de‐
+       sired.
+
+       The  issue of which files or file types are interruptible is considered
+       an implementation design issue. This is  often  affected  primarily  by
+       hardware and reliability issues.
+
+       There  are  no references to actions taken following an ``unrecoverable
+       error''.  It  is  considered  beyond  the  scope  of  this  volume   of
+       POSIX.1‐2017 to describe what happens in the case of hardware errors.
+
+       Earlier  versions of this standard allowed two very different behaviors
+       with regard to the handling of interrupts. In order to minimize the re‐
+       sulting confusion, it was decided that POSIX.1‐2008 should support only
+       one of these behaviors. Historical practice on AT&T-derived systems was
+       to  have read() and write() return -1 and set errno to [EINTR] when in‐
+       terrupted after some, but not all,  of  the  data  requested  had  been
+       transferred. However, the US Department of Commerce FIPS 151‐1 and FIPS
+       151‐2 require the historical BSD behavior, in which read() and  write()
+       return  the  number of bytes actually transferred before the interrupt.
+       If -1 is returned when any data is transferred, it is difficult to  re‐
+       cover from the error on a seekable device and impossible on a non-seek‐
+       able device. Most new implementations support this behavior.   The  be‐
+       havior required by POSIX.1‐2008 is to return the number of bytes trans‐
+       ferred.
+
+       POSIX.1‐2008 does not  specify  when  an  implementation  that  buffers
+       read()s  actually  moves  the data into the user-supplied buffer, so an
+       implementation may choose to do this at  the  latest  possible  moment.
+       Therefore, an interrupt arriving earlier may not cause read() to return
+       a partial byte count, but rather to return -1 and set errno to [EINTR].
+
+       Consideration was also given to combining the two previous options, and
+       setting  errno  to  [EINTR] while returning a short count. However, not
+       only is there no existing practice that implements  this,  it  is  also
+       contradictory  to the idea that when errno is set, the function respon‐
+       sible shall return -1.
+
+       This volume of POSIX.1‐2017 intentionally does not specify any  pread()
+       errors related to pipes, FIFOs, and sockets other than [ESPIPE].
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       fcntl(), ioctl(), lseek(), open(), pipe(), readv()
+
+       The Base Definitions volume of POSIX.1‐2017, Chapter 11, General Termi‐
+       nal Interface, <stropts.h>, <sys_uio.h>, <unistd.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017                             READ(3P)
+read(2)                       System Calls Manual                      read(2)
+
+NAME
+       read - read from a file descriptor
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       ssize_t read(int fd, void buf[.count], size_t count);
+
+DESCRIPTION
+       read()  attempts to read up to count bytes from file descriptor fd into
+       the buffer starting at buf.
+
+       On files that support seeking, the read operation commences at the file
+       offset, and the file offset is incremented by the number of bytes read.
+       If the file offset is at or past the end of file, no  bytes  are  read,
+       and read() returns zero.
+
+       If count is zero, read() may detect the errors described below.  In the
+       absence of any errors, or if read() does not check for errors, a read()
+       with a count of 0 returns zero and has no other effects.
+
+       According to POSIX.1, if count is greater than SSIZE_MAX, the result is
+       implementation-defined; see NOTES for the upper limit on Linux.
+
+RETURN VALUE
+       On success, the number of bytes read is returned (zero indicates end of
+       file),  and the file position is advanced by this number.  It is not an
+       error if this number is smaller than the  number  of  bytes  requested;
+       this  may happen for example because fewer bytes are actually available
+       right now (maybe because we were close to end-of-file,  or  because  we
+       are reading from a pipe, or from a terminal), or because read() was in‐
+       terrupted by a signal.  See also NOTES.
+
+       On error, -1 is returned, and errno is set to indicate the  error.   In
+       this  case,  it  is left unspecified whether the file position (if any)
+       changes.
+
+ERRORS
+       EAGAIN The file descriptor fd refers to a file other than a socket  and
+              has  been  marked  nonblocking  (O_NONBLOCK), and the read would
+              block.  See open(2) for further details on the O_NONBLOCK flag.
+
+       EAGAIN or EWOULDBLOCK
+              The file descriptor fd refers to a socket and  has  been  marked
+              nonblocking    (O_NONBLOCK),   and   the   read   would   block.
+              POSIX.1-2001 allows either error to be returned for  this  case,
+              and  does not require these constants to have the same value, so
+              a portable application should check for both possibilities.
+
+       EBADF  fd is not a valid file descriptor or is not open for reading.
+
+       EFAULT buf is outside your accessible address space.
+
+       EINTR  The call was interrupted by a signal before any data  was  read;
+              see signal(7).
+
+       EINVAL fd  is attached to an object which is unsuitable for reading; or
+              the file was opened with the O_DIRECT flag, and either  the  ad‐
+              dress  specified  in  buf,  the value specified in count, or the
+              file offset is not suitably aligned.
+
+       EINVAL fd was created via a call to  timerfd_create(2)  and  the  wrong
+              size  buffer was given to read(); see timerfd_create(2) for fur‐
+              ther information.
+
+       EIO    I/O error.  This will happen for example when the process is  in
+              a  background  process group, tries to read from its controlling
+              terminal, and either it is ignoring or blocking SIGTTIN  or  its
+              process  group  is  orphaned.  It may also occur when there is a
+              low-level I/O error while reading from a disk or tape.   A  fur‐
+              ther  possible  cause of EIO on networked filesystems is when an
+              advisory lock had been taken out on the file descriptor and this
+              lock  has been lost.  See the Lost locks section of fcntl(2) for
+              further details.
+
+       EISDIR fd refers to a directory.
+
+       Other errors may occur, depending on the object connected to fd.
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       SVr4, 4.3BSD, POSIX.1-2001.
+
+NOTES
+       On Linux, read() (and similar  system  calls)  will  transfer  at  most
+       0x7ffff000  (2,147,479,552)  bytes, returning the number of bytes actu‐
+       ally transferred.  (This is true on both 32-bit and 64-bit systems.)
+
+       On NFS filesystems, reading small amounts of data will update the time‐
+       stamp  only  the  first  time, subsequent calls may not do so.  This is
+       caused by client side attribute caching, because most if  not  all  NFS
+       clients  leave  st_atime (last file access time) updates to the server,
+       and client side reads satisfied from the client's cache will not  cause
+       st_atime updates on the server as there are no server-side reads.  UNIX
+       semantics can be obtained by disabling client-side  attribute  caching,
+       but in most situations this will substantially increase server load and
+       decrease performance.
+
+BUGS
+       According to POSIX.1-2008/SUSv4 Section XSI 2.9.7 ("Thread Interactions
+       with Regular File Operations"):
+
+           All of the following functions shall be atomic with respect to each
+           other in the effects specified in POSIX.1-2008 when they operate on
+           regular files or symbolic links: ...
+
+       Among  the APIs subsequently listed are read() and readv(2).  And among
+       the effects that should be atomic across threads  (and  processes)  are
+       updates  of  the file offset.  However, before Linux 3.14, this was not
+       the case: if two processes that share an  open  file  description  (see
+       open(2))  perform a read() (or readv(2)) at the same time, then the I/O
+       operations were not atomic with respect updating the file offset,  with
+       the  result  that  the  reads  in the two processes might (incorrectly)
+       overlap in the blocks of data that they  obtained.   This  problem  was
+       fixed in Linux 3.14.
+
+SEE ALSO
+       close(2),  fcntl(2), ioctl(2), lseek(2), open(2), pread(2), readdir(2),
+       readlink(2), readv(2), select(2), write(2), fread(3)
+
+Linux man-pages 6.04              2023-04-03                           read(2)

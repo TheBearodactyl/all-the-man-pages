@@ -1,0 +1,319 @@
+opus_decoder(3)                      Opus                      opus_decoder(3)
+
+NAME
+       opus_decoder - Opus Decoder
+
+        - This page describes the process and functions used to decode Opus.
+
+SYNOPSIS
+   Typedefs
+       typedef struct OpusDecoder OpusDecoder
+           Opus decoder state.
+
+   Functions
+       int opus_decoder_get_size (int channels)
+           Gets the size of an OpusDecoder structure.
+       OpusDecoder * opus_decoder_create (opus_int32 Fs, int channels, int
+           *error)
+           Allocates and initializes a decoder state.
+       int opus_decoder_init (OpusDecoder *st, opus_int32 Fs, int channels)
+           Initializes a previously allocated decoder state.
+       int opus_decode (OpusDecoder *st, const unsigned char *data, opus_int32
+           len, opus_int16 *pcm, int frame_size, int decode_fec)
+           Decode an Opus packet.
+       int opus_decode_float (OpusDecoder *st, const unsigned char *data,
+           opus_int32 len, float *pcm, int frame_size, int decode_fec)
+           Decode an Opus packet with floating point output.
+       int opus_decoder_ctl (OpusDecoder *st, int request,...)
+           Perform a CTL function on an Opus decoder.
+       void opus_decoder_destroy (OpusDecoder *st)
+           Frees an OpusDecoder allocated by opus_decoder_create().
+       int opus_packet_parse (const unsigned char *data, opus_int32 len,
+           unsigned char *out_toc, const unsigned char *frames[48], opus_int16
+           size[48], int *payload_offset)
+           Parse an opus packet into one or more frames.
+       int opus_packet_get_bandwidth (const unsigned char *data)
+           Gets the bandwidth of an Opus packet.
+       int opus_packet_get_samples_per_frame (const unsigned char *data,
+           opus_int32 Fs)
+           Gets the number of samples per frame from an Opus packet.
+       int opus_packet_get_nb_channels (const unsigned char *data)
+           Gets the number of channels from an Opus packet.
+       int opus_packet_get_nb_frames (const unsigned char packet[], opus_int32
+           len)
+           Gets the number of frames in an Opus packet.
+       int opus_packet_get_nb_samples (const unsigned char packet[],
+           opus_int32 len, opus_int32 Fs)
+           Gets the number of samples of an Opus packet.
+       int opus_decoder_get_nb_samples (const OpusDecoder *dec, const unsigned
+           char packet[], opus_int32 len)
+           Gets the number of samples of an Opus packet.
+       void opus_pcm_soft_clip (float *pcm, int frame_size, int channels,
+           float *softclip_mem)
+           Applies soft-clipping to bring a float signal within the [-1,1]
+           range.
+
+Detailed Description
+       This page describes the process and functions used to decode Opus.
+
+       The decoding process also starts with creating a decoder state. This
+       can be done with:
+
+       int          error;
+       OpusDecoder *dec;
+       dec = opus_decoder_create(Fs, channels, &error);
+
+        where
+
+       • Fs is the sampling rate and must be 8000, 12000, 16000, 24000, or
+         48000
+       • channels is the number of channels (1 or 2)
+       • error will hold the error code in case of failure (or OPUS_OK on
+         success)
+       • the return value is a newly created decoder state to be used for
+         decoding
+       While opus_decoder_create() allocates memory for the state, it's also
+       possible to initialize pre-allocated memory:
+       int          size;
+       int          error;
+       OpusDecoder *dec;
+       size = opus_decoder_get_size(channels);
+       dec = malloc(size);
+       error = opus_decoder_init(dec, Fs, channels);
+
+        where opus_decoder_get_size() returns the required size for the
+       decoder state. Note that future versions of this code may change the
+       size, so no assuptions should be made about it.
+       The decoder state is always continuous in memory and only a shallow
+       copy is sufficient to copy it (e.g. memcpy())
+       To decode a frame, opus_decode() or opus_decode_float() must be called
+       with a packet of compressed audio data:
+       frame_size = opus_decode(dec, packet, len, decoded, max_size, 0);
+
+        where
+       • packet is the byte array containing the compressed data
+       • len is the exact number of bytes contained in the packet
+       • decoded is the decoded audio data in opus_int16 (or float for
+         opus_decode_float())
+       • max_size is the max duration of the frame in samples (per channel)
+         that can fit into the decoded_frame array
+       opus_decode() and opus_decode_float() return the number of samples (per
+       channel) decoded from the packet. If that value is negative, then an
+       error has occurred. This can occur if the packet is corrupted or if the
+       audio buffer is too small to hold the decoded audio.
+       Opus is a stateful codec with overlapping blocks and as a result Opus
+       packets are not coded independently of each other. Packets must be
+       passed into the decoder serially and in the correct order for a correct
+       decode. Lost packets can be replaced with loss concealment by calling
+       the decoder with a null pointer and zero length for the missing packet.
+       A single codec state may only be accessed from a single thread at a
+       time and any required locking must be performed by the caller. Separate
+       streams must be decoded with separate decoder states and can be decoded
+       in parallel unless the library was compiled with
+       NONTHREADSAFE_PSEUDOSTACK defined.
+Typedef Documentation
+   typedef struct OpusDecoder OpusDecoder
+       Opus decoder state. This contains the complete state of an Opus
+       decoder. It is position independent and can be freely copied.
+       See also
+           opus_decoder_create,opus_decoder_init
+Function Documentation
+   int opus_decode (OpusDecoder * st, const unsigned char * data, opus_int32
+       len, opus_int16 * pcm, int frame_size, int decode_fec)
+       Decode an Opus packet.
+       Parameters
+           st OpusDecoder*: Decoder state
+           data char*: Input payload. Use a NULL pointer to indicate packet
+           loss
+           len opus_int32: Number of bytes in payload*
+           pcm opus_int16*: Output signal (interleaved if 2 channels). length
+           is frame_size*channels*sizeof(opus_int16)
+           frame_size Number of samples per channel of available space in pcm.
+           If this is less than the maximum packet duration (120ms; 5760 for
+           48kHz), this function will not be capable of decoding some packets.
+           In the case of PLC (data==NULL) or FEC (decode_fec=1), then
+           frame_size needs to be exactly the duration of audio that is
+           missing, otherwise the decoder will not be in the optimal state to
+           decode the next incoming packet. For the PLC and FEC cases,
+           frame_size must be a multiple of 2.5 ms.
+           decode_fec int: Flag (0 or 1) to request that any in-band forward
+           error correction data be decoded. If no such data is available, the
+           frame is decoded as if it were lost.
+       Returns
+           Number of decoded samples or Error codes
+   int opus_decode_float (OpusDecoder * st, const unsigned char * data,
+       opus_int32 len, float * pcm, int frame_size, int decode_fec)
+       Decode an Opus packet with floating point output.
+       Parameters
+           st OpusDecoder*: Decoder state
+           data char*: Input payload. Use a NULL pointer to indicate packet
+           loss
+           len opus_int32: Number of bytes in payload
+           pcm float*: Output signal (interleaved if 2 channels). length is
+           frame_size*channels*sizeof(float)
+           frame_size Number of samples per channel of available space in pcm.
+           If this is less than the maximum packet duration (120ms; 5760 for
+           48kHz), this function will not be capable of decoding some packets.
+           In the case of PLC (data==NULL) or FEC (decode_fec=1), then
+           frame_size needs to be exactly the duration of audio that is
+           missing, otherwise the decoder will not be in the optimal state to
+           decode the next incoming packet. For the PLC and FEC cases,
+           frame_size must be a multiple of 2.5 ms.
+           decode_fec int: Flag (0 or 1) to request that any in-band forward
+           error correction data be decoded. If no such data is available the
+           frame is decoded as if it were lost.
+       Returns
+           Number of decoded samples or Error codes
+   OpusDecoder * opus_decoder_create (opus_int32 Fs, int channels, int *
+       error)
+       Allocates and initializes a decoder state.
+       Parameters
+           Fs opus_int32: Sample rate to decode at (Hz). This must be one of
+           8000, 12000, 16000, 24000, or 48000.
+           channels int: Number of channels (1 or 2) to decode
+           error int*: OPUS_OK Success or Error codes
+       Internally Opus stores data at 48000 Hz, so that should be the default
+       value for Fs. However, the decoder can efficiently decode to buffers at
+       8, 12, 16, and 24 kHz so if for some reason the caller cannot use data
+       at the full sample rate, or knows the compressed data doesn't use the
+       full frequency range, it can request decoding at a reduced rate.
+       Likewise, the decoder is capable of filling in either mono or
+       interleaved stereo pcm buffers, at the caller's request.
+   int opus_decoder_ctl (OpusDecoder * st, int request,  ...)
+       Perform a CTL function on an Opus decoder. Generally the request and
+       subsequent arguments are generated by a convenience macro.
+       Parameters
+           st OpusDecoder*: Decoder state.
+           request This and all remaining parameters should be replaced by one
+           of the convenience macros in Generic CTLs or Decoder related CTLs.
+       See also
+           Generic CTLs
+           Decoder related CTLs
+   void opus_decoder_destroy (OpusDecoder * st)
+       Frees an OpusDecoder allocated by opus_decoder_create().
+       Parameters
+           st OpusDecoder*: State to be freed.
+   int opus_decoder_get_nb_samples (const OpusDecoder * dec, const unsigned
+       char packet[], opus_int32 len)
+       Gets the number of samples of an Opus packet.
+       Parameters
+           dec OpusDecoder*: Decoder state
+           packet char*: Opus packet
+           len opus_int32: Length of packet
+       Returns
+           Number of samples
+       Return values
+           OPUS_BAD_ARG Insufficient data was passed to the function
+           OPUS_INVALID_PACKET The compressed data passed is corrupted or of
+           an unsupported type
+   int opus_decoder_get_size (int channels)
+       Gets the size of an OpusDecoder structure.
+       Parameters
+           channels int: Number of channels. This must be 1 or 2.
+       Returns
+           The size in bytes.
+   int opus_decoder_init (OpusDecoder * st, opus_int32 Fs, int channels)
+       Initializes a previously allocated decoder state. The state must be at
+       least the size returned by opus_decoder_get_size(). This is intended
+       for applications which use their own allocator instead of malloc.
+       See also
+           opus_decoder_create,opus_decoder_get_size To reset a previously
+           initialized state, use the OPUS_RESET_STATE CTL.
+       Parameters
+           st OpusDecoder*: Decoder state.
+           Fs opus_int32: Sampling rate to decode to (Hz). This must be one of
+           8000, 12000, 16000, 24000, or 48000.
+           channels int: Number of channels (1 or 2) to decode
+       Return values
+           OPUS_OK Success or Error codes
+   int opus_packet_get_bandwidth (const unsigned char * data)
+       Gets the bandwidth of an Opus packet.
+       Parameters
+           data char*: Opus packet
+       Return values
+           OPUS_BANDWIDTH_NARROWBAND Narrowband (4kHz bandpass)
+           OPUS_BANDWIDTH_MEDIUMBAND Mediumband (6kHz bandpass)
+           OPUS_BANDWIDTH_WIDEBAND Wideband (8kHz bandpass)
+           OPUS_BANDWIDTH_SUPERWIDEBAND Superwideband (12kHz bandpass)
+           OPUS_BANDWIDTH_FULLBAND Fullband (20kHz bandpass)
+           OPUS_INVALID_PACKET The compressed data passed is corrupted or of
+           an unsupported type
+   int opus_packet_get_nb_channels (const unsigned char * data)
+       Gets the number of channels from an Opus packet.
+       Parameters
+           data char*: Opus packet
+       Returns
+           Number of channels
+       Return values
+           OPUS_INVALID_PACKET The compressed data passed is corrupted or of
+           an unsupported type
+   int opus_packet_get_nb_frames (const unsigned char packet[], opus_int32
+       len)
+       Gets the number of frames in an Opus packet.
+       Parameters
+           packet char*: Opus packet
+           len opus_int32: Length of packet
+       Returns
+           Number of frames
+       Return values
+           OPUS_BAD_ARG Insufficient data was passed to the function
+           OPUS_INVALID_PACKET The compressed data passed is corrupted or of
+           an unsupported type
+   int opus_packet_get_nb_samples (const unsigned char packet[], opus_int32
+       len, opus_int32 Fs)
+       Gets the number of samples of an Opus packet.
+       Parameters
+           packet char*: Opus packet
+           len opus_int32: Length of packet
+           Fs opus_int32: Sampling rate in Hz. This must be a multiple of 400,
+           or inaccurate results will be returned.
+       Returns
+           Number of samples
+       Return values
+           OPUS_BAD_ARG Insufficient data was passed to the function
+           OPUS_INVALID_PACKET The compressed data passed is corrupted or of
+           an unsupported type
+   int opus_packet_get_samples_per_frame (const unsigned char * data,
+       opus_int32 Fs)
+       Gets the number of samples per frame from an Opus packet.
+       Parameters
+           data char*: Opus packet. This must contain at least one byte of
+           data.
+           Fs opus_int32: Sampling rate in Hz. This must be a multiple of 400,
+           or inaccurate results will be returned.
+       Returns
+           Number of samples per frame.
+   int opus_packet_parse (const unsigned char * data, opus_int32 len, unsigned
+       char * out_toc, const unsigned char * frames[48], opus_int16 size[48],
+       int * payload_offset)
+       Parse an opus packet into one or more frames. Opus_decode will perform
+       this operation internally so most applications do not need to use this
+       function. This function does not copy the frames, the returned pointers
+       are pointers into the input packet.
+       Parameters
+           data char*: Opus packet to be parsed
+           len opus_int32: size of data
+           out_toc char*: TOC pointer
+           frames char*[48] encapsulated frames
+           size opus_int16[48] sizes of the encapsulated frames
+           payload_offset int*: returns the position of the payload within the
+           packet (in bytes)
+       Returns
+           number of frames
+   void opus_pcm_soft_clip (float * pcm, int frame_size, int channels, float *
+       softclip_mem)
+       Applies soft-clipping to bring a float signal within the [-1,1] range.
+       If the signal is already in that range, nothing is done. If there are
+       values outside of [-1,1], then the signal is clipped as smoothly as
+       possible to both fit in the range and avoid creating excessive
+       distortion in the process.
+       Parameters
+           pcm float*: Input PCM and modified PCM
+           frame_size int Number of samples per channel to process
+           channels int: Number of channels
+           softclip_mem float*: State memory for the soft clipping process
+           (one float per channel, initialized to zero)
+Author
+       Generated automatically by Doxygen for Opus from the source code.
+
+Version 1.3.1                   Fri Feb 11 2022                opus_decoder(3)

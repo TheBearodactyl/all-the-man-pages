@@ -1,0 +1,143 @@
+pthread_attr_setstack(3)   Library Functions Manual   pthread_attr_setstack(3)
+
+NAME
+       pthread_attr_setstack, pthread_attr_getstack - set/get stack attributes
+       in thread attributes object
+
+LIBRARY
+       POSIX threads library (libpthread, -lpthread)
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_attr_setstack(pthread_attr_t *attr,
+                                 void stackaddr[.stacksize],
+                                 size_t stacksize);
+       int pthread_attr_getstack(const pthread_attr_t *restrict attr,
+                                 void **restrict stackaddr,
+                                 size_t *restrict stacksize);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       pthread_attr_getstack(), pthread_attr_setstack():
+           _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       The pthread_attr_setstack() function sets the stack address  and  stack
+       size  attributes of the thread attributes object referred to by attr to
+       the values specified in stackaddr and stacksize,  respectively.   These
+       attributes  specify  the  location and size of the stack that should be
+       used by a thread that is created using  the  thread  attributes  object
+       attr.
+
+       stackaddr  should  point  to the lowest addressable byte of a buffer of
+       stacksize bytes that was allocated by the caller.  The pages of the al‐
+       located buffer should be both readable and writable.
+
+       The  pthread_attr_getstack()  function  returns  the  stack address and
+       stack size attributes of the thread attributes object  referred  to  by
+       attr  in  the  buffers  pointed  to by stackaddr and stacksize, respec‐
+       tively.
+
+RETURN VALUE
+       On success, these functions return 0; on error, they return  a  nonzero
+       error number.
+
+ERRORS
+       pthread_attr_setstack() can fail with the following error:
+
+       EINVAL stacksize is less than PTHREAD_STACK_MIN (16384) bytes.  On some
+              systems, this error  may  also  occur  if  stackaddr  or  stack‐
+              addr + stacksize is not suitably aligned.
+
+       POSIX.1  also  documents an EACCES error if the stack area described by
+       stackaddr and stacksize is  not  both  readable  and  writable  by  the
+       caller.
+
+ATTRIBUTES
+       For  an  explanation  of  the  terms  used  in  this  section,  see at‐
+       tributes(7).
+
+       ┌────────────────────────────────────────────┬───────────────┬─────────┐
+       │Interface                                   │ Attribute     │ Value   │
+       ├────────────────────────────────────────────┼───────────────┼─────────┤
+       │pthread_attr_setstack(),                    │ Thread safety │ MT-Safe │
+       │pthread_attr_getstack()                     │               │         │
+       └────────────────────────────────────────────┴───────────────┴─────────┘
+
+STANDARDS
+       POSIX.1-2008.
+
+HISTORY
+       glibc 2.2.  POSIX.1-2001.
+
+NOTES
+       These  functions  are provided for applications that must ensure that a
+       thread's stack is placed in a particular location.  For  most  applica‐
+       tions,  this is not necessary, and the use of these functions should be
+       avoided.  (Use pthread_attr_setstacksize(3) if  an  application  simply
+       requires a stack size other than the default.)
+
+       When  an application employs pthread_attr_setstack(), it takes over the
+       responsibility of allocating the stack.  Any guard size value that  was
+       set  using  pthread_attr_setguardsize(3)  is ignored.  If deemed neces‐
+       sary, it is the application's responsibility to allocate a  guard  area
+       (one or more pages protected against reading and writing) to handle the
+       possibility of stack overflow.
+
+       The address specified in stackaddr should be suitably aligned: for full
+       portability,  align  it  on  a  page  boundary (sysconf(_SC_PAGESIZE)).
+       posix_memalign(3) may be useful for  allocation.   Probably,  stacksize
+       should also be a multiple of the system page size.
+
+       If attr is used to create multiple threads, then the caller must change
+       the stack address attribute between calls to pthread_create(3);  other‐
+       wise,  the  threads  will attempt to use the same memory area for their
+       stacks, and chaos will ensue.
+
+EXAMPLES
+       See pthread_attr_init(3).
+
+SEE ALSO
+       mmap(2), mprotect(2), posix_memalign(3), pthread_attr_init(3),
+       pthread_attr_setguardsize(3), pthread_attr_setstackaddr(3),
+       pthread_attr_setstacksize(3), pthread_create(3), pthreads(7)
+
+Linux man-pages 6.04              2023-03-30          pthread_attr_setstack(3)
+PTHREAD_ATTR_SETSTACK(3P)  POSIX Programmer's Manual PTHREAD_ATTR_SETSTACK(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux
+       implementation of this interface may differ (consult the  corresponding
+       Linux  manual page for details of Linux behavior), or the interface may
+       not be implemented on Linux.
+
+NAME
+       pthread_attr_setstack — set the stack attribute
+
+SYNOPSIS
+       #include <pthread.h>
+
+       int pthread_attr_setstack(pthread_attr_t *attr, void *stackaddr,
+           size_t stacksize);
+
+DESCRIPTION
+       Refer to pthread_attr_getstack().
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in  electronic  form
+       from  IEEE Std 1003.1-2017, Standard for Information Technology -- Por‐
+       table Operating System Interface (POSIX), The Open Group Base  Specifi‐
+       cations  Issue  7, 2018 Edition, Copyright (C) 2018 by the Institute of
+       Electrical and Electronics Engineers, Inc and The Open Group.   In  the
+       event of any discrepancy between this version and the original IEEE and
+       The Open Group Standard, the original IEEE and The Open Group  Standard
+       is  the  referee document. The original Standard can be obtained online
+       at http://www.opengroup.org/unix/online.html .
+
+       Any typographical or formatting errors that appear  in  this  page  are
+       most likely to have been introduced during the conversion of the source
+       files to man page format. To report such errors,  see  https://www.ker‐
+       nel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                  2017            PTHREAD_ATTR_SETSTACK(3P)

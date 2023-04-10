@@ -1,0 +1,412 @@
+curs_inopts(3X)                                                curs_inopts(3X)
+
+NAME
+       cbreak, nocbreak, echo, noecho, halfdelay, intrflush, keypad, meta, nl,
+       nonl, nodelay, notimeout, raw, noraw, qiflush, noqiflush, timeout,
+       wtimeout, typeahead - curses input options
+
+SYNOPSIS
+       #include <curses.h>
+
+       int cbreak(void);
+       int nocbreak(void);
+
+       int echo(void);
+       int noecho(void);
+
+       int intrflush(WINDOW *win, bool bf);
+       int keypad(WINDOW *win, bool bf);
+       int meta(WINDOW *win, bool bf);
+       int nodelay(WINDOW *win, bool bf);
+       int notimeout(WINDOW *win, bool bf);
+
+       int nl(void);
+       int nonl(void);
+
+       int raw(void);
+       int noraw(void);
+
+       void qiflush(void);
+       void noqiflush(void);
+
+       int halfdelay(int tenths);
+       void timeout(int delay);
+       void wtimeout(WINDOW *win, int delay);
+
+       int typeahead(int fd);
+
+DESCRIPTION
+       The ncurses library provides several functions which let an application
+       change the way input from the terminal is handled.   Some  are  global,
+       applying to all windows.  Others apply only to a specific window.  Win‐
+       dow-specific settings are not automatically applied to new  or  derived
+       windows.   An  application must apply these to each window, if the same
+       behavior is needed.
+
+   cbreak/nocbreak
+       Normally, the tty driver buffers typed characters until  a  newline  or
+       carriage  return  is typed.  The cbreak routine disables line buffering
+       and erase/kill character-processing (interrupt and flow control charac‐
+       ters  are  unaffected), making characters typed by the user immediately
+       available to the program.  The nocbreak routine returns the terminal to
+       normal (cooked) mode.
+
+       Initially the terminal may or may not be in cbreak mode, as the mode is
+       inherited; therefore, a program should call cbreak or nocbreak  explic‐
+       itly.   Most  interactive  programs  using  curses set the cbreak mode.
+       Note that cbreak overrides raw.  [See curs_getch(3X) for  a  discussion
+       of how these routines interact with echo and noecho.]
+
+   echo/noecho
+       The  echo  and  noecho routines control whether characters typed by the
+       user are echoed by getch(3X) as they are typed.   Echoing  by  the  tty
+       driver  is  always  disabled,  but  initially getch is in echo mode, so
+       characters typed are echoed.  Authors of most interactive programs pre‐
+       fer  to do their own echoing in a controlled area of the screen, or not
+       to echo at all, so  they  disable  echoing  by  calling  noecho.   [See
+       curs_getch(3X)  for  a  discussion  of how these routines interact with
+       cbreak and nocbreak.]
+
+   halfdelay
+       The halfdelay routine is used for half-delay mode, which is similar  to
+       cbreak mode in that characters typed by the user are immediately avail‐
+       able to the program.  However, after blocking for tenths tenths of sec‐
+       onds,  ERR  is returned if nothing has been typed.  The value of tenths
+       must be a number between 1 and 255.  Use nocbreak to  leave  half-delay
+       mode.
+
+   intrflush
+       If  the  intrflush option is enabled (bf is TRUE), and an interrupt key
+       is pressed on the keyboard (interrupt, break, quit), all output in  the
+       tty  driver queue will be flushed, giving the effect of faster response
+       to the interrupt, but causing curses to have the wrong idea of what  is
+       on  the screen.  Disabling the option (bf is FALSE) prevents the flush.
+       The default for the option is inherited from the tty  driver  settings.
+       The window argument is ignored.
+
+   keypad
+       The  keypad  option  enables the keypad of the user's terminal.  If en‐
+       abled (bf is TRUE), the user can press a function key (such as an arrow
+       key)  and  wgetch(3X)  returns a single value representing the function
+       key, as in KEY_LEFT.  If disabled (bf is FALSE), curses does not  treat
+       function keys specially and the program has to interpret the escape se‐
+       quences itself.  If the keypad in the terminal can be turned  on  (made
+       to  transmit)  and  off  (made to work locally), turning on this option
+       causes the terminal keypad to be turned on when wgetch(3X)  is  called.
+       The default value for keypad is FALSE.
+
+   meta
+       Initially,  whether the terminal returns 7 or 8 significant bits on in‐
+       put depends on the control mode of the tty driver [see termios(3)].  To
+       force  8  bits  to be returned, invoke meta(win, TRUE); this is equiva‐
+       lent, under POSIX, to setting the CS8 flag on the terminal.  To force 7
+       bits to be returned, invoke meta(win, FALSE); this is equivalent, under
+       POSIX, to setting the CS7 flag on the terminal.  The  window  argument,
+       win, is always ignored.  If the terminfo capabilities smm (meta_on) and
+       rmm (meta_off) are defined for the terminal, smm is sent to the  termi‐
+       nal  when  meta(win,  TRUE)  is  called  and rmm is sent when meta(win,
+       FALSE) is called.
+
+   nl/nonl
+       The nl and nonl routines control whether the underlying display  device
+       translates the return key into newline on input.
+
+   nodelay
+       The nodelay option causes getch to be a non-blocking call.  If no input
+       is ready, getch returns ERR.  If disabled (bf is  FALSE),  getch  waits
+       until a key is pressed.
+
+   notimeout
+       When  interpreting  an  escape  sequence, wgetch(3X) sets a timer while
+       waiting for the next character.  If  notimeout(win,  TRUE)  is  called,
+       then  wgetch  does  not  set a timer.  The purpose of the timeout is to
+       differentiate between sequences received from a function key and  those
+       typed by a user.
+
+   raw/noraw
+       The  raw and noraw routines place the terminal into or out of raw mode.
+       Raw mode is similar to cbreak mode, in that characters typed are  imme‐
+       diately  passed  through to the user program.  The differences are that
+       in raw mode, the interrupt, quit, suspend, and flow control  characters
+       are  all  passed through uninterpreted, instead of generating a signal.
+       The behavior of the BREAK key depends on other bits in the  tty  driver
+       that are not set by curses.
+
+   qiflush/noqiflush
+       When  the  noqiflush  routine is used, normal flush of input and output
+       queues associated with the INTR, QUIT and SUSP characters will  not  be
+       done  [see  termios(3)].   When  qiflush  is called, the queues will be
+       flushed when these control characters are read.  You may want  to  call
+       noqiflush  in a signal handler if you want output to continue as though
+       the interrupt had not occurred, after the handler exits.
+
+   timeout/wtimeout
+       The timeout and wtimeout routines set blocking or non-blocking read for
+       a  given  window.   If  delay is negative, blocking read is used (i.e.,
+       waits indefinitely for input).  If delay  is  zero,  then  non-blocking
+       read is used (i.e., read returns ERR if no input is waiting).  If delay
+       is positive, then read blocks for delay milliseconds, and  returns  ERR
+       if  there  is  still  no input.  Hence, these routines provide the same
+       functionality as nodelay, plus the additional capability of being  able
+       to block for only delay milliseconds (where delay is positive).
+
+   typeahead
+       The curses library does “line-breakout optimization” by looking for ty‐
+       peahead periodically while updating the screen.  If input is found, and
+       it  is  coming  from  a  tty, the current update is postponed until re‐
+       fresh(3X) or doupdate is called again.  This allows faster response  to
+       commands  typed in advance.  Normally, the input FILE pointer passed to
+       newterm, or stdin in the case that initscr was used, will be used to do
+       this typeahead checking.  The typeahead routine specifies that the file
+       descriptor fd is to be used to check for typeahead instead.  If  fd  is
+       -1, then no typeahead checking is done.
+
+RETURN VALUE
+       All  routines  that  return  an  integer return ERR upon failure and OK
+       (SVr4 specifies only “an integer value other than ERR”) upon successful
+       completion,  unless  otherwise  noted in the preceding routine descrip‐
+       tions.
+
+       X/Open does not define any error conditions.  In  this  implementation,
+       functions  with  a window parameter will return an error if it is null.
+       Any function will also return an error if the terminal was not initial‐
+       ized.  Also,
+
+              halfdelay
+                   returns  an  error  if  its  parameter is outside the range
+                   1..255.
+
+PORTABILITY
+       These functions are described in the XSI Curses standard, Issue 4.
+
+       The ncurses library obeys the XPG4 standard and the historical practice
+       of  the  AT&T  curses  implementations, in that the echo bit is cleared
+       when curses initializes the terminal state.  BSD curses  differed  from
+       this  slightly;  it left the echo bit on at initialization, but the BSD
+       raw call turned it off as a side-effect.   For  best  portability,  set
+       echo  or noecho explicitly just after initialization, even if your pro‐
+       gram remains in cooked mode.
+
+       The XSI Curses standard is ambiguous on the  question  of  whether  raw
+       should  disable  the  CRLF translations controlled by nl and nonl.  BSD
+       curses did turn off these translations; AT&T curses (at least  as  late
+       as  SVr1)  did not.  We chose to do so, on the theory that a programmer
+       requesting raw input wants a clean  (ideally  8-bit  clean)  connection
+       that the operating system will not alter.
+
+       When keypad is first enabled, ncurses loads the key-definitions for the
+       current terminal description.  If the terminal description includes ex‐
+       tended string capabilities, e.g., from using the -x option of tic, then
+       ncurses also defines keys for the capabilities whose names  begin  with
+       “k”.  The corresponding keycodes are generated and (depending on previ‐
+       ous loads of terminal descriptions) may differ from one execution of  a
+       program to the next.  The generated keycodes are recognized by the key‐
+       name function (which will then return a name beginning with “k”  denot‐
+       ing  the terminfo capability name rather than “K”, used for curses key-
+       names).  On the other hand, an application can use define_key to estab‐
+       lish a specific keycode for a given string.  This makes it possible for
+       an application to check for  an  extended  capability's  presence  with
+       tigetstr, and reassign the keycode to match its own needs.
+
+       Low-level applications can use tigetstr to obtain the definition of any
+       particular string capability.  Higher-level applications which use  the
+       curses  wgetch  and  similar functions to return keycodes rely upon the
+       order in which the strings are loaded.  If more than one key definition
+       has  the  same  string  value, then wgetch can return only one keycode.
+       Most curses implementations (including ncurses) load key definitions in
+       the  order  defined  by the array of string capability names.  The last
+       key to be loaded determines the keycode which  will  be  returned.   In
+       ncurses,  you  may  also  have extended capabilities interpreted as key
+       definitions.  These are loaded after the predefined keys, and if a  ca‐
+       pability's value is the same as a previously-loaded key definition, the
+       later definition is the one used.
+
+NOTES
+       Note that echo, noecho, halfdelay, intrflush, meta, nl, nonl,  nodelay,
+       notimeout, noqiflush, qiflush, timeout, and wtimeout may be macros.
+
+       The  noraw  and  nocbreak calls follow historical practice in that they
+       attempt to restore to normal (“cooked”) mode from raw and cbreak  modes
+       respectively.   Mixing raw/noraw and cbreak/nocbreak calls leads to tty
+       driver control states that are hard to predict or understand; it is not
+       recommended.
+
+SEE ALSO
+       curses(3X),   curs_getch(3X),   curs_initscr(3X),   curs_util(3X),  de‐
+       fine_key(3X), termios(3)
+
+                                                               curs_inopts(3X)
+raw(7)                 Miscellaneous Information Manual                 raw(7)
+
+NAME
+       raw - Linux IPv4 raw sockets
+
+SYNOPSIS
+       #include <sys/socket.h>
+       #include <netinet/in.h>
+       raw_socket = socket(AF_INET, SOCK_RAW, int protocol);
+
+DESCRIPTION
+       Raw  sockets  allow new IPv4 protocols to be implemented in user space.
+       A raw socket receives or sends the  raw  datagram  not  including  link
+       level headers.
+
+       The  IPv4 layer generates an IP header when sending a packet unless the
+       IP_HDRINCL socket option is enabled on the socket.  When it is enabled,
+       the  packet must contain an IP header.  For receiving, the IP header is
+       always included in the packet.
+
+       In order to create a raw socket, a process must  have  the  CAP_NET_RAW
+       capability in the user namespace that governs its network namespace.
+
+       All  packets  or  errors matching the protocol number specified for the
+       raw socket are passed to this socket.  For a list of the allowed proto‐
+       cols,   see   the   IANA   list   of   assigned   protocol  numbers  at
+       ⟨http://www.iana.org/assignments/protocol-numbers/⟩   and   getprotoby‐
+       name(3).
+
+       A  protocol  of  IPPROTO_RAW  implies enabled IP_HDRINCL and is able to
+       send any IP protocol that is specified in the passed header.  Receiving
+       of all IP protocols via IPPROTO_RAW is not possible using raw sockets.
+
+              ┌───────────────────────────────────────────────────┐
+              │IP Header fields modified on sending by IP_HDRINCL │
+              ├──────────────────────┬────────────────────────────┤
+              │IP Checksum           │ Always filled in           │
+              ├──────────────────────┼────────────────────────────┤
+              │Source Address        │ Filled in when zero        │
+              ├──────────────────────┼────────────────────────────┤
+              │Packet ID             │ Filled in when zero        │
+              ├──────────────────────┼────────────────────────────┤
+              │Total Length          │ Always filled in           │
+              └──────────────────────┴────────────────────────────┘
+       If  IP_HDRINCL is specified and the IP header has a nonzero destination
+       address, then the destination address of the socket is  used  to  route
+       the  packet.   When MSG_DONTROUTE is specified, the destination address
+       should refer to a local interface, otherwise a routing table lookup  is
+       done anyway but gatewayed routes are ignored.
+
+       If IP_HDRINCL isn't set, then IP header options can be set on raw sock‐
+       ets with setsockopt(2); see ip(7) for more information.
+
+       Starting with Linux 2.2, all IP header fields and options  can  be  set
+       using  IP  socket  options.   This means raw sockets are usually needed
+       only for new protocols or protocols with no user interface (like ICMP).
+
+       When a packet is received, it is passed to any raw sockets  which  have
+       been  bound  to its protocol before it is passed to other protocol han‐
+       dlers (e.g., kernel protocol modules).
+
+   Address format
+       For sending and receiving datagrams (sendto(2), recvfrom(2), and  simi‐
+       lar),  raw  sockets  use the standard sockaddr_in address structure de‐
+       fined in ip(7).  The sin_port field could be used  to  specify  the  IP
+       protocol  number, but it is ignored for sending in Linux 2.2 and later,
+       and should be always set  to  0  (see  BUGS).   For  incoming  packets,
+       sin_port is set to zero.
+
+   Socket options
+       Raw socket options can be set with setsockopt(2) and read with getsock‐
+       opt(2) by passing the IPPROTO_RAW family flag.
+
+       ICMP_FILTER
+              Enable a special  filter  for  raw  sockets  bound  to  the  IP‐
+              PROTO_ICMP protocol.  The value has a bit set for each ICMP mes‐
+              sage type which should be filtered out.  The default is to  fil‐
+              ter no ICMP messages.
+
+       In  addition,  all  ip(7)  IPPROTO_IP socket options valid for datagram
+       sockets are supported.
+
+   Error handling
+       Errors originating from the network are passed to the  user  only  when
+       the  socket  is  connected or the IP_RECVERR flag is enabled.  For con‐
+       nected sockets, only EMSGSIZE and EPROTO are passed for  compatibility.
+       With IP_RECVERR, all network errors are saved in the error queue.
+
+ERRORS
+       EACCES User  tried  to  send  to a broadcast address without having the
+              broadcast flag set on the socket.
+
+       EFAULT An invalid memory address was supplied.
+
+       EINVAL Invalid argument.
+
+       EMSGSIZE
+              Packet too big.  Either  Path  MTU  Discovery  is  enabled  (the
+              IP_MTU_DISCOVER socket flag) or the packet size exceeds the max‐
+              imum allowed IPv4 packet size of 64 kB.
+
+       EOPNOTSUPP
+              Invalid flag has been passed to a socket call (like MSG_OOB).
+
+       EPERM  The user doesn't have permission to open raw sockets.  Only pro‐
+              cesses  with an effective user ID of 0 or the CAP_NET_RAW attri‐
+              bute may do that.
+
+       EPROTO An ICMP error has arrived reporting a parameter problem.
+
+VERSIONS
+       IP_RECVERR and ICMP_FILTER are new in Linux 2.2.  They are Linux exten‐
+       sions and should not be used in portable programs.
+
+       Linux  2.0  enabled  some  bug-to-bug compatibility with BSD in the raw
+       socket code when the SO_BSDCOMPAT socket option was  set;  since  Linux
+       2.2, this option no longer has that effect.
+
+NOTES
+       By default, raw sockets do path MTU (Maximum Transmission Unit) discov‐
+       ery.  This means the kernel will keep track of the MTU  to  a  specific
+       target  IP  address and return EMSGSIZE when a raw packet write exceeds
+       it.  When this happens, the  application  should  decrease  the  packet
+       size.   Path MTU discovery can be also turned off using the IP_MTU_DIS‐
+       COVER socket option or the /proc/sys/net/ipv4/ip_no_pmtu_disc file, see
+       ip(7) for details.  When turned off, raw sockets will fragment outgoing
+       packets that exceed the interface MTU.  However, disabling  it  is  not
+       recommended for performance and reliability reasons.
+
+       A raw socket can be bound to a specific local address using the bind(2)
+       call.  If it isn't bound, all packets with the  specified  IP  protocol
+       are  received.   In  addition,  a raw socket can be bound to a specific
+       network device using SO_BINDTODEVICE; see socket(7).
+
+       An IPPROTO_RAW socket is send only.  If you really want to receive  all
+       IP  packets,  use  a packet(7) socket with the ETH_P_IP protocol.  Note
+       that packet sockets don't reassemble IP fragments, unlike raw sockets.
+
+       If you want to receive all ICMP packets for a datagram  socket,  it  is
+       often better to use IP_RECVERR on that particular socket; see ip(7).
+
+       Raw sockets may tap all IP protocols in Linux, even protocols like ICMP
+       or TCP which have a protocol module in the kernel.  In this  case,  the
+       packets  are  passed  to  both the kernel module and the raw socket(s).
+       This should not be relied upon in portable  programs,  many  other  BSD
+       socket implementation have limitations here.
+
+       Linux never changes headers passed from the user (except for filling in
+       some zeroed fields as described for  IP_HDRINCL).   This  differs  from
+       many other implementations of raw sockets.
+
+       Raw  sockets  are  generally rather unportable and should be avoided in
+       programs intended to be portable.
+
+       Sending on raw sockets should take the IP protocol from sin_port;  this
+       ability was lost in Linux 2.2.  The workaround is to use IP_HDRINCL.
+
+BUGS
+       Transparent proxy extensions are not described.
+
+       When the IP_HDRINCL option is set, datagrams will not be fragmented and
+       are limited to the interface MTU.
+
+       Setting the IP protocol for sending in sin_port got lost in Linux  2.2.
+       The  protocol that the socket was bound to or that was specified in the
+       initial socket(2) call is always used.
+
+SEE ALSO
+       recvmsg(2), sendmsg(2), capabilities(7), ip(7), socket(7)
+
+       RFC 1191 for path MTU discovery.  RFC 791 and the  <linux/ip.h>  header
+       file for the IP protocol.
+
+Linux man-pages 6.04              2022-12-15                            raw(7)

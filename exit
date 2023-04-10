@@ -1,0 +1,362 @@
+EXIT(1P)                                                                                 POSIX Programmer's Manual                                                                                EXIT(1P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       exit — cause the shell to exit
+
+SYNOPSIS
+       exit [n]
+
+DESCRIPTION
+       The exit utility shall cause the shell to exit from its current execution environment with the exit status specified by the unsigned decimal integer n.  If the current execution environment is  a
+       subshell  environment,  the  shell shall exit from the subshell environment with the specified exit status and continue in the environment from which that subshell environment was invoked; other‐
+       wise, the shell utility shall terminate with the specified exit status. If n is specified, but its value is not between 0 and 255 inclusively, the exit status is undefined.
+
+       A trap on EXIT shall be executed before the shell terminates, except when the exit utility is invoked in that trap itself, in which case the shell shall exit immediately.
+
+OPTIONS
+       None.
+
+OPERANDS
+       See the DESCRIPTION.
+
+STDIN
+       Not used.
+
+INPUT FILES
+       None.
+
+ENVIRONMENT VARIABLES
+       None.
+
+ASYNCHRONOUS EVENTS
+       Default.
+
+STDOUT
+       Not used.
+
+STDERR
+       The standard error shall be used only for diagnostic messages.
+
+OUTPUT FILES
+       None.
+
+EXTENDED DESCRIPTION
+       None.
+
+EXIT STATUS
+       The exit status shall be n, if specified, except that the behavior is unspecified if n is not an unsigned decimal integer or is greater than 255. Otherwise, the value shall be the exit  value  of
+       the  last  command  executed,  or zero if no command was executed. When exit is executed in a trap action, the last command is considered to be the command that executed immediately preceding the
+       trap action.
+
+CONSEQUENCES OF ERRORS
+       Default.
+
+       The following sections are informative.
+
+APPLICATION USAGE
+       None.
+
+EXAMPLES
+       Exit with a true value:
+
+           exit 0
+
+       Exit with a false value:
+
+           exit 1
+
+       Propagate error handling from within a subshell:
+
+           (
+               command1 || exit 1
+               command2 || exit 1
+               exec command3
+           ) > outputfile || exit 1
+           echo "outputfile created successfully"
+
+RATIONALE
+       As explained in other sections, certain exit status values have been reserved for special uses and should be used by applications only for those purposes:
+
+        126    A file to be executed was found, but it was not an executable utility.
+
+        127    A utility to be executed was not found.
+
+       >128    A command was interrupted by a signal.
+
+       The behavior of exit when given an invalid argument or unknown option is unspecified, because of differing practices in the various historical implementations. A value larger than  255  might  be
+       truncated  by the shell, and be unavailable even to a parent process that uses waitid() to get the full exit value. It is recommended that implementations that detect any usage error should cause
+       a non-zero exit status (or, if the shell is interactive and the error does not cause the shell to abort, store a non-zero value in "$?"), but even this was not done historically in all shells.
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       Section 2.14, Special Built-In Utilities
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           EXIT(1P)
+exit(n)                                                                                    Tcl Built-In Commands                                                                                   exit(n)
+
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+NAME
+       exit - End the application
+
+SYNOPSIS
+       exit ?returnCode?
+__________________________________________________________________________________________________________________________________________________________________________________________________________
+
+DESCRIPTION
+       Terminate the process, returning returnCode to the system as the exit status.  If returnCode is not specified then it defaults to 0.
+
+EXAMPLE
+       Since non-zero exit codes are usually interpreted as error cases by the calling process, the exit command is an important part of signaling that something fatal has gone wrong. This code fragment
+       is useful in scripts to act as a general problem trap:
+
+              proc main {} {
+                  # ... put the real main code in here ...
+              }
+
+              if {[catch {main} msg options]} {
+                  puts stderr "unexpected script error: $msg"
+                  if {[info exists env(DEBUG)]} {
+                      puts stderr "---- BEGIN TRACE ----"
+                      puts stderr [dict get $options -errorinfo]
+                      puts stderr "---- END TRACE ----"
+                  }
+
+                  # Reserve code 1 for "expected" error exits...
+                  exit 2
+              }
+
+SEE ALSO
+       exec(n)
+
+KEYWORDS
+       abort, exit, process
+
+Tcl                                                                                                                                                                                                exit(n)
+exit(3)                                                                                  Library Functions Manual                                                                                  exit(3)
+
+NAME
+       exit - cause normal process termination
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       [[noreturn]] void exit(int status);
+
+DESCRIPTION
+       The exit() function causes normal process termination and the least significant byte of status (i.e., status & 0xFF) is returned to the parent (see wait(2)).
+
+       All functions registered with atexit(3) and on_exit(3) are called, in the reverse order of their registration.  (It is possible for one of these functions to use atexit(3) or on_exit(3) to regis‐
+       ter an additional function to be executed during exit processing; the new registration is added to the front of the list of functions that remain to be called.)  If one of  these  functions  does
+       not  return  (e.g., it calls _exit(2), or kills itself with a signal), then none of the remaining functions is called, and further exit processing (in particular, flushing of stdio(3) streams) is
+       abandoned.  If a function has been registered multiple times using atexit(3) or on_exit(3), then it is called as many times as it was registered.
+
+       All open stdio(3) streams are flushed and closed.  Files created by tmpfile(3) are removed.
+
+       The C standard specifies two constants, EXIT_SUCCESS and EXIT_FAILURE, that may be passed to exit() to indicate successful or unsuccessful termination, respectively.
+
+RETURN VALUE
+       The exit() function does not return.
+
+ATTRIBUTES
+       For an explanation of the terms used in this section, see attributes(7).
+
+       ┌────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┬───────────────┬─────────────────────┐
+       │Interface                                                                                                                                                   │ Attribute     │ Value               │
+       ├────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┼───────────────┼─────────────────────┤
+       │exit()                                                                                                                                                      │ Thread safety │ MT-Unsafe race:exit │
+       └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┴───────────────┴─────────────────────┘
+
+       The exit() function uses a global variable that is not protected, so it is not thread-safe.
+
+STANDARDS
+       C11, POSIX.1-2008.
+
+HISTORY
+       C89, POSIX.1-2001, SVr4, 4.3BSD.
+
+NOTES
+       The behavior is undefined if one of the functions registered using atexit(3) and on_exit(3) calls either exit() or longjmp(3).  Note that a call to execve(2) removes registrations  created  using
+       atexit(3) and on_exit(3).
+
+       The  use  of EXIT_SUCCESS and EXIT_FAILURE is slightly more portable (to non-UNIX environments) than the use of 0 and some nonzero value like 1 or -1.  In particular, VMS uses a different conven‐
+       tion.
+
+       BSD has attempted to standardize exit codes (which some C libraries such as the GNU C library have also adopted); see the file <sysexits.h>.
+
+       After exit(), the exit status must be transmitted to the parent process.  There are three cases:
+
+       •  If the parent has set SA_NOCLDWAIT, or has set the SIGCHLD handler to SIG_IGN, the status is discarded and the child dies immediately.
+
+       •  If the parent was waiting on the child, it is notified of the exit status and the child dies immediately.
+
+       •  Otherwise, the child becomes a "zombie" process: most of the process resources are recycled, but a slot containing minimal information about the child process (termination status, resource us‐
+          age statistics) is retained in process table.  This allows the parent to subsequently use waitpid(2) (or similar) to learn the termination status of the child; at that point the zombie process
+          slot is released.
+
+       If the implementation supports the SIGCHLD signal, this signal is sent to the parent.  If the parent has set SA_NOCLDWAIT, it is undefined whether a SIGCHLD signal is sent.
+
+   Signals sent to other processes
+       If the exiting process is a session leader and its controlling terminal is the controlling terminal of the session, then each process in the foreground process group of this controlling  terminal
+       is sent a SIGHUP signal, and the terminal is disassociated from this session, allowing it to be acquired by a new controlling process.
+
+       If  the  exit of the process causes a process group to become orphaned, and if any member of the newly orphaned process group is stopped, then a SIGHUP signal followed by a SIGCONT signal will be
+       sent to each process in this process group.  See setpgid(2) for an explanation of orphaned process groups.
+
+       Except in the above cases, where the signalled processes may be children of the terminating process, termination of a process does not in general cause a signal to be sent  to  children  of  that
+       process.  However, a process can use the prctl(2) PR_SET_PDEATHSIG operation to arrange that it receives a signal if its parent terminates.
+
+SEE ALSO
+       _exit(2), get_robust_list(2), setpgid(2), wait(2), atexit(3), on_exit(3), tmpfile(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                         exit(3)
+EXIT(3P)                                                                                 POSIX Programmer's Manual                                                                                EXIT(3P)
+
+PROLOG
+       This  manual  page is part of the POSIX Programmer's Manual.  The Linux implementation of this interface may differ (consult the corresponding Linux manual page for details of Linux behavior), or
+       the interface may not be implemented on Linux.
+
+NAME
+       exit — terminate a process
+
+SYNOPSIS
+       #include <stdlib.h>
+
+       void exit(int status);
+
+DESCRIPTION
+       The functionality described on this reference page is aligned with the ISO C standard. Any conflict between the requirements described here and the ISO C standard is unintentional. This volume of
+       POSIX.1‐2017 defers to the ISO C standard.
+
+       The  value  of status may be 0, EXIT_SUCCESS, EXIT_FAILURE, or any other value, though only the least significant 8 bits (that is, status & 0377) shall be available from wait() and waitpid(); the
+       full value shall be available from waitid() and in the siginfo_t passed to a signal handler for SIGCHLD.
+
+       The exit() function shall first call all functions registered by atexit(), in the reverse order of their registration, except that a function is called after any previously  registered  functions
+       that  had already been called at the time it was registered. Each function is called as many times as it was registered. If, during the call to any such function, a call to the longjmp() function
+       is made that would terminate the call to the registered function, the behavior is undefined.
+
+       If a function registered by a call to atexit() fails to return, the remaining registered functions shall not be called and the rest of the exit() processing shall not be completed. If  exit()  is
+       called more than once, the behavior is undefined.
+
+       The  exit() function shall then flush all open streams with unwritten buffered data and close all open streams. Finally, the process shall be terminated with the same consequences as described in
+       Consequences of Process Termination.
+
+RETURN VALUE
+       The exit() function does not return.
+
+ERRORS
+       No errors are defined.
+
+       The following sections are informative.
+
+EXAMPLES
+       None.
+
+APPLICATION USAGE
+       None.
+
+RATIONALE
+       See _Exit().
+
+FUTURE DIRECTIONS
+       None.
+
+SEE ALSO
+       _Exit(), atexit(), exec, longjmp(), tmpfile(), wait(), waitid()
+
+       The Base Definitions volume of POSIX.1‐2017, <stdlib.h>
+
+COPYRIGHT
+       Portions of this text are reprinted and reproduced in electronic form from IEEE Std 1003.1-2017, Standard for Information Technology -- Portable Operating System Interface (POSIX), The Open Group
+       Base  Specifications Issue 7, 2018 Edition, Copyright (C) 2018 by the Institute of Electrical and Electronics Engineers, Inc and The Open Group.  In the event of any discrepancy between this ver‐
+       sion and the original IEEE and The Open Group Standard, the original IEEE and The Open Group Standard is the referee document. The original Standard can be  obtained  online  at  http://www.open‐
+       group.org/unix/online.html .
+
+       Any  typographical  or  formatting errors that appear in this page are most likely to have been introduced during the conversion of the source files to man page format. To report such errors, see
+       https://www.kernel.org/doc/man-pages/reporting_bugs.html .
+
+IEEE/The Open Group                                                                                2017                                                                                           EXIT(3P)
+_exit(2)                                                                                    System Calls Manual                                                                                   _exit(2)
+
+NAME
+       _exit, _Exit - terminate the calling process
+
+LIBRARY
+       Standard C library (libc, -lc)
+
+SYNOPSIS
+       #include <unistd.h>
+
+       [[noreturn]] void _exit(int status);
+
+       #include <stdlib.h>
+
+       [[noreturn]] void _Exit(int status);
+
+   Feature Test Macro Requirements for glibc (see feature_test_macros(7)):
+
+       _Exit():
+           _ISOC99_SOURCE || _POSIX_C_SOURCE >= 200112L
+
+DESCRIPTION
+       _exit()  terminates  the  calling  process  "immediately".  Any open file descriptors belonging to the process are closed.  Any children of the process are inherited by init(1) (or by the nearest
+       "subreaper" process as defined through the use of the prctl(2) PR_SET_CHILD_SUBREAPER operation).  The process's parent is sent a SIGCHLD signal.
+
+       The value status & 0xFF is returned to the parent process as the process's exit status, and can be collected by the parent using one of the wait(2) family of calls.
+
+       The function _Exit() is equivalent to _exit().
+
+RETURN VALUE
+       These functions do not return.
+
+STANDARDS
+       _exit()
+              POSIX.1-2008.
+
+       _Exit()
+              C11, POSIX.1-2008.
+
+HISTORY
+       POSIX.1-2001, SVr4, 4.3BSD.
+
+       _Exit() was introduced by C99.
+
+NOTES
+       For a discussion on the effects of an exit, the transmission of exit status, zombie processes, signals sent, and so on, see exit(3).
+
+       The function _exit() is like exit(3), but does not call any functions registered with atexit(3) or on_exit(3).  Open stdio(3) streams are not flushed.  On the other hand, _exit() does close  open
+       file descriptors, and this may cause an unknown delay, waiting for pending output to finish.  If the delay is undesired, it may be useful to call functions like tcflush(3) before calling _exit().
+       Whether any pending I/O is canceled, and which pending I/O may be canceled upon _exit(), is implementation-dependent.
+
+   C library/kernel differences
+       The text above in DESCRIPTION describes the traditional effect of _exit(), which is to terminate a process, and these are the semantics specified by POSIX.1 and implemented by the C library wrap‐
+       per function.  On modern systems, this means termination of all threads in the process.
+
+       By  contrast  with  the C library wrapper function, the raw Linux _exit() system call terminates only the calling thread, and actions such as reparenting child processes or sending SIGCHLD to the
+       parent process are performed only if this is the last thread in the thread group.
+
+       Up to glibc 2.3, the _exit() wrapper function invoked the kernel system call of the same name.  Since glibc 2.3, the wrapper function invokes exit_group(2), in  order  to  terminate  all  of  the
+       threads in a process.
+
+SEE ALSO
+       execve(2), exit_group(2), fork(2), kill(2), wait(2), wait4(2), waitpid(2), atexit(3), exit(3), on_exit(3), termios(3)
+
+Linux man-pages 6.04                                                                            2023-03-30                                                                                        _exit(2)

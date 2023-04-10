@@ -1,0 +1,168 @@
+SYSTEMD-JOURNAL-UPLOAD.Ssystemd-journal-uploaSYSTEMD-JOURNAL-UPLOAD.SERVICE(8)
+
+NAME
+       systemd-journal-upload.service, systemd-journal-upload - Send journal
+       messages over the network
+
+SYNOPSIS
+       systemd-journal-upload.service
+
+       /usr/lib/systemd/systemd-journal-upload [OPTIONS...] [-u/--url=URL]
+                                               [SOURCES...]
+
+DESCRIPTION
+       systemd-journal-upload will upload journal entries to the URL specified
+       with --url=. This program reads journal entries from one or more
+       journal files, similarly to journalctl(1). Unless limited by one of the
+       options specified below, all journal entries accessible to the user the
+       program is running as will be uploaded, and then the program will wait
+       and send new entries as they become available.
+
+       systemd-journal-upload transfers the raw content of journal file and
+       uses HTTP as a transport protocol.
+
+       systemd-journal-upload.service is a system service that uses
+       systemd-journal-upload to upload journal entries to a server. It uses
+       the configuration in journal-upload.conf(5). At least the URL= option
+       must be specified.
+
+OPTIONS
+       -u, --url=[https://]URL[:PORT], --url=[http://]URL[:PORT]
+           Upload to the specified address.  URL may specify either just the
+           hostname or both the protocol and hostname.  https is the default.
+           The port number may be specified after a colon (":"), otherwise
+           19532 will be used by default.
+
+       --system, --user
+           Limit uploaded entries to entries from system services and the
+           kernel, or to entries from services of current user. This has the
+           same meaning as --system and --user options for journalctl(1). If
+           neither is specified, all accessible entries are uploaded.
+
+       -m, --merge
+           Upload entries interleaved from all available journals, including
+           other machines. This has the same meaning as --merge option for
+           journalctl(1).
+
+       -D, --directory=DIR
+           Takes a directory path as argument. Upload entries from the
+           specified journal directory DIR instead of the default runtime and
+           system journal paths. This has the same meaning as --directory=
+           option for journalctl(1).
+
+       --file=GLOB
+           Takes a file glob as an argument. Upload entries from the specified
+           journal files matching GLOB instead of the default runtime and
+           system journal paths. May be specified multiple times, in which
+           case files will be suitably interleaved. This has the same meaning
+           as --file= option for journalctl(1).
+
+       --cursor=
+           Upload entries from the location in the journal specified by the
+           passed cursor. This has the same meaning as --cursor= option for
+           journalctl(1).
+
+       --after-cursor=
+           Upload entries from the location in the journal after the location
+           specified by the this cursor. This has the same meaning as
+           --after-cursor= option for journalctl(1).
+
+       --save-state[=PATH]
+           Upload entries from the location in the journal after the location
+           specified by the cursor saved in file at PATH
+           (/var/lib/systemd/journal-upload/state by default). After an entry
+           is successfully uploaded, update this file with the cursor of that
+           entry.
+
+       --follow[=BOOL]
+           If set to yes, then systemd-journal-upload waits for input.
+
+       --key=
+           Takes a path to a SSL key file in PEM format, or -. If - is set,
+           then client certificate authentication checking will be disabled.
+           Defaults to /etc/ssl/private/journal-upload.pem.
+
+       --cert=
+           Takes a path to a SSL certificate file in PEM format, or -. If - is
+           set, then client certificate authentication checking will be
+           disabled. Defaults to /etc/ssl/certs/journal-upload.pem.
+
+       --trust=
+           Takes a path to a SSL CA certificate file in PEM format, or -/all.
+           If -/all is set, then certificate checking will be disabled.
+           Defaults to /etc/ssl/ca/trusted.pem.
+
+       -h, --help
+           Print a short help text and exit.
+
+       --version
+           Print a short version string and exit.
+
+EXIT STATUS
+       On success, 0 is returned; otherwise, a non-zero failure code is
+       returned.
+
+EXAMPLES
+       Example 1. Setting up certificates for authentication
+
+       Certificates signed by a trusted authority are used to verify that the
+       server to which messages are uploaded is legitimate, and vice versa,
+       that the client is trusted.
+
+       A suitable set of certificates can be generated with openssl. Note,
+       2048 bits of key length is minimally recommended to use for security
+       reasons:
+
+           openssl req -newkey rsa:2048 -days 3650 -x509 -nodes \
+                 -out ca.pem -keyout ca.key -subj '/CN=Certificate authority/'
+
+           cat >ca.conf <<EOF
+           [ ca ]
+           default_ca = this
+
+           [ this ]
+           new_certs_dir = .
+           certificate = ca.pem
+           database = ./index
+           private_key = ca.key
+           serial = ./serial
+           default_days = 3650
+           default_md = default
+           policy = policy_anything
+
+           [ policy_anything ]
+           countryName             = optional
+           stateOrProvinceName     = optional
+           localityName            = optional
+           organizationName        = optional
+           organizationalUnitName  = optional
+           commonName              = supplied
+           emailAddress            = optional
+           EOF
+
+           touch index
+           echo 0001 >serial
+
+           SERVER=server
+           CLIENT=client
+
+           openssl req -newkey rsa:2048 -nodes -out $SERVER.csr -keyout $SERVER.key -subj "/CN=$SERVER/"
+           openssl ca -batch -config ca.conf -notext -in $SERVER.csr -out $SERVER.pem
+
+           openssl req -newkey rsa:2048 -nodes -out $CLIENT.csr -keyout $CLIENT.key -subj "/CN=$CLIENT/"
+           openssl ca -batch -config ca.conf -notext -in $CLIENT.csr -out $CLIENT.pem
+
+       Generated files ca.pem, server.pem, and server.key should be installed
+       on server, and ca.pem, client.pem, and client.key on the client. The
+       location of those files can be specified using TrustedCertificateFile=,
+       ServerCertificateFile=, and ServerKeyFile= in
+       /etc/systemd/journal-remote.conf and /etc/systemd/journal-upload.conf,
+       respectively. The default locations can be queried by using
+       systemd-journal-remote --help and systemd-journal-upload --help.
+
+SEE ALSO
+       journal-upload.conf(5), systemd-journal-remote.service(8),
+       journalctl(1), systemd-journald.service(8), systemd-journal-
+       gatewayd.service(8)
+
+systemd 253                                  SYSTEMD-JOURNAL-UPLOAD.SERVICE(8)

@@ -1,0 +1,133 @@
+PAM_SYSTEMD_HOME(8)            pam_systemd_home            PAM_SYSTEMD_HOME(8)
+
+NAME
+       pam_systemd_home - Authenticate users and mount home directories via
+       systemd-homed.service
+
+SYNOPSIS
+       pam_systemd_home.so
+
+DESCRIPTION
+       pam_systemd_home ensures that home directories managed by systemd-
+       homed.service(8) are automatically activated (mounted) on user login,
+       and are deactivated (unmounted) when the last session of the user ends.
+       For such users, it also provides authentication (when per-user disk
+       encryption is used, the disk encryption key is derived from the
+       authentication credential supplied at login time), account management
+       (the JSON user record[1] embedded in the home store contains account
+       details), and implements the updating of the encryption password (which
+       is also used for user authentication).
+
+OPTIONS
+       The following options are understood:
+
+       suspend=
+           Takes a boolean argument. If true, the home directory of the user
+           will be suspended automatically during system suspend; if false it
+           will remain active. Automatic suspending of the home directory
+           improves security substantially as secret key material is
+           automatically removed from memory before the system is put to sleep
+           and must be re-acquired (through user re-authentication) when
+           coming back from suspend. It is recommended to set this parameter
+           for all PAM applications that have support for automatically
+           re-authenticating via PAM on system resume. If multiple sessions of
+           the same user are open in parallel the user's home directory will
+           be left unsuspended on system suspend as long as at least one of
+           the sessions does not set this parameter to on. Defaults to off.
+
+           Note that TTY logins generally do not support re-authentication on
+           system resume. Re-authentication on system resume is primarily a
+           concept implementable in graphical environments, in the form of
+           lock screens brought up automatically when the system goes to
+           sleep. This means that if a user concurrently uses graphical login
+           sessions that implement the required re-authentication mechanism
+           and console logins that do not, the home directory is not locked
+           during suspend, due to the logic explained above. That said, it is
+           possible to set this field for TTY logins too, ignoring the fact
+           that TTY logins actually don't support the re-authentication
+           mechanism. In that case the TTY sessions will appear hung until the
+           user logs in on another virtual terminal (regardless if via another
+           TTY session or graphically) which will resume the home directory
+           and unblock the original TTY session. (Do note that lack of screen
+           locking on TTY sessions means even though the TTY session appears
+           hung, keypresses can still be queued into it, and the existing
+           screen contents be read without re-authentication; this limitation
+           is unrelated to the home directory management pam_systemd_home and
+           systemd-homed.service implement.)
+
+           Turning this option on by default is highly recommended for all
+           sessions, but only if the service managing these sessions correctly
+           implements the aforementioned re-authentication. Note that the
+           re-authentication must take place from a component running outside
+           of the user's context, so that it does not require access to the
+           user's home directory for operation. Traditionally, most desktop
+           environments do not implement screen locking this way, and need to
+           be updated accordingly.
+
+           This setting may also be controlled via the $SYSTEMD_HOME_SUSPEND
+           environment variable (see below), which pam_systemd_home reads
+           during initialization and sets for sessions. If both the
+           environment variable is set and the module parameter specified the
+           latter takes precedence.
+
+       debug[=]
+           Takes an optional boolean argument. If yes or without the argument,
+           the module will log debugging information as it operates.
+
+MODULE TYPES PROVIDED
+       The module implements all four PAM operations: auth (to allow
+       authentication using the encrypted data), account (because users with
+       systemd-homed.service user accounts are described in a JSON user
+       record[1] and may be configured in more detail than in the traditional
+       Linux user database), session (because user sessions must be tracked in
+       order to implement automatic release when the last session of the user
+       is gone), password (to change the encryption password — also used for
+       user authentication — through PAM).
+
+ENVIRONMENT
+       The following environment variables are initialized by the module and
+       available to the processes of the user's session:
+
+       $SYSTEMD_HOME=1
+           Indicates that the user's home directory is managed by
+           systemd-homed.service.
+
+       $SYSTEMD_HOME_SUSPEND=
+           Indicates whether the session has been registered with the suspend
+           mechanism enabled or disabled (see above). The variable's value is
+           either "0" or "1". Note that the module both reads the variable
+           when initializing, and sets it for sessions.
+
+EXAMPLE
+       Here's an example PAM configuration fragment that permits users managed
+       by systemd-homed.service to log in:
+
+           #%PAM-1.0
+           auth      sufficient pam_unix.so
+           -auth     sufficient pam_systemd_home.so
+           auth      required   pam_deny.so
+
+           account   required   pam_nologin.so
+           -account  sufficient pam_systemd_home.so
+           account   sufficient pam_unix.so
+           account   required   pam_permit.so
+
+           -password sufficient pam_systemd_home.so
+           password  sufficient pam_unix.so sha512 shadow try_first_pass use_authtok
+           password  required   pam_deny.so
+
+           -session  optional   pam_keyinit.so revoke
+           -session  optional   pam_loginuid.so
+           -session  optional   pam_systemd_home.so
+           -session  optional   pam_systemd.so
+           session   required   pam_unix.so
+
+SEE ALSO
+       systemd(1), systemd-homed.service(8), homed.conf(5), homectl(1),
+       pam_systemd(8), pam.conf(5), pam.d(5), pam(8)
+
+NOTES
+        1. JSON user record
+           https://systemd.io/USER_RECORD/
+
+systemd 253                                                PAM_SYSTEMD_HOME(8)
